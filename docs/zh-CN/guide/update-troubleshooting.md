@@ -27,7 +27,7 @@
 ### LeviLauncher 本体一闪即退或双击没反应
 
 - 在 Windows 上，LeviLauncher 现在会以更保守的 WebView2 软件渲染模式启动，以降低部分显卡和驱动组合下的启动崩溃概率。
-- 如果界面还没出现就退出，请先检查 `%APPDATA%\levilauncher.exe\logs\startup.log`。
+- 如果界面还没出现就退出，请先检查 `%LOCALAPPDATA%\LeviLauncher\Logs\startup.log`。
 - 失败后可以先重试一次；如果仍然复现，提交 Issue 时请附上 `startup.log`。
 
 ### 某个版本无法启动

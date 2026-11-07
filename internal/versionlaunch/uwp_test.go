@@ -29,7 +29,7 @@ func TestUWPNativeArchitectureDoesNotBreakVanillaLaunch(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			apppath.SetBaseRootOverride(t.TempDir())
 			t.Cleanup(func() { apppath.SetBaseRootOverride("") })
-			root, err := apppath.VersionsDir()
+			root, err := apppath.InstancesDir()
 			if err != nil {
 				t.Fatal(err)
 			}

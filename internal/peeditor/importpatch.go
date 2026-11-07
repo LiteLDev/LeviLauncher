@@ -9,6 +9,8 @@ import (
 	"unsafe"
 
 	"golang.org/x/sys/windows"
+
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 const (
@@ -311,7 +313,7 @@ var procReplaceFile = windows.NewLazySystemDLL("kernel32.dll").NewProc("ReplaceF
 // writePatchedExecutable stages the complete image before replacing the game.
 // ReplaceFileW preserves the original file's ACLs and saves it as .orig.
 func writePatchedExecutable(exePath string, data []byte) error {
-	tmp, err := os.CreateTemp(filepath.Dir(exePath), ".leviloader-*.tmp")
+	tmp, err := fsx.CreateTemp(filepath.Dir(exePath), exePath)
 	if err != nil {
 		return err
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/storage"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
@@ -151,16 +152,16 @@ func (s *VersionService) ListVersionMetas() []versions.VersionMeta {
 
 func (s *VersionService) ListVersionMetasWithRegistered() []versions.VersionMeta {
 	metas := mcservice.ListVersionMetas()
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return metas
 	}
 	var releaseLoc, previewLoc string
 	if info, e := registry.GetAppxInfo("MICROSOFT.MINECRAFTUWP"); e == nil && info != nil {
-		releaseLoc = normalizePath(info.InstallLocation)
+		releaseLoc = normalizePath(storage.TranslateLegacyPath(info.InstallLocation))
 	}
 	if info, e := registry.GetAppxInfo("Microsoft.MinecraftWindowsBeta"); e == nil && info != nil {
-		previewLoc = normalizePath(info.InstallLocation)
+		previewLoc = normalizePath(storage.TranslateLegacyPath(info.InstallLocation))
 	}
 	for i := range metas {
 		m := &metas[i]
@@ -255,7 +256,7 @@ func (s *VersionService) RegisterVersionWithWdapp(name string, isPreview bool) s
 		log.Printf("VersionService.RegisterVersionWithWdapp: version name is empty")
 		return "ERR_TARGET_DIR_NOT_SPECIFIED"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		log.Printf("VersionService.RegisterVersionWithWdapp: failed to access versions dir for name=%s: %v", trimmedName, err)
 		return "ERR_ACCESS_VERSIONS_DIR"
@@ -311,7 +312,7 @@ func (s *VersionService) UnregisterVersionByName(name string) string {
 		log.Printf("VersionService.UnregisterVersionByName: version name is empty")
 		return "ERR_TARGET_DIR_NOT_SPECIFIED"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		log.Printf("VersionService.UnregisterVersionByName: failed to access versions dir for name=%s: %v", trimmedName, err)
 		return "ERR_ACCESS_VERSIONS_DIR"

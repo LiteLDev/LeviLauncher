@@ -174,7 +174,7 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 		return "ERR_LL_NOT_SUPPORTED"
 	}
 
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -219,7 +219,7 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 }
 
 func UninstallLeviLamina(ctx context.Context, targetName string) string {
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}

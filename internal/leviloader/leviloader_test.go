@@ -79,6 +79,7 @@ func TestUWPActivatesNativeLoaderAndPreservesRuntime(t *testing.T) {
 
 func TestRunMigrationSkipsUWP(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
+	t.Setenv("LOCALAPPDATA", t.TempDir())
 	c, err := config.Reload()
 	if err != nil {
 		t.Fatal(err)
@@ -88,7 +89,7 @@ func TestRunMigrationSkipsUWP(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { config.Reload() })
-	dir := filepath.Join(c.BaseRoot, "versions", "uwp")
+	dir := filepath.Join(c.BaseRoot, apppath.InstancesDirName, "uwp")
 	writeTestVersion(t, dir)
 	if err := versions.WriteMeta(dir, versions.VersionMeta{Name: "uwp", PackageType: "uwp"}); err != nil {
 		t.Fatal(err)
@@ -108,7 +109,7 @@ func TestRunMigrationSkipsUWP(t *testing.T) {
 func TestPatchAndActivateRequiresLoaderDeployment(t *testing.T) {
 	dir := t.TempDir()
 	writeTestVersion(t, dir)
-	if err := os.Mkdir(filepath.Join(dir, LoaderDLLName+".tmp"), 0755); err != nil {
+	if err := os.Mkdir(filepath.Join(dir, LoaderDLLName), 0755); err != nil {
 		t.Fatal(err)
 	}
 	added, err := PatchAndActivate(context.Background(), dir)
@@ -158,6 +159,7 @@ func TestPatchAndActivateIsIdempotent(t *testing.T) {
 
 func TestRunMigrationRetriesFailedVersions(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
+	t.Setenv("LOCALAPPDATA", t.TempDir())
 	c, err := config.Reload()
 	if err != nil {
 		t.Fatal(err)
@@ -166,8 +168,8 @@ func TestRunMigrationRetriesFailedVersions(t *testing.T) {
 	if err := config.Save(c); err != nil {
 		t.Fatal(err)
 	}
-	first := filepath.Join(c.BaseRoot, "versions", "a-good")
-	second := filepath.Join(c.BaseRoot, "versions", "b-broken")
+	first := filepath.Join(c.BaseRoot, apppath.InstancesDirName, "a-good")
+	second := filepath.Join(c.BaseRoot, apppath.InstancesDirName, "b-broken")
 	writeTestVersion(t, first)
 	writeTestVersion(t, second)
 	if err := os.WriteFile(filepath.Join(second, minecraftExeName), []byte("invalid PE"), 0644); err != nil {
@@ -197,6 +199,7 @@ func TestRunMigrationRetriesFailedVersions(t *testing.T) {
 
 func TestRunMigrationReportsConfigWriteFailure(t *testing.T) {
 	t.Setenv("APPDATA", t.TempDir())
+	t.Setenv("LOCALAPPDATA", t.TempDir())
 	if _, err := config.Reload(); err != nil {
 		t.Fatal(err)
 	}

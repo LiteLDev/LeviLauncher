@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/xbox"
 	"golang.org/x/sys/windows"
 )
@@ -131,9 +132,7 @@ func Install(ctx context.Context, sourcePath, outputPath string, options Options
 		emit(map[string]any{"license_type": active.report.LicenseType})
 	} else {
 		if active.options.CacheDir == "" {
-			cache, e := os.UserCacheDir()
-			must(e)
-			active.options.CacheDir = filepath.Join(cache, "LeviLauncher", "native-msixvc")
+			active.options.CacheDir = apppath.AccountsDir()
 		}
 		secureCache(active.options.CacheDir)
 		lockPath, e := windows.UTF16PtrFromString(filepath.Join(active.options.CacheDir, "device.lock"))

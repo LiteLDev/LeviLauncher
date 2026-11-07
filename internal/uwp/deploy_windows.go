@@ -16,6 +16,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/storage"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 )
 
@@ -91,11 +92,18 @@ func isManagedDevelopmentPackage(pkg *registeredPackage) bool {
 	if pkg == nil || !pkg.IsDevelopmentMode || strings.TrimSpace(pkg.InstallLocation) == "" {
 		return false
 	}
-	return isManagedVersionDirectory(pkg.InstallLocation)
+	return isManagedVersionDirectory(storage.TranslateLegacyPath(pkg.InstallLocation))
+}
+
+// isMovedRegistration reports a registration of an instance that the storage
+// migration moved: Windows still records its legacy location, which no
+// longer exists.
+func isMovedRegistration(pkg *registeredPackage) bool {
+	return pkg != nil && storage.IsMovedLegacyPath(pkg.InstallLocation)
 }
 
 func isManagedVersionDirectory(dir string) bool {
-	root, err := apppath.VersionsDir()
+	root, err := apppath.InstancesDir()
 	if err != nil {
 		return false
 	}
@@ -176,13 +184,21 @@ func registerLocked(ctx context.Context, dir string, manifest Manifest) (*regist
 		if ErrorCode(err) != "ERR_UWP_PACKAGE_CONFLICT" {
 			return nil, err
 		}
-		if info, readErr := os.Stat(filepath.Join(existing.InstallLocation, "AppxManifest.xml")); readErr != nil || !info.Mode().IsRegular() {
-			return nil, failure("ERR_UWP_PACKAGE_CONFLICT", fmt.Errorf("existing registration cannot be restored because its manifest is missing"))
+		// A registration the migration moved has nothing left to restore at its
+		// old location; the data it keeps survives the removal either way.
+		moved := isMovedRegistration(existing)
+		if !moved {
+			if info, readErr := os.Stat(filepath.Join(existing.InstallLocation, "AppxManifest.xml")); readErr != nil || !info.Mode().IsRegular() {
+				return nil, failure("ERR_UWP_PACKAGE_CONFLICT", fmt.Errorf("existing registration cannot be restored because its manifest is missing"))
+			}
 		}
 		if removeErr := removeDevelopmentPackage(ctx, existing); removeErr != nil {
 			return nil, removeErr
 		}
 		if err = addPackage(ctx, dir); err != nil {
+			if moved {
+				return nil, err
+			}
 			// Use an independent context for rollback even if launch was cancelled.
 			if rollbackErr := addPackage(context.Background(), existing.InstallLocation); rollbackErr != nil {
 				return nil, failure("ERR_UWP_REGISTER_ROLLBACK", fmt.Errorf("registration: %v; rollback: %w", err, rollbackErr))
@@ -222,7 +238,7 @@ func Unregister(ctx context.Context, dir string) error {
 	if err != nil {
 		return err
 	}
-	if pkg == nil || !samePath(pkg.InstallLocation, dir) {
+	if pkg == nil || !samePath(storage.TranslateLegacyPath(pkg.InstallLocation), dir) {
 		return nil
 	}
 	if !strings.EqualFold(pkg.PackageFamilyName, manifest.FamilyName()) {
@@ -256,6 +272,13 @@ func LaunchWithPreparation(ctx context.Context, dir string, enableEditorMode boo
 	pkg, err := queryPackage(ctx, manifest.Identity.Name)
 	if err != nil {
 		return 0, err
+	}
+	// The storage migration moved this registered instance: register it where
+	// it is now, as it was registered before.
+	if isMovedRegistration(pkg) && samePath(storage.TranslateLegacyPath(pkg.InstallLocation), dir) && strings.EqualFold(pkg.PackageFamilyName, manifest.FamilyName()) {
+		if pkg, err = registerLocked(ctx, dir, manifest); err != nil {
+			return 0, err
+		}
 	}
 	if pkg == nil || !samePath(pkg.InstallLocation, dir) || !strings.EqualFold(pkg.PackageFamilyName, manifest.FamilyName()) {
 		return 0, failure("ERR_UWP_NOT_REGISTERED", fmt.Errorf("register the selected UWP instance before launching it"))

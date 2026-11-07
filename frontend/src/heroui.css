@@ -10,9 +10,11 @@
 @import "@heroui/styles/components/chip.css" layer(components);
 @import "@heroui/styles/components/close-button.css" layer(components);
 @import "@heroui/styles/components/description.css" layer(components);
+@import "@heroui/styles/components/drawer.css" layer(components);
 @import "@heroui/styles/components/dropdown.css" layer(components);
 @import "@heroui/styles/components/field-error.css" layer(components);
 @import "@heroui/styles/components/input.css" layer(components);
+@import "@heroui/styles/components/kbd.css" layer(components);
 @import "@heroui/styles/components/input-group.css" layer(components);
 @import "@heroui/styles/components/label.css" layer(components);
 @import "@heroui/styles/components/link.css" layer(components);

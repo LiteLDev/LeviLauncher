@@ -9,6 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
+	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
 // Public key bytes and replacement behavior verified against KeyPatcher:
@@ -17,7 +21,6 @@ import (
 const (
 	legacyAuthPublicKey  = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V"
 	currentAuthPublicKey = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECRXueJeTDqNRRgJi/vlRufByu/2G0i2Ebt6YMar5QX/R0DIIyrJMcUpruK4QveTfJSTp3Shlq4Gk34cD/4GUWwkv0DVuzeuB+tXija7HBxii03NHDbPAD0AKnLr2wdAp"
-	authKeyMarkerName    = ".levilauncher-xbox-auth-key-v1"
 	authKeyScanSize      = 1 << 20
 )
 
@@ -34,7 +37,8 @@ func ensureLegacyAuthKey(ctx context.Context, dir string, manifest Manifest) err
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	marker := filepath.Join(dir, authKeyMarkerName)
+	marker := authKeyMarkerPath(dir)
+	moveLegacyAuthKeyMarker(dir, marker)
 	state, err := os.ReadFile(marker)
 	if err == nil {
 		switch string(state) {
@@ -51,6 +55,10 @@ func ensureLegacyAuthKey(ctx context.Context, dir string, manifest Manifest) err
 	}
 	// Publish the marker only after successful scanning, writing, sync and close.
 	// A failed marker write is safe to retry: the next scan recognizes the new key.
+	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
+		return fmt.Errorf("write Xbox authentication key marker: %w", err)
+	}
+	fsx.SetHidden(filepath.Dir(marker))
 	if err := os.WriteFile(marker, []byte(result+"\n"), 0644); err != nil {
 		return fmt.Errorf("write Xbox authentication key marker: %w", err)
 	}
@@ -139,4 +147,23 @@ func patchLegacyAuthKey(ctx context.Context, exe string) (result string, err err
 		}
 	}
 	return "patched", nil
+}
+
+// authKeyMarkerPath is <instance>\.levilauncher\xbox-auth-key-v1.
+func authKeyMarkerPath(dir string) string {
+	return filepath.Join(apppath.InstanceStateDir(dir), apppath.InstanceAuthKeyMarker)
+}
+
+// moveLegacyAuthKeyMarker moves the marker that instances kept at their root
+// in the legacy layout into .levilauncher.
+func moveLegacyAuthKeyMarker(dir, marker string) {
+	legacy := filepath.Join(dir, apppath.LegacyInstanceAuthKeyMarker)
+	if !utils.FileExists(legacy) || utils.FileExists(marker) {
+		return
+	}
+	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
+		return
+	}
+	fsx.SetHidden(filepath.Dir(marker))
+	_ = os.Rename(legacy, marker)
 }

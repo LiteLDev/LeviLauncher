@@ -49,7 +49,7 @@ func TestInstallExtractAppxWritesManifestChannelAndMetadata(t *testing.T) {
 			if code := InstallExtractAppx(context.Background(), archive, "instance", tc.requested); code != "" {
 				t.Fatalf("install error: %s", code)
 			}
-			dir := filepath.Join(root, "versions", "instance")
+			dir := filepath.Join(root, apppath.InstancesDirName, "instance")
 			m, err := versions.ReadMeta(dir)
 			if err != nil {
 				t.Fatal(err)

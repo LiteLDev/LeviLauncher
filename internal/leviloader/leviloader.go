@@ -14,6 +14,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
@@ -94,13 +95,7 @@ func EnsureForVersion(ctx context.Context, versionDir string) error {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return err
 		}
-		tmp := dest + ".tmp"
-		if err := os.WriteFile(tmp, embeddedLoader, 0644); err != nil {
-			_ = os.Remove(tmp)
-			return err
-		}
-		if err := os.Rename(tmp, dest); err != nil {
-			_ = os.Remove(tmp)
+		if err := fsx.WriteFileAtomic(dest, embeddedLoader, 0o644); err != nil {
 			return err
 		}
 	}
@@ -195,7 +190,7 @@ func RunMigration(ctx context.Context) (migrated int, err error) {
 			emit(EventMigrateError, err.Error())
 		}
 	}()
-	root, err := apppath.VersionsDir()
+	root, err := apppath.InstancesDir()
 	if err != nil {
 		return 0, err
 	}

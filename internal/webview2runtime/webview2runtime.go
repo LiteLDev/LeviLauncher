@@ -13,6 +13,7 @@ import (
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/oslang"
 	win "golang.org/x/sys/windows"
@@ -73,8 +74,8 @@ var (
 		},
 	}
 
-	user32MessageBox             = win.NewLazySystemDLL("user32.dll")
-	procWebView2MessageBoxW      = user32MessageBox.NewProc("MessageBoxW")
+	user32MessageBox        = win.NewLazySystemDLL("user32.dll")
+	procWebView2MessageBoxW = user32MessageBox.NewProc("MessageBoxW")
 )
 
 func messageBox(title, message string, flags uint32) int32 {
@@ -309,10 +310,9 @@ func ValidateBrowserExecutableFolder(runtimeDir string) error {
 }
 
 func webView2InstallerPath() (string, string) {
+	// No fallback to the system temporary directory: when the cache cannot
+	// be created, the download reports why.
 	dir, _ := apppath.InstallersDir()
-	if dir == "" {
-		dir = filepath.Join(os.TempDir(), "LeviLauncher", "Installers")
-	}
 	return dir, filepath.Join(dir, webView2InstallerName)
 }
 
@@ -323,7 +323,7 @@ func downloadWebView2Installer(ctx context.Context, destPath string) error {
 	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 		return err
 	}
-	tmpPath := destPath + ".part"
+	tmpPath := fsx.PartialPath(destPath)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", webView2DownloadURL, nil)
 	if err != nil {

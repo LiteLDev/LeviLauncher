@@ -196,7 +196,7 @@ func setupLeviLaminaTestVersionsDir(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	apppath.SetBaseRootOverride(filepath.Join(root, "base"))
-	versionsDir, err := apppath.VersionsDir()
+	versionsDir, err := apppath.InstancesDir()
 	if err != nil {
 		t.Fatalf("resolve versions dir: %v", err)
 	}

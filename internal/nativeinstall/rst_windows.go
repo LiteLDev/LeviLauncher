@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 	"unsafe"
+
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 const dsNS = "http://www.w3.org/2000/09/xmldsig#"
@@ -76,7 +78,7 @@ func saveProtected(path string, v any) error {
 		return e
 	}
 	defer windows.LocalFree(windows.Handle(uintptr(unsafe.Pointer(out.Data))))
-	temp, e := os.CreateTemp(filepath.Dir(path), ".device-*.dpapi")
+	temp, e := fsx.CreateTemp(filepath.Dir(path), path)
 	if e != nil {
 		return e
 	}

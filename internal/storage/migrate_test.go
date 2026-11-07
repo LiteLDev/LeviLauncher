@@ -138,9 +138,13 @@ func TestPrepareMigratesDefaultLayout(t *testing.T) {
 			if migrated["future_key"] != "kept" || migrated["window_width"] != float64(900) {
 				t.Errorf("config members lost: %v", migrated)
 			}
-			// Nothing of the legacy layout is deleted.
-			if !exists(filepath.Join(e.legacy, "config.json")) {
-				t.Error("legacy config.json was removed")
+			// Nothing of the legacy layout is deleted; its config.json is
+			// renamed so that the next start does not migrate again.
+			if exists(filepath.Join(e.legacy, "config.json")) {
+				t.Error("legacy config.json still marks the legacy layout as not migrated")
+			}
+			if !exists(filepath.Join(e.legacy, "config.migrated.json")) {
+				t.Error("legacy config.json was not kept as config.migrated.json")
 			}
 			if exists(apppath.MigrationJournalPath()) {
 				t.Error("journal left after a committed migration")
@@ -273,6 +277,203 @@ func TestPrepareKeepsBothEntriesOnConflict(t *testing.T) {
 	}
 	if got := read(t, filepath.Join(instances, "A-legacy", "version.json")); got != `{"legacy":true}` {
 		t.Errorf("legacy instance = %q", got)
+	}
+}
+
+func readJSON(t *testing.T, path string) map[string]any {
+	t.Helper()
+	var m map[string]any
+	if err := json.Unmarshal([]byte(read(t, path)), &m); err != nil {
+		t.Fatalf("parse %s: %v", path, err)
+	}
+	return m
+}
+
+// A current layout that exists without a migration record was made without
+// the user's data, for example by a start that skipped the migration: the
+// legacy data is migrated into it and its settings, WebView2 profile and
+// accounts take precedence.
+func TestPrepareMigratesIntoAnExistingCurrentLayout(t *testing.T) {
+	e := setup(t)
+	seedLegacy(t, e.legacy, e.legacy)
+	cfg, _ := json.Marshal(map[string]any{"base_root": e.legacy, "window_width": 1200, "legacy_only": "kept"})
+	write(t, filepath.Join(e.legacy, "config.json"), string(cfg))
+	local := filepath.Join(e.local, "LeviLauncher")
+	write(t, apppath.ConfigPath(), `{"base_root":"","window_width":1024,"current_only":"kept"}`)
+	write(t, filepath.Join(local, "WebView2", "EBWebView", "Default", "fresh"), "fresh profile")
+	write(t, filepath.Join(local, "Accounts", "device.dpapi"), "fresh device")
+	write(t, filepath.Join(local, "Cache", "gamertags.json"), `{}`)
+	if err := os.MkdirAll(filepath.Join(local, "Instances"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	if outcome, err := Prepare(); err != nil || outcome != Migrated {
+		t.Fatalf("Prepare = %v, %v", outcome, err)
+	}
+	for path, want := range map[string]string{
+		filepath.Join(local, "Instances", "A", "version.json"):                               `{"name":"A"}`,
+		filepath.Join(local, "WebView2", "EBWebView", "Default", "Local Storage", "leveldb"): "storage",
+		filepath.Join(local, "WebView2", "EBWebView-before-migration", "Default", "fresh"):   "fresh profile",
+		filepath.Join(local, "Accounts", "device.dpapi"):                                     "device",
+		filepath.Join(local, "Accounts-before-migration", "device.dpapi"):                    "fresh device",
+		filepath.Join(local, "Cache", "gamertags.json"):                                      `{"1":"Steve"}`,
+		filepath.Join(local, "Cache", "gamertags-before-migration.json"):                     `{}`,
+		filepath.Join(e.legacy, "config.migrated.json"):                                      string(cfg),
+	} {
+		if got := read(t, path); got != want {
+			t.Errorf("%s = %q, want %q", path, got, want)
+		}
+	}
+	migrated := readJSON(t, apppath.ConfigPath())
+	if _, ok := migrated["base_root"]; ok {
+		t.Errorf("default data root kept base_root: %v", migrated)
+	}
+	if migrated["window_width"] != float64(1200) || migrated["legacy_only"] != "kept" || migrated["current_only"] != "kept" {
+		t.Errorf("config not merged with the legacy members winning: %v", migrated)
+	}
+	if exists(filepath.Join(e.roaming, "LeviLauncher", "config-before-migration.json")) {
+		t.Error("the replaced config.json was left behind after the commit")
+	}
+
+	recordLoaded = false
+	if outcome, err := Prepare(); err != nil || outcome != Current {
+		t.Fatalf("second Prepare = %v, %v", outcome, err)
+	}
+}
+
+// After a migration, legacy data appears again only when an old version runs
+// again: it is migrated too, but the current data takes precedence.
+func TestPrepareMigratesLegacyDataThatReappears(t *testing.T) {
+	e := setup(t)
+	seedLegacy(t, e.legacy, e.legacy)
+	write(t, filepath.Join(e.legacy, "config.json"), `{"window_width":900}`)
+	if outcome, err := Prepare(); err != nil || outcome != Migrated {
+		t.Fatalf("Prepare = %v, %v", outcome, err)
+	}
+	write(t, apppath.ConfigPath(), `{"window_width":1500}`)
+
+	// The old version runs again and writes its defaults and a new instance.
+	write(t, filepath.Join(e.legacy, "config.json"), `{"window_width":800,"old_only":true}`)
+	write(t, filepath.Join(e.legacy, "versions", "B", "version.json"), `{"name":"B"}`)
+	write(t, filepath.Join(e.legacy, "EBWebView", "Default", "old"), "old profile")
+	recordLoaded = false
+	if outcome, err := Prepare(); err != nil || outcome != Migrated {
+		t.Fatalf("second Prepare = %v, %v", outcome, err)
+	}
+	local := filepath.Join(e.local, "LeviLauncher")
+	migrated := readJSON(t, apppath.ConfigPath())
+	if migrated["window_width"] != float64(1500) || migrated["old_only"] != true {
+		t.Errorf("config not merged with the current members winning: %v", migrated)
+	}
+	for path, want := range map[string]string{
+		filepath.Join(local, "Instances", "A", "version.json"):                               `{"name":"A"}`,
+		filepath.Join(local, "Instances", "B", "version.json"):                               `{"name":"B"}`,
+		filepath.Join(local, "WebView2", "EBWebView", "Default", "Local Storage", "leveldb"): "storage",
+		filepath.Join(local, "WebView2", "EBWebView", "Default-legacy", "old"):               "old profile",
+		filepath.Join(e.legacy, "config.migrated.json"):                                      `{"window_width":900}`,
+		filepath.Join(e.legacy, "config.migrated-2.json"):                                    `{"window_width":800,"old_only":true}`,
+	} {
+		if got := read(t, path); got != want {
+			t.Errorf("%s = %q, want %q", path, got, want)
+		}
+	}
+	if exists(filepath.Join(local, "WebView2", "EBWebView-before-migration")) {
+		t.Error("the current WebView2 profile was replaced by the legacy one")
+	}
+	recordLoaded = false
+	for _, legacyPath := range []string{
+		filepath.Join(e.legacy, "versions", "A"),
+		filepath.Join(e.legacy, "versions", "B"),
+	} {
+		if got := TranslateLegacyPath(legacyPath); samePath(got, legacyPath) {
+			t.Errorf("TranslateLegacyPath(%s) lost its move", legacyPath)
+		}
+	}
+}
+
+// What a migration leaves in the legacy directory does not start another
+// one: config.migrated.json, entries copied across volumes, and a data root
+// kept in place, whose backups were renamed to Backups.
+func TestPrepareIgnoresAMigratedLegacyDirectory(t *testing.T) {
+	e := setup(t)
+	write(t, filepath.Join(e.legacy, "config.migrated.json"), `{}`)
+	write(t, filepath.Join(e.legacy, "microsoft-account", "device.dpapi"), "device")
+	write(t, filepath.Join(e.legacy, "EBWebView", "Default", "x"), "x")
+	write(t, filepath.Join(e.legacy, "logs", "startup.log"), "log")
+	write(t, filepath.Join(e.legacy, "Instances", "A", "version.json"), `{}`)
+	write(t, filepath.Join(e.legacy, "Backups", "Worlds", "W", "W_1.mcworld"), "world")
+
+	if outcome, err := Prepare(); err != nil || outcome != Current {
+		t.Fatalf("Prepare = %v, %v; want Current", outcome, err)
+	}
+	if exists(apppath.ConfigPath()) || exists(apppath.MigrationPath()) {
+		t.Error("a migrated legacy directory was migrated again")
+	}
+}
+
+// An undone migration restores a current config.json, a migration record and
+// entries it moved aside.
+func TestPrepareUndoRestoresTheExistingCurrentLayout(t *testing.T) {
+	for _, withRecord := range []bool{false, true} {
+		name := "without record"
+		if withRecord {
+			name = "with record"
+		}
+		t.Run(name, func(t *testing.T) {
+			e := setup(t)
+			seedLegacy(t, e.legacy, e.legacy)
+			write(t, filepath.Join(e.legacy, "config.json"), `{"window_width":900}`)
+			local := filepath.Join(e.local, "LeviLauncher")
+			const currentConfig = `{"window_width":1500}`
+			write(t, apppath.ConfigPath(), currentConfig)
+			write(t, filepath.Join(local, "Accounts", "device.dpapi"), "fresh device")
+			write(t, filepath.Join(local, "WebView2", "EBWebView", "Default", "fresh"), "fresh profile")
+			record := ""
+			if withRecord {
+				rec, _ := json.Marshal(Record{Format: recordFormat, LegacyDir: e.legacy, Moves: []Move{{From: `C:\old`, To: `C:\new`}}})
+				record = string(rec)
+				write(t, apppath.MigrationPath(), record)
+			}
+			f, err := os.Open(filepath.Join(e.legacy, "EBWebView", "Default", "Local Storage", "leveldb"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			outcome, err := Prepare()
+			f.Close()
+			if outcome != Legacy || err == nil {
+				t.Fatalf("Prepare = %v, %v; want Legacy with an error", outcome, err)
+			}
+			apppath.SetLegacyMode("")
+			for path, want := range map[string]string{
+				apppath.ConfigPath():                                              currentConfig,
+				filepath.Join(local, "Accounts", "device.dpapi"):                  "fresh device",
+				filepath.Join(local, "WebView2", "EBWebView", "Default", "fresh"): "fresh profile",
+				filepath.Join(e.legacy, "config.json"):                            `{"window_width":900}`,
+				filepath.Join(e.legacy, "microsoft-account", "device.dpapi"):      "device",
+				filepath.Join(e.legacy, "versions", "A", "version.json"):          `{"name":"A"}`,
+			} {
+				if got := read(t, path); got != want {
+					t.Errorf("%s = %q, want %q", path, got, want)
+				}
+			}
+			if withRecord && read(t, apppath.MigrationPath()) != record {
+				t.Error("the migration record was not restored")
+			}
+			if !withRecord && exists(apppath.MigrationPath()) {
+				t.Error("an undone migration left a record")
+			}
+			for _, p := range []string{
+				filepath.Join(local, "Accounts-before-migration"),
+				filepath.Join(local, "WebView2", "EBWebView-before-migration"),
+				filepath.Join(e.roaming, "LeviLauncher", "config-before-migration.json"),
+				filepath.Join(local, "storage-migration-before-migration.json"),
+				filepath.Join(e.legacy, "config.migrated.json"),
+			} {
+				if exists(p) {
+					t.Errorf("%s left after the undo", p)
+				}
+			}
+		})
 	}
 }
 

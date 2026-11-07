@@ -69,6 +69,11 @@ const (
 	LegacyInstanceMetaFileName   = "version.json"
 	LegacyInstanceIconFileName   = "LargeLogo.ico"
 	LegacyInstanceAuthKeyMarker  = ".levilauncher-xbox-auth-key-v1"
+
+	// LegacyMigratedConfigFileName is the legacy config.json once migrated,
+	// renamed in place so that the legacy directory no longer holds data to
+	// migrate.
+	LegacyMigratedConfigFileName = "config.migrated.json"
 )
 
 var (

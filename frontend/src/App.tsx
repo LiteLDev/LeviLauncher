@@ -4,6 +4,7 @@ import "./polyfills/wails";
 import { Navigate, Route, Routes } from "react-router-dom";
 import React, { useEffect, useState, Suspense, lazy } from "react";
 
+import { ActivityCenter } from "@/components/ActivityCenter";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
@@ -276,6 +277,7 @@ function App() {
                         placement="top"
                         className="wails-no-drag z-[120] top-20"
                       />
+                      <ActivityCenter />
 
                       <div
                         data-wallpaper-active={hasWallpaper ? "true" : undefined}

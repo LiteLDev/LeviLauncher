@@ -1,0 +1,15 @@
+{
+  "activity": {
+    "title": "动态",
+    "empty": "暂无动态",
+    "copy_all": "全部复制",
+    "clear": "清空记录",
+    "log_lines": "{{count}} 行日志",
+    "open": "动态"
+  },
+  "instance_picker": {
+    "label": "实例",
+    "placeholder": "选择实例",
+    "none_installed": "尚未安装实例"
+  }
+}

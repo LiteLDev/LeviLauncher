@@ -65,8 +65,8 @@ const (
 	SW_RESTORE            = 9
 	MB_OK                 = 0x00000000
 	MB_ICONERROR          = 0x00000010
-	minWindowWidth        = 960
-	minWindowHeight       = 600
+	minWindowWidth        = 640
+	minWindowHeight       = 480
 	defaultWindowWidth    = 1024
 	defaultWindowHeight   = 640
 )

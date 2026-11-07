@@ -1,0 +1,15 @@
+{
+  "activity": {
+    "title": "Activity",
+    "empty": "No activity yet",
+    "copy_all": "Copy all",
+    "clear": "Clear history",
+    "log_lines": "{{count}} log lines",
+    "open": "Activity"
+  },
+  "instance_picker": {
+    "label": "Instance",
+    "placeholder": "Choose an instance",
+    "none_installed": "No instances installed"
+  }
+}

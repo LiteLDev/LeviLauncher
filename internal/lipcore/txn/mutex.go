@@ -76,9 +76,11 @@ func (m *Mutex) Close() error {
 // EnsureLipDir creates <root>/.lip when it is missing, with the hidden
 // attribute on Windows (LockStore.CreateLipDirectory; failing to hide it is
 // ignored).
-func EnsureLipDir(root string) error { return ensureLipDir(OS, root) }
+func EnsureLipDir(root string) error { return EnsureLipDirFS(OS, root) }
 
-func ensureLipDir(fsys FS, root string) error {
+// EnsureLipDirFS is EnsureLipDir on fsys. The error is a *Error, or the
+// error of making root a full path.
+func EnsureLipDirFS(fsys FS, root string) error {
 	root, err := normalizeRoot(root)
 	if err != nil {
 		return err

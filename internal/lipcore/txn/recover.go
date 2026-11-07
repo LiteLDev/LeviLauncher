@@ -53,10 +53,10 @@ func RecoverWith(root string, opts RecoverOptions) (*RecoveryResult, error) {
 		fsys = OS
 	}
 	if opts.CommitLock == nil {
-		opts.CommitLock = func() error { return commitStaged(fsys, root) }
+		opts.CommitLock = func() error { return CommitStaged(fsys, root) }
 	}
 	if opts.DiscardLock == nil {
-		opts.DiscardLock = func() error { return discardStaged(fsys, root) }
+		opts.DiscardLock = func() error { return DiscardStaged(fsys, root) }
 	}
 	if opts.Now == nil {
 		opts.Now = time.Now
@@ -129,9 +129,11 @@ func RecoverWith(root string, opts RecoverOptions) (*RecoveryResult, error) {
 	return result, nil
 }
 
-// commitStaged is LockStore.CommitStaged without its tooth_lock.json
-// migration: moves the staged workspace file into place, if any.
-func commitStaged(fsys FS, root string) error {
+// CommitStaged is LockStore.CommitStaged without its tooth_lock.json
+// migration: moves the staged workspace file <root>/.lip/workspace.yaml.tmp
+// onto <root>/.lip/workspace.yaml in one rename, if it exists. root is a
+// full path (LockStore.NormalizeRoot). The error is a *Error.
+func CommitStaged(fsys FS, root string) error {
 	path := filepath.Join(root, LipDirectory, WorkspaceFile)
 	temp := filepath.Join(root, LipDirectory, StagedFile)
 	if !fileExists(fsys, temp) {
@@ -144,14 +146,16 @@ func commitStaged(fsys FS, root string) error {
 	return nil
 }
 
-// discardStaged is LockStore.DiscardStaged: deletes the staged workspace
-// file, if any.
-func discardStaged(fsys FS, root string) error {
+// DiscardStaged is LockStore.DiscardStaged: deletes the staged workspace
+// file <root>/.lip/workspace.yaml.tmp, if it exists. root is a full path.
+// The error is a *Error.
+func DiscardStaged(fsys FS, root string) error {
 	temp := filepath.Join(root, LipDirectory, StagedFile)
 	if !fileExists(fsys, temp) {
 		return nil
 	}
-	if err := fsys.Remove(temp); err != nil {
+	// File.Delete does nothing for a missing file.
+	if err := fsys.Remove(temp); err != nil && !notFound(err) {
 		return wrap(err, fmt.Sprintf("Cannot delete the unused new workspace file '%s'.", temp))
 	}
 	return nil

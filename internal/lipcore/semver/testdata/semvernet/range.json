@@ -1,0 +1,1411 @@
+[
+  {
+    "in": "",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Range is missing a comparison or limit at 0 in ''."
+  },
+  {
+    "in": " ",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range ' ' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Range is missing a comparison or limit at 1 in ' '."
+  },
+  {
+    "in": "  ",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '  ' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Range is missing a comparison or limit at 2 in '  '."
+  },
+  {
+    "in": "\t",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '\t' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 0 in '\t'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "1.2.3\t",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3\t' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 5 in '1.2.3\t'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": " 1.2.3",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "1.2.3 ",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "1.2.3  ||  2.0.0",
+    "ok": true,
+    "str": "1.2.3 || 2.0.0"
+  },
+  {
+    "in": "1.2.3 ||\t2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 ||\t2.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 8 in '1.2.3 ||\t2.0.0'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "1.2.3\u00A0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3\u00A0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 5 in '1.2.3\u00A0'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "\u30001.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '\u30001.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 0 in '\u30001.2.3'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "1.2.3 \u2003",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 \u2003' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 6 in '1.2.3 \u2003'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "||",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '||' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Range is missing a comparison or limit at 0 in '||'."
+  },
+  {
+    "in": "1.2.3 ||",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 ||' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Range is missing a comparison or limit at 8 in '1.2.3 ||'."
+  },
+  {
+    "in": "|| 1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '|| 1.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Range is missing a comparison or limit at 0 in '|| 1.2.3'."
+  },
+  {
+    "in": "1.2.3 | 2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 | 2.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '|'."
+  },
+  {
+    "in": "1.2.3|||2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3|||2.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '|'."
+  },
+  {
+    "in": "1.2.3 || || 2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 || || 2.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Range is missing a comparison or limit at 9 in '1.2.3 || || 2.0.0'."
+  },
+  {
+    "in": "a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range 'a' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character 'a' in 'a'."
+  },
+  {
+    "in": "abc",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range 'abc' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character 'a' in 'abc'."
+  },
+  {
+    "in": "not a range",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range 'not a range' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character 'n' in 'not'."
+  },
+  {
+    "in": ">=1.0.0 <",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>=1.0.0 <' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Empty string is not a valid version."
+  },
+  {
+    "in": "^^1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '^^1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '^^'."
+  },
+  {
+    "in": ">>1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>>1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '>>'."
+  },
+  {
+    "in": "<>1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '<>1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '<>'."
+  },
+  {
+    "in": "=>1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '=>1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '=>'."
+  },
+  {
+    "in": "==1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '==1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '=='."
+  },
+  {
+    "in": "!=1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '!=1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '!='."
+  },
+  {
+    "in": "!1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '!1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '!'."
+  },
+  {
+    "in": "~=1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '~=1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '~='."
+  },
+  {
+    "in": "^=1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '^=1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '^='."
+  },
+  {
+    "in": "~>1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '~>1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '~>'."
+  },
+  {
+    "in": ">=",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>=' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Empty string is not a valid version."
+  },
+  {
+    "in": "<",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '<' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Empty string is not a valid version."
+  },
+  {
+    "in": "=",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '=' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Empty string is not a valid version."
+  },
+  {
+    "in": "~",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '~' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Empty string is not a valid version."
+  },
+  {
+    "in": "^",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '^' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Empty string is not a valid version."
+  },
+  {
+    "in": "v1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range 'v1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Leading 'v' in 'v1.0.0'."
+  },
+  {
+    "in": "V1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range 'V1.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Leading 'V' in 'V1.0.0'."
+  },
+  {
+    "in": "1.x",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.x' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version contains invalid character 'x' in '1.x'."
+  },
+  {
+    "in": "1.X",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.X' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version contains invalid character 'X' in '1.X'."
+  },
+  {
+    "in": "1.0.0 - 2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.0.0 - 2.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '-'."
+  },
+  {
+    "in": "1.2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Patch version missing in '1.2'."
+  },
+  {
+    "in": "1",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version missing in '1'."
+  },
+  {
+    "in": "01.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '01.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version has leading zero in '01.0.0'."
+  },
+  {
+    "in": "1.01.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.01.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version has leading zero in '1.01.0'."
+  },
+  {
+    "in": "1.0.01",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.0.01' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Patch version has leading zero in '1.0.01'."
+  },
+  {
+    "in": ">=01.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>=01.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version has leading zero in '01.0.0'."
+  },
+  {
+    "in": "1.2.3+build",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3+build' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '+'."
+  },
+  {
+    "in": ">=1.2.3+build",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>=1.2.3+build' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '+'."
+  },
+  {
+    "in": "1.2.3-",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Missing prerelease identifier in '1.2.3-'."
+  },
+  {
+    "in": "1.2.3-.a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-.a' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Missing prerelease identifier in '1.2.3-.a'."
+  },
+  {
+    "in": "1.2.3-a..b",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-a..b' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Missing prerelease identifier in '1.2.3-a..b'."
+  },
+  {
+    "in": "1.2.3-01",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-01' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Leading zero in prerelease identifier in version '1.2.3-01'."
+  },
+  {
+    "in": "1.2.3-a.01",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-a.01' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Leading zero in prerelease identifier in version '1.2.3-a.01'."
+  },
+  {
+    "in": "1.2.3-a_b",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-a_b' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '_'."
+  },
+  {
+    "in": "1.2.3-é",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-é' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid character 'é' in prerelease identifier in '1.2.3-é'."
+  },
+  {
+    "in": "1.2.3-\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-\uD83D\uDE1E' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid character '\uFFFD' in prerelease identifier in '1.2.3-\uD83D\uDE1E'."
+  },
+  {
+    "in": "1.2.3\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3\uD83D\uDE1E' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Patch version contains invalid character '\uFFFD' in '1.2.3\uD83D\uDE1E'."
+  },
+  {
+    "in": "\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '\uD83D\uDE1E' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character '\uFFFD' in '\uD83D\uDE1E'."
+  },
+  {
+    "in": "\uD83D\uDE1E1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '\uD83D\uDE1E1.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character '\uFFFD' in '\uD83D\uDE1E1.2.3'."
+  },
+  {
+    "in": "1.2.\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.\uD83D\uDE1E' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Patch version contains invalid character '\uFFFD' in '1.2.\uD83D\uDE1E'."
+  },
+  {
+    "in": "1.2.3.4",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3.4' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Fourth version number in '1.2.3.4'."
+  },
+  {
+    "in": "1.2.3.a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3.a' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "The prerelease identfiers should be prefixed by '-' instead of '.' in '1.2.3.a'."
+  },
+  {
+    "in": "1.2.3.",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3.' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "The prerelease identfiers should be prefixed by '-' instead of '.' in '1.2.3.'."
+  },
+  {
+    "in": "1..3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1..3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version missing in '1..3'."
+  },
+  {
+    "in": ".1.2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '.1.2' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '.'."
+  },
+  {
+    "in": "1.2.",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Patch version missing in '1.2.'."
+  },
+  {
+    "in": "*",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "**",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '**' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version is a wildcard and should contain only 1 character in '**'."
+  },
+  {
+    "in": "*.*",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "*.*.*",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "1.*",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "1.*.*",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "1.2.*",
+    "ok": true,
+    "str": "1.2.*"
+  },
+  {
+    "in": "*.1",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '*.1' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version should be a wildcard because the preceding version is a wildcard in '*.1'."
+  },
+  {
+    "in": "*.1.2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '*.1.2' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version should be a wildcard because the preceding version is a wildcard in '*.1.2'."
+  },
+  {
+    "in": "1.*.2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.*.2' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Patch version should be a wildcard because the preceding version is a wildcard in '1.*.2'."
+  },
+  {
+    "in": "1.**",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.**' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version is a wildcard and should contain only 1 character in '1.**'."
+  },
+  {
+    "in": "*-*",
+    "ok": true,
+    "str": "*-*"
+  },
+  {
+    "in": "*-**",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '*-**' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Prerelease version is a wildcard and should contain only 1 character in '*-**'."
+  },
+  {
+    "in": "1.2.3-*",
+    "ok": true,
+    "str": "1.2.3-*"
+  },
+  {
+    "in": "1.2.3-a.*",
+    "ok": true,
+    "str": "1.2.3-a.*"
+  },
+  {
+    "in": "1.2.3-*.a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-*.a' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Prerelease identifier follows wildcard prerelease identifier in '1.2.3-*.a'."
+  },
+  {
+    "in": "1.2.3-a*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-a*' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Prerelease version is a wildcard and should contain only 1 character in '1.2.3-a*'."
+  },
+  {
+    "in": "1.*-*",
+    "ok": true,
+    "str": "1.*-*"
+  },
+  {
+    "in": "1.*-rc",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.*-rc' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "A wildcard major, minor, or patch is combined with a prerelease version in '1.*-rc'."
+  },
+  {
+    "in": "1.2.*-rc",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.*-rc' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "A wildcard major, minor, or patch is combined with a prerelease version in '1.2.*-rc'."
+  },
+  {
+    "in": ">=1.*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>=1.*' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Operator is combined with wildcards in '>=1.*'."
+  },
+  {
+    "in": "^1.*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '^1.*' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Operator is combined with wildcards in '^1.*'."
+  },
+  {
+    "in": "~*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '~*' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Operator is combined with wildcards in '~*'."
+  },
+  {
+    "in": ">*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>*' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Operator is combined with wildcards in '>*'."
+  },
+  {
+    "in": "=1.2.3-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '=1.2.3-*' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Operator is combined with wildcards in '=1.2.3-*'."
+  },
+  {
+    "in": ">1.2.3-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>1.2.3-*' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Operator is combined with wildcards in '>1.2.3-*'."
+  },
+  {
+    "in": "1.2.3-rc.*",
+    "ok": true,
+    "str": "1.2.3-rc.*"
+  },
+  {
+    "in": "1.2.3-rc.1.*",
+    "ok": true,
+    "str": "1.2.3-rc.1.*"
+  },
+  {
+    "in": "x",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range 'x' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character 'x' in 'x'."
+  },
+  {
+    "in": "1.x.x",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.x.x' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version contains invalid character 'x' in '1.x.x'."
+  },
+  {
+    "in": "1.2.3 2.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": ">=1.0.0 <2.0.0",
+    "ok": true,
+    "str": ">=1.0.0 <2.0.0"
+  },
+  {
+    "in": ">=1.0.0, <2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>=1.0.0, <2.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator ','."
+  },
+  {
+    "in": ">=1.0.0,<2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>=1.0.0,<2.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator ',<'."
+  },
+  {
+    "in": "^1.2.3",
+    "ok": true,
+    "str": "^1.2.3"
+  },
+  {
+    "in": "~1.2.3",
+    "ok": true,
+    "str": "~1.2.3"
+  },
+  {
+    "in": "^0.1.2",
+    "ok": true,
+    "str": "~0.1.2"
+  },
+  {
+    "in": "^0.0.2",
+    "ok": true,
+    "str": "^0.0.2"
+  },
+  {
+    "in": "^0.0.0",
+    "ok": true,
+    "str": "^0.0.0"
+  },
+  {
+    "in": "~0.0.0",
+    "ok": true,
+    "str": "0.0.*"
+  },
+  {
+    "in": ">=1.2.3-rc",
+    "ok": true,
+    "str": ">=1.2.3-rc"
+  },
+  {
+    "in": "<1.2.3-0",
+    "ok": true,
+    "str": "<1.2.3-0"
+  },
+  {
+    "in": "<0.0.0-0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "<0.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": ">99.0.0 <1.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "99999999999999999999.0.0",
+    "ok": true,
+    "str": "99999999999999999999.0.0"
+  },
+  {
+    "in": "^99999999999999999999.0.0",
+    "ok": true,
+    "str": "99999999999999999999.*"
+  },
+  {
+    "in": "~99999999999999999999.0.0",
+    "ok": true,
+    "str": "99999999999999999999.0.*"
+  },
+  {
+    "in": "99999999999999999999.*",
+    "ok": true,
+    "str": "99999999999999999999.*"
+  },
+  {
+    "in": "1.99999999999999999999.*",
+    "ok": true,
+    "str": "1.99999999999999999999.*"
+  },
+  {
+    "in": ">=99999999999999999999.0.0",
+    "ok": true,
+    "str": ">=99999999999999999999.0.0"
+  },
+  {
+    "in": "^0.0.99999999999999999999",
+    "ok": true,
+    "str": "^0.0.99999999999999999999"
+  },
+  {
+    "in": "^0.99999999999999999999.0",
+    "ok": true,
+    "str": "0.99999999999999999999.*"
+  },
+  {
+    "in": "1.2.99999999999999999999-*",
+    "ok": true,
+    "str": "1.2.99999999999999999999-*"
+  },
+  {
+    "in": "18446744073709551615.0.0",
+    "ok": true,
+    "str": "18446744073709551615.0.0"
+  },
+  {
+    "in": "^18446744073709551615.0.0",
+    "ok": true,
+    "str": "18446744073709551615.*"
+  },
+  {
+    "in": "18446744073709551616.0.0",
+    "ok": true,
+    "str": "18446744073709551616.0.0"
+  },
+  {
+    "in": "1.2.3-99999999999999999999",
+    "ok": true,
+    "str": "1.2.3-99999999999999999999"
+  },
+  {
+    "in": "1.2.3-99999999999999999999.*",
+    "ok": true,
+    "str": "1.2.3-99999999999999999999.*"
+  },
+  {
+    "in": "^1.2.3-99999999999999999999",
+    "ok": true,
+    "str": "^1.2.3-99999999999999999999"
+  },
+  {
+    "in": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version missing in '1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111...'."
+  },
+  {
+    "in": "^111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '^111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version missing in '1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111...'."
+  },
+  {
+    "in": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111.0.0",
+    "ok": true,
+    "str": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111.0.0"
+  },
+  {
+    "in": ">=1.0.0 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>=1.0.0 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version missing in '1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111...'."
+  },
+  {
+    "in": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character 'a' in 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'."
+  },
+  {
+    "in": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character 'a' in 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'."
+  },
+  {
+    "in": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character 'a' in 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...'."
+  },
+  {
+    "in": "\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character '\uFFFD' in '\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uFFFD...'."
+  },
+  {
+    "in": "1.2.3-\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3-\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid character '\uFFFD' in prerelease identifier in '1.2.3-\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uFFFD...'."
+  },
+  {
+    "in": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Minor version missing in '1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111...'."
+  },
+  {
+    "in": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Exceeded maximum length of 2048 for '1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111...'."
+  },
+  {
+    "in": "1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || ",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || ' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Exceeded maximum length of 2048 for '1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 |...'."
+  },
+  {
+    "in": "1.2.3 #",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 #' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '#'."
+  },
+  {
+    "in": "1.2.3 $",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 $' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '$'."
+  },
+  {
+    "in": "$1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '$1.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '$'."
+  },
+  {
+    "in": "1.2.3$",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3$' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '$'."
+  },
+  {
+    "in": "1.2.3 @",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 @' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '@'."
+  },
+  {
+    "in": "+1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '+1.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '+'."
+  },
+  {
+    "in": "1.2.3+",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3+' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '+'."
+  },
+  {
+    "in": "1.2.3 +b",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 +b' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '+'."
+  },
+  {
+    "in": "(1.2.3)",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '(1.2.3)' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '('."
+  },
+  {
+    "in": "[1.2.3]",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '[1.2.3]' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '['."
+  },
+  {
+    "in": "1.2.3,",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3,' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator ','."
+  },
+  {
+    "in": "1.2.3;",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3;' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator ';'."
+  },
+  {
+    "in": "1.2.3/2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3/2' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '/'."
+  },
+  {
+    "in": "1.2.3\\",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3\\' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '\\'."
+  },
+  {
+    "in": "'1.2.3'",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range ''1.2.3'' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '''."
+  },
+  {
+    "in": "\"1.2.3\"",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '\"1.2.3\"' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '\"'."
+  },
+  {
+    "in": "1.2.3 - ",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 - ' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '-'."
+  },
+  {
+    "in": " - 1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range ' - 1.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '-'."
+  },
+  {
+    "in": "1.2.3 -",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 -' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '-'."
+  },
+  {
+    "in": "-1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '-1.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '-'."
+  },
+  {
+    "in": "1.2.3--",
+    "ok": true,
+    "str": "1.2.3--"
+  },
+  {
+    "in": "1.2.3-rc--1",
+    "ok": true,
+    "str": "1.2.3-rc--1"
+  },
+  {
+    "in": "<=1.2.3",
+    "ok": true,
+    "str": "<=1.2.3"
+  },
+  {
+    "in": "> 1.2.3",
+    "ok": true,
+    "str": ">1.2.3"
+  },
+  {
+    "in": ">  1.2.3",
+    "ok": true,
+    "str": ">1.2.3"
+  },
+  {
+    "in": ">\t1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>\t1.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 1 in '>\t1.2.3'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "> \t1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '> \t1.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 2 in '> \t1.2.3'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "1.2.3 <  2.0.0",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "1.2.3\n",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3\n' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 5 in '1.2.3\n'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "\n",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '\n' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 0 in '\n'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "1.2.3 ||\n2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 ||\n2.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid whitespace character at 8 in '1.2.3 ||\n2.0.0'. Only the ASCII space character is allowed."
+  },
+  {
+    "in": "1.2.3​",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3​' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Patch version contains invalid character '​' in '1.2.3​'."
+  },
+  {
+    "in": "​",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '​' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Major version contains invalid character '​' in '​'."
+  },
+  {
+    "in": "1.2.3\uFEFF",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3\uFEFF' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Patch version contains invalid character '\uFEFF' in '1.2.3\uFEFF'."
+  },
+  {
+    "in": "1.2.3–2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3–2.0.0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '–'."
+  },
+  {
+    "in": "≥1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '≥1.2.3' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '≥'."
+  },
+  {
+    "in": "×",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '×' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '×'."
+  },
+  {
+    "in": "1.2.3 ※",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 ※' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '※'."
+  },
+  {
+    "in": "1.2.3 ±",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.2.3 ±' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Invalid operator '±'."
+  },
+  {
+    "in": "*-0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '*-0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "A wildcard major, minor, or patch is combined with a prerelease version in '*-0'."
+  },
+  {
+    "in": "*-a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '*-a' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "A wildcard major, minor, or patch is combined with a prerelease version in '*-a'."
+  },
+  {
+    "in": "1.*-0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '1.*-0' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "A wildcard major, minor, or patch is combined with a prerelease version in '1.*-0'."
+  },
+  {
+    "in": "1.2.3-0.*",
+    "ok": true,
+    "str": "1.2.3-0.*"
+  },
+  {
+    "in": ">=1.0.0-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The version range '>=1.0.0-*' is not valid. A version range is written like 1.2.3, >=1.2.0 <2.0.0, ^1.2.0, ~1.2.0, 1.* or *, with SemVer versions without a leading 'v', and alternatives separated by ||.",
+    "innerType": "FormatException",
+    "inner": "Operator is combined with wildcards in '>=1.0.0-*'."
+  },
+  {
+    "in": "1.0.0 *",
+    "ok": true,
+    "str": "1.0.0"
+  },
+  {
+    "in": "* 1.0.0",
+    "ok": true,
+    "str": "1.0.0"
+  },
+  {
+    "in": "* *",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "*-* 1.0.0",
+    "ok": true,
+    "str": "1.0.0"
+  },
+  {
+    "in": "1.0.0 *-*",
+    "ok": true,
+    "str": "1.0.0"
+  },
+  {
+    "in": "^1.0.0 ^2.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "<1.0.0 >2.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "1.0.0 || 1.0.0",
+    "ok": true,
+    "str": "1.0.0"
+  },
+  {
+    "in": "*-* || 1.0.0-rc",
+    "ok": true,
+    "str": "*-*"
+  },
+  {
+    "in": "~1.2.3-rc",
+    "ok": true,
+    "str": "~1.2.3-rc"
+  },
+  {
+    "in": "^0.2.3-rc",
+    "ok": true,
+    "str": "~0.2.3-rc"
+  },
+  {
+    "in": "^1.2.3-rc",
+    "ok": true,
+    "str": "^1.2.3-rc"
+  },
+  {
+    "in": "1.2.3-a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y",
+    "ok": true,
+    "str": "1.2.3-a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y"
+  },
+  {
+    "in": ">=1.2.3 <1.2.4-0",
+    "ok": true,
+    "str": ">=1.2.3 <1.2.4-0"
+  },
+  {
+    "in": ">=1.2.3-0 <1.2.4-0",
+    "ok": true,
+    "str": "1.2.3-*"
+  },
+  {
+    "in": ">=99999999999999999999.0.0 <100000000000000000000.0.0-0",
+    "ok": true,
+    "str": "99999999999999999999.*"
+  },
+  {
+    "in": ">=1.99999999999999999999.0 <1.100000000000000000000.0-0",
+    "ok": true,
+    "str": "1.99999999999999999999.*"
+  },
+  {
+    "in": ">=0.0.99999999999999999999 <0.0.100000000000000000000-0",
+    "ok": true,
+    "str": "^0.0.99999999999999999999"
+  }
+]

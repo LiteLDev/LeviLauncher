@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/fs"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -398,7 +397,7 @@ func (s WorkspaceStore) StageWorkspace(root string, lf *pkgmodel.LockFile) error
 	if err != nil {
 		return err
 	}
-	if err := s.createLipDirectory(r); err != nil {
+	if err := txn.EnsureLipDirFS(s.fs(), r); err != nil {
 		return err
 	}
 	temp := filepath.Join(r, txn.LipDirectory, txn.StagedFile)
@@ -409,20 +408,6 @@ func (s WorkspaceStore) StageWorkspace(root string, lf *pkgmodel.LockFile) error
 		}
 		return &txn.Error{Msg: fmt.Sprintf("Cannot write the new workspace file '%s'.", temp), Err: err}
 	}
-	return nil
-}
-
-// createLipDirectory is LockStore.CreateLipDirectory.
-func (s WorkspaceStore) createLipDirectory(root string) error {
-	dir := filepath.Join(root, txn.LipDirectory)
-	if info, err := s.fs().Stat(dir); err == nil && info.IsDir() {
-		return nil
-	}
-	if err := s.fs().MkdirAll(dir); err != nil {
-		return &txn.Error{Msg: fmt.Sprintf("Cannot create the directory '%s', where lip keeps the workspace"+
-			" file. Check that you may write to the workspace.", dir), Err: err}
-	}
-	_ = s.fs().SetHidden(dir, true) // A visible .lip works the same.
 	return nil
 }
 
@@ -445,9 +430,8 @@ func (s WorkspaceStore) CommitStaged(root string) error {
 		return nil
 	}
 	migrated := !s.fileExists(path) && s.toothLockReadable(r)
-	if err := s.fs().Rename(temp, path); err != nil {
-		return &txn.Error{Msg: fmt.Sprintf("Cannot replace the workspace file '%s' with the new one '%s'.",
-			path, temp), Err: err}
+	if err := txn.CommitStaged(s.fs(), r); err != nil {
+		return err
 	}
 	if migrated {
 		// The workspace file is in place; what follows must not fail the
@@ -465,15 +449,7 @@ func (s WorkspaceStore) DiscardStaged(root string) error {
 	if err != nil {
 		return err
 	}
-	temp := filepath.Join(r, txn.LipDirectory, txn.StagedFile)
-	if !s.fileExists(temp) {
-		return nil
-	}
-	// File.Delete does nothing for a missing file.
-	if err := s.fs().Remove(temp); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return &txn.Error{Msg: fmt.Sprintf("Cannot delete the unused new workspace file '%s'.", temp), Err: err}
-	}
-	return nil
+	return txn.DiscardStaged(s.fs(), r)
 }
 
 // StagedHooks are CommitStaged and DiscardStaged of root, for

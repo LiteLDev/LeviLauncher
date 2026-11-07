@@ -285,7 +285,7 @@ func (t *Transaction) Commit(writeStaged func() error) ([]error, error) {
 	}
 	commit := t.opts.CommitStaged
 	if commit == nil {
-		commit = func() error { return commitStaged(t.fs, t.root) }
+		commit = func() error { return CommitStaged(t.fs, t.root) }
 	}
 	if err := commit(); err != nil {
 		return fail(err)
@@ -305,7 +305,7 @@ func (t *Transaction) Rollback(discardLock func() error) []error {
 	if discardLock == nil {
 		discard := t.opts.DiscardStaged
 		if discard == nil {
-			discard = func() error { return discardStaged(t.fs, t.root) }
+			discard = func() error { return DiscardStaged(t.fs, t.root) }
 		}
 		discardLock = func() error { _ = discard(); return nil }
 	}

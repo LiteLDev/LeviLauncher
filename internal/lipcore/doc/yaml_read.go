@@ -9,7 +9,6 @@ import (
 	"runtime/debug"
 	"strconv"
 	"unicode/utf16"
-	"unicode/utf8"
 )
 
 // YAMLError is the error ParseYAML returns: a YamlFormatException of lip's
@@ -73,9 +72,10 @@ var (
 // are expanded (at most 1,000,000 nodes); collections nest at most 64 deep;
 // mapping keys must be unique strings. Errors are *YAMLError.
 func ParseYAML(data []byte, file string) (v any, err error) {
-	text, ok := decodeText(data)
-	if !ok {
-		return nil, &YAMLError{File: file, Message: "The file is not valid UTF-8 text. Save it with the UTF-8 encoding."}
+	text, derr := decodeText(data)
+	if derr != nil {
+		return nil, &YAMLError{File: file, Message: "The file is not valid UTF-8 text. Save it with the UTF-8 encoding.",
+			Err: derr}
 	}
 	return parseYAMLText(text, file)
 }
@@ -123,26 +123,28 @@ func parseYAMLText(text []uint16, file string) (v any, err error) {
 }
 
 // decodeText decodes bytes as new StreamReader(stream, strictUtf8,
-// detectEncodingFromByteOrderMarks: true).ReadToEnd() does, into UTF-16.
-func decodeText(b []byte) ([]uint16, bool) {
+// detectEncodingFromByteOrderMarks: true).ReadToEnd() does, into UTF-16;
+// the error is the DecoderFallbackException it throws for text without a
+// byte order mark that is not UTF-8.
+func decodeText(b []byte) ([]uint16, *DecoderError) {
 	switch {
 	case len(b) >= 2 && b[0] == 0xFE && b[1] == 0xFF:
-		return decodeUTF16(b[2:], true), true
+		return decodeUTF16(b[2:], true), nil
 	case len(b) >= 2 && b[0] == 0xFF && b[1] == 0xFE:
 		if len(b) < 4 || b[2] != 0 || b[3] != 0 {
-			return decodeUTF16(b[2:], false), true
+			return decodeUTF16(b[2:], false), nil
 		}
-		return decodeUTF32(b[4:], false), true
+		return decodeUTF32(b[4:], false), nil
 	case len(b) >= 3 && b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF:
 		// Encoding.UTF8, which replaces invalid bytes.
-		return decodeUTF8Replacing(b[3:]), true
+		return decodeUTF8Replacing(b[3:]), nil
 	case len(b) >= 4 && b[0] == 0 && b[1] == 0 && b[2] == 0xFE && b[3] == 0xFF:
-		return decodeUTF32(b[4:], true), true
+		return decodeUTF32(b[4:], true), nil
 	}
-	if !utf8.Valid(b) {
-		return nil, false
+	if err := streamReaderUTF8Error(b); err != nil {
+		return nil, err
 	}
-	return utf16.Encode([]rune(string(b))), true
+	return utf16.Encode([]rune(string(b))), nil
 }
 
 // decodeUTF16 decodes as Encoding.Unicode / BigEndianUnicode: unpaired

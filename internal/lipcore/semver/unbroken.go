@@ -188,7 +188,7 @@ func newUnbroken(start, end bound, includeAllPrerelease bool) unbrokenRange {
 			if s.majorMinorPatchEquals(e) {
 				covered = true
 			} else if (rightIncludesPrerelease(end) || e.prereleaseIsZero()) &&
-				s.Major == e.Major && s.Minor == e.Minor && s.Patch+1 == e.Patch {
+				s.Major == e.Major && s.Minor == e.Minor && s.Patch.isSucc(e.Patch) {
 				covered = true
 			}
 		}
@@ -223,7 +223,7 @@ func boundsEmpty(start, end bound, includeAllPrerelease bool) bool {
 		return false
 	}
 	return start.v.Major == end.v.Major && start.v.Minor == end.v.Minor &&
-		start.v.Patch+1 == end.v.Patch
+		start.v.Patch.isSucc(end.v.Patch)
 }
 
 func (r unbrokenRange) contains(v Version) bool {
@@ -279,13 +279,13 @@ func (r unbrokenRange) specialString(extraPrerelease bool) (string, bool) {
 		start, end := *r.left.v, *r.right.v
 		tilde := false
 		// Wildcard ranges like 2.*, 2.*-*, 2.3.*, and 2.3.*-*
-		if start.Patch == 0 && end.Patch == 0 && (!start.IsPrerelease() || start.prereleaseIsZero()) {
+		if start.Patch.IsZero() && end.Patch.IsZero() && (!start.IsPrerelease() || start.prereleaseIsZero()) {
 			var result string
 			switch {
-			case start.Major == end.Major && start.Minor+1 == end.Minor:
-				result = uitoa(start.Major) + "." + uitoa(start.Minor) + ".*"
-			case start.Major+1 == end.Major && start.Minor == 0 && end.Minor == 0:
-				result = uitoa(start.Major) + ".*"
+			case start.Major == end.Major && start.Minor.isSucc(end.Minor):
+				result = start.Major.String() + "." + start.Minor.String() + ".*"
+			case start.Major.isSucc(end.Major) && start.Minor.IsZero() && end.Minor.IsZero():
+				result = start.Major.String() + ".*"
 			default:
 				tilde = true
 			}
@@ -301,26 +301,26 @@ func (r unbrokenRange) specialString(extraPrerelease bool) (string, bool) {
 		}
 		// Wildcard ranges like 2.1.4-* follow the pattern '>=X.Y.Z-0 <X.Y.(Z+1)-0'
 		if !tilde && start.prereleaseIsZero() &&
-			start.Major == end.Major && start.Minor == end.Minor && start.Patch+1 == end.Patch {
-			return uitoa(start.Major) + "." + uitoa(start.Minor) + "." + uitoa(start.Patch) + "-*", true
+			start.Major == end.Major && start.Minor == end.Minor && start.Patch.isSucc(end.Patch) {
+			return start.Major.String() + "." + start.Minor.String() + "." + start.Patch.String() + "-*", true
 		}
 		// Tilde ranges like ~1.2.3, and ~1.2.3-rc
-		if start.Major == end.Major && start.Minor+1 == end.Minor && end.Patch == 0 {
+		if start.Major == end.Major && start.Minor.isSucc(end.Minor) && end.Patch.IsZero() {
 			if extraPrerelease {
 				return "*-* ~" + start.String(), true
 			}
 			return "~" + start.String(), true
 		}
 		// Note: caret ranges like ^0.1.2 and ^0.2.3-rc are converted to tilde ranges
-		if start.Major != 0 {
+		if !start.Major.IsZero() {
 			// Caret ranges like ^1.2.3 and ^1.2.3-rc
-			if start.Major+1 == end.Major && end.Minor == 0 && end.Patch == 0 {
+			if start.Major.isSucc(end.Major) && end.Minor.IsZero() && end.Patch.IsZero() {
 				if extraPrerelease {
 					return "*-* ^" + start.String(), true
 				}
 				return "^" + start.String(), true
 			}
-		} else if end.Major == 0 && start.Minor == 0 && end.Minor == 0 && start.Patch+1 == end.Patch {
+		} else if end.Major.IsZero() && start.Minor.IsZero() && end.Minor.IsZero() && start.Patch.isSucc(end.Patch) {
 			// Caret ranges like ^0.0.2 and ^0.0.2-rc
 			if extraPrerelease {
 				return "*-* ^" + start.String(), true
@@ -346,7 +346,7 @@ func (r unbrokenRange) specialString(extraPrerelease bool) (string, bool) {
 			return "", false
 		}
 		s := *r.left.v
-		return uitoa(s.Major) + "." + uitoa(s.Minor) + "." + uitoa(s.Patch) + "-" +
+		return s.Major.String() + "." + s.Minor.String() + "." + s.Patch.String() + "-" +
 			strings.Join(lp[:len(lp)-1], ".") + ".*", true
 	}
 	return "", false

@@ -1,0 +1,1316 @@
+[
+  {
+    "in": "",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": " ",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "  ",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "\t",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "1.2.3\t",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": " 1.2.3",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "1.2.3 ",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "1.2.3  ||  2.0.0",
+    "ok": true,
+    "str": "1.2.3 || 2.0.0"
+  },
+  {
+    "in": "1.2.3 ||\t2.0.0",
+    "ok": true,
+    "str": "1.2.3 || 2.0.0"
+  },
+  {
+    "in": "1.2.3\u00A0",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "\u30001.2.3",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "1.2.3 \u2003",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "||",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "1.2.3 ||",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "|| 1.2.3",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "1.2.3 | 2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '|'."
+  },
+  {
+    "in": "1.2.3|||2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '|'."
+  },
+  {
+    "in": "1.2.3 || || 2.0.0",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character 'a' in 'a'."
+  },
+  {
+    "in": "abc",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character 'a' in 'abc'."
+  },
+  {
+    "in": "not a range",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character 'n' in 'not'."
+  },
+  {
+    "in": ">=1.0.0 <",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Empty string is not a valid version."
+  },
+  {
+    "in": "^^1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '^^'."
+  },
+  {
+    "in": ">>1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '>>'."
+  },
+  {
+    "in": "<>1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '<>'."
+  },
+  {
+    "in": "=>1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '=>'."
+  },
+  {
+    "in": "==1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '=='."
+  },
+  {
+    "in": "!=1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '!='."
+  },
+  {
+    "in": "!1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '!'."
+  },
+  {
+    "in": "~=1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '~='."
+  },
+  {
+    "in": "^=1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '^='."
+  },
+  {
+    "in": "~>1.0.0",
+    "ok": true,
+    "str": "1.0.*"
+  },
+  {
+    "in": ">=",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Empty string is not a valid version."
+  },
+  {
+    "in": "<",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Empty string is not a valid version."
+  },
+  {
+    "in": "=",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Empty string is not a valid version."
+  },
+  {
+    "in": "~",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Empty string is not a valid version."
+  },
+  {
+    "in": "^",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Empty string is not a valid version."
+  },
+  {
+    "in": "v1.0.0",
+    "ok": true,
+    "str": "1.0.0"
+  },
+  {
+    "in": "V1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Leading 'V' in 'V1.0.0'."
+  },
+  {
+    "in": "1.x",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "1.X",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "1.0.0 - 2.0.0",
+    "ok": true,
+    "str": ">=1.0.0 <=2.0.0"
+  },
+  {
+    "in": "1.2",
+    "ok": true,
+    "str": "1.2.*"
+  },
+  {
+    "in": "1",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "01.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version has leading zero in '01.0.0'."
+  },
+  {
+    "in": "1.01.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Minor version has leading zero in '1.01.0'."
+  },
+  {
+    "in": "1.0.01",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Patch version has leading zero in '1.0.01'."
+  },
+  {
+    "in": ">=01.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version has leading zero in '01.0.0'."
+  },
+  {
+    "in": "1.2.3+build",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": ">=1.2.3+build",
+    "ok": true,
+    "str": ">=1.2.3"
+  },
+  {
+    "in": "1.2.3-",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Missing prerelease identifier in '1.2.3-'."
+  },
+  {
+    "in": "1.2.3-.a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Missing prerelease identifier in '1.2.3-.a'."
+  },
+  {
+    "in": "1.2.3-a..b",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Missing prerelease identifier in '1.2.3-a..b'."
+  },
+  {
+    "in": "1.2.3-01",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Leading zero in prerelease identifier in version '1.2.3-01'."
+  },
+  {
+    "in": "1.2.3-a.01",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Leading zero in prerelease identifier in version '1.2.3-a.01'."
+  },
+  {
+    "in": "1.2.3-a_b",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '_'."
+  },
+  {
+    "in": "1.2.3-é",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character 'é' in prerelease identifier in '1.2.3-é'."
+  },
+  {
+    "in": "1.2.3-\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '\uFFFD' in prerelease identifier in '1.2.3-\uD83D\uDE1E'."
+  },
+  {
+    "in": "1.2.3\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Patch version contains invalid character '\uFFFD' in '1.2.3\uD83D\uDE1E'."
+  },
+  {
+    "in": "\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character '\uFFFD' in '\uD83D\uDE1E'."
+  },
+  {
+    "in": "\uD83D\uDE1E1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character '\uFFFD' in '\uD83D\uDE1E1.2.3'."
+  },
+  {
+    "in": "1.2.\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Patch version contains invalid character '\uFFFD' in '1.2.\uD83D\uDE1E'."
+  },
+  {
+    "in": "1.2.3.4",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Fourth version number in '1.2.3.4'."
+  },
+  {
+    "in": "1.2.3.a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The prerelease identfiers should be prefixed by '-' instead of '.' in '1.2.3.a'."
+  },
+  {
+    "in": "1.2.3.",
+    "ok": false,
+    "type": "FormatException",
+    "err": "The prerelease identfiers should be prefixed by '-' instead of '.' in '1.2.3.'."
+  },
+  {
+    "in": "1..3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Minor version missing in '1..3'."
+  },
+  {
+    "in": ".1.2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '.'."
+  },
+  {
+    "in": "1.2.",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Patch version missing in '1.2.'."
+  },
+  {
+    "in": "*",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "**",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version is a wildcard and should contain only 1 character in '**'."
+  },
+  {
+    "in": "*.*",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "*.*.*",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "1.*",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "1.*.*",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "1.2.*",
+    "ok": true,
+    "str": "1.2.*"
+  },
+  {
+    "in": "*.1",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Minor version should be a wildcard because the preceding version is a wildcard in '*.1'."
+  },
+  {
+    "in": "*.1.2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Minor version should be a wildcard because the preceding version is a wildcard in '*.1.2'."
+  },
+  {
+    "in": "1.*.2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Patch version should be a wildcard because the preceding version is a wildcard in '1.*.2'."
+  },
+  {
+    "in": "1.**",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Minor version is a wildcard and should contain only 1 character in '1.**'."
+  },
+  {
+    "in": "*-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '*-*'."
+  },
+  {
+    "in": "*-**",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '*-**'."
+  },
+  {
+    "in": "1.2.3-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-*'."
+  },
+  {
+    "in": "1.2.3-a.*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-a.*'."
+  },
+  {
+    "in": "1.2.3-*.a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-*.a'."
+  },
+  {
+    "in": "1.2.3-a*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-a*'."
+  },
+  {
+    "in": "1.*-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.*-*'."
+  },
+  {
+    "in": "1.*-rc",
+    "ok": false,
+    "type": "FormatException",
+    "err": "A wildcard major, minor, or patch is combined with a prerelease version in '1.*-rc'."
+  },
+  {
+    "in": "1.2.*-rc",
+    "ok": false,
+    "type": "FormatException",
+    "err": "A wildcard major, minor, or patch is combined with a prerelease version in '1.2.*-rc'."
+  },
+  {
+    "in": ">=1.*",
+    "ok": true,
+    "str": ">=1.0.0"
+  },
+  {
+    "in": "^1.*",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "~*",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": ">*",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "=1.2.3-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-*'."
+  },
+  {
+    "in": ">1.2.3-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-*'."
+  },
+  {
+    "in": "1.2.3-rc.*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-rc.*'."
+  },
+  {
+    "in": "1.2.3-rc.1.*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-rc.1.*'."
+  },
+  {
+    "in": "x",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "1.x.x",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "1.2.3 2.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": ">=1.0.0 <2.0.0",
+    "ok": true,
+    "str": ">=1.0.0 <2.0.0"
+  },
+  {
+    "in": ">=1.0.0, <2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator ','."
+  },
+  {
+    "in": ">=1.0.0,<2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator ',<'."
+  },
+  {
+    "in": "^1.2.3",
+    "ok": true,
+    "str": "^1.2.3"
+  },
+  {
+    "in": "~1.2.3",
+    "ok": true,
+    "str": "~1.2.3"
+  },
+  {
+    "in": "^0.1.2",
+    "ok": true,
+    "str": "~0.1.2"
+  },
+  {
+    "in": "^0.0.2",
+    "ok": true,
+    "str": "^0.0.2"
+  },
+  {
+    "in": "^0.0.0",
+    "ok": true,
+    "str": "^0.0.0"
+  },
+  {
+    "in": "~0.0.0",
+    "ok": true,
+    "str": "0.0.*"
+  },
+  {
+    "in": ">=1.2.3-rc",
+    "ok": true,
+    "str": ">=1.2.3-rc"
+  },
+  {
+    "in": "<1.2.3-0",
+    "ok": true,
+    "str": "<1.2.3-0"
+  },
+  {
+    "in": "<0.0.0-0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "<0.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": ">99.0.0 <1.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "99999999999999999999.0.0",
+    "ok": true,
+    "str": "99999999999999999999.0.0"
+  },
+  {
+    "in": "^99999999999999999999.0.0",
+    "ok": true,
+    "str": "99999999999999999999.*"
+  },
+  {
+    "in": "~99999999999999999999.0.0",
+    "ok": true,
+    "str": "99999999999999999999.0.*"
+  },
+  {
+    "in": "99999999999999999999.*",
+    "ok": true,
+    "str": "99999999999999999999.*"
+  },
+  {
+    "in": "1.99999999999999999999.*",
+    "ok": true,
+    "str": "1.99999999999999999999.*"
+  },
+  {
+    "in": ">=99999999999999999999.0.0",
+    "ok": true,
+    "str": ">=99999999999999999999.0.0"
+  },
+  {
+    "in": "^0.0.99999999999999999999",
+    "ok": true,
+    "str": "^0.0.99999999999999999999"
+  },
+  {
+    "in": "^0.99999999999999999999.0",
+    "ok": true,
+    "str": "0.99999999999999999999.*"
+  },
+  {
+    "in": "1.2.99999999999999999999-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.99999999999999999999-*'."
+  },
+  {
+    "in": "18446744073709551615.0.0",
+    "ok": true,
+    "str": "18446744073709551615.0.0"
+  },
+  {
+    "in": "^18446744073709551615.0.0",
+    "ok": true,
+    "str": "18446744073709551615.*"
+  },
+  {
+    "in": "18446744073709551616.0.0",
+    "ok": true,
+    "str": "18446744073709551616.0.0"
+  },
+  {
+    "in": "1.2.3-99999999999999999999",
+    "ok": true,
+    "str": "1.2.3-99999999999999999999"
+  },
+  {
+    "in": "1.2.3-99999999999999999999.*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-99999999999999999999.*'."
+  },
+  {
+    "in": "^1.2.3-99999999999999999999",
+    "ok": true,
+    "str": "^1.2.3-99999999999999999999"
+  },
+  {
+    "in": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": true,
+    "str": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111.*"
+  },
+  {
+    "in": "^111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": true,
+    "str": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111.*"
+  },
+  {
+    "in": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111.0.0",
+    "ok": true,
+    "str": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111.0.0"
+  },
+  {
+    "in": ">=1.0.0 111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": true,
+    "str": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111.*"
+  },
+  {
+    "in": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character 'a' in 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'."
+  },
+  {
+    "in": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character 'a' in 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'."
+  },
+  {
+    "in": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character 'a' in 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...'."
+  },
+  {
+    "in": "\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character '\uFFFD' in '\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uFFFD...'."
+  },
+  {
+    "in": "1.2.3-\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '\uFFFD' in prerelease identifier in '1.2.3-\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uD83D\uDE1E\uFFFD...'."
+  },
+  {
+    "in": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": true,
+    "str": "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111.*"
+  },
+  {
+    "in": "111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Exceeded maximum length of 2048 for '1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111...'."
+  },
+  {
+    "in": "1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || ",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Exceeded maximum length of 2048 for '1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 || 1.2.3 |...'."
+  },
+  {
+    "in": "1.2.3 #",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '#'."
+  },
+  {
+    "in": "1.2.3 $",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '$'."
+  },
+  {
+    "in": "$1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '$'."
+  },
+  {
+    "in": "1.2.3$",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '$'."
+  },
+  {
+    "in": "1.2.3 @",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '@'."
+  },
+  {
+    "in": "+1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version missing in '+1.2.3'."
+  },
+  {
+    "in": "1.2.3+",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Missing metadata identifier in '1.2.3+'."
+  },
+  {
+    "in": "1.2.3 +b",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version missing in '+b'."
+  },
+  {
+    "in": "(1.2.3)",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '('."
+  },
+  {
+    "in": "[1.2.3]",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '['."
+  },
+  {
+    "in": "1.2.3,",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator ','."
+  },
+  {
+    "in": "1.2.3;",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator ';'."
+  },
+  {
+    "in": "1.2.3/2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '/'."
+  },
+  {
+    "in": "1.2.3\\",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '\\'."
+  },
+  {
+    "in": "'1.2.3'",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '''."
+  },
+  {
+    "in": "\"1.2.3\"",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '\"'."
+  },
+  {
+    "in": "1.2.3 - ",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Missing a version number in hyphen range in '1.2.3 - '."
+  },
+  {
+    "in": " - 1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Missing a version number in hyphen range in ' - 1.2.3'."
+  },
+  {
+    "in": "1.2.3 -",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '-'."
+  },
+  {
+    "in": "-1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '-'."
+  },
+  {
+    "in": "1.2.3--",
+    "ok": true,
+    "str": "1.2.3--"
+  },
+  {
+    "in": "1.2.3-rc--1",
+    "ok": true,
+    "str": "1.2.3-rc--1"
+  },
+  {
+    "in": "<=1.2.3",
+    "ok": true,
+    "str": "<=1.2.3"
+  },
+  {
+    "in": "> 1.2.3",
+    "ok": true,
+    "str": ">1.2.3"
+  },
+  {
+    "in": ">  1.2.3",
+    "ok": true,
+    "str": ">1.2.3"
+  },
+  {
+    "in": ">\t1.2.3",
+    "ok": true,
+    "str": ">1.2.3"
+  },
+  {
+    "in": "> \t1.2.3",
+    "ok": true,
+    "str": ">1.2.3"
+  },
+  {
+    "in": "1.2.3 <  2.0.0",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "1.2.3\n",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "\n",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "1.2.3 ||\n2.0.0",
+    "ok": true,
+    "str": "1.2.3 || 2.0.0"
+  },
+  {
+    "in": "1.2.3​",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Patch version contains invalid character '​' in '1.2.3​'."
+  },
+  {
+    "in": "​",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character '​' in '​'."
+  },
+  {
+    "in": "1.2.3\uFEFF",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Patch version contains invalid character '\uFEFF' in '1.2.3\uFEFF'."
+  },
+  {
+    "in": "1.2.3–2.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '–'."
+  },
+  {
+    "in": "≥1.2.3",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '≥'."
+  },
+  {
+    "in": "×",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '×'."
+  },
+  {
+    "in": "1.2.3 ※",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '※'."
+  },
+  {
+    "in": "1.2.3 ±",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid operator '±'."
+  },
+  {
+    "in": "*-0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "A wildcard major, minor, or patch is combined with a prerelease version in '*-0'."
+  },
+  {
+    "in": "*-a",
+    "ok": false,
+    "type": "FormatException",
+    "err": "A wildcard major, minor, or patch is combined with a prerelease version in '*-a'."
+  },
+  {
+    "in": "1.*-0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "A wildcard major, minor, or patch is combined with a prerelease version in '1.*-0'."
+  },
+  {
+    "in": "1.2.3-0.*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-0.*'."
+  },
+  {
+    "in": ">=1.0.0-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.0.0-*'."
+  },
+  {
+    "in": "1.0.0 *",
+    "ok": true,
+    "str": "1.0.0"
+  },
+  {
+    "in": "* 1.0.0",
+    "ok": true,
+    "str": "1.0.0"
+  },
+  {
+    "in": "* *",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "*-* 1.0.0",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '*-*'."
+  },
+  {
+    "in": "1.0.0 *-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '*-*'."
+  },
+  {
+    "in": "^1.0.0 ^2.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "<1.0.0 >2.0.0",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "1.0.0 || 1.0.0",
+    "ok": true,
+    "str": "1.0.0"
+  },
+  {
+    "in": "*-* || 1.0.0-rc",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '*-*'."
+  },
+  {
+    "in": "~1.2.3-rc",
+    "ok": true,
+    "str": "~1.2.3-rc"
+  },
+  {
+    "in": "^0.2.3-rc",
+    "ok": true,
+    "str": "~0.2.3-rc"
+  },
+  {
+    "in": "^1.2.3-rc",
+    "ok": true,
+    "str": "^1.2.3-rc"
+  },
+  {
+    "in": "1.2.3-a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y",
+    "ok": true,
+    "str": "1.2.3-a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y"
+  },
+  {
+    "in": ">=1.2.3 <1.2.4-0",
+    "ok": true,
+    "str": ">=1.2.3 <1.2.4-0"
+  },
+  {
+    "in": ">=1.2.3-0 <1.2.4-0",
+    "ok": true,
+    "str": "1.2.3-*"
+  },
+  {
+    "in": ">=99999999999999999999.0.0 <100000000000000000000.0.0-0",
+    "ok": true,
+    "str": "99999999999999999999.*"
+  },
+  {
+    "in": ">=1.99999999999999999999.0 <1.100000000000000000000.0-0",
+    "ok": true,
+    "str": "1.99999999999999999999.*"
+  },
+  {
+    "in": ">=0.0.99999999999999999999 <0.0.100000000000000000000-0",
+    "ok": true,
+    "str": "^0.0.99999999999999999999"
+  },
+  {
+    "in": "1.2.3 - 2.3.4",
+    "ok": true,
+    "str": ">=1.2.3 <=2.3.4"
+  },
+  {
+    "in": "1.2 - 2",
+    "ok": true,
+    "str": ">=1.2.0 <3.0.0-0"
+  },
+  {
+    "in": "1.x - 2.x",
+    "ok": true,
+    "str": ">=1.0.0 <3.0.0-0"
+  },
+  {
+    "in": " - 2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Missing a version number in hyphen range in ' - 2'."
+  },
+  {
+    "in": "1 - ",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Missing a version number in hyphen range in '1 - '."
+  },
+  {
+    "in": "1 - >2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Unexpected characters in hyphen range '>'."
+  },
+  {
+    "in": "1 - 2 x",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Unexpected characters in hyphen range 'x'."
+  },
+  {
+    "in": "1.2.3 - 2.3.4 - 5",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Unexpected characters in hyphen range '- 5'."
+  },
+  {
+    "in": "~>1.2",
+    "ok": true,
+    "str": "1.2.*"
+  },
+  {
+    "in": "v1.2.3",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "1.2.3+b",
+    "ok": true,
+    "str": "1.2.3"
+  },
+  {
+    "in": "x",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "X.x",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "1.x.x-rc",
+    "ok": false,
+    "type": "FormatException",
+    "err": "A wildcard major, minor, or patch is combined with a prerelease version in '1.x.x-rc'."
+  },
+  {
+    "in": "*-rc",
+    "ok": false,
+    "type": "FormatException",
+    "err": "A wildcard major, minor, or patch is combined with a prerelease version in '*-rc'."
+  },
+  {
+    "in": "<1.x",
+    "ok": true,
+    "str": "<1.0.0-0"
+  },
+  {
+    "in": ">1.x",
+    "ok": true,
+    "str": ">=2.0.0"
+  },
+  {
+    "in": ">*",
+    "ok": true,
+    "str": ""
+  },
+  {
+    "in": "^*",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "~*",
+    "ok": true,
+    "str": "*"
+  },
+  {
+    "in": "^1.x",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "~1.x",
+    "ok": true,
+    "str": "1.*"
+  },
+  {
+    "in": "^0.x",
+    "ok": true,
+    "str": "0.*"
+  },
+  {
+    "in": "^0.0.x",
+    "ok": true,
+    "str": "0.0.*"
+  },
+  {
+    "in": "^99999999999999999999.x",
+    "ok": true,
+    "str": "99999999999999999999.*"
+  },
+  {
+    "in": ">99999999999999999999.x",
+    "ok": true,
+    "str": ">=100000000000000000000.0.0"
+  },
+  {
+    "in": "1 - 99999999999999999999.x",
+    "ok": true,
+    "str": ">=1.0.0 <100000000000000000000.0.0-0"
+  },
+  {
+    "in": "1 -\t2",
+    "ok": true,
+    "str": ">=1.0.0 <3.0.0-0"
+  },
+  {
+    "in": "1\t-\t2",
+    "ok": true,
+    "str": ">=1.0.0 <3.0.0-0"
+  },
+  {
+    "in": "1 -  2",
+    "ok": true,
+    "str": ">=1.0.0 <3.0.0-0"
+  },
+  {
+    "in": "1 - 2 ",
+    "ok": true,
+    "str": ">=1.0.0 <3.0.0-0"
+  },
+  {
+    "in": "1 - $2",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Unexpected characters in hyphen range '$'."
+  },
+  {
+    "in": "1 - 2$",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Unexpected characters in hyphen range '$'."
+  },
+  {
+    "in": "1 - \uD83D\uDE1E",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Major version contains invalid character '\uFFFD' in '\uD83D\uDE1E'."
+  },
+  {
+    "in": "=1.2",
+    "ok": true,
+    "str": "1.2.*"
+  },
+  {
+    "in": "<=1.x",
+    "ok": true,
+    "str": "<2.0.0-0"
+  },
+  {
+    "in": "1.2.3-*",
+    "ok": false,
+    "type": "FormatException",
+    "err": "Invalid character '*' in prerelease identifier in '1.2.3-*'."
+  }
+]

@@ -4,9 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
-	"compress/flate"
 	"errors"
-	"hash/crc32"
 	"io"
 	"io/fs"
 	"os"
@@ -47,10 +45,8 @@ type zipStamp struct {
 
 type zipEntry struct {
 	method         uint16
-	flags          uint16
 	compressedSize uint64
 	size           uint64
-	crc            uint32
 	offset         int64 // of the data, after the local header
 	offsetErr      error
 }
@@ -59,8 +55,6 @@ const (
 	zipStored    = 0
 	zipDeflate   = 8
 	zipDeflate64 = 9
-
-	zipFlagEncrypted = 0x1
 )
 
 // OpenZipFile validates the ZIP archive at path ("The local file <path>")
@@ -188,10 +182,8 @@ func (s *ZipSource) load(zr *zip.Reader, zerr error, stamp zipStamp) error {
 		}
 		e := &zipEntry{
 			method:         zf.Method,
-			flags:          zf.Flags,
 			compressedSize: zf.CompressedSize64,
 			size:           zf.UncompressedSize64,
-			crc:            zf.CRC32,
 		}
 		e.offset, e.offsetErr = zf.DataOffset()
 		keys = append(keys, name)
@@ -260,26 +252,35 @@ func (s *ZipSource) Open(key string) (io.ReadCloser, error) {
 		c.Close()
 		return nil, s.readError(key, e.offsetErr)
 	}
-	raw := io.NewSectionReader(r, e.offset, int64(e.compressedSize))
-	var dec io.Reader
-	var decCloser io.Closer
-	switch {
-	case e.flags&zipFlagEncrypted != 0:
-		// .NET cannot decrypt entries either.
+	if e.compressedSize > uint64(size) || uint64(e.offset) > uint64(size)-e.compressedSize {
+		// ZipArchiveEntry.IsOpenable: "A local file header is corrupt."
 		c.Close()
-		return nil, s.readError(key, zip.ErrAlgorithm)
-	case e.method == zipStored:
-		dec = raw
-	case e.method == zipDeflate:
-		fr := flate.NewReader(raw)
-		dec, decCloser = fr, fr
-	case e.method == zipDeflate64:
-		dec = newDeflate64Reader(bufio.NewReader(raw))
+		return nil, s.readError(key, zip.ErrFormat)
+	}
+	// What ZipArchiveEntry.Open of .NET 10 serves, which lip relies on: the
+	// encryption flags are ignored (the data is served as if it were not
+	// encrypted), the CRC-32 is not checked, a stored entry is its
+	// compressed size of data, and a compressed one is what the
+	// decompressor yields, cut at the uncompressed size; compressed data
+	// that ends early ends the file without an error.
+	raw := io.NewSectionReader(r, e.offset, int64(e.compressedSize))
+	z := &zipEntryReader{s: s, key: key, closer: c}
+	switch e.method {
+	case zipStored:
+		z.r = raw
+	case zipDeflate:
+		z.r, z.limit, z.compressed = newDeflateReader(bufio.NewReader(raw)), e.size, true
+	case zipDeflate64:
+		z.r, z.limit, z.compressed = newDeflate64Reader(bufio.NewReader(raw)), e.size, true
+		trial := bufio.NewReader(io.NewSectionReader(r, e.offset, int64(e.compressedSize)))
+		if n, ok := dotnetDeflate64Length(trial, int64(e.compressedSize), e.size); ok && uint64(n) < z.limit {
+			z.limit = uint64(n)
+		}
 	default:
 		c.Close()
 		return nil, s.readError(key, zip.ErrAlgorithm)
 	}
-	return &zipEntryReader{s: s, key: key, r: dec, decCloser: decCloser, closer: c, size: e.size, crc: e.crc}, nil
+	return z, nil
 }
 
 // readError names the archive and the entry in a failure to read it.
@@ -296,8 +297,7 @@ func (s *ZipSource) readError(key string, err error) error {
 }
 
 func isDamaged(err error) bool {
-	var corrupt flate.CorruptInputError
-	return isZipFormatError(err) || errors.As(err, &corrupt) || errors.Is(err, errDeflate64)
+	return isZipFormatError(err) || errors.Is(err, errDeflate64)
 }
 
 func (s *ZipSource) damagedAdvice() string {
@@ -317,37 +317,39 @@ func (s *ZipSource) unreadableAdvice() string {
 	return ""
 }
 
-// zipEntryReader decompresses an entry and verifies its size and CRC-32 at
-// the end, naming the entry in errors.
+// zipEntryReader reads an entry as .NET's ZipArchiveEntry.Open stream does,
+// naming the entry in errors.
 type zipEntryReader struct {
-	s         *ZipSource
-	key       string
-	r         io.Reader
-	decCloser io.Closer
-	closer    io.Closer
-	size      uint64
-	crc       uint32
-	n         uint64
-	hash      uint32
-	err       error
+	s      *ZipSource
+	key    string
+	r      io.Reader
+	closer io.Closer
+	// compressed: r is a decompressor, whose output DeflateStream cuts at
+	// limit bytes (the uncompressed size), and whose running out of
+	// compressed data is the end of the file.
+	compressed bool
+	limit      uint64
+	n          uint64
+	err        error
 }
 
 func (z *zipEntryReader) Read(p []byte) (int, error) {
 	if z.err != nil {
 		return 0, z.err
 	}
-	n, err := z.r.Read(p)
-	z.hash = crc32.Update(z.hash, crc32.IEEETable, p[:n])
-	z.n += uint64(n)
-	switch {
-	case z.n > z.size:
-		err = zip.ErrFormat
-	case err == io.EOF:
-		if z.n != z.size {
-			err = io.ErrUnexpectedEOF
-		} else if z.crc != 0 && z.hash != z.crc {
-			err = zip.ErrChecksum
+	if z.compressed {
+		if z.n >= z.limit {
+			z.err = io.EOF
+			return 0, io.EOF
 		}
+		if rest := z.limit - z.n; uint64(len(p)) > rest {
+			p = p[:rest]
+		}
+	}
+	n, err := z.r.Read(p)
+	z.n += uint64(n)
+	if z.compressed && errors.Is(err, io.ErrUnexpectedEOF) {
+		err = io.EOF
 	}
 	if err == nil {
 		return n, nil
@@ -359,9 +361,4 @@ func (z *zipEntryReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func (z *zipEntryReader) Close() error {
-	if z.decCloser != nil {
-		z.decCloser.Close()
-	}
-	return z.closer.Close()
-}
+func (z *zipEntryReader) Close() error { return z.closer.Close() }

@@ -1,14 +1,16 @@
 package semver
 
 import (
-	"errors"
 	"fmt"
-	"math"
 	"unicode"
+	"unicode/utf16"
 )
 
-// This file ports Semver.Parsing.GeneralRangeParser, StandardRangeParser and
-// NpmRangeParser.
+// This file ports Semver.Parsing.GeneralRangeParser, StandardRangeParser,
+// NpmRangeParser and RangeError. Like the C# code it works on UTF-16 code
+// units, so positions in messages and the classification of characters
+// outside the BMP (surrogates are neither whitespace, punctuation nor
+// symbols) are the library's.
 
 // maxRangeLength is SemVersionRange.MaxRangeLength.
 const maxRangeLength = 2048
@@ -26,8 +28,6 @@ const (
 	opCaret
 )
 
-var errTooLarge = errors.New("semver: version number too large for range bound")
-
 var standardParsingOptions = parsingOptions{
 	allowWildcardMajorMinorPatch: true,
 	allowWildcardPrerelease:      true,
@@ -40,98 +40,206 @@ var npmParsingOptions = parsingOptions{
 	isWildcard:                   func(c byte) bool { return c == 'x' || c == 'X' || c == '*' },
 }
 
-func isPossibleOperatorChar(c rune, allowMetadata bool) bool {
-	return c == '=' || c == '<' || c == '>' || c == '~' || c == '^' ||
-		(unicode.IsPunct(c) && !unicode.IsSpace(c) && c != '*') ||
-		(unicode.IsSymbol(c) && (c != '+' || !allowMetadata))
+// segment is a StringSegment: units [off, end) of the UTF-16 text buf.
+type segment struct {
+	buf      []uint16
+	off, end int
 }
 
-func isPossibleVersionChar(c rune, allowMetadata bool) bool {
-	return !unicode.IsSpace(c) &&
+func newSegment(s string) segment {
+	buf := utf16.Encode([]rune(s))
+	return segment{buf: buf, end: len(buf)}
+}
+
+func (s segment) len() int           { return s.end - s.off }
+func (s segment) at(i int) uint16    { return s.buf[s.off+i] }
+func (s segment) from(i int) segment { return segment{s.buf, s.off + i, s.end} }
+func (s segment) slice(i, j int) segment {
+	return segment{s.buf, s.off + i, s.off + j}
+}
+func (s segment) String() string { return string(utf16.Decode(s.buf[s.off:s.end])) }
+
+// text is segment.Buffer: the whole range.
+func (s segment) text() string { return string(utf16.Decode(s.buf)) }
+
+// charRune is the rune of a UTF-16 code unit for classification; a
+// surrogate is not a character of its own and classifies as nothing.
+func charRune(c uint16) (rune, bool) {
+	if utf16.IsSurrogate(rune(c)) {
+		return 0, false
+	}
+	return rune(c), true
+}
+
+// isWhiteSpace is char.IsWhiteSpace.
+func isWhiteSpace(c uint16) bool {
+	r, ok := charRune(c)
+	return ok && unicode.IsSpace(r)
+}
+
+// isPossibleOperatorChar is GeneralRangeParser.IsPossibleOperatorChar.
+func isPossibleOperatorChar(c uint16, allowMetadata bool) bool {
+	r, ok := charRune(c)
+	if !ok {
+		return false
+	}
+	return r == '=' || r == '<' || r == '>' || r == '~' || r == '^' ||
+		(unicode.IsPunct(r) && !unicode.IsSpace(r) && r != '*') ||
+		(unicode.IsSymbol(r) && (r != '+' || !allowMetadata))
+}
+
+// isPossibleVersionChar is GeneralRangeParser.IsPossibleVersionChar.
+func isPossibleVersionChar(c uint16, allowMetadata bool) bool {
+	return !isWhiteSpace(c) &&
 		(!isPossibleOperatorChar(c, allowMetadata) || c == '-' || c == '.' || (c == '+' && allowMetadata))
 }
 
+// --- RangeError messages ---
+
+func errTooLong(rangeText string, maxLength int) error {
+	return formatError("Exceeded maximum length of %d for '%s'.", maxLength, limitLength(rangeText))
+}
+
+func errInvalidOperator(op segment) error {
+	return formatError("Invalid operator '%s'.", limitLength(op.String()))
+}
+
+func errInvalidWhitespace(position int, rangeText string) error {
+	return formatError("Invalid whitespace character at %d in '%s'. Only the ASCII space character is allowed.",
+		position, limitLength(rangeText))
+}
+
+func errMissingComparison(position int, rangeText string) error {
+	return formatError("Range is missing a comparison or limit at %d in '%s'.", position, limitLength(rangeText))
+}
+
+func errWildcardWithOperator(rangeText string) error {
+	return formatError("Operator is combined with wildcards in '%s'.", limitLength(rangeText))
+}
+
+func errPrereleaseWithWildcard(rangeText string) error {
+	return formatError("A wildcard major, minor, or patch is combined with a prerelease version in '%s'.",
+		limitLength(rangeText))
+}
+
+func errUnexpectedInHyphenRange(unexpected string) error {
+	return formatError("Unexpected characters in hyphen range '%s'.", unexpected)
+}
+
+func errMissingVersionInHyphenRange(rangeText string) error {
+	return formatError("Missing a version number in hyphen range in '%s'.", limitLength(rangeText))
+}
+
+// --- GeneralRangeParser ---
+
 // splitOnOrOperator is GeneralRangeParser.SplitOnOrOperator.
-func splitOnOrOperator(s []rune) [][]rune {
-	var out [][]rune
+func splitOnOrOperator(s segment) []segment {
+	var out []segment
 	possiblyInSeparator := false
 	start := 0
-	for i, c := range s {
-		isSep := c == '|'
+	for i := 0; i < s.len(); i++ {
+		isSep := s.at(i) == '|'
 		if possiblyInSeparator && isSep {
 			possiblyInSeparator = false
-			out = append(out, s[start:i-1])
+			out = append(out, s.slice(start, i-1))
 			start = i + 1
 		} else {
 			possiblyInSeparator = isSep
 		}
 	}
-	return append(out, s[start:])
-}
-
-// trimStartSpaces is StringSegment.TrimStartSpaces (only ' ').
-func trimStartSpaces(s []rune) []rune {
-	for len(s) > 0 && s[0] == ' ' {
-		s = s[1:]
-	}
-	return s
-}
-
-func trimStartWhitespace(s []rune) []rune {
-	for len(s) > 0 && unicode.IsSpace(s[0]) {
-		s = s[1:]
-	}
-	return s
+	return append(out, s.from(start))
 }
 
 // parseOptionalSpaces is GeneralRangeParser.ParseOptionalSpaces.
-func parseOptionalSpaces(s []rune, rangeText string) ([]rune, error) {
-	s = trimStartSpaces(s)
-	if len(s) > 0 && unicode.IsSpace(s[0]) {
-		return nil, fmt.Errorf("semver: invalid whitespace in range %q", rangeText)
+func parseOptionalSpaces(s segment) (segment, error) {
+	i := 0
+	for i < s.len() && s.at(i) == ' ' {
+		i++
+	}
+	s = s.from(i)
+	if s.len() > 0 && isWhiteSpace(s.at(0)) {
+		return s, errInvalidWhitespace(s.off, s.text())
 	}
 	return s, nil
 }
 
-// parseRangeVersion is GeneralRangeParser.ParseVersion: consume the
-// version characters and parse them (metadata is removed).
-func parseRangeVersion(s []rune, style styles, allowMetadata bool, opts *parsingOptions, maxLength int) ([]rune, Version, wildcardVersion, error) {
-	end := 0
-	for end < len(s) && isPossibleVersionChar(s[end], allowMetadata) {
-		end++
+// parseOptionalWhitespace is GeneralRangeParser.ParseOptionalWhitespace.
+func parseOptionalWhitespace(s segment) segment {
+	i := 0
+	for i < s.len() && isWhiteSpace(s.at(i)) {
+		i++
 	}
-	v, wc, err := parseVersion(string(s[:end]), style, opts, maxLength)
-	if err != nil {
-		return nil, Version{}, wildcardNone, err
-	}
-	return s[end:], v.withoutMetadata(), wc, nil
+	return s.from(i)
 }
 
-func inc(n uint64) (uint64, error) {
-	if n == math.MaxUint64 {
-		return 0, errTooLarge
+// parseRangeVersion is GeneralRangeParser.ParseVersion: consume the
+// version characters and parse them (metadata is removed).
+func parseRangeVersion(s segment, style styles, allowMetadata bool, opts *parsingOptions, maxLength int) (segment, Version, wildcardVersion, error) {
+	end := 0
+	for end < s.len() && isPossibleVersionChar(s.at(end), allowMetadata) {
+		end++
 	}
-	return n + 1, nil
+	v, wc, err := parseVersion(s.slice(0, end).String(), style, opts, maxLength)
+	if err != nil {
+		return s, Version{}, wildcardNone, err
+	}
+	return s.from(end), v.withoutMetadata(), wc, nil
 }
 
 func ptr(v Version) *Version { return &v }
 
-func checkRangeLength(s string, maxLength int) error {
-	if utf16Len(s) > maxLength {
-		return fmt.Errorf("semver: exceeded maximum length of %d for range %q", maxLength, s)
+func checkRangeLength(s segment, maxLength int) error {
+	if s.len() > maxLength {
+		return errTooLong(s.text(), maxLength)
 	}
 	return nil
+}
+
+// parseOperator is StandardRangeParser.ParseOperator (npm false) and
+// NpmRangeParser.ParseOperator (npm true, which also accepts "~>").
+func parseOperator(s segment, npm bool) (segment, rangeOperator, error) {
+	end := 0
+	for end < s.len() && isPossibleOperatorChar(s.at(end), npm) {
+		end++
+	}
+	op := s.slice(0, end)
+	s = s.from(end)
+	if op.len() == 0 {
+		return s, opNone, nil
+	}
+	if op.len() > 2 || (op.len() == 2 && op.at(1) != '=' && !(npm && op.at(0) == '~' && op.at(1) == '>')) {
+		return s, 0, errInvalidOperator(op)
+	}
+	orEqual := op.len() == 2 && op.at(1) == '='
+	switch c := op.at(0); {
+	case c == '=' && !orEqual:
+		return s, opEquals, nil
+	case c == '<' && orEqual:
+		return s, opLessThanOrEqual, nil
+	case c == '<':
+		return s, opLessThan, nil
+	case c == '>' && orEqual:
+		return s, opGreaterThanOrEqual, nil
+	case c == '>':
+		return s, opGreaterThan, nil
+	case c == '~' && !orEqual:
+		return s, opTilde, nil
+	case c == '^' && !orEqual:
+		return s, opCaret, nil
+	}
+	return s, 0, errInvalidOperator(op)
 }
 
 // --- standard syntax ---
 
 func parseStandardRange(s string, includeAllPrerelease bool, maxLength int) ([]unbrokenRange, error) {
-	if err := checkRangeLength(s, maxLength); err != nil {
+	all := newSegment(s)
+	if err := checkRangeLength(all, maxLength); err != nil {
 		return nil, err
 	}
 	var out []unbrokenRange
-	for _, seg := range splitOnOrOperator([]rune(s)) {
-		r, err := parseStandardUnbroken(seg, s, includeAllPrerelease, maxLength)
+	for _, seg := range splitOnOrOperator(all) {
+		r, err := parseStandardUnbroken(seg, includeAllPrerelease, maxLength)
 		if err != nil {
 			return nil, err
 		}
@@ -140,17 +248,17 @@ func parseStandardRange(s string, includeAllPrerelease bool, maxLength int) ([]u
 	return out, nil
 }
 
-func parseStandardUnbroken(seg []rune, rangeText string, includeAllPrerelease bool, maxLength int) (unbrokenRange, error) {
-	seg, err := parseOptionalSpaces(seg, rangeText)
+func parseStandardUnbroken(seg segment, includeAllPrerelease bool, maxLength int) (unbrokenRange, error) {
+	seg, err := parseOptionalSpaces(seg)
 	if err != nil {
 		return unbrokenRange{}, err
 	}
-	if len(seg) == 0 {
-		return unbrokenRange{}, fmt.Errorf("semver: range %q is missing a comparison", rangeText)
+	if seg.len() == 0 {
+		return unbrokenRange{}, errMissingComparison(seg.off, seg.text())
 	}
 	var left, right bound
-	for len(seg) > 0 {
-		seg, err = parseStandardComparison(seg, rangeText, &includeAllPrerelease, maxLength, &left, &right)
+	for seg.len() > 0 {
+		seg, err = parseStandardComparison(seg, &includeAllPrerelease, maxLength, &left, &right)
 		if err != nil {
 			return unbrokenRange{}, err
 		}
@@ -158,81 +266,46 @@ func parseStandardUnbroken(seg []rune, rangeText string, includeAllPrerelease bo
 	return newUnbroken(left, right, includeAllPrerelease), nil
 }
 
-func parseStandardOperator(seg []rune) ([]rune, rangeOperator, error) {
-	end := 0
-	for end < len(seg) && isPossibleOperatorChar(seg[end], false) {
-		end++
-	}
-	op, seg := seg[:end], seg[end:]
-	if len(op) == 0 {
-		return seg, opNone, nil
-	}
-	if len(op) > 2 || (len(op) == 2 && op[1] != '=') {
-		return nil, 0, fmt.Errorf("semver: invalid operator %q", string(op))
-	}
-	orEqual := len(op) == 2
-	switch {
-	case op[0] == '=' && !orEqual:
-		return seg, opEquals, nil
-	case op[0] == '<' && orEqual:
-		return seg, opLessThanOrEqual, nil
-	case op[0] == '<':
-		return seg, opLessThan, nil
-	case op[0] == '>' && orEqual:
-		return seg, opGreaterThanOrEqual, nil
-	case op[0] == '>':
-		return seg, opGreaterThan, nil
-	case op[0] == '~' && !orEqual:
-		return seg, opTilde, nil
-	case op[0] == '^' && !orEqual:
-		return seg, opCaret, nil
-	}
-	return nil, 0, fmt.Errorf("semver: invalid operator %q", string(op))
-}
-
 // caretUpper returns the exclusive upper bound version of a caret range.
-func caretUpper(v Version, wildMinorPatch, wildPatch bool) (Version, error) {
+func caretUpper(v Version, wildMinorPatch, wildPatch bool) Version {
 	var out Version
-	var err error
 	switch {
-	case v.Major != 0 || wildMinorPatch:
-		out.Major, err = inc(v.Major)
-	case v.Minor != 0 || wildPatch:
-		out.Minor, err = inc(v.Minor)
+	case !v.Major.IsZero() || wildMinorPatch:
+		out.Major = v.Major.inc()
+	case !v.Minor.IsZero() || wildPatch:
+		out.Minor = v.Minor.inc()
 	default:
-		out.Patch, err = inc(v.Patch)
+		out.Patch = v.Patch.inc()
 	}
 	out.Prerelease = []string{"0"}
-	return out, err
+	return out
 }
 
-func nextMinorZero(v Version) (Version, error) {
-	minor, err := inc(v.Minor)
-	return Version{Major: v.Major, Minor: minor, Prerelease: []string{"0"}}, err
+func nextMinorZero(v Version) Version {
+	return Version{Major: v.Major, Minor: v.Minor.inc(), Prerelease: []string{"0"}}
 }
 
-func nextMajorZero(v Version) (Version, error) {
-	major, err := inc(v.Major)
-	return Version{Major: major, Prerelease: []string{"0"}}, err
+func nextMajorZero(v Version) Version {
+	return Version{Major: v.Major.inc(), Prerelease: []string{"0"}}
 }
 
-func parseStandardComparison(seg []rune, rangeText string, includeAllPrerelease *bool, maxLength int, left, right *bound) ([]rune, error) {
-	seg, op, err := parseStandardOperator(seg)
+func parseStandardComparison(seg segment, includeAllPrerelease *bool, maxLength int, left, right *bound) (segment, error) {
+	seg, op, err := parseOperator(seg, false)
 	if err != nil {
-		return nil, err
+		return seg, err
 	}
-	if seg, err = parseOptionalSpaces(seg, rangeText); err != nil {
-		return nil, err
+	if seg, err = parseOptionalSpaces(seg); err != nil {
+		return seg, err
 	}
 	seg, v, wc, err := parseRangeVersion(seg, styleStrict, false, &standardParsingOptions, maxLength)
 	if err != nil {
-		return nil, err
+		return seg, err
 	}
 	if op != opNone && wc != wildcardNone {
-		return nil, fmt.Errorf("semver: operator is combined with a wildcard version in range %q", rangeText)
+		return seg, errWildcardWithOperator(seg.text())
 	}
-	if seg, err = parseOptionalSpaces(seg, rangeText); err != nil {
-		return nil, err
+	if seg, err = parseOptionalSpaces(seg); err != nil {
+		return seg, err
 	}
 
 	switch op {
@@ -249,51 +322,31 @@ func parseStandardComparison(seg []rune, rangeText string, includeAllPrerelease 
 		*right = rightMin(*right, bound{ptr(v), true})
 	case opCaret:
 		*left = leftMax(*left, bound{ptr(v), true})
-		upper, err := caretUpper(v, false, false)
-		if err != nil {
-			return nil, err
-		}
-		*right = rightMin(*right, bound{&upper, false})
+		*right = rightMin(*right, bound{ptr(caretUpper(v, false, false)), false})
 	case opTilde:
 		*left = leftMax(*left, bound{ptr(v), true})
-		upper, err := nextMinorZero(v)
-		if err != nil {
-			return nil, err
-		}
-		*right = rightMin(*right, bound{&upper, false})
+		*right = rightMin(*right, bound{ptr(nextMinorZero(v)), false})
 	case opNone:
 		prereleaseWildcard := wc&wildcardPrerelease != 0
 		*includeAllPrerelease = *includeAllPrerelease || prereleaseWildcard
 		wc &^= wildcardPrerelease
 		if wc != wildcardNone && v.IsPrerelease() {
-			return nil, fmt.Errorf("semver: prerelease is not supported with a wildcard version in range %q", rangeText)
+			return seg, errPrereleaseWithWildcard(seg.text())
 		}
 		switch wc {
 		case wildcardNone:
 			*left = leftMax(*left, standardWildcardLowerBound(v, prereleaseWildcard))
-			upper, err := standardPrereleaseWildcardUpperBound(v, prereleaseWildcard)
-			if err != nil {
-				return nil, err
-			}
-			*right = rightMin(*right, upper)
+			*right = rightMin(*right, standardPrereleaseWildcardUpperBound(v, prereleaseWildcard))
 		case wildcardMajorMinorPatch:
 			// No further bound is placed on the left and right bounds.
 		case wildcardMinorPatch:
 			*left = leftMax(*left, standardWildcardLowerBound(v, prereleaseWildcard))
-			upper, err := nextMajorZero(v)
-			if err != nil {
-				return nil, err
-			}
-			*right = rightMin(*right, bound{&upper, false})
+			*right = rightMin(*right, bound{ptr(nextMajorZero(v)), false})
 		case wildcardPatch:
 			*left = leftMax(*left, standardWildcardLowerBound(v, prereleaseWildcard))
-			upper, err := nextMinorZero(v)
-			if err != nil {
-				return nil, err
-			}
-			*right = rightMin(*right, bound{&upper, false})
+			*right = rightMin(*right, bound{ptr(nextMinorZero(v)), false})
 		default:
-			return nil, fmt.Errorf("semver: unexpected wildcard in range %q", rangeText)
+			panic(fmt.Sprintf("semver: unexpected wildcard %d", wc))
 		}
 	}
 	return seg, nil
@@ -308,21 +361,17 @@ func standardWildcardLowerBound(v Version, prereleaseWildcard bool) bound {
 	return bound{ptr(v), true}
 }
 
-func standardPrereleaseWildcardUpperBound(v Version, prereleaseWildcard bool) (bound, error) {
+func standardPrereleaseWildcardUpperBound(v Version, prereleaseWildcard bool) bound {
 	if !prereleaseWildcard {
-		return bound{ptr(v), true}, nil
+		return bound{ptr(v), true}
 	}
 	if v.IsPrerelease() {
 		pre := make([]string, len(v.Prerelease))
 		copy(pre, v.Prerelease)
 		pre[len(pre)-1] = nextIdentifier(pre[len(pre)-1])
-		return bound{&Version{Major: v.Major, Minor: v.Minor, Patch: v.Patch, Prerelease: pre}, false}, nil
+		return bound{&Version{Major: v.Major, Minor: v.Minor, Patch: v.Patch, Prerelease: pre}, false}
 	}
-	patch, err := inc(v.Patch)
-	if err != nil {
-		return bound{}, err
-	}
-	return bound{&Version{Major: v.Major, Minor: v.Minor, Patch: patch, Prerelease: []string{"0"}}, false}, nil
+	return bound{&Version{Major: v.Major, Minor: v.Minor, Patch: v.Patch.inc(), Prerelease: []string{"0"}}, false}
 }
 
 // --- npm syntax ---
@@ -332,12 +381,13 @@ func standardPrereleaseWildcardUpperBound(v Version, prereleaseWildcard bool) (b
 const npmStyles = styleAllowLowerV | styleOptionalMinorPatch
 
 func parseNpmRange(s string, includeAllPrerelease bool, maxLength int) ([]unbrokenRange, error) {
-	if err := checkRangeLength(s, maxLength); err != nil {
+	all := newSegment(s)
+	if err := checkRangeLength(all, maxLength); err != nil {
 		return nil, err
 	}
 	var out []unbrokenRange
-	for _, seg := range splitOnOrOperator([]rune(s)) {
-		r, err := parseNpmUnbroken(seg, s, includeAllPrerelease, maxLength)
+	for _, seg := range splitOnOrOperator(all) {
+		r, err := parseNpmUnbroken(seg, includeAllPrerelease, maxLength)
 		if err != nil {
 			return nil, err
 		}
@@ -346,29 +396,27 @@ func parseNpmRange(s string, includeAllPrerelease bool, maxLength int) ([]unbrok
 	return out, nil
 }
 
-func parseNpmUnbroken(seg []rune, rangeText string, includeAllPrerelease bool, maxLength int) (unbrokenRange, error) {
+func parseNpmUnbroken(seg segment, includeAllPrerelease bool, maxLength int) (unbrokenRange, error) {
 	var left, right bound
 	if seg1, seg2, ok := splitOnHyphenRangeSeparator(seg); ok {
-		v1, wc1, err := parseNpmHyphenSegment(seg1, rangeText, maxLength)
+		v1, wc1, err := parseNpmHyphenSegment(seg1, maxLength)
 		if err != nil {
 			return unbrokenRange{}, err
 		}
-		v2, wc2, err := parseNpmHyphenSegment(seg2, rangeText, maxLength)
+		v2, wc2, err := parseNpmHyphenSegment(seg2, maxLength)
 		if err != nil {
 			return unbrokenRange{}, err
 		}
 		npmWildcardLowerBound(includeAllPrerelease, &left, v1, wc1)
-		if err := npmWildcardUpperBound(&right, v2, wc2); err != nil {
-			return unbrokenRange{}, err
-		}
+		npmWildcardUpperBound(&right, v2, wc2)
 	} else {
-		seg = trimStartWhitespace(seg)
-		if len(seg) == 0 {
+		seg = parseOptionalWhitespace(seg)
+		if seg.len() == 0 {
 			return newUnbroken(bound{}, bound{}, includeAllPrerelease), nil
 		}
-		for len(seg) > 0 {
+		for seg.len() > 0 {
 			var err error
-			seg, err = parseNpmComparison(seg, rangeText, includeAllPrerelease, maxLength, &left, &right)
+			seg, err = parseNpmComparison(seg, includeAllPrerelease, maxLength, &left, &right)
 			if err != nil {
 				return unbrokenRange{}, err
 			}
@@ -378,131 +426,91 @@ func parseNpmUnbroken(seg []rune, rangeText string, includeAllPrerelease bool, m
 }
 
 // splitOnHyphenRangeSeparator is NpmRangeParser.TrySplitOnHyphenRangeSeparator.
-func splitOnHyphenRangeSeparator(seg []rune) ([]rune, []rune, bool) {
-	for i := 1; i < len(seg)-1; i++ {
-		if seg[i] == '-' && unicode.IsSpace(seg[i-1]) && unicode.IsSpace(seg[i+1]) {
-			return seg[:i-1], seg[i+2:], true
+func splitOnHyphenRangeSeparator(seg segment) (segment, segment, bool) {
+	for i := 1; i < seg.len()-1; i++ {
+		if seg.at(i) == '-' && isWhiteSpace(seg.at(i-1)) && isWhiteSpace(seg.at(i+1)) {
+			return seg.slice(0, i-1), seg.from(i + 2), true
 		}
 	}
-	return nil, nil, false
+	return seg, seg, false
 }
 
-func parseNpmHyphenSegment(seg []rune, rangeText string, maxLength int) (Version, wildcardVersion, error) {
-	seg = trimStartWhitespace(seg)
-	if len(seg) == 0 {
-		return Version{}, 0, fmt.Errorf("semver: missing version in hyphen range %q", rangeText)
+func parseNpmHyphenSegment(seg segment, maxLength int) (Version, wildcardVersion, error) {
+	seg = parseOptionalWhitespace(seg)
+	if seg.len() == 0 {
+		return Version{}, 0, errMissingVersionInHyphenRange(seg.text())
 	}
-	if !isPossibleVersionChar(seg[0], true) {
-		return Version{}, 0, fmt.Errorf("semver: unexpected %q in hyphen range %q", string(seg[0]), rangeText)
+	if !isPossibleVersionChar(seg.at(0), true) {
+		return Version{}, 0, errUnexpectedInHyphenRange(seg.slice(0, 1).String())
 	}
-	seg, v, wc, err := parseNpmVersion(seg, rangeText, maxLength)
+	seg, v, wc, err := parseNpmVersion(seg, maxLength)
 	if err != nil {
 		return Version{}, 0, err
 	}
-	seg = trimStartWhitespace(seg)
-	if len(seg) != 0 {
-		return Version{}, 0, fmt.Errorf("semver: unexpected %q in hyphen range %q", string(seg), rangeText)
+	seg = parseOptionalWhitespace(seg)
+	if seg.len() != 0 {
+		return Version{}, 0, errUnexpectedInHyphenRange(seg.String())
 	}
 	return v, wc, nil
 }
 
-func parseNpmVersion(seg []rune, rangeText string, maxLength int) ([]rune, Version, wildcardVersion, error) {
+func parseNpmVersion(seg segment, maxLength int) (segment, Version, wildcardVersion, error) {
 	seg, v, wc, err := parseRangeVersion(seg, npmStyles, true, &npmParsingOptions, maxLength)
 	if err != nil {
-		return nil, Version{}, 0, err
+		return seg, Version{}, 0, err
 	}
 	if wc != wildcardNone && v.IsPrerelease() {
-		return nil, Version{}, 0, fmt.Errorf("semver: prerelease is not supported with a wildcard version in range %q", rangeText)
+		return seg, Version{}, 0, errPrereleaseWithWildcard(seg.text())
 	}
 	return seg, v, wc, nil
 }
 
-func parseNpmOperator(seg []rune) ([]rune, rangeOperator, error) {
-	end := 0
-	for end < len(seg) && isPossibleOperatorChar(seg[end], true) {
-		end++
-	}
-	op, seg := seg[:end], seg[end:]
-	if len(op) == 0 {
-		return seg, opNone, nil
-	}
-	if len(op) > 2 || (len(op) == 2 && op[1] != '=' && !(op[0] == '~' && op[1] == '>')) {
-		return nil, 0, fmt.Errorf("semver: invalid operator %q", string(op))
-	}
-	orEqual := len(op) == 2 && op[1] == '='
-	switch {
-	case op[0] == '=' && !orEqual:
-		return seg, opEquals, nil
-	case op[0] == '<' && orEqual:
-		return seg, opLessThanOrEqual, nil
-	case op[0] == '<':
-		return seg, opLessThan, nil
-	case op[0] == '>' && orEqual:
-		return seg, opGreaterThanOrEqual, nil
-	case op[0] == '>':
-		return seg, opGreaterThan, nil
-	case op[0] == '~' && !orEqual:
-		return seg, opTilde, nil
-	case op[0] == '^' && !orEqual:
-		return seg, opCaret, nil
-	}
-	return nil, 0, fmt.Errorf("semver: invalid operator %q", string(op))
-}
-
-func parseNpmComparison(seg []rune, rangeText string, includeAllPrerelease bool, maxLength int, left, right *bound) ([]rune, error) {
-	seg, op, err := parseNpmOperator(seg)
+func parseNpmComparison(seg segment, includeAllPrerelease bool, maxLength int, left, right *bound) (segment, error) {
+	seg, op, err := parseOperator(seg, true)
 	if err != nil {
-		return nil, err
+		return seg, err
 	}
-	seg = trimStartWhitespace(seg)
-	seg, v, wc, err := parseNpmVersion(seg, rangeText, maxLength)
+	seg = parseOptionalWhitespace(seg)
+	seg, v, wc, err := parseNpmVersion(seg, maxLength)
 	if err != nil {
-		return nil, err
+		return seg, err
 	}
-	seg = trimStartWhitespace(seg)
+	seg = parseOptionalWhitespace(seg)
 
 	switch op {
 	case opGreaterThan:
-		return seg, npmGreaterThan(includeAllPrerelease, left, right, v, wc)
+		npmGreaterThan(includeAllPrerelease, left, right, v, wc)
 	case opGreaterThanOrEqual:
 		npmWildcardLowerBound(includeAllPrerelease, left, v, wc)
 	case opLessThan:
 		npmLessThan(right, v, wc)
 	case opLessThanOrEqual:
-		return seg, npmWildcardUpperBound(right, v, wc)
+		npmWildcardUpperBound(right, v, wc)
 	case opCaret:
 		if wc == wildcardMajorMinorPatch {
 			return seg, nil
 		}
 		npmWildcardLowerBound(includeAllPrerelease, left, v, wc)
-		upper, err := caretUpper(v, wc == wildcardMinorPatch, wc == wildcardPatch)
-		if err != nil {
-			return nil, err
-		}
+		upper := caretUpper(v, wc == wildcardMinorPatch, wc == wildcardPatch)
 		*right = rightMin(*right, bound{&upper, false})
 	case opTilde:
 		if wc == wildcardMajorMinorPatch {
 			return seg, nil
 		}
 		npmWildcardLowerBound(includeAllPrerelease, left, v, wc)
-		var upper Version
+		upper := nextMinorZero(v)
 		if wc == wildcardMinorPatch {
-			upper, err = nextMajorZero(v)
-		} else {
-			upper, err = nextMinorZero(v)
-		}
-		if err != nil {
-			return nil, err
+			upper = nextMajorZero(v)
 		}
 		*right = rightMin(*right, bound{&upper, false})
 	case opEquals, opNone:
 		npmWildcardLowerBound(includeAllPrerelease, left, v, wc)
-		return seg, npmWildcardUpperBound(right, v, wc)
+		npmWildcardUpperBound(right, v, wc)
 	}
 	return seg, nil
 }
 
-func npmGreaterThan(includeAllPrerelease bool, left, right *bound, v Version, wc wildcardVersion) error {
+func npmGreaterThan(includeAllPrerelease bool, left, right *bound, v Version, wc wildcardVersion) {
 	var pre []string
 	if includeAllPrerelease {
 		pre = []string{"0"}
@@ -512,24 +520,15 @@ func npmGreaterThan(includeAllPrerelease bool, left, right *bound, v Version, wc
 	case wildcardMajorMinorPatch:
 		// No version matches.
 		*right = bound{ptr(minVersion), false}
-		return nil
+		return
 	case wildcardMinorPatch:
-		major, err := inc(v.Major)
-		if err != nil {
-			return err
-		}
-		v = Version{Major: major, Prerelease: pre}
+		v = Version{Major: v.Major.inc(), Prerelease: pre}
 		inclusive = true
 	case wildcardPatch:
-		minor, err := inc(v.Minor)
-		if err != nil {
-			return err
-		}
-		v = Version{Major: v.Major, Minor: minor, Prerelease: pre}
+		v = Version{Major: v.Major, Minor: v.Minor.inc(), Prerelease: pre}
 		inclusive = true
 	}
 	*left = leftMax(*left, bound{ptr(v), inclusive})
-	return nil
 }
 
 func npmLessThan(right *bound, v Version, wc wildcardVersion) {
@@ -552,22 +551,13 @@ func npmWildcardLowerBound(includeAllPrerelease bool, left *bound, v Version, wc
 	*left = leftMax(*left, bound{ptr(v), true})
 }
 
-func npmWildcardUpperBound(right *bound, v Version, wc wildcardVersion) error {
+func npmWildcardUpperBound(right *bound, v Version, wc wildcardVersion) {
 	switch wc {
 	case wildcardNone:
 		*right = rightMin(*right, bound{ptr(v), true})
 	case wildcardMinorPatch:
-		upper, err := nextMajorZero(v)
-		if err != nil {
-			return err
-		}
-		*right = rightMin(*right, bound{&upper, false})
+		*right = rightMin(*right, bound{ptr(nextMajorZero(v)), false})
 	case wildcardPatch:
-		upper, err := nextMinorZero(v)
-		if err != nil {
-			return err
-		}
-		*right = rightMin(*right, bound{&upper, false})
+		*right = rightMin(*right, bound{ptr(nextMinorZero(v)), false})
 	}
-	return nil
 }

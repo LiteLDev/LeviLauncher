@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "Palette de commandes",
+    "placeholder": "Rechercher des pages, paramètres et actions…",
+    "results": "Commandes",
+    "empty": "Aucune commande ne correspond à « {{query}} »",
+    "nav_locked": "La navigation est indisponible pour le moment ; seules les actions sont listées.",
+    "hint_move": "déplacer",
+    "hint_run": "exécuter",
+    "hint_close": "fermer",
+    "open_activity": "Ouvrir l’activité",
+    "theme_light": "Passer au thème clair",
+    "theme_dark": "Passer au thème sombre",
+    "show_shortcuts": "Raccourcis clavier",
+    "instance_settings": "Paramètres de l’instance : {{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "Basculer vers l’instance {{name}}",
+    "current": "actuelle",
+    "group": {
+      "recent": "Récents",
+      "actions": "Actions",
+      "navigate": "Aller à",
+      "settings": "Paramètres",
+      "instances": "Instances"
+    },
+    "shortcuts_title": "Raccourcis clavier",
+    "shortcut_open": "Ouvrir la palette de commandes",
+    "shortcut_settings": "Ouvrir les paramètres"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "Befehlspalette",
+    "placeholder": "Seiten, Einstellungen und Aktionen suchen…",
+    "results": "Befehle",
+    "empty": "Keine Befehle für „{{query}}“",
+    "nav_locked": "Navigation ist gerade nicht möglich, daher werden nur Aktionen angezeigt.",
+    "hint_move": "bewegen",
+    "hint_run": "ausführen",
+    "hint_close": "schließen",
+    "open_activity": "Aktivität öffnen",
+    "theme_light": "Zum hellen Design wechseln",
+    "theme_dark": "Zum dunklen Design wechseln",
+    "show_shortcuts": "Tastenkürzel",
+    "instance_settings": "Instanzeinstellungen: {{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "Zu Instanz {{name}} wechseln",
+    "current": "aktuell",
+    "group": {
+      "recent": "Zuletzt",
+      "actions": "Aktionen",
+      "navigate": "Gehe zu",
+      "settings": "Einstellungen",
+      "instances": "Instanzen"
+    },
+    "shortcuts_title": "Tastenkürzel",
+    "shortcut_open": "Befehlspalette öffnen",
+    "shortcut_settings": "Einstellungen öffnen"
+  }
+}

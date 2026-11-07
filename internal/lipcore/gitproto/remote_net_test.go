@@ -43,7 +43,7 @@ func lip038() string {
 func TestNetRemoteLeviLamina(t *testing.T) {
 	netE2E(t)
 	const module = "github.com/LiteLDev/LeviLamina"
-	repo := RepoURL(module)
+	repo := "https://" + module + ".git"
 	ctx := context.Background()
 	c := &RemoteClient{TempDir: t.TempDir()}
 

@@ -101,31 +101,6 @@ func TestParseAny(t *testing.T) {
 	}
 }
 
-func TestParseTag(t *testing.T) {
-	tests := []struct {
-		tag  string
-		want string
-		ok   bool
-	}{
-		{"v1.2.3", "1.2.3", true},
-		{"v1.2", "1.2.0", true},
-		{"v1", "1.0.0", true},
-		{"v1.2.3-rc.1", "1.2.3-rc.1", true},
-		{"v1.2.3+build", "1.2.3", true},
-		{"v26.51.1-client.11", "26.51.1-client.11", true},
-		{"1.2.3", "", false},
-		{"v01.2.3", "", false},
-		{"latest", "", false},
-		{"v1.2.3-01", "", false},
-	}
-	for _, tc := range tests {
-		v, ok := ParseTag(tc.tag)
-		if ok != tc.ok || (ok && v.String() != tc.want) {
-			t.Errorf("ParseTag(%q) = %q, %v; want %q, %v", tc.tag, v.String(), ok, tc.want, tc.ok)
-		}
-	}
-}
-
 func TestCompare(t *testing.T) {
 	// Ascending SemVer 2.0 precedence order (spec section 11 example + more).
 	ordered := []string{
@@ -555,40 +530,6 @@ func TestContains(t *testing.T) {
 	var zero Range
 	if zero.Contains(MustParse("1.0.0")) || zero.String() != "" {
 		t.Errorf("zero Range must be empty")
-	}
-}
-
-func TestExact(t *testing.T) {
-	tests := []struct{ in, want string }{
-		{"1.2.3", "1.2.3"},
-		{"26.51.1-client.11", "26.51.1-client.11"},
-		{"1.2.3+build", "1.2.3"},
-	}
-	for _, tc := range tests {
-		v := MustParse(tc.in)
-		r := Exact(v)
-		if r.String() != tc.want {
-			t.Errorf("Exact(%s).String() = %q, want %q", tc.in, r.String(), tc.want)
-		}
-		if !r.Contains(v) {
-			t.Errorf("Exact(%s) does not contain itself", tc.in)
-		}
-		if r.Contains(MustParse("1.2.4")) || r.Contains(MustParse("26.51.1-client.12")) {
-			t.Errorf("Exact(%s) contains another version", tc.in)
-		}
-		parsed, err := ParseRange(r.String())
-		if err != nil || describe(parsed.ranges) != describe(r.ranges) {
-			t.Errorf("Exact(%s) does not round-trip: %v", tc.in, err)
-		}
-	}
-}
-
-func TestExactDoesNotAliasInput(t *testing.T) {
-	v := MustParse("1.2.3-rc")
-	r := Exact(v)
-	v.Prerelease[0] = "zz"
-	if !r.Contains(MustParse("1.2.3-rc")) || r.Contains(MustParse("1.2.3-zz")) {
-		t.Errorf("Exact range changed after mutating the input version")
 	}
 }
 

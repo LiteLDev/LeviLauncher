@@ -21,6 +21,9 @@ import (
 // A variable for tests.
 var downloadIdleTimeout = 100 * time.Second
 
+// errIdle cancels a download that stalled.
+var errIdle = errors.New("download stalled")
+
 // downloadBufferSize is FileDownloader's read buffer (81920 bytes).
 const downloadBufferSize = 81920
 
@@ -79,13 +82,13 @@ func DownloadFile(ctx context.Context, client *http.Client, rawURL, dest string,
 	id := newGUIDN()
 	message := "Downloading " + rawURL
 	tr := &transferReporter{
-		fn: func(t Transfer) {
+		fn: func(t transfer) {
 			report.Report(r, report.Progress{
 				ID: id, Stage: report.StageDownload, Message: message, Item: rawURL,
 				Current: t.Current, Total: t.Total, Unit: report.UnitBytes, Done: t.Done,
 			})
 		},
-		t: Transfer{Total: max(length, 0)},
+		t: transfer{Total: max(length, 0)},
 	}
 	tr.update(0)
 	defer func() { tr.finish(err) }()
@@ -174,4 +177,55 @@ func isGitHub(rawURL string) bool {
 	return host == "github.com" || host == "codeload.github.com" ||
 		strings.HasSuffix(host, ".githubusercontent.com") ||
 		strings.Contains(strings.ToLower(u.EscapedPath()), "github.com/")
+}
+
+// transfer is measured progress of one download: bytes received out of the
+// response's Content-Length.
+type transfer struct {
+	// Current is the number of bytes received so far.
+	Current int64
+	// Total is the Content-Length, or 0 when the server sent none.
+	Total int64
+	// Done marks the last update; Err is the download's error, if it failed.
+	Done bool
+	Err  error
+}
+
+// transferReporter throttles the transfer updates of one download: the
+// first update, then at most one per 0.1% of the total (or per 64 KiB
+// without a total), and the Done update.
+type transferReporter struct {
+	fn   func(transfer)
+	t    transfer
+	last int64 // Current of the last update sent
+	sent bool
+}
+
+// transferByteStep is the byte step of updates without a total.
+const transferByteStep = 64 << 10
+
+func (r *transferReporter) update(current int64) {
+	r.t.Current = current
+	if r.fn == nil {
+		return
+	}
+	if r.sent {
+		if r.t.Total > 0 && current*1000/r.t.Total <= r.last*1000/r.t.Total {
+			return
+		}
+		if r.t.Total <= 0 && current/transferByteStep <= r.last/transferByteStep {
+			return
+		}
+	}
+	r.sent = true
+	r.last = current
+	r.fn(r.t)
+}
+
+func (r *transferReporter) finish(err error) {
+	if r.fn == nil {
+		return
+	}
+	r.t.Done, r.t.Err = true, err
+	r.fn(r.t)
 }

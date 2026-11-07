@@ -37,3 +37,28 @@ func gameVersionAtLeast(value, minimum string) bool {
 	}
 	return true
 }
+
+// CompareGameVersions orders two game versions ("1.21.50.07"): -1 when a is
+// older than b, 1 when newer, 0 when equal. A version that does not parse
+// counts as older than any that does; two such versions compare as text.
+func CompareGameVersions(a, b string) int {
+	va, okA := parseNumericGameVersion(a)
+	vb, okB := parseNumericGameVersion(b)
+	switch {
+	case okA && okB:
+		for i := range va {
+			if va[i] != vb[i] {
+				if va[i] < vb[i] {
+					return -1
+				}
+				return 1
+			}
+		}
+		return 0
+	case okA:
+		return 1
+	case okB:
+		return -1
+	}
+	return strings.Compare(strings.TrimSpace(a), strings.TrimSpace(b))
+}

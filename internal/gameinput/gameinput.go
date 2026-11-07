@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
-	"github.com/wailsapp/wails/v3/pkg/application"
 	winreg "golang.org/x/sys/windows/registry"
 )
 
@@ -48,12 +48,12 @@ func EnsureInteractive(ctx context.Context) {
 		return
 	}
 
-	application.Get().Event.Emit("gameinput.ensure.start", struct{}{})
+	eventsink.From(ctx).Emit("gameinput.ensure.start", struct{}{})
 
 	if len(msiBytes) == 0 {
-		application.Get().Event.Emit("gameinput.download.error", "MSI not embedded")
+		eventsink.From(ctx).Emit("gameinput.download.error", "MSI not embedded")
 		log.Println("gameinput msi not embedded")
-		application.Get().Event.Emit("gameinput.ensure.done", false)
+		eventsink.From(ctx).Emit("gameinput.ensure.done", false)
 		return
 	}
 
@@ -62,19 +62,19 @@ func EnsureInteractive(ctx context.Context) {
 		dir = "."
 	}
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		application.Get().Event.Emit("gameinput.download.error", err.Error())
+		eventsink.From(ctx).Emit("gameinput.download.error", err.Error())
 		log.Println("mkdir installers error:", err)
-		application.Get().Event.Emit("gameinput.ensure.done", false)
+		eventsink.From(ctx).Emit("gameinput.ensure.done", false)
 		return
 	}
 	dlPath := filepath.Join(dir, "GameInputRedist.msi")
 	tmpPath := fsx.PartialPath(dlPath)
 
-	application.Get().Event.Emit("gameinput.download.start", int64(len(msiBytes)))
+	eventsink.From(ctx).Emit("gameinput.download.start", int64(len(msiBytes)))
 	if err := os.WriteFile(tmpPath, msiBytes, 0644); err != nil {
-		application.Get().Event.Emit("gameinput.download.error", err.Error())
+		eventsink.From(ctx).Emit("gameinput.download.error", err.Error())
 		log.Println("gameinput write error:", err)
-		application.Get().Event.Emit("gameinput.ensure.done", false)
+		eventsink.From(ctx).Emit("gameinput.ensure.done", false)
 		return
 	}
 	if _, stErr := os.Stat(dlPath); stErr == nil {
@@ -82,11 +82,11 @@ func EnsureInteractive(ctx context.Context) {
 	}
 	if err := os.Rename(tmpPath, dlPath); err != nil {
 		log.Println("gameinput rename error:", err)
-		application.Get().Event.Emit("gameinput.download.error", err.Error())
-		application.Get().Event.Emit("gameinput.ensure.done", false)
+		eventsink.From(ctx).Emit("gameinput.download.error", err.Error())
+		eventsink.From(ctx).Emit("gameinput.ensure.done", false)
 		return
 	}
-	application.Get().Event.Emit("gameinput.download.done", struct{}{})
+	eventsink.From(ctx).Emit("gameinput.download.done", struct{}{})
 	log.Println("GameInputRedist prepared:", dlPath)
 
 	cmd := exec.Command("msiexec", "/i", dlPath, "/passive")
@@ -106,5 +106,5 @@ func EnsureInteractive(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 	log.Println("GameInput installed:", installed)
-	application.Get().Event.Emit("gameinput.ensure.done", installed)
+	eventsink.From(ctx).Emit("gameinput.ensure.done", installed)
 }

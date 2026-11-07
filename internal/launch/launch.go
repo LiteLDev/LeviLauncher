@@ -13,6 +13,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/versions"
@@ -50,12 +51,14 @@ func QuitRequested() bool {
 // through here.
 func QuitLauncher() {
 	quitRequested.Store(true)
-	application.Get().Quit()
+	if app := application.Get(); app != nil {
+		app.Quit()
+	}
 }
 
 func EnsureGamingServicesInstalled(ctx context.Context) bool {
 	if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err != nil {
-		application.Get().Event.Emit(EventGamingServicesMissing, struct{}{})
+		eventsink.From(ctx).Emit(EventGamingServicesMissing, struct{}{})
 		return false
 	}
 	return true
@@ -194,27 +197,40 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 // The caller owns the activeMonitors entry, including during UWP activation.
 func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, launchBehaviorApplied bool) {
 	defer activeMonitors.Delete(versionDir)
+	monitorWithTimeouts(ctx, versionDir, launchPID, launchBehaviorApplied, 120*time.Second, 60*time.Second)
+}
 
+// monitorWithTimeouts waits up to processTimeout for the game process and
+// then up to windowTimeout for its window, and reports the outcome.
+func monitorWithTimeouts(ctx context.Context, versionDir string, launchPID int, launchBehaviorApplied bool, processTimeout, windowTimeout time.Duration) {
 	var pid uint32
 	if launchPID > 0 {
 		pid = uint32(launchPID)
 	}
 
-	found, launchExited, canceled := waitForGameProcess(ctx, versionDir, pid, 120*time.Second)
+	found, launchExited, canceled := waitForGameProcess(ctx, versionDir, pid, processTimeout)
 	if canceled {
 		return
 	}
+
+	// Without a launcher window (the command line) there is nothing to
+	// minimise, restore or quit, and no Discord presence to update: the
+	// monitor only reports the outcome.
+	gui := eventsink.HasApplication()
+	sink := eventsink.From(ctx)
 
 	if !found {
 		if launchBehaviorApplied && !userHidLauncher.Load() {
 			RestoreLauncherWindow()
 		}
 		if launchExited {
-			application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
+			sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
 		} else {
-			application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_TIMEOUT")
+			sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_TIMEOUT")
 		}
-		discord.SetLauncherIdle()
+		if gui {
+			discord.SetLauncherIdle()
+		}
 		return
 	}
 
@@ -222,7 +238,7 @@ func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, l
 	// have minimized the game since then; do not wait for it to reappear.
 	visible := launchBehaviorApplied
 	if !visible {
-		found, visible, canceled = waitForGameWindow(ctx, versionDir, 60*time.Second)
+		found, visible, canceled = waitForGameWindow(ctx, versionDir, windowTimeout)
 	}
 	if canceled {
 		return
@@ -232,12 +248,17 @@ func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, l
 		if launchBehaviorApplied && !userHidLauncher.Load() {
 			RestoreLauncherWindow()
 		}
-		application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
-		discord.SetLauncherIdle()
+		sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
+		if gui {
+			discord.SetLauncherIdle()
+		}
 		return
 	}
 
-	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+	sink.Emit(EventMcLaunchDone, struct{}{})
+	if !gui {
+		return
+	}
 
 	// waitForGameWindow reports found without visible when it times out: the
 	// game process is alive but never put a window on screen. Getting the
@@ -288,7 +309,11 @@ func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, l
 // yet: a monitor started from the single-instance pipe can run before the
 // window is created.
 func GetMainWindow() application.Window {
-	w, ok := application.Get().Window.GetByName("main")
+	app := application.Get()
+	if app == nil || app.Window == nil {
+		return nil
+	}
+	w, ok := app.Window.GetByName("main")
 	if !ok {
 		return nil
 	}

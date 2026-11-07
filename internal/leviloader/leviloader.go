@@ -14,12 +14,12 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 const (
@@ -66,10 +66,8 @@ func fileExists(p string) bool {
 	return err == nil && !fi.IsDir()
 }
 
-func emit(name string, data any) {
-	if app := application.Get(); app != nil {
-		app.Event.Emit(name, data)
-	}
+func emit(ctx context.Context, name string, data any) {
+	eventsink.From(ctx).Emit(name, data)
 }
 
 // EnsureForVersion writes LeviLauncher.dll into versionDir when it is missing
@@ -172,12 +170,7 @@ func NeedsMigration() bool {
 }
 
 func markMigrated() error {
-	c, err := config.Load()
-	if err != nil {
-		return err
-	}
-	c.LoaderMigratedV1 = true
-	return config.Save(c)
+	return config.Update(func(c *config.AppConfig) { c.LoaderMigratedV1 = true })
 }
 
 // RunMigration migrates every installed version to the import-table loader:
@@ -187,7 +180,7 @@ func markMigrated() error {
 func RunMigration(ctx context.Context) (migrated int, err error) {
 	defer func() {
 		if err != nil {
-			emit(EventMigrateError, err.Error())
+			emit(ctx, EventMigrateError, err.Error())
 		}
 	}()
 	root, err := apppath.InstancesDir()
@@ -217,20 +210,20 @@ func RunMigration(ctx context.Context) (migrated int, err error) {
 	}
 
 	total := len(dirs)
-	emit(EventMigrateStart, struct{}{})
-	emit(EventMigrateProgress, MigrateProgress{Done: 0, Total: total})
+	emit(ctx, EventMigrateStart, struct{}{})
+	emit(ctx, EventMigrateProgress, MigrateProgress{Done: 0, Total: total})
 
 	for i, dir := range dirs {
 		if _, err := PatchAndActivate(ctx, dir); err != nil {
 			return migrated, fmt.Errorf("migrate %s: %w", filepath.Base(dir), err)
 		}
 		migrated++
-		emit(EventMigrateProgress, MigrateProgress{Done: i + 1, Total: total})
+		emit(ctx, EventMigrateProgress, MigrateProgress{Done: i + 1, Total: total})
 	}
 
 	if err := markMigrated(); err != nil {
 		return migrated, err
 	}
-	emit(EventMigrateDone, migrated)
+	emit(ctx, EventMigrateDone, migrated)
 	return migrated, nil
 }

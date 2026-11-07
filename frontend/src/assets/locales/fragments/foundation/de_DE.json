@@ -1,0 +1,15 @@
+{
+  "activity": {
+    "title": "Aktivität",
+    "empty": "Noch keine Aktivität",
+    "copy_all": "Alles kopieren",
+    "clear": "Verlauf leeren",
+    "log_lines": "{{count}} Protokollzeilen",
+    "open": "Aktivität"
+  },
+  "instance_picker": {
+    "label": "Instanz",
+    "placeholder": "Instanz wählen",
+    "none_installed": "Keine Instanzen installiert"
+  }
+}

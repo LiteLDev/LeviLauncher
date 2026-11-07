@@ -1,0 +1,15 @@
+{
+  "activity": {
+    "title": "アクティビティ",
+    "empty": "アクティビティはありません",
+    "copy_all": "すべてコピー",
+    "clear": "履歴を消去",
+    "log_lines": "ログ {{count}} 行",
+    "open": "アクティビティ"
+  },
+  "instance_picker": {
+    "label": "インスタンス",
+    "placeholder": "インスタンスを選択",
+    "none_installed": "インスタンスがありません"
+  }
+}

@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import i18n from "i18next";
 import type { BackendModule } from "i18next";
 import { initReactI18next } from "react-i18next";
@@ -20,6 +21,49 @@ const localeLoaders = {
 } as const;
 
 type SupportedLocale = keyof typeof localeLoaders;
+
+// Feature fragments live in assets/locales/fragments/<feature>/<locale>.json and
+// are deep-merged over the base locale, so features can add strings without
+// editing the shared locale files.
+const fragmentLoaders = import.meta.glob<{ default: Record<string, unknown> }>(
+  "./assets/locales/fragments/*/*.json",
+);
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const deepMerge = (
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+): Record<string, unknown> => {
+  for (const [key, value] of Object.entries(source)) {
+    const current = target[key];
+    target[key] =
+      isPlainObject(current) && isPlainObject(value)
+        ? deepMerge({ ...current }, value)
+        : value;
+  }
+  return target;
+};
+
+const loadLocaleResources = async (
+  locale: SupportedLocale,
+): Promise<Record<string, unknown>> => {
+  const base = (await localeLoaders[locale]()).default as Record<
+    string,
+    unknown
+  >;
+  const fragments = await Promise.all(
+    Object.entries(fragmentLoaders)
+      .filter(([path]) => path.endsWith(`/${locale}.json`))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, load]) => load().then((module) => module.default)),
+  );
+  return fragments.reduce(
+    (merged, fragment) => deepMerge(merged, fragment),
+    deepMerge({}, base),
+  );
+};
 
 const supportedLngs = [
   "en_US",
@@ -85,9 +129,9 @@ const localeBackend: BackendModule = {
   read(language, _namespace, callback) {
     const locale = resolveLocale(language);
 
-    localeLoaders[locale]()
-      .then((module) => {
-        callback(null, module.default);
+    loadLocaleResources(locale)
+      .then((resources) => {
+        callback(null, resources);
       })
       .catch((error) => {
         callback(error, null);

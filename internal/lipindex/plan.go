@@ -137,7 +137,7 @@ func Decide(in PlanInput) Plan {
 	p.NeedsLoader = p.RequiresLoader && !checkFailed && !p.LoaderCompatible
 	p.ReplacesLoader = p.NeedsLoader && llInstalled
 	if p.RequiresLoader && game != "" && len(in.DB) > 0 {
-		for _, v := range in.DB.For(game) {
+		for _, v := range in.DB.Versions(game) {
 			if Compatible(v, file.LLRanges) {
 				p.LoaderOptions = append(p.LoaderOptions, v)
 			}

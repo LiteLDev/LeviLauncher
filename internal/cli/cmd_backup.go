@@ -101,7 +101,7 @@ archive is for another kind of instance (GDK/UWP).`,
 		MinArgs: 1, MaxArgs: 2,
 		Run: runBackupRestore,
 	})
-	RegisterBackendErrors(map[string]BackendError{
+	RegisterBackendErrorsFor([]string{"backup"}, map[string]BackendError{
 		"ERR_INSTANCE_BACKUP_INSTANCE_NOT_FOUND":  {Exit: ExitNotFound, Message: "the instance does not exist"},
 		"ERR_INSTANCE_BACKUP_INVALID_SCOPE":       {Exit: ExitUsage, Message: "the archive or instance has no such scope"},
 		"ERR_INSTANCE_BACKUP_NO_SCOPE":            {Exit: ExitUsage, Message: "there is nothing to back up or restore"},

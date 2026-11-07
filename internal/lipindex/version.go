@@ -363,9 +363,109 @@ func NormalizeLoaderDB(raw map[string][]string) LoaderDB {
 	return out
 }
 
-// For returns the LeviLamina versions of a game version (newest first).
-func (db LoaderDB) For(gameVersion string) []string {
+// Versions returns the LeviLamina versions of a game version (exact match
+// after stripping a leading "v"), newest first; nil when unsupported.
+func (db LoaderDB) Versions(gameVersion string) []string {
 	return db[NormalizeSemverInput(gameVersion)]
+}
+
+// Supports reports whether LeviLamina supports a game version.
+func (db LoaderDB) Supports(gameVersion string) bool { return len(db.Versions(gameVersion)) > 0 }
+
+// GameVersions lists the supported game versions, newest first.
+func (db LoaderDB) GameVersions() []string {
+	out := make([]string, 0, len(db))
+	for g := range db {
+		out = append(out, g)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if c := CompareVersions(out[i], out[j]); c != 0 {
+			return c > 0
+		}
+		return out[i] > out[j]
+	})
+	return out
+}
+
+// ResolveGame finds the game version key matching spec: "latest" (the
+// newest), an exact version (also "1.21.50.7" for "1.21.50.07"), else the
+// newest key with spec as a dotted prefix on segment boundaries. ok is
+// false when none matches.
+func (db LoaderDB) ResolveGame(spec string) (string, bool) {
+	spec = NormalizeSemverInput(spec)
+	games := db.GameVersions()
+	if strings.EqualFold(spec, "latest") {
+		if len(games) == 0 {
+			return "", false
+		}
+		return games[0], true
+	}
+	if _, ok := db[spec]; ok {
+		return spec, true
+	}
+	for _, g := range games {
+		if VersionEqual(g, spec) {
+			return g, true
+		}
+	}
+	for _, g := range games {
+		if HasVersionPrefix(g, spec) {
+			return g, true
+		}
+	}
+	return "", false
+}
+
+func versionSegments(v string) []string { return strings.Split(strings.TrimSpace(v), ".") }
+
+func segmentEqual(a, b string) bool {
+	na, ea := strconv.Atoi(a)
+	nb, eb := strconv.Atoi(b)
+	if ea == nil && eb == nil {
+		return na == nb
+	}
+	return strings.EqualFold(a, b)
+}
+
+// VersionEqual reports whether two dotted versions are the same build
+// number, segment by segment, so "1.21.50.7" equals "1.21.50.07".
+func VersionEqual(a, b string) bool {
+	sa, sb := versionSegments(a), versionSegments(b)
+	if len(sa) != len(sb) {
+		return false
+	}
+	for i := range sa {
+		if !segmentEqual(sa[i], sb[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// HasVersionPrefix reports whether prefix names version on dotted segment
+// boundaries: "1.21.50" matches "1.21.50.07", "1.21.5" does not, and a
+// version is a prefix of itself.
+func HasVersionPrefix(version, prefix string) bool {
+	sv, sp := versionSegments(version), versionSegments(prefix)
+	if strings.TrimSpace(prefix) == "" || len(sp) > len(sv) {
+		return false
+	}
+	for i := range sp {
+		if !segmentEqual(sv[i], sp[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// IsPrerelease reports whether a LeviLamina version is a pre-release
+// ("1.8.0-rc.1"): a semver pre-release part, or "rc" anywhere, as the
+// window's release-candidate warning checks.
+func IsPrerelease(v string) bool {
+	if s, ok := ParseSemver(v); ok && len(s.Pre) > 0 {
+		return true
+	}
+	return IsReleaseCandidate(v)
 }
 
 // IsStable reports whether a package version is a release (no "-").

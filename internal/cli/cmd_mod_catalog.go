@@ -72,23 +72,11 @@ installed version there is shown too.`,
 	})
 }
 
-// resolveCatalogGame matches a game version against the LeviLamina
-// database: "latest", an exact version, or a dotted prefix on segment
-// boundaries (the newest match).
+// modResolveGame matches a game version against the LeviLamina database:
+// "latest", an exact version, or a dotted prefix on segment boundaries (the
+// newest match).
 func modResolveGame(db lipindex.LoaderDB, want string) (string, bool) {
-	want = lipindex.NormalizeSemverInput(want)
-	var games []string
-	for g := range db {
-		games = append(games, g)
-	}
-	best := ""
-	for _, g := range games {
-		ok := strings.EqualFold(want, "latest") || g == want || strings.HasPrefix(g, want+".")
-		if ok && (best == "" || lipindex.CompareVersions(g, best) > 0) {
-			best = g
-		}
-	}
-	return best, best != ""
+	return db.ResolveGame(want)
 }
 
 func runModSearch(c *Ctx) error {
@@ -133,7 +121,7 @@ func runModSearch(c *Ctx) error {
 				return ierr
 			} else if ok {
 				g := lipindex.NormalizeSemverInput(inst.Meta.GameVersion)
-				if len(q.DB.For(g)) > 0 {
+				if len(q.DB.Versions(g)) > 0 {
 					q.GameVersion = g
 					c.Notice("Showing mods for Minecraft %s (instance %s); add --any-version to see all", g, inst.Name)
 				}

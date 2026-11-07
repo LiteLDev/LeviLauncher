@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -155,7 +154,7 @@ func realGameInstallBackend() gameInstallBackend {
 }
 
 func init() {
-	RegisterBackendErrors(map[string]BackendError{
+	RegisterBackendErrorsFor([]string{"installer", "instance create", "loader"}, map[string]BackendError{
 		// Installer files and downloads.
 		"ERR_MSIXVC_NOT_FOUND":          {Exit: ExitNotFound, Message: "the installer file was not found"},
 		"ERR_MSIXVC_NOT_SPECIFIED":      {Exit: ExitUsage, Message: "no installer file was given"},
@@ -383,25 +382,12 @@ func giScanInstallers() (string, []catalog.InstallerFile, error) {
 	return dir, files, nil
 }
 
-// giRunningPIDs returns the PIDs of Minecraft processes started from inst.
-func giRunningPIDs(inst Instance) []int {
-	var pids []int
-	dir := strings.ToLower(filepath.Clean(inst.Dir)) + string(filepath.Separator)
-	for _, p := range minecraftProcesses() {
-		if (p.VersionName != "" && strings.EqualFold(p.VersionName, inst.Name)) ||
-			(p.ExePath != "" && strings.HasPrefix(strings.ToLower(filepath.Clean(p.ExePath)), dir)) {
-			pids = append(pids, p.Pid)
-		}
-	}
-	sort.Ints(pids)
-	return pids
-}
-
 // giNotRunning fails with exit 4 when inst's game is running.
 func giNotRunning(inst Instance, doing string) error {
-	if pids := giRunningPIDs(inst); len(pids) > 0 {
-		return Errorf(ExitConflict, "ERR_GAME_ALREADY_RUNNING", "Minecraft is running from instance %s (PID %s); close it before %s", inst.Name, joinInts(pids), doing).
-			WithHint("%s stop %s", ProgramName, quoteArg(inst.Name))
+	if pids := instRunningPIDs(inst); len(pids) > 0 {
+		e := instRunningError(inst, pids)
+		e.Message += "; close it before " + doing
+		return e
 	}
 	return nil
 }
@@ -608,7 +594,7 @@ Only release builds are listed unless --channel says otherwise. Beta builds
 exist only for UWP. On a console at most 20 rows are shown; --limit 0 shows all.`,
 		Examples: []string{"installer search 1.21", "installer search --channel preview --type gdk", "installer search --loader --json"},
 		Flags: []*Flag{
-			giChannelFlag("channel to list (repeatable; default release)"),
+			giChannelFlag("channel to list (default release)"),
 			EnumFlag("type", "", []string{catalog.TypeGDK, catalog.TypeUWP}, "only GDK or UWP builds (default both)"),
 			BoolFlag("downloaded", "", "only builds whose installer is downloaded"),
 			BoolFlag("not-downloaded", "", "only builds whose installer is not downloaded"),

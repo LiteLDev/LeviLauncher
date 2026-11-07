@@ -101,11 +101,21 @@ type BackendError struct {
 var (
 	backendMu     sync.RWMutex
 	backendErrors = map[string]BackendError{}
+	// scopedErrors holds the tables registered for some commands only, by
+	// scope ("instance create", "instance", "config").
+	scopedErrors = map[string]map[string]BackendError{}
+	// fallbackErrors holds the entries of scoped tables for codes no
+	// global table names, so a code keeps its message outside its scope.
+	fallbackErrors = map[string]BackendError{}
+	// activeScope is the path of the command being run ("instance create");
+	// set by run for the command's duration.
+	activeScope string
 )
 
-// RegisterBackendErrors adds or replaces entries of the backend error table.
-// Command files call it from init() for the codes their backend calls
-// return, so the table needs no central edits.
+// RegisterBackendErrors adds or replaces entries of the global backend error
+// table. Use it for codes that mean the same thing for every command; a
+// code other commands also get with another meaning (ERR_WRITE_FILE,
+// ERR_INVALID_PATH, ...) belongs in RegisterBackendErrorsFor.
 func RegisterBackendErrors(m map[string]BackendError) {
 	backendMu.Lock()
 	defer backendMu.Unlock()
@@ -114,10 +124,65 @@ func RegisterBackendErrors(m map[string]BackendError) {
 	}
 }
 
+// RegisterBackendErrorsFor adds a table that applies only while one of the
+// commands named by scopes runs. A scope is a command path ("instance
+// create") or a noun or top-level word ("instance", "launch"); the exact
+// path wins over the noun, and both win over the global table. Codes no
+// global table names also serve as a fallback for other commands.
+func RegisterBackendErrorsFor(scopes []string, m map[string]BackendError) {
+	backendMu.Lock()
+	defer backendMu.Unlock()
+	for _, sc := range scopes {
+		sc = strings.ToLower(strings.Join(strings.Fields(sc), " "))
+		t := scopedErrors[sc]
+		if t == nil {
+			t = map[string]BackendError{}
+			scopedErrors[sc] = t
+		}
+		for k, v := range m {
+			t[strings.TrimSpace(k)] = v
+		}
+	}
+	for k, v := range m {
+		k = strings.TrimSpace(k)
+		if _, ok := fallbackErrors[k]; !ok {
+			fallbackErrors[k] = v
+		}
+	}
+}
+
+// setBackendScope makes lookups use the tables of the command at path and
+// returns a function restoring the previous scope.
+func setBackendScope(path string) func() {
+	backendMu.Lock()
+	prev := activeScope
+	activeScope = strings.ToLower(path)
+	backendMu.Unlock()
+	return func() {
+		backendMu.Lock()
+		activeScope = prev
+		backendMu.Unlock()
+	}
+}
+
 func lookupBackend(code string) (BackendError, bool) {
 	backendMu.RLock()
 	defer backendMu.RUnlock()
-	v, ok := backendErrors[code]
+	if activeScope != "" {
+		scopes := []string{activeScope}
+		if i := strings.IndexByte(activeScope, ' '); i > 0 {
+			scopes = append(scopes, activeScope[:i])
+		}
+		for _, sc := range scopes {
+			if v, ok := scopedErrors[sc][code]; ok {
+				return v, true
+			}
+		}
+	}
+	if v, ok := backendErrors[code]; ok {
+		return v, true
+	}
+	v, ok := fallbackErrors[code]
 	return v, ok
 }
 
@@ -249,5 +314,48 @@ func init() {
 		"ERR_AUTH_ACCOUNT_CHANGED":       {Exit: ExitAuth, Message: "the signed-in Microsoft account changed during the operation", Hint: "run the command again"},
 		"ERR_AUTH_DEVICE_BUSY":           {Exit: ExitConflict, Message: "another launcher process is using the account"},
 		"ERR_NO_INTERACTIVE_DESKTOP":     {Exit: ExitSystem, Message: "signing in needs an interactive Windows desktop"},
+	})
+	// Codes several command groups get, each with its own wording
+	// (RegisterBackendErrorsFor); these are the neutral messages for the
+	// remaining commands.
+	RegisterBackendErrors(map[string]BackendError{
+		"ERR_NAME_REQUIRED":            {Exit: ExitUsage, Message: "the instance name must not be empty"},
+		"ERR_NAME_TOO_LONG":            {Exit: ExitUsage, Message: "the instance name is longer than 64 characters"},
+		"ERR_NAME_TRAILING_DOT_SPACE":  {Exit: ExitUsage, Message: "the instance name must not end with a dot or a space"},
+		"ERR_NAME_INVALID_CHAR":        {Exit: ExitUsage, Message: `the instance name must not contain any of < > : " / \ | ? *`},
+		"ERR_NAME_CONTROL_CHAR":        {Exit: ExitUsage, Message: "the instance name must not contain control characters"},
+		"ERR_NAME_RESERVED":            {Exit: ExitUsage, Message: "the instance name is reserved by Windows (CON, PRN, AUX, NUL, COM1-9, LPT1-9)"},
+		"ERR_NAME_EXISTS":              {Exit: ExitConflict, Message: "an instance with that name already exists", Hint: ProgramName + " instance list"},
+		"ERR_READ_VERSIONS_DIR":        {Exit: ExitFailure, Message: "cannot read the instances folder"},
+		"ERR_TARGET_DIR_NOT_SPECIFIED": {Exit: ExitUsage, Message: "no instance was given"},
+		"ERR_TARGET_NOT_FOUND":         {Exit: ExitNotFound, Message: "the instance folder was not found"},
+		"ERR_PREPARE_EXE":              {Exit: ExitFailure, Message: "cannot prepare the game executable"},
+		"ERR_WRITE_TARGET":             {Exit: ExitFailure, Message: "cannot write the target file or folder"},
+		"ERR_CREATE_TARGET_DIR":        {Exit: ExitFailure, Message: "cannot create the target folder"},
+		"ERR_WRITE_FILE":               {Exit: ExitFailure, Message: "cannot write the files (check permissions and free disk space)"},
+		"ERR_INVALID_PATH":             {Exit: ExitFailure, Message: "the path is not valid here"},
+		"ERR_OPEN_ZIP":                 {Exit: ExitFailure, Message: "cannot read the file as a ZIP archive"},
+		"ERR_READ_ZIP_ENTRY":           {Exit: ExitFailure, Message: "cannot read a file inside the archive"},
+		"ERR_MANIFEST_NOT_FOUND":       {Exit: ExitFailure, Message: "the file contains no manifest.json"},
+		"ERR_INVALID_PACKAGE":          {Exit: ExitFailure, Message: "the file is not a valid package"},
+		"ERR_DUPLICATE_FOLDER": {Exit: ExitConflict, Message: "an item with the same folder name is already installed",
+			Hint: "add --overwrite to replace it, or --skip-existing to keep it"},
+		"ERR_UWP_MANIFEST":             {Exit: ExitFailure, Message: "the package manifest is missing or damaged"},
+		"ERR_UWP_UNSUPPORTED_FEATURE":  {Exit: ExitConflict, Message: "this is not supported on UWP instances"},
+		"ERR_INHERIT_SOURCE_NOT_FOUND": {Exit: ExitNotFound, Message: "the source has no game data to copy"},
+		"ERR_INHERIT_TARGET_NOT_FOUND": {Exit: ExitNotFound, Message: "the target instance does not exist"},
+		"ERR_INHERIT_TYPE_MISMATCH":    {Exit: ExitUsage, Message: "game data can only be copied between GDK instances of the same channel"},
+		"ERR_INHERIT_COPY_FAILED":      {Exit: ExitFailure, Message: "copying the game data failed"},
+		"ERR_NO_GAME_DATA":             {Exit: ExitNotFound, Message: "the system Minecraft has no game data on this PC"},
+		"ERR_FETCH_LL_DB": {Exit: ExitNetwork, Message: "cannot download the LeviLamina version list",
+			Hint: "check the network connection and run the command again"},
+		"ERR_LL_NOT_SUPPORTED":       {Exit: ExitUsage, Message: "LeviLamina does not support this game version"},
+		"ERR_LL_VERSION_UNSUPPORTED": {Exit: ExitNotFound, Message: "that LeviLamina version does not support this game version"},
+		"ERR_INVALID_VERSION_FORMAT": {Exit: ExitUsage, Message: "the instance's game version is not a full version number"},
+		"ERR_LIP_INSTALL_FAILED": {Exit: ExitFailure, Message: "the package manager could not install LeviLamina",
+			Hint: "run the command again with -v to see the package manager's log"},
+		"ERR_LIP_PACKAGE_UNINSTALL_FAILED": {Exit: ExitFailure, Message: "the package manager could not remove the package",
+			Hint: "run the command again with -v to see the package manager's log"},
+		"ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": {Exit: ExitConflict, Message: "other installed mods need this package"},
 	})
 }

@@ -845,23 +845,7 @@ func CreateDesktopShortcut(name string) string {
 		return "ERR_SHORTCUT_CREATE_FAILED"
 	}
 
-	safeName := strings.Map(func(r rune) rune {
-		switch r {
-		case '<', '>', ':', '"', '/', '\\', '|', '?', '*':
-			return '_'
-		}
-		if r < 32 {
-			return '_'
-		}
-		return r
-	}, n)
-	safeName = strings.TrimSpace(safeName)
-	safeName = strings.TrimRight(safeName, ". ")
-	if safeName == "" {
-		safeName = "Minecraft"
-	}
-
-	lnk := filepath.Join(desktop, "Minecraft - "+safeName+".lnk")
+	lnk := filepath.Join(desktop, ShortcutFileName(n))
 	args := "--launch=" + n
 	if strings.ContainsAny(n, " \t") {
 		esc := strings.ReplaceAll(n, `"`, `\"`)

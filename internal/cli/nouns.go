@@ -19,7 +19,7 @@ func init() {
 		{Name: "backup", Group: GroupManage, Note: "(preview)", Summary: "instance backups"},
 		{Name: "installer", Group: GroupFind, Note: "(Minecraft builds)", Summary: "downloadable Minecraft builds and downloaded installers"},
 		{Name: "curseforge", Aliases: []string{"cf"}, Group: GroupFind, Summary: "CurseForge content for Minecraft Bedrock"},
-		{Name: "process", Group: GroupSystem, Summary: "running Minecraft processes"},
+		{Name: "process", Group: GroupSystem, Note: "(alias: ps)", Summary: "running Minecraft processes"},
 		{Name: "account", Group: GroupSystem, Summary: "the Microsoft account the launcher uses"},
 		{Name: "config", Group: GroupSystem, Summary: "launcher settings"},
 		{Name: "cache", Group: GroupSystem, Summary: "launcher caches"},

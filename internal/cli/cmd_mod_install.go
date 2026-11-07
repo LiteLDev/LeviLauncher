@@ -53,7 +53,7 @@ shows it.`,
 		Examples: []string{"mod update --all", "mod update LiteLDev/LegacyMoney --yes", "mod update --all --dry-run --json"},
 		Flags: []*Flag{
 			BoolFlag("all", "", "update every outdated mod"),
-			BoolFlag("dry-run", "", "only show what would be updated"),
+			BoolFlag("dry-run", "n", "only show what would be updated"),
 			BoolFlag("refresh", "", "fetch the mod catalogue again instead of using the cached copy"),
 		},
 		MaxArgs: Unlimited,

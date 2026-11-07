@@ -79,7 +79,7 @@ func TestLoaderDB(t *testing.T) {
 		"1.21.60.10":  {"1.3.0"},
 		"1.21.70.01":  {},
 	})
-	if got := db.For("1.21.50.07"); !reflect.DeepEqual(got, []string{"1.2.0-rc.1", "1.1.0", "1.0.0"}) {
+	if got := db.Versions("1.21.50.07"); !reflect.DeepEqual(got, []string{"1.2.0-rc.1", "1.1.0", "1.0.0"}) {
 		t.Fatalf("For = %v", got)
 	}
 	if _, ok := db["1.21.70.01"]; ok {

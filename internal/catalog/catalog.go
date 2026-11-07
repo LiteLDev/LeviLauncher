@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/gdkversions"
+	"github.com/liteldev/LeviLauncher/internal/lipindex"
 	"github.com/liteldev/LeviLauncher/internal/uwpdownload"
 )
 
@@ -233,47 +234,14 @@ func Select(builds []Build, f Filter) []Build {
 // Latest is the version spec naming the newest build.
 const Latest = "latest"
 
-func segments(v string) []string { return strings.Split(strings.TrimSpace(v), ".") }
-
-func segmentEqual(a, b string) bool {
-	na, ea := strconv.Atoi(a)
-	nb, eb := strconv.Atoi(b)
-	if ea == nil && eb == nil {
-		return na == nb
-	}
-	return strings.EqualFold(a, b)
-}
-
 // VersionEqual reports whether two versions are the same build number,
 // segment by segment, so "1.21.50.7" equals "1.21.50.07".
-func VersionEqual(a, b string) bool {
-	sa, sb := segments(a), segments(b)
-	if len(sa) != len(sb) {
-		return false
-	}
-	for i := range sa {
-		if !segmentEqual(sa[i], sb[i]) {
-			return false
-		}
-	}
-	return true
-}
+func VersionEqual(a, b string) bool { return lipindex.VersionEqual(a, b) }
 
 // HasVersionPrefix reports whether prefix names version on dotted segment
 // boundaries: "1.21.50" matches "1.21.50.07", "1.21.5" does not, and a
 // version is a prefix of itself.
-func HasVersionPrefix(version, prefix string) bool {
-	sv, sp := segments(version), segments(prefix)
-	if strings.TrimSpace(prefix) == "" || len(sp) > len(sv) {
-		return false
-	}
-	for i := range sp {
-		if !segmentEqual(sv[i], sp[i]) {
-			return false
-		}
-	}
-	return true
-}
+func HasVersionPrefix(version, prefix string) bool { return lipindex.HasVersionPrefix(version, prefix) }
 
 // Resolution errors. Resolve wraps them with the spec.
 var (
@@ -359,7 +327,7 @@ func better(a, b Build) bool {
 // Nearest returns up to n catalogue versions closest to spec, for a
 // did-you-mean hint: those sharing the longest dotted prefix, newest first.
 func Nearest(builds []Build, spec string, n int) []string {
-	sp := segments(spec)
+	sp := strings.Split(strings.TrimSpace(spec), ".")
 	out := []string{}
 	seen := map[string]bool{}
 	for k := len(sp) - 1; k >= 1 && len(out) == 0; k-- {

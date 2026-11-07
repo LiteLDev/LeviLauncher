@@ -23,7 +23,7 @@ import (
 var contentRootsByName = mcservice.GetContentRoots
 
 func init() {
-	RegisterBackendErrors(map[string]BackendError{
+	RegisterBackendErrorsFor([]string{"world", "pack", "screenshot", "server", "player"}, map[string]BackendError{
 		"ERR_OPEN_ZIP":           {Exit: ExitFailure, Message: "cannot read the file as a ZIP archive"},
 		"ERR_MANIFEST_NOT_FOUND": {Exit: ExitFailure, Message: "the file contains no manifest.json, so it is not a pack"},
 		"ERR_DUPLICATE_UUID": {Exit: ExitConflict, Message: "a pack with the same UUID is already installed",

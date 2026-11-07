@@ -33,6 +33,22 @@ See the user docs:
 - **User docs:** https://docs.levimc.org/LeviLauncher/
 - **中文文档：** https://docs.levimc.org/LeviLauncher/zh-CN/
 
+### Command Line
+
+`LeviLauncher.exe` with no arguments opens the launcher window; with a subcommand it runs headless and exits:
+
+```text
+LeviLauncher.exe list                   List installed instances
+LeviLauncher.exe launch <instance>      Launch an instance
+LeviLauncher.exe call                   List every backend method the GUI uses
+LeviLauncher.exe call <method> [args]   Invoke one of them
+LeviLauncher.exe help                   Show usage
+```
+
+Everything the GUI does goes through one of the methods `call` lists, so the command line can do all of it (download, install, import content, manage mods, settings and so on). String parameters take the argument as is, other types take JSON (`true`, `42`, `["a"]`). Results go to stdout (JSON unless a plain string), progress events to stderr as JSON lines, and downloads are waited for. The exit status is 0 on success, 1 when the call fails (a Go error or an `ERR_...` code) and 2 on a usage error.
+
+`LeviLauncher.exe` is a GUI program, so shells don't wait for it by default. When you need its output before the prompt returns, or its exit code, use `start /wait LeviLauncher.exe ...` in cmd. In PowerShell, pipe the output (`LeviLauncher.exe list | Out-String`) or use `Start-Process -Wait -NoNewWindow`.
+
 ## Contributing
 
 ### Issue Reporting

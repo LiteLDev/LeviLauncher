@@ -1,0 +1,27 @@
+{
+  "lip_install": {
+    "title": "{{name}} をインストール",
+    "target_label": "対象インスタンス",
+    "version_label": "パッケージのバージョン",
+    "ll_version_label": "LeviLamina のバージョン",
+    "ll_will_install": "このインスタンスには LeviLamina がインストールされていません。先に LeviLamina {{version}} をインストールしてから、このパッケージをインストールします。",
+    "ll_will_replace": "インストール済みの LeviLamina {{installedVersion}} はこのパッケージに対応していません。先に LeviLamina {{version}} をインストールしてから、このパッケージをインストールします。",
+    "ll_no_compatible": "このパッケージとゲームバージョン {{gameVersion}} の両方に対応する LeviLamina がありません。別のバージョンかインスタンスを選んでください。",
+    "confirm_with_ll": "LeviLamina と一緒に{{action}}",
+    "step_ll": "LeviLamina {{version}} をインストール",
+    "step_package": "{{name}} {{version}} を{{action}}",
+    "steps_label": "インストール手順",
+    "status_pending": "待機中",
+    "status_running": "実行中",
+    "status_success": "完了",
+    "status_error": "失敗",
+    "status_skipped": "スキップ",
+    "success_summary": "{{name}} {{version}} を {{instance}} にインストールしました。",
+    "failed_title": "{{name}} をインストールできませんでした",
+    "activity_title": "{{name}} を {{instance}} にインストール",
+    "quick_install_aria": "{{name}} をインストール",
+    "ll_check_failed": "このインスタンスの LeviLamina を確認できませんでした：{{error}}",
+    "ll_replace_warning": "LeviLamina {{installedVersion}} に依存しているこのインスタンスの他の MOD が動作しなくなる可能性があります。",
+    "ll_downgrade_note": "これはダウングレードです。"
+  }
+}

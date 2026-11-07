@@ -1,0 +1,27 @@
+{
+  "lip_install": {
+    "title": "安装 {{name}}",
+    "target_label": "目标实例",
+    "version_label": "包版本",
+    "ll_version_label": "LeviLamina 版本",
+    "ll_will_install": "该实例尚未安装 LeviLamina。将先安装 LeviLamina {{version}}，再安装此包。",
+    "ll_will_replace": "已安装的 LeviLamina {{installedVersion}} 不支持此包。将先安装 LeviLamina {{version}}，再安装此包。",
+    "ll_no_compatible": "没有同时支持此包和游戏版本 {{gameVersion}} 的 LeviLamina 版本。请选择其他版本或实例。",
+    "confirm_with_ll": "连同 LeviLamina 一起{{action}}",
+    "step_ll": "安装 LeviLamina {{version}}",
+    "step_package": "{{action}} {{name}} {{version}}",
+    "steps_label": "安装步骤",
+    "status_pending": "等待中",
+    "status_running": "进行中",
+    "status_success": "完成",
+    "status_error": "失败",
+    "status_skipped": "已跳过",
+    "success_summary": "{{name}} {{version}} 已安装到 {{instance}}。",
+    "failed_title": "无法安装 {{name}}",
+    "activity_title": "将 {{name}} 安装到 {{instance}}",
+    "quick_install_aria": "安装 {{name}}",
+    "ll_check_failed": "无法检查该实例的 LeviLamina：{{error}}",
+    "ll_replace_warning": "该实例上依赖 LeviLamina {{installedVersion}} 的其他模组可能无法继续运行。",
+    "ll_downgrade_note": "这是一次降级。"
+  }
+}

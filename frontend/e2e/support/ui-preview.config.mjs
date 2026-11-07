@@ -11,7 +11,7 @@ export default (env) => {
    if(id.replaceAll('\\','/').endsWith('/pages/ModsPage.tsx')) return code.replace('Dialogs.OpenFile(', 'window.__audit.call("OpenModFiles", ');
    if(id.replaceAll('\\','/').endsWith('/hooks/useInstanceSettings.ts')) return code.replace(/Dialogs\.OpenFile\((\{\s*Title: t\("versions\.edit\.backup\.restore\.file_picker_title"\))/, 'window.__audit.call("OpenBackupArchive", $1');
    if(id.replaceAll('\\','/').endsWith('/components/SponsorModal.tsx')) return code.replace('Browser.OpenURL(url)', 'window.__audit.openSponsorURL(url)');
-   if(id.replaceAll('\\','/').endsWith('/utils/content.ts')) return code.replace('const forceRefresh = options?.forceRefresh === true;', 'if (window.__audit.scenario.startsWith("catalog")) return { packages: window.__audit.catalogPackages, detailsByIdentifier: {}, selfVariantRelations: [] };\n  const forceRefresh = options?.forceRefresh === true;');
+   if(id.replaceAll('\\','/').endsWith('/utils/content.ts')) return code.replace('const forceRefresh = options?.forceRefresh === true;', 'if (window.__audit.scenario.startsWith("catalog")) return { packages: window.__audit.catalogPackages, detailsByIdentifier: window.__audit.catalogDetails || {}, selfVariantRelations: [] };\n  const forceRefresh = options?.forceRefresh === true;');
    if(id.replaceAll('\\','/').includes('/bindings/')) return code.replace(/export function (\w+)\([^)]*\) \{[\s\S]*?\n\}/g,(body,name)=>{
     if(name==='CheckGameLicenses'||name==='RefreshGameLicenses') return body.replace(/\$Call\.ByID\(\d+, xuid\)/, 'new $CancellablePromise((resolve, reject) => window.__audit.call('+JSON.stringify(name)+', xuid).then(resolve, reject))');
     return body.replace(/\$Call\.ByID\(\d+/, 'window.__audit.call('+JSON.stringify(name));

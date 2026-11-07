@@ -1,0 +1,27 @@
+{
+  "lip_install": {
+    "title": "Установить {{name}}",
+    "target_label": "Целевой экземпляр",
+    "version_label": "Версия пакета",
+    "ll_version_label": "Версия LeviLamina",
+    "ll_will_install": "LeviLamina не установлена в этом экземпляре. Сначала будет установлена LeviLamina {{version}}, затем этот пакет.",
+    "ll_will_replace": "Установленная LeviLamina {{installedVersion}} не поддерживает этот пакет. Сначала будет установлена LeviLamina {{version}}, затем этот пакет.",
+    "ll_no_compatible": "Ни одна версия LeviLamina не поддерживает этот пакет и версию игры {{gameVersion}}. Выберите другую версию или экземпляр.",
+    "confirm_with_ll": "{{action}} вместе с LeviLamina",
+    "step_ll": "Установить LeviLamina {{version}}",
+    "step_package": "{{action}}: {{name}} {{version}}",
+    "steps_label": "Шаги установки",
+    "status_pending": "Ожидание",
+    "status_running": "Выполняется",
+    "status_success": "Готово",
+    "status_error": "Ошибка",
+    "status_skipped": "Пропущено",
+    "success_summary": "{{name}} {{version}} установлен в {{instance}}.",
+    "failed_title": "Не удалось установить {{name}}",
+    "activity_title": "Установить {{name}} в {{instance}}",
+    "quick_install_aria": "Установить {{name}}",
+    "ll_check_failed": "Не удалось проверить LeviLamina в этом экземпляре: {{error}}",
+    "ll_replace_warning": "Другие моды этого экземпляра, которым нужна LeviLamina {{installedVersion}}, могут перестать работать.",
+    "ll_downgrade_note": "Это понижение версии."
+  }
+}

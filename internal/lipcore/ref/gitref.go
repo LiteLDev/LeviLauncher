@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/semver"
 )
 
 // GitRefKind is the kind of a GitRef (Ref.cs GitRefKind).
@@ -142,20 +144,8 @@ func IsValidRefName(name string) bool {
 	return true
 }
 
-// strictSemverRegex is the SemVer 2.0.0 grammar (semver.org), which
-// SemVersion.TryParse with SemVersionStyles.Strict accepts; numbers may be of
-// any size, as SemVersion's are BigIntegers.
-var strictSemverRegex = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)` +
-	`(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?` +
-	`(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
-
-// semverMaxLength is SemVersion.MaxVersionLength.
-const semverMaxLength = 1024
-
 // isStrictSemver reports whether SemVersion.TryParse(s, Strict) succeeds.
-// TODO: switch to semver.ParseStrict once internal/lipcore/semver has it;
-// semver.Parse limits numbers to uint64, which SemVersion does not.
 func isStrictSemver(s string) bool {
-	// The grammar is ASCII-only, so bytes are UTF-16 chars.
-	return len(s) <= semverMaxLength && strictSemverRegex.MatchString(s)
+	_, err := semver.ParseStrict(s)
+	return err == nil
 }

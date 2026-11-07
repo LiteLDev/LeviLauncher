@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "Joueur",
+    "clear_search": "Effacer la recherche",
+    "no_instance_title": "Aucune instance sélectionnée",
+    "no_instance_body": "Choisissez une instance pour gérer son contenu.",
+    "delete_failed": "Échec de la suppression",
+    "targets_load_failed": "Impossible de lister les instances",
+    "transfer_start": "Transférer",
+    "transfer_running": "Transfert {{done}} sur {{total}} vers {{target}}",
+    "transfer_summary": "{{success}} réussi(s), {{failed}} échec(s), {{skipped}} ignoré(s)",
+    "transfer_done_title": "Transfert terminé",
+    "transfer_partial_title": "Transfert terminé avec des erreurs",
+    "transfer_failed_title": "Échec du transfert",
+    "transfer_log": "Journal du transfert",
+    "duplicate_prompt": "{{name}} existe déjà dans l’instance cible. L’écraser ?",
+    "overwrite": "Écraser",
+    "skip": "Ignorer",
+    "apply_to_rest": "Faire de même pour les doublons restants",
+    "item_running": "Transfert…",
+    "item_ok": "Transféré",
+    "item_overwritten": "Écrasé",
+    "item_skipped": "Ignoré",
+    "item_failed": "Échec"
+  }
+}

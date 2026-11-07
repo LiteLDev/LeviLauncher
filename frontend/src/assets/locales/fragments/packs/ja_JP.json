@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "プレイヤー",
+    "clear_search": "検索をクリア",
+    "no_instance_title": "インスタンスが選択されていません",
+    "no_instance_body": "コンテンツを管理するインスタンスを選択してください。",
+    "delete_failed": "削除に失敗しました",
+    "targets_load_failed": "インスタンス一覧を取得できませんでした",
+    "transfer_start": "転送",
+    "transfer_running": "{{target}} へ転送中 {{done}}/{{total}}",
+    "transfer_summary": "成功 {{success}}、失敗 {{failed}}、スキップ {{skipped}}",
+    "transfer_done_title": "転送が完了しました",
+    "transfer_partial_title": "転送が完了しました（一部失敗）",
+    "transfer_failed_title": "転送に失敗しました",
+    "transfer_log": "転送ログ",
+    "duplicate_prompt": "{{name}} は転送先に既に存在します。上書きしますか？",
+    "overwrite": "上書き",
+    "skip": "スキップ",
+    "apply_to_rest": "残りの重複にも同じ操作を適用",
+    "item_running": "転送中…",
+    "item_ok": "転送済み",
+    "item_overwritten": "上書き済み",
+    "item_skipped": "スキップ済み",
+    "item_failed": "失敗"
+  }
+}

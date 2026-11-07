@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "Giocatore",
+    "clear_search": "Cancella ricerca",
+    "no_instance_title": "Nessuna istanza selezionata",
+    "no_instance_body": "Scegli un’istanza per gestirne i contenuti.",
+    "delete_failed": "Eliminazione non riuscita",
+    "targets_load_failed": "Impossibile elencare le istanze",
+    "transfer_start": "Trasferisci",
+    "transfer_running": "Trasferimento {{done}} di {{total}} a {{target}}",
+    "transfer_summary": "{{success}} riusciti, {{failed}} non riusciti, {{skipped}} saltati",
+    "transfer_done_title": "Trasferimento completato",
+    "transfer_partial_title": "Trasferimento completato con errori",
+    "transfer_failed_title": "Trasferimento non riuscito",
+    "transfer_log": "Registro di trasferimento",
+    "duplicate_prompt": "{{name}} esiste già nell’istanza di destinazione. Sovrascrivere?",
+    "overwrite": "Sovrascrivi",
+    "skip": "Salta",
+    "apply_to_rest": "Applica ai duplicati rimanenti",
+    "item_running": "Trasferimento…",
+    "item_ok": "Trasferito",
+    "item_overwritten": "Sovrascritto",
+    "item_skipped": "Saltato",
+    "item_failed": "Non riuscito"
+  }
+}

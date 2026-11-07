@@ -11,13 +11,20 @@ import (
 )
 
 // createDeleteOnCloseTemp creates lip-<guid>.pack in the temp directory,
-// opened like lip's CreateTempFile (FileShare.None, DeleteOnClose), so the
-// system removes it when the handle is closed, even if the process dies.
+// opened like lip 0.37.0's CreateTempFile (FileShare.None, DeleteOnClose),
+// so the system removes it when the handle is closed, even if the process
+// dies.
 func createDeleteOnCloseTemp() (*os.File, error) {
+	return createDeleteOnCloseFile(os.TempDir(), "lip-", ".pack")
+}
+
+// createDeleteOnCloseFile creates <prefix><guid><suffix> in dir, opened with
+// FileShare.None and DeleteOnClose.
+func createDeleteOnCloseFile(dir, prefix, suffix string) (*os.File, error) {
 	for range 100 {
 		var b [16]byte
 		_, _ = rand.Read(b[:])
-		name := filepath.Join(os.TempDir(), "lip-"+hex.EncodeToString(b[:])+".pack")
+		name := filepath.Join(dir, prefix+hex.EncodeToString(b[:])+suffix)
 		p, err := windows.UTF16PtrFromString(name)
 		if err != nil {
 			return nil, err

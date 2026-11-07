@@ -95,12 +95,30 @@ func TestParseTree(t *testing.T) {
 }
 
 func TestWalkNames(t *testing.T) {
-	for _, name := range []string{".", "..", ".git", ".GIT", "a\\b", "a/b"} {
+	for _, name := range []string{"", ".", "..", "a/b"} {
 		s := NewStore()
 		blob := s.Put(ObjBlob, []byte("x"))
 		root := s.Put(ObjTree, rawTree(TreeEntry{"100644", name, blob}))
-		if _, err := s.WalkFiles(root); err == nil {
-			t.Errorf("name %q accepted", name)
+		var unusable *UnusableRepositoryError
+		if _, err := s.WalkFiles(root); !errors.As(err, &unusable) {
+			t.Errorf("name %q: %v", name, err)
+		} else if want := "it has an entry named '" + name + "' (in tree " + root + "), which is not a valid file name"; err.Error() != want {
+			t.Errorf("name %q: %q, want %q", name, err, want)
+		}
+	}
+	// protocol/package.md section 1 puts no other restriction on names.
+	for _, name := range []string{".git", ".GIT", "a\\b"} {
+		s := NewStore()
+		blob := s.Put(ObjBlob, []byte("x"))
+		root := s.Put(ObjTree, rawTree(TreeEntry{"100644", name, blob}))
+		if files, err := s.WalkFiles(root); err != nil || len(files) != 1 || files[0].Path != name {
+			t.Errorf("name %q: %+v, %v", name, files, err)
+		}
+	}
+	// Only 100644 and 100755 are regular files.
+	for mode, want := range map[string]bool{"100644": true, "100755": true, "100664": false, "120000": false} {
+		if IsRegularFile(mode) != want {
+			t.Errorf("IsRegularFile(%s) = %v", mode, !want)
 		}
 	}
 	s := NewStore()

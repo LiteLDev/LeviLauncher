@@ -1,8 +1,10 @@
 // Package gitproto is a minimal git smart-HTTP protocol v2 client, porting
-// lip 0.37.0 src/Lip.Core/Git/GitRemoteClient.cs and PktLine.cs.
+// lip 0.38.0-beta.1 src/Lip.Core/Git/GitRemoteClient.cs, GithubProxy.cs,
+// PktLine.cs and src/Lip.Core/Sources/GitTreeSource.cs (RemoteClient,
+// TreeSource).
 //
-// It lists version tags (ls-refs) and fetches packfiles (fetch) into
-// temporary files. Packfile decoding lives in package gitpack.
+// Client is the lip 0.37.0 client the old engine still uses; it is kept
+// until that engine is replaced. Packfile decoding lives in package gitpack.
 package gitproto
 
 import (
@@ -57,6 +59,10 @@ type Proxy interface {
 // Client talks to remote repositories such as
 // "https://github.com/LiteLDev/LeviLamina.git". The zero value is usable and
 // safe for concurrent use.
+//
+// Deprecated: Client is lip 0.37.0's client (transient retries, a proxy
+// that is skipped after failing, full fetches when the server cannot
+// filter). Use RemoteClient, which ports lip 0.38.0-beta.1.
 type Client struct {
 	// HTTP is the client to use; nil means defaultHTTPClient.
 	HTTP *http.Client
@@ -542,7 +548,8 @@ func (p *PackFile) Close() error {
 // ReadPackfile reads a fetch response up to and including the packfile
 // section and writes the demultiplexed pack data (side-band channel 1) to w.
 // Sections before "packfile" (acknowledgments, shallow-info, wanted-refs,
-// packfile-uris) are skipped.
+// packfile-uris) are skipped. An ERR line or side-band channel 3 is a
+// ServerError.
 func ReadPackfile(r *PktLineReader, w io.Writer) error {
 	for {
 		typ, err := r.Read()
@@ -550,7 +557,7 @@ func ReadPackfile(r *PktLineReader, w io.Writer) error {
 			return err
 		}
 		if typ != PktData {
-			return protocolErrorf("Unexpected %s in fetch response.", typ)
+			return protocolErrorf("Unexpected %s packet in the fetch response; expected a section header.", typ)
 		}
 		header := r.PayloadText()
 		if err := checkErrLine(header); err != nil {
@@ -572,7 +579,7 @@ func ReadPackfile(r *PktLineReader, w io.Writer) error {
 			}
 		}
 		if typ != PktDelimiter {
-			return protocolErrorf("Fetch response ended without a packfile (section %s).", header)
+			return protocolErrorf("The fetch response ended after section '%s' without a packfile section.", header)
 		}
 	}
 
@@ -586,11 +593,11 @@ func ReadPackfile(r *PktLineReader, w io.Writer) error {
 			return nil
 		case PktData:
 		default:
-			return protocolErrorf("Unexpected %s in packfile section.", typ)
+			return protocolErrorf("Unexpected %s packet in the packfile section.", typ)
 		}
 		payload := r.Payload
 		if len(payload) == 0 {
-			return protocolErrorf("Empty side-band packet.")
+			return protocolErrorf("Empty side-band packet in the packfile section.")
 		}
 		switch payload[0] {
 		case 1:
@@ -599,9 +606,9 @@ func ReadPackfile(r *PktLineReader, w io.Writer) error {
 			}
 		case 2:
 		case 3:
-			return protocolErrorf("Remote error: %s", strings.TrimSpace(string(payload[1:])))
+			return &ServerError{ServerMessage: gitpack.TrimSpace(gitpack.DecodeUTF8(payload[1:]))}
 		default:
-			return protocolErrorf("Invalid side-band channel %d.", payload[0])
+			return protocolErrorf("Invalid side-band channel %d in the packfile section.", payload[0])
 		}
 	}
 }
@@ -701,29 +708,19 @@ func (c *Client) httpClient() *http.Client {
 	return defaultHTTPClient
 }
 
-// do sends req with a per-request timeout and returns the response whose
-// body maps read failures to transport/timeout errors. cancel must be
-// called once the body has been consumed.
+// do is the package function do with c's HTTP client.
 func (c *Client) do(ctx context.Context, req *http.Request, timeout time.Duration) (*http.Response, context.CancelFunc, error) {
-	reqCtx, cancel := context.WithTimeout(ctx, timeout)
-	req = req.WithContext(reqCtx)
-	resp, err := c.httpClient().Do(req)
-	if err != nil {
-		cancel()
-		return nil, nil, classifyNetError(ctx, reqCtx, req.URL.String(), err)
-	}
-	resp.Body = &classifyingBody{rc: resp.Body, parent: ctx, reqCtx: reqCtx, url: req.URL.String()}
-	return resp, cancel, nil
+	return do(ctx, c.httpClient(), req, timeout)
 }
 
-func classifyNetError(parent, reqCtx context.Context, url string, err error) error {
+func classifyNetError(parent, reqCtx context.Context, url string, err error, body bool) error {
 	if perr := parent.Err(); perr != nil {
 		return perr
 	}
 	if errors.Is(reqCtx.Err(), context.DeadlineExceeded) {
 		return &timeoutError{url: url}
 	}
-	return &transportError{err: err}
+	return &transportError{err: err, body: body}
 }
 
 // classifyingBody turns body read errors (other than a clean EOF) into
@@ -738,7 +735,7 @@ type classifyingBody struct {
 func (b *classifyingBody) Read(p []byte) (int, error) {
 	n, err := b.rc.Read(p)
 	if err != nil && err != io.EOF {
-		err = classifyNetError(b.parent, b.reqCtx, b.url, err)
+		err = classifyNetError(b.parent, b.reqCtx, b.url, err, true)
 	}
 	return n, err
 }
@@ -898,7 +895,7 @@ func (c *Client) postCommand(ctx context.Context, remote remoteInfo, body []byte
 func parseRef(line string) (RemoteRef, error) {
 	parts := strings.Split(line, " ")
 	if len(parts) < 2 || !isObjectID(parts[0]) {
-		return RemoteRef{}, protocolErrorf("Malformed ls-refs line '%s'.", line)
+		return RemoteRef{}, protocolErrorf("Malformed ls-refs line '%s'; expected an object id followed by a ref name.", line)
 	}
 	ref := RemoteRef{Name: parts[1], ObjectID: strings.ToLower(parts[0])}
 	for _, p := range parts[2:] {
@@ -923,9 +920,10 @@ func isObjectID(s string) bool {
 	return true
 }
 
+// checkErrLine is lip's ThrowIfError.
 func checkErrLine(line string) error {
 	if rest, ok := strings.CutPrefix(line, "ERR "); ok {
-		return protocolErrorf("Remote error: %s", rest)
+		return &ServerError{ServerMessage: rest}
 	}
 	return nil
 }

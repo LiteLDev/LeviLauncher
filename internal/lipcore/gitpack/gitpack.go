@@ -1,6 +1,7 @@
-// Package gitpack decodes git packfiles and walks trees, porting lip 0.37.0
-// src/Lip.Core/Git/GitPackFile.cs, GitObject.cs and ZlibInflater.cs, plus the
-// tree walk of GitRemoteClient.WalkTree.
+// Package gitpack decodes git packfiles and walks trees, porting lip
+// 0.38.0-beta.1 src/Lip.Core/Git/GitPackFile.cs, GitObject.cs,
+// GitProtocolException.cs and ZlibInflater.cs, plus the tree walk of
+// GitRemoteClient.WalkTree.
 package gitpack
 
 import (
@@ -19,8 +20,38 @@ import (
 // ErrNotImplemented is returned by skeleton stubs.
 var ErrNotImplemented = errors.New("gitpack: not implemented")
 
-// ErrCorrupt is wrapped by every packfile/zlib decoding error.
+// ErrCorrupt is wrapped by every packfile/zlib decoding error (a
+// *ProtocolError whose message is lip's "Corrupt packfile: <reason>.").
 var ErrCorrupt = errors.New("corrupt packfile")
+
+// ProtocolError is lip's GitProtocolException: a git remote misbehaved,
+// reported an error or sent malformed data. Err is the inner error, if any.
+type ProtocolError struct {
+	Message string
+	Err     error
+}
+
+func (e *ProtocolError) Error() string { return e.Message }
+
+func (e *ProtocolError) Unwrap() error { return e.Err }
+
+// UnusableRepositoryError is lip's UnusableRepositoryException: the content
+// of a repository is something lip cannot handle (a file name that is not
+// valid, an object that is too large, an object of the wrong type). Trying
+// again or using another server does not help. Reason is in plain words,
+// without a final period.
+type UnusableRepositoryError struct{ Reason string }
+
+func (e *UnusableRepositoryError) Error() string { return e.Reason }
+
+// tooLarge is the UnusableRepositoryError for an object over MaxObjectSize.
+func tooLarge(size int64) error {
+	return &UnusableRepositoryError{Reason: fmt.Sprintf(
+		"it contains an object of %d bytes, more than the %d bytes lip can handle", size, MaxObjectSize)}
+}
+
+// TypeName is lip's GitObject.GetTypeName.
+func TypeName(t ObjectType) string { return t.String() }
 
 // MaxObjectSize bounds a single object's size, guarding against
 // decompression bombs (lip GitPackFile.MaxObjectSize).
@@ -71,8 +102,9 @@ func NewStore() *Store { return &Store{objects: map[string]Object{}} }
 // Len returns the number of objects in s.
 func (s *Store) Len() int { return len(s.objects) }
 
+// corrupt is lip's GitPackFile.Corrupt.
 func corrupt(format string, args ...any) error {
-	return fmt.Errorf("%w: %s", ErrCorrupt, fmt.Sprintf(format, args...))
+	return &ProtocolError{Message: "Corrupt packfile: " + fmt.Sprintf(format, args...) + ".", Err: ErrCorrupt}
 }
 
 // Decode reads every object of a version 2/3 packfile into s (see Open for
@@ -136,7 +168,7 @@ func ApplyDelta(base, delta []byte) ([]byte, error) {
 		return nil, corrupt("delta base size mismatch")
 	}
 	if dstSize > MaxObjectSize {
-		return nil, corrupt("delta result too large")
+		return nil, tooLarge(dstSize)
 	}
 	out := make([]byte, dstSize)
 	o := 0
@@ -238,7 +270,7 @@ func readHeader(content []byte, key string) (string, bool) {
 func ParseCommitTree(data []byte) (string, error) {
 	tree, ok := readHeader(data, "tree")
 	if !ok || !IsObjectID(tree) {
-		return "", errors.New("malformed commit object: missing tree")
+		return "", &ProtocolError{Message: "Malformed commit object: it has no valid tree header."}
 	}
 	return tree, nil
 }
@@ -247,31 +279,43 @@ func ParseCommitTree(data []byte) (string, error) {
 func ParseTagTarget(data []byte) (string, error) {
 	target, ok := readHeader(data, "object")
 	if !ok || !IsObjectID(target) {
-		return "", errors.New("malformed tag object: missing target")
+		return "", &ProtocolError{Message: "Malformed tag object: it has no valid object header."}
 	}
 	return target, nil
+}
+
+// missingObject is WalkTree's error for an object the server did not send.
+func missingObject(oid string) error {
+	return &ProtocolError{Message: fmt.Sprintf("The server did not send object %s.", oid)}
 }
 
 // CommitTree returns the root tree id of a commit object in s.
 func (s *Store) CommitTree(commitOID string) (string, error) {
 	o, ok := s.objects[commitOID]
 	if !ok {
-		return "", fmt.Errorf("remote did not send object %s", commitOID)
+		return "", missingObject(commitOID)
 	}
 	if o.Type != ObjCommit {
-		return "", fmt.Errorf("object %s is not a commit", commitOID)
+		return "", notACommit(commitOID, o.Type)
 	}
 	return ParseCommitTree(o.Data)
+}
+
+func notACommit(oid string, t ObjectType) error {
+	return &UnusableRepositoryError{Reason: fmt.Sprintf(
+		"the object %s is a %s, not a commit or a tag of one", oid, TypeName(t))}
 }
 
 // PeelCommit follows annotated tags from oid and returns the commit id they
 // point to, as lip's WalkTree does.
 func (s *Store) PeelCommit(oid string) (string, error) {
 	cur := oid
+	// Object ids are hashes of the content, so tags cannot form a cycle;
+	// the bound only guards against a corrupt store.
 	for range len(s.objects) + 1 {
 		o, ok := s.objects[cur]
 		if !ok {
-			return "", fmt.Errorf("remote did not send object %s", cur)
+			return "", missingObject(cur)
 		}
 		switch o.Type {
 		case ObjTag:
@@ -283,10 +327,10 @@ func (s *Store) PeelCommit(oid string) (string, error) {
 		case ObjCommit:
 			return cur, nil
 		default:
-			return "", fmt.Errorf("object %s does not point to a commit", oid)
+			return "", notACommit(oid, o.Type)
 		}
 	}
-	return "", fmt.Errorf("object %s does not point to a commit", oid)
+	return "", notACommit(oid, ObjTag)
 }
 
 // TreeEntry is one raw tree entry.
@@ -313,11 +357,11 @@ func ParseTree(data []byte) ([]TreeEntry, error) {
 			}
 		}
 		if sp < 0 || nul < 0 || nul+21 > len(data) {
-			return nil, errors.New("malformed tree object")
+			return nil, &ProtocolError{Message: fmt.Sprintf("Malformed tree object: the entry at byte %d is truncated.", pos)}
 		}
-		modeText := string(data[pos:sp])
+		modeText := ASCIIString(data[pos:sp])
 		if len(modeText) == 0 || len(modeText) > 7 || strings.Trim(modeText, "01234567") != "" {
-			return nil, fmt.Errorf("malformed tree entry mode '%s'", modeText)
+			return nil, &ProtocolError{Message: fmt.Sprintf("Malformed tree entry mode '%s'.", modeText)}
 		}
 		mode, _ := strconv.Atoi(modeText)
 		out = append(out, TreeEntry{
@@ -330,17 +374,22 @@ func ParseTree(data []byte) ([]TreeEntry, error) {
 	return out, nil
 }
 
-// File is a regular file reachable from a tree.
+// File is a non-tree, non-gitlink entry reachable from a tree (lip's
+// GitTreeEntry).
 type File struct {
 	// Path is relative, with "/" separators.
 	Path string
 	OID  string
+	// Mode is the octal mode digits read as a decimal number, as git prints
+	// them, e.g. "100644", "100755" or "120000".
 	Mode string
 }
 
-// IsRegularFile reports whether mode is 100644, 100755 or 100664.
+// IsRegularFile reports whether mode is 100644 or 100755 (lip's
+// GitTreeEntry.IsRegularFile): a regular, possibly executable, file rather
+// than e.g. a symlink.
 func IsRegularFile(mode string) bool {
-	return mode == "100644" || mode == "100755" || mode == "100664"
+	return mode == "100644" || mode == "100755"
 }
 
 // IsRegularFile reports whether f is a regular (possibly executable) file
@@ -349,19 +398,19 @@ func (f File) IsRegularFile() bool { return IsRegularFile(f.Mode) }
 
 // WalkTree lists every non-tree, non-gitlink entry under treeOID
 // recursively, exactly like lip's GitRemoteClient.WalkTree: symlinks (120000)
-// and any other non-40000/160000 modes are included. Names "", ".", "..",
-// ".git" (case-insensitive) or containing "/", "\" or NUL are errors, as is a
-// missing or non-tree subtree.
+// and any other non-40000/160000 modes are included. An entry named "", ".",
+// ".." or containing "/" is an UnusableRepositoryError (protocol/package.md
+// section 1); a missing or non-tree subtree is a ProtocolError.
 func (s *Store) WalkTree(treeOID string) ([]File, error) {
 	var out []File
 	var walk func(prefix, oid string) error
 	walk = func(prefix, oid string) error {
 		o, ok := s.objects[oid]
 		if !ok {
-			return fmt.Errorf("remote did not send object %s", oid)
+			return missingObject(oid)
 		}
 		if o.Type != ObjTree {
-			return fmt.Errorf("object %s is not a tree", oid)
+			return &ProtocolError{Message: fmt.Sprintf("Object %s at '%s' is a %s, not a tree.", oid, prefix, TypeName(o.Type))}
 		}
 		entries, err := ParseTree(o.Data)
 		if err != nil {
@@ -369,7 +418,8 @@ func (s *Store) WalkTree(treeOID string) ([]File, error) {
 		}
 		for _, e := range entries {
 			if !isSafeEntryName(e.Name) {
-				return fmt.Errorf("unsafe tree entry name '%s%s'", prefix, e.Name)
+				return &UnusableRepositoryError{Reason: fmt.Sprintf(
+					"it has an entry named '%s%s' (in tree %s), which is not a valid file name", prefix, e.Name, oid)}
 			}
 			p := prefix + e.Name
 			switch e.Mode {
@@ -391,8 +441,7 @@ func (s *Store) WalkTree(treeOID string) ([]File, error) {
 }
 
 // ListTree peels commitish (a commit or annotated tag id) to a commit and
-// walks its root tree with WalkTree, like lip's GitRemoteClient.ListTree
-// after the fetch.
+// walks its root tree with WalkTree, like lip's GitRemoteClient.WalkTree.
 func (s *Store) ListTree(commitish string) ([]File, error) {
 	commit, err := s.PeelCommit(commitish)
 	if err != nil {
@@ -405,10 +454,9 @@ func (s *Store) ListTree(commitish string) ([]File, error) {
 	return s.WalkTree(tree)
 }
 
-// WalkFiles lists all regular files (modes 100644, 100755, 100664) under
-// treeOID recursively; gitlinks and symlinks are skipped. Entry names ".",
-// "..", ".git" or containing "/", "\" or NUL are errors. Every subtree must
-// be present in s.
+// WalkFiles lists the regular files (modes 100644, 100755) under treeOID
+// recursively; gitlinks, symlinks and other modes are skipped. Names are
+// checked and subtrees required as by WalkTree.
 func (s *Store) WalkFiles(treeOID string) ([]File, error) {
 	all, err := s.WalkTree(treeOID)
 	if err != nil {
@@ -423,13 +471,14 @@ func (s *Store) WalkFiles(treeOID string) ([]File, error) {
 	return out, nil
 }
 
-// isSafeEntryName rejects names git itself refuses to check out.
+// isSafeEntryName rejects names a git archive cannot hold (lip's
+// IsSafeEntryName, protocol/package.md section 1).
 func isSafeEntryName(name string) bool {
 	switch name {
 	case "", ".", "..":
 		return false
 	}
-	return !strings.EqualFold(name, ".git") && !strings.ContainsAny(name, "/\\\x00")
+	return !strings.Contains(name, "/")
 }
 
 // HashObject returns the hex SHA-1 of "<type> <len>\x00<data>".
@@ -457,6 +506,26 @@ func VerifyBlob(oid string, data []byte) error {
 		return fmt.Errorf("blob content hash %s does not match object id %s", actual, oid)
 	}
 	return nil
+}
+
+// DecodeUTF8 decodes b like .NET Encoding.UTF8.GetString (invalid
+// sequences become U+FFFD).
+func DecodeUTF8(b []byte) string { return decodeUTF8(b) }
+
+// TrimSpace trims leading and trailing white space like .NET String.Trim().
+func TrimSpace(s string) string { return strings.TrimFunc(s, isDotNetWhiteSpace) }
+
+// ASCIIString decodes b like .NET Encoding.ASCII.GetString: bytes above
+// 0x7F become '?'.
+func ASCIIString(b []byte) string {
+	out := make([]byte, len(b))
+	for i, c := range b {
+		if c > 0x7f {
+			c = '?'
+		}
+		out[i] = c
+	}
+	return string(out)
 }
 
 // decodeUTF8 decodes b like .NET Encoding.UTF8.GetString: each maximal

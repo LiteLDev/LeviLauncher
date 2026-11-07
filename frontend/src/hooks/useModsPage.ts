@@ -377,7 +377,9 @@ export const useModsPage = (
 
   const allLipGroupItems = useMemo(() => {
     return baseLipGroupItems.map((group) => {
-      const installState = lipInstallStateByIdentifier.get(group.identifierKey);
+      const installState = lipInstallStateByIdentifier.get(
+        normalizeIdentifierLookupKey(group.identifierKey),
+      );
       if (!installState) return group;
 
       const uniqueModVersions = Array.from(
@@ -571,7 +573,9 @@ export const useModsPage = (
   const activeLipInstallState = useMemo(() => {
     if (!activeLipGroup) return null;
     return (
-      lipInstallStateByIdentifier.get(activeLipGroup.identifierKey) || null
+      lipInstallStateByIdentifier.get(
+        normalizeIdentifierLookupKey(activeLipGroup.identifierKey),
+      ) || null
     );
   }, [activeLipGroup, lipInstallStateByIdentifier]);
 
@@ -629,19 +633,11 @@ export const useModsPage = (
     identifierKey: string,
     state: LIPPackageInstallState,
   ) => {
-    const normalizedKey = String(identifierKey || "").trim();
-    if (!normalizedKey) return;
+    const lookupKey = normalizeIdentifierLookupKey(identifierKey);
+    if (!lookupKey) return;
     setLipInstallStateByIdentifier((prev) => {
       const next = new Map(prev);
-      let targetKey = normalizedKey;
-      const lookupKey = normalizeIdentifierLookupKey(normalizedKey);
-      for (const key of next.keys()) {
-        if (normalizeIdentifierLookupKey(key) === lookupKey) {
-          targetKey = key;
-          break;
-        }
-      }
-      next.set(targetKey, state);
+      next.set(lookupKey, state);
       return next;
     });
   };
@@ -677,7 +673,9 @@ export const useModsPage = (
   };
 
   const resolvePromoteInstallVersion = (group: LipGroupItem): string => {
-    const installState = lipInstallStateByIdentifier.get(group.identifierKey);
+    const installState = lipInstallStateByIdentifier.get(
+      normalizeIdentifierLookupKey(group.identifierKey),
+    );
     const installedVersion = String(
       installState?.installedVersion || "",
     ).trim();
@@ -686,7 +684,9 @@ export const useModsPage = (
   };
 
   const isLipGroupPromotable = (group: LipGroupItem): boolean => {
-    const installState = lipInstallStateByIdentifier.get(group.identifierKey);
+    const installState = lipInstallStateByIdentifier.get(
+      normalizeIdentifierLookupKey(group.identifierKey),
+    );
     if (!installState) {
       return Boolean(group.installedVersion) && !group.explicitInstalled;
     }

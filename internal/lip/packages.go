@@ -39,7 +39,7 @@ var newEngine = func(workDir string, r report.Reporter) packageEngine {
 		Registry:   engine.NewGitRegistry(EffectiveGithubProxy(), r, engine.WithHTTPClient(engineHTTPClient)),
 		Reporter:   r,
 		Hooks:      engine.DefaultHooks(engine.CurrentRID()),
-		CleanCache: fetch.DefaultCache().Clean,
+		CleanCache: fetch.DefaultHTTPCache(nil).Clean,
 	}
 }
 

@@ -51,6 +51,8 @@ type FetchHooks struct {
 
 // Downloader downloads asset URLs into the cache, keyed by the original
 // (unproxied) URL. The GET must return 200.
+//
+// Deprecated: removed with the 0.37 engine; use HTTPCache.DownloadZip.
 type Downloader struct {
 	// HTTP is the client to use; nil means httpclient.Default. Its redirect
 	// policy defaults to httpclient.CheckRedirect.

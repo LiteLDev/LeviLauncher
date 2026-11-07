@@ -44,7 +44,29 @@ func NewProxyRewriter(proxy string) *ProxyRewriter {
 // URL is not eligible (no proxy, unparsable URL, host other than
 // github.com, or a rewrite that yields the same URL).
 func (p *ProxyRewriter) Rewrite(rawURL string) (string, bool) {
-	if p == nil || p.Proxy == "" {
+	if p == nil {
+		return rawURL, false
+	}
+	return rewriteGithub(p.Proxy, rawURL, true)
+}
+
+// RewriteGithub is lip 0.38's GithubProxy.Rewrite (src/Lip.Core/Git/
+// GithubProxy.cs): when proxy is set and rawURL's host is github.com
+// (compared case-insensitively) it returns proxy with rawURL's path
+// segments appended and rawURL's query (when non-empty) in place of the
+// proxy's, built like Flurl's Clone().AppendPathSegments(url.PathSegments).
+// The original host is dropped and, unlike 0.37, the URL's fragment is not
+// carried over. It returns rawURL and false when no proxy applies,
+// including when the result equals rawURL. Download candidates are then
+// [proxied, rawURL].
+func RewriteGithub(proxy, rawURL string) (string, bool) {
+	return rewriteGithub(proxy, rawURL, false)
+}
+
+// rewriteGithub is the rewrite shared by 0.37 (keepFragment: the URL's
+// fragment replaces the proxy's) and 0.38 (the proxy's own is kept).
+func rewriteGithub(proxy, rawURL string, keepFragment bool) (string, bool) {
+	if proxy == "" {
 		return rawURL, false
 	}
 	u, err := url.Parse(rawURL)
@@ -52,7 +74,7 @@ func (p *ProxyRewriter) Rewrite(rawURL string) (string, bool) {
 		return rawURL, false
 	}
 
-	base, pq, pf := splitURL(p.Proxy)
+	base, pq, pf := splitURL(proxy)
 	var segs []string
 	for _, s := range strings.Split(rawPath(rawURL), "/") {
 		if s != "" {
@@ -65,7 +87,7 @@ func (p *ProxyRewriter) Rewrite(rawURL string) (string, bool) {
 	if u.RawQuery != "" {
 		pq = u.RawQuery
 	}
-	if f := u.EscapedFragment(); f != "" {
+	if f := u.EscapedFragment(); keepFragment && f != "" {
 		pf = f
 	}
 	out := base

@@ -1,0 +1,48 @@
+{
+  "mods": {
+    "notify": {
+      "action_done": "{{action}} abgeschlossen",
+      "action_failed": "{{action}} fehlgeschlagen",
+      "import_failed": "Mod-Import fehlgeschlagen",
+      "import_busy_title": "Import läuft bereits",
+      "import_busy_body": "Warte, bis der aktuelle Import fertig ist, und ziehe die Dateien dann erneut hierher."
+    },
+    "no_instance": {
+      "title": "Instanz auswählen",
+      "body": "Mods werden pro Instanz installiert. Wähle hier eine aus, dann lädt diese Seite ihre Mods direkt.",
+      "none_title": "Noch keine Instanzen",
+      "none_body": "Lade zuerst eine Spielversion herunter; ihre Mods erscheinen dann hier.",
+      "download": "Spielversion herunterladen"
+    },
+    "import_log": {
+      "waiting": "Wartet auf dich",
+      "importing": "Wird importiert…",
+      "imported": "Importiert",
+      "overwritten": "Überschrieben",
+      "skipped": "Übersprungen",
+      "failed": "Fehlgeschlagen",
+      "reason_exists": "Ein Mod mit demselben Ordner existiert bereits",
+      "reason_cancelled": "Abgebrochen"
+    },
+    "import_summary": "{{imported}} importiert · {{skipped}} übersprungen · {{failed}} fehlgeschlagen",
+    "import_dialog": {
+      "open_activity": "Aktivität öffnen",
+      "log_label": "Importprotokoll",
+      "nothing_imported": "Nichts importiert"
+    },
+    "import_prompt": {
+      "skip": "Überspringen",
+      "import": "Importieren",
+      "overwrite": "Überschreiben",
+      "apply_all": "Für alle weiteren Duplikate übernehmen"
+    },
+    "batch_result": {
+      "demoted": "Als Abhängigkeit behalten"
+    },
+    "batch_more_actions": "Weitere Aktionen für ausgewählte Mods",
+    "uninstall": {
+      "dependency_note": "Wenn andere installierte Mods noch von diesem Paket abhängen, wird es als Abhängigkeit behalten statt entfernt.",
+      "demoted_title": "Als Abhängigkeit behalten"
+    }
+  }
+}

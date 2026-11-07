@@ -1,0 +1,48 @@
+{
+  "mods": {
+    "notify": {
+      "action_done": "{{action}}が完了しました",
+      "action_failed": "{{action}}に失敗しました",
+      "import_failed": "MOD のインポートに失敗しました",
+      "import_busy_title": "インポート実行中です",
+      "import_busy_body": "現在のインポートが終わってから、もう一度ファイルをドロップしてください。"
+    },
+    "no_instance": {
+      "title": "インスタンスを選択",
+      "body": "MOD はインスタンスごとにインストールされます。ここで選ぶと、このページにその MOD が読み込まれます。",
+      "none_title": "インスタンスがありません",
+      "none_body": "まずゲームバージョンをダウンロードしてください。MOD はここに表示されます。",
+      "download": "ゲームバージョンをダウンロード"
+    },
+    "import_log": {
+      "waiting": "入力待ち",
+      "importing": "インポート中…",
+      "imported": "インポート済み",
+      "overwritten": "上書き済み",
+      "skipped": "スキップ",
+      "failed": "失敗",
+      "reason_exists": "同じフォルダーの MOD が既にあります",
+      "reason_cancelled": "キャンセルしました"
+    },
+    "import_summary": "インポート {{imported}} · スキップ {{skipped}} · 失敗 {{failed}}",
+    "import_dialog": {
+      "open_activity": "アクティビティを開く",
+      "log_label": "インポートログ",
+      "nothing_imported": "何もインポートされませんでした"
+    },
+    "import_prompt": {
+      "skip": "スキップ",
+      "import": "インポート",
+      "overwrite": "上書き",
+      "apply_all": "残りの重複にも同じ操作を適用"
+    },
+    "batch_result": {
+      "demoted": "依存関係として保持"
+    },
+    "batch_more_actions": "選択した MOD のその他の操作",
+    "uninstall": {
+      "dependency_note": "他のインストール済み MOD がこのパッケージに依存している場合、削除されず依存関係として保持されます。",
+      "demoted_title": "依存関係として保持されました"
+    }
+  }
+}

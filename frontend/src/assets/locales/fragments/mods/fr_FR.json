@@ -1,0 +1,48 @@
+{
+  "mods": {
+    "notify": {
+      "action_done": "{{action}} terminé",
+      "action_failed": "Échec : {{action}}",
+      "import_failed": "Échec de l'importation des mods",
+      "import_busy_title": "Importation déjà en cours",
+      "import_busy_body": "Attendez la fin de l'importation en cours, puis déposez à nouveau les fichiers."
+    },
+    "no_instance": {
+      "title": "Choisissez une instance",
+      "body": "Les mods sont installés par instance. Choisissez-en une ici et cette page chargera ses mods.",
+      "none_title": "Aucune instance",
+      "none_body": "Téléchargez d'abord une version du jeu ; ses mods apparaîtront ici.",
+      "download": "Télécharger une version du jeu"
+    },
+    "import_log": {
+      "waiting": "En attente de votre choix",
+      "importing": "Importation…",
+      "imported": "Importé",
+      "overwritten": "Remplacé",
+      "skipped": "Ignoré",
+      "failed": "Échec",
+      "reason_exists": "Un mod avec le même dossier existe déjà",
+      "reason_cancelled": "Annulé"
+    },
+    "import_summary": "{{imported}} importé(s) · {{skipped}} ignoré(s) · {{failed}} en échec",
+    "import_dialog": {
+      "open_activity": "Ouvrir l'activité",
+      "log_label": "Journal d'importation",
+      "nothing_imported": "Rien n'a été importé"
+    },
+    "import_prompt": {
+      "skip": "Ignorer",
+      "import": "Importer",
+      "overwrite": "Remplacer",
+      "apply_all": "Faire de même pour les doublons restants"
+    },
+    "batch_result": {
+      "demoted": "Conservé comme dépendance"
+    },
+    "batch_more_actions": "Plus d'actions pour les mods sélectionnés",
+    "uninstall": {
+      "dependency_note": "Si d'autres mods installés dépendent encore de ce paquet, il est conservé comme dépendance au lieu d'être supprimé.",
+      "demoted_title": "Conservé comme dépendance"
+    }
+  }
+}

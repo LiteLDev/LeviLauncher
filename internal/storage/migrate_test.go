@@ -9,6 +9,11 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 )
 
+// testSecondVolume is a directory on another NTFS volume than the temporary
+// directory, for the tests that migrate across volumes; they are skipped
+// without it. Tests create unique directories in it and remove them.
+var testSecondVolume = os.Getenv("LEVILAUNCHER_TEST_SECOND_VOLUME")
+
 type env struct {
 	roaming, local, legacy string
 }

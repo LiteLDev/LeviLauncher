@@ -105,4 +105,9 @@ tasks:
     summary: Updates the build assets
     dir: build
     cmds:
-      - wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -config config.yml -dir .
+      - wails3 update build-assets -name "{{.APP_NAME}}" -binaryname "{{.APP_NAME}}" -config config.yml -productversion "{{.NUMERIC_VERSION}}" -dir .
+    vars:
+      # VERSION is the SemVer from the release tag (without leading "v"), e.g. 1.2.3 or 1.2.3-beta.1.
+      VERSION: '{{.VERSION | default "0.0.0-dev" | trimPrefix "v"}}'
+      # Windows version resources and manifests only accept numeric versions, so drop prerelease/build metadata.
+      NUMERIC_VERSION: '{{regexReplaceAll "[-+].*$" .VERSION ""}}'

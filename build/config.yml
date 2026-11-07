@@ -11,8 +11,9 @@ info:
   description: "A Minecraft Launcher" # The application description
   copyright: "(c) 2024-2026, LeviMC" # Copyright text
   comments: "Some Product Comments" # Comments
-  version: "1.0.7" # The application version
-  beta: "false" # Whether the application is in beta or not
+  # Placeholder only: the real version comes from the release tag via the
+  # VERSION build variable (see build/Taskfile.yml and build/windows/Taskfile.yml).
+  version: "0.0.0"
 
 # Dev mode configuration
 dev_mode:

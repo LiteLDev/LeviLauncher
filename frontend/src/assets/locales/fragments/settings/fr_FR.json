@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "Impossible de changer la source miroir",
+    "cache_clean_failed": "Impossible de vider le cache LIP",
+    "updating": {
+      "log_title": "Étapes",
+      "error_code": "Code d'erreur",
+      "details": "Détails",
+      "download_line": "{{percent}} % téléchargé ({{downloaded}} / {{total}} Mo)",
+      "retry_line": "Nouvelle tentative de mise à jour (essai {{count}})"
+    },
+    "onboarding": {
+      "footer_hint": "Vous pourrez modifier cela plus tard dans les paramètres."
+    }
+  }
+}

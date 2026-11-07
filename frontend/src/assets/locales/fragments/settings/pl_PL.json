@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "Nie można zmienić źródła lustrzanego",
+    "cache_clean_failed": "Nie można wyczyścić pamięci podręcznej LIP",
+    "updating": {
+      "log_title": "Kroki",
+      "error_code": "Kod błędu",
+      "details": "Szczegóły",
+      "download_line": "Pobrano {{percent}}% ({{downloaded}} / {{total}} MB)",
+      "retry_line": "Ponawianie aktualizacji (próba {{count}})"
+    },
+    "onboarding": {
+      "footer_hint": "Możesz to później zmienić w ustawieniach."
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "Impossibile cambiare la sorgente mirror",
+    "cache_clean_failed": "Impossibile pulire la cache LIP",
+    "updating": {
+      "log_title": "Passaggi",
+      "error_code": "Codice di errore",
+      "details": "Dettagli",
+      "download_line": "Scaricato {{percent}}% ({{downloaded}} / {{total}} MB)",
+      "retry_line": "Nuovo tentativo di aggiornamento (tentativo {{count}})"
+    },
+    "onboarding": {
+      "footer_hint": "Potrai modificarle in seguito nelle Impostazioni."
+    }
+  }
+}

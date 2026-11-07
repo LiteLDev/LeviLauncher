@@ -142,17 +142,19 @@ export default function OnboardingPage() {
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-6">
+      {/* One centred column: scrolls on small windows, sits mid-screen on large
+          ones, and keeps the primary action pinned to the bottom edge. */}
+      <div className="mx-auto my-auto flex w-full max-w-[60rem] flex-col gap-4">
         {/* Header Card */}
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <Card.Content className="p-6">
+          <Card.Content className="p-4 min-[1200px]:p-6">
             <PageHeader
               title={t("onboarding.title")}
               description={t("onboarding.subtitle")}
               startContent={
-                <div className="w-16 h-16 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-500 shrink-0">
+                <div className="size-12 sm:size-16 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-500 shrink-0">
                   <svg
-                    className="w-10 h-10"
+                    className="size-8 sm:size-10"
                     aria-hidden="true"
                     fill="none"
                     focusable="false"
@@ -169,28 +171,13 @@ export default function OnboardingPage() {
                   </svg>
                 </div>
               }
-              endContent={
-                <div className="flex items-center gap-3">
-                  <Button
-                    onPress={requestFinish}
-                    isDisabled={savingBaseRoot || rootStatus !== "ready"}
-                    variant={"primary"}
-                    className={cn(
-                      "rounded-full",
-                      "font-black px-10 h-12 text-lg brand-primary-foreground shadow-lg shadow-brand-500/20",
-                    )}
-                  >
-                    {t("audit.usability.start_using")}
-                  </Button>
-                </div>
-              }
             />
           </Card.Content>
         </Card>
 
         {/* Content Card */}
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <Card.Content className="p-6 space-y-8">
+          <Card.Content className="p-4 min-[1200px]:p-6 space-y-6">
             {rootStatus === "loading" && <div role="status" className="flex items-center gap-2 text-sm text-muted"><Spinner size="sm" />{t("common.loading")}</div>}
             {rootStatus === "error" && (
               <ModalNotice role="alert" tone="danger">
@@ -212,43 +199,6 @@ export default function OnboardingPage() {
                 title={t("settings.body.paths.title")}
                 description={t("settings.body.paths.subtitle")}
                 icon={<LuHardDrive className="w-5 h-5" />}
-                action={
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="md"
-                      isDisabled={savingBaseRoot || rootStatus === "loading"}
-                      onPress={() => void persistRoot(true)}
-                      variant={"ghost"}
-                      className={cn("rounded-full", "font-bold px-4")}
-                    >
-                      {t("settings.body.paths.reset")}
-                    </Button>
-                    <Button
-                      size="md"
-                      isDisabled={
-                        savingBaseRoot || rootStatus === "loading" ||
-                        !newBaseRoot.trim() ||
-                        !baseRootWritable ||
-                        newBaseRoot === baseRoot
-                      }
-                      onPress={() => void persistRoot()}
-                      variant={"primary"}
-                      isPending={savingBaseRoot}
-                      className={cn("rounded-full", "font-bold px-6")}
-                    >
-                      {({ isPending }) => (
-                        <>
-                          <Spinner
-                            size="sm"
-                            color="current"
-                            className={isPending ? "" : "hidden"}
-                          />
-                          {t("settings.body.paths.apply")}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                }
               />
 
               <div className="space-y-4">
@@ -329,6 +279,41 @@ export default function OnboardingPage() {
                       : undefined}
                   </FieldError>
                 </TextField>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button
+                    size="md"
+                    isDisabled={savingBaseRoot || rootStatus === "loading"}
+                    onPress={() => void persistRoot(true)}
+                    variant={"ghost"}
+                    className={cn("rounded-full", "font-bold px-4")}
+                  >
+                    {t("settings.body.paths.reset")}
+                  </Button>
+                  <Button
+                    size="md"
+                    isDisabled={
+                      savingBaseRoot || rootStatus === "loading" ||
+                      !newBaseRoot.trim() ||
+                      !baseRootWritable ||
+                      newBaseRoot === baseRoot
+                    }
+                    onPress={() => void persistRoot()}
+                    variant={"primary"}
+                    isPending={savingBaseRoot}
+                    className={cn("rounded-full", "font-bold px-6")}
+                  >
+                    {({ isPending }) => (
+                      <>
+                        <Spinner
+                          size="sm"
+                          color="current"
+                          className={isPending ? "" : "hidden"}
+                        />
+                        {t("settings.body.paths.apply")}
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
             <Separator className="opacity-50" />
@@ -404,6 +389,27 @@ export default function OnboardingPage() {
             </div>
           </Card.Content>
         </Card>
+
+        <div className="sticky bottom-0 z-10">
+          <Card className={LAYOUT.GLASS_CARD.BASE}>
+            <Card.Content className="flex flex-row flex-wrap items-center justify-between gap-3 p-3 min-[1200px]:p-4">
+              <p className="min-w-0 flex-1 basis-48 text-sm text-muted">
+                {t("settings_ux.onboarding.footer_hint")}
+              </p>
+              <Button
+                onPress={requestFinish}
+                isDisabled={savingBaseRoot || rootStatus !== "ready"}
+                variant={"primary"}
+                className={cn(
+                  "rounded-full",
+                  "font-black px-8 h-11 text-base brand-primary-foreground shadow-lg shadow-brand-500/20",
+                )}
+              >
+                {t("audit.usability.start_using")}
+              </Button>
+            </Card.Content>
+          </Card>
+        </div>
       </div>
 
       <UnifiedModal

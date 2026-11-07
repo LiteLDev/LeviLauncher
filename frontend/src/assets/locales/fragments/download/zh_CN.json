@@ -1,0 +1,72 @@
+{
+  "download_flow": {
+    "activity": {
+      "title": "下载 {{name}}"
+    },
+    "status": {
+      "starting": "正在开始下载",
+      "started": "正在下载",
+      "resumed": "已继续下载",
+      "verifying": "正在校验文件",
+      "done": "下载完成",
+      "cancelled": "下载已取消"
+    },
+    "failed": "下载失败",
+    "failed_title": "无法下载 {{name}}",
+    "start_failed_title": "无法开始下载 {{name}}",
+    "already_title": "已在下载",
+    "done_title": "下载完成",
+    "view_tasks": "打开任务",
+    "show_log": "查看日志",
+    "install_when_done": "完成后安装",
+    "download_install": "下载并安装",
+    "download_only": "仅下载",
+    "more_options": "更多下载选项",
+    "show_more": "再显示 {{count}} 个",
+    "latency": "延迟",
+    "row": {
+      "downloading": "正在下载 {{percent}}%"
+    },
+    "back_to": "返回{{place}}",
+    "origin": {
+      "download": "版本列表",
+      "tasks": "下载任务",
+      "home": "首页",
+      "instances": "实例列表"
+    },
+    "go_to_instance": "前往实例",
+    "launch": {
+      "now": "立即启动",
+      "started": "正在启动 {{name}}",
+      "failed": "无法启动游戏",
+      "open_home": "前往首页"
+    },
+    "install": {
+      "steps": "安装步骤",
+      "activity_title": "安装 {{name}}",
+      "started": "正在将 {{version}} 安装为“{{name}}”",
+      "extracting": "正在解压 {{file}}",
+      "extracted": "已解压 {{percent}}%（{{done}} / {{total}}）",
+      "extracted_files": "已解压 {{count}} 个文件",
+      "extract_done": "游戏文件解压完成",
+      "saving_settings": "正在保存实例设置",
+      "copying_data": "正在从 {{source}} 复制游戏数据",
+      "installing_ll": "正在安装 LeviLamina {{version}}",
+      "ll_done": "LeviLamina {{version}} 已安装",
+      "rolled_back": "已删除未完成的实例“{{name}}”",
+      "set_current": "“{{name}}”已设为当前实例",
+      "done": "“{{name}}”安装完成",
+      "when_downloaded": "下载完成后安装",
+      "queued": "将在下载后安装",
+      "downloading": "正在下载游戏文件",
+      "download_ready": "下载完成，可以安装",
+      "background_hint": "下载会在后台继续。先设置下面的选项，再点击“下载完成后安装”。",
+      "queued_hint": "下载完成后会自动开始安装。再次点击按钮可取消。",
+      "instance": "实例：",
+      "is_current": "当前实例",
+      "set_current_action": "设为当前实例",
+      "set_current_label": "设为当前实例",
+      "set_current_desc": "安装完成后在首页选中新实例。"
+    }
+  }
+}

@@ -35,19 +35,17 @@ See the user docs:
 
 ### Command Line
 
-`LeviLauncher.exe` with no arguments opens the launcher window; with a subcommand it runs headless and exits:
+`LeviLauncher.exe` with no arguments opens the launcher window. With a command it runs in the terminal and exits, using a `<noun> <verb>` grammar:
 
 ```text
-LeviLauncher.exe list                   List installed instances
-LeviLauncher.exe launch <instance>      Launch an instance
-LeviLauncher.exe call                   List every backend method the GUI uses
-LeviLauncher.exe call <method> [args]   Invoke one of them
-LeviLauncher.exe help                   Show usage
+LeviLauncher.exe version                Print version information
+LeviLauncher.exe instance list          List installed instances (--json, -q)
+LeviLauncher.exe help [<command>...]    Help for any command, with examples
 ```
 
-Everything the GUI does goes through one of the methods `call` lists, so the command line can do all of it (download, install, import content, manage mods, settings and so on). String parameters take the argument as is, other types take JSON (`true`, `42`, `["a"]`). Results go to stdout (JSON unless a plain string), progress events to stderr as JSON lines, and downloads are waited for. The exit status is 0 on success, 1 when the call fails (a Go error or an `ERR_...` code) and 2 on a usage error.
+Global flags: `-i/--instance <name>`, `-p/--player <id|gamertag>`, `--json` (one JSON document on stdout), `-q/--quiet` (identifiers only), `-v/--verbose` (also the launcher log on stderr), `-y/--yes`, `--no-input`, `-h/--help`, `--version`. Results go to stdout; progress, notices and errors (`error:`, `hint:`, `[ERR_CODE]`) go to stderr. Exit codes: 0 ok, 1 failed, 2 usage, 3 not found, 4 conflict, 5 sign-in/licence, 6 network, 7 partial, 8 needs a system change or admin, 9 timeout, 10 cancelled, 130 interrupted. The environment variables `LEVILAUNCHER_INSTANCE` and `LEVILAUNCHER_PLAYER` set a default instance and player for a shell. The window's own switches (`--launch=<instance>`, `--debug`, ...) keep opening the window.
 
-`LeviLauncher.exe` is a GUI program, so shells don't wait for it by default. When you need its output before the prompt returns, or its exit code, use `start /wait LeviLauncher.exe ...` in cmd. In PowerShell, pipe the output (`LeviLauncher.exe list | Out-String`) or use `Start-Process -Wait -NoNewWindow`.
+`LeviLauncher.exe` is a GUI program, so shells don't wait for it by default. When you need its output before the prompt returns, or its exit code, use `start /wait LeviLauncher.exe ...` in cmd. In PowerShell, pipe the output (`LeviLauncher.exe instance list | Out-String`) or use `Start-Process -Wait -NoNewWindow`.
 
 ## Contributing
 

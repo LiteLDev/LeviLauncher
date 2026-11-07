@@ -56,7 +56,7 @@ const ActivePill: React.FC<{ expanded: boolean }> = ({ expanded }) => (
     layoutId="active-pill"
     className={cn(
       "absolute top-1/2 -translate-y-1/2 w-1 bg-brand-500 rounded-r-full",
-      expanded ? "-left-3 h-5" : "-left-1 h-8",
+      expanded ? "-left-3 h-5" : "-left-2 h-8",
     )}
     transition={{ type: "spring", stiffness: 300, damping: 30 }}
   />
@@ -173,7 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           // still fits.
           expanded
             ? "gap-1 px-3 py-3"
-            : cn("items-center px-1", activeChild ? "gap-2 py-2" : "gap-4 py-4"),
+            : cn("items-center px-2", activeChild ? "gap-2 py-2" : "gap-4 py-4"),
         )}
       >
         {items.map((item) => {
@@ -288,7 +288,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           "flex w-full",
           expanded
             ? "gap-1 px-3 pb-3 pt-2 flex-row items-center"
-            : "gap-4 flex-col items-center px-1 pb-6 pt-2",
+            : "gap-4 flex-col items-center px-2 pb-6 pt-2",
         )}
       >
         <RailTooltip label={toggleLabel} expanded={false}>
@@ -302,8 +302,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               "transition-colors duration-200 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary",
               expanded
                 ? "flex-1 min-w-0 h-10 justify-start gap-3 rounded-xl px-3 text-sm font-normal"
-                : // Below the theme switch, which keeps its released spot.
-                  "order-last size-12 min-w-12 rounded-xl",
+                : "size-12 min-w-12 rounded-xl",
             )}
           >
             {expanded ? (

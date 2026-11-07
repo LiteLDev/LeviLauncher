@@ -38,7 +38,7 @@ type NavTarget = { id: string; path: string; keywords: string[] };
 // Every user-facing route without params. Internal flows (onboarding,
 // updating, world editor) and detail pages are left out on purpose.
 export const NAV_TARGETS: NavTarget[] = [
-  { id: "nav.home", path: ROUTES.home, keywords: ["home", "launch", "play", "start", "run", "content", "manage", "files"] },
+  { id: "nav.home", path: ROUTES.home, keywords: ["home", "launch", "play", "start", "run"] },
   { id: "nav.download", path: ROUTES.download, keywords: ["download", "versions", "get", "minecraft"] },
   { id: "nav.download_tasks", path: ROUTES.downloadTasks, keywords: ["download", "tasks", "queue", "progress"] },
   { id: "nav.install", path: ROUTES.install, keywords: ["install", "local", "file", "appx", "msixvc", "import"] },
@@ -46,6 +46,7 @@ export const NAV_TARGETS: NavTarget[] = [
   { id: "nav.mods", path: ROUTES.mods, keywords: ["mods", "plugins", "addons"] },
   { id: "nav.curseforge", path: ROUTES.curseForge, keywords: ["curseforge", "browse", "mods", "search"] },
   { id: "nav.lip", path: ROUTES.lip, keywords: ["lip", "packages", "levilamina", "browse"] },
+  { id: "nav.content", path: ROUTES.content, keywords: ["content", "manage", "files"] },
   { id: "nav.worlds", path: ROUTES.contentWorlds, keywords: ["worlds", "maps", "saves"] },
   { id: "nav.resource_packs", path: ROUTES.contentResourcePacks, keywords: ["resource", "packs", "textures"] },
   { id: "nav.behavior_packs", path: ROUTES.contentBehaviorPacks, keywords: ["behavior", "behaviour", "packs", "addons"] },

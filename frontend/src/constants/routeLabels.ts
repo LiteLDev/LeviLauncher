@@ -12,6 +12,7 @@ export const ROUTE_LABEL_KEYS: Record<string, string> = {
   [ROUTES.curseForgeMod]: "nav.mod_details",
   [ROUTES.lip]: "lip.title",
   [ROUTES.lipPackage]: "nav.package_details",
+  [ROUTES.content]: "launcherpage.content_manage",
   [ROUTES.contentWorlds]: "contentpage.worlds",
   [ROUTES.contentWorldEditor]: "contentpage.world_leveldat_editor",
   [ROUTES.contentResourcePacks]: "contentpage.resource_packs",

@@ -131,12 +131,13 @@
       "unknown": "Desconhecido"
     },
     "tip": {
-      "version_selector": "Mude a instância atual no seletor da barra superior; todas as páginas que usam uma instância acompanham-na.",
-      "sidebar_toggle": "Use o botão no fundo da barra lateral para mostrar ou ocultar as etiquetas.",
-      "manage_versions": "Abra Instâncias na barra lateral para instalar, importar ou organizar instâncias.",
+      "version_selector": "Usa a lista pendente de instâncias para mudares rapidamente de instância.",
+      "version_search": "Pesquise pelo nome da instância ou versão do jogo antes de selecionar na lista suspensa.",
+      "manage_versions": "Seleciona «Instâncias» no painel pendente para instalar, importar ou organizar instâncias.",
       "quick_actions_menu": "O menu junto ao botão de iniciar oferece definições da instância, atalho no ambiente de trabalho, pasta do jogo e ações de registo no sistema.",
       "launch_dependencies": "Se faltarem o GameInput, o runtime do Visual C++ ou o Gaming Services, o LeviLauncher orienta-te na instalação antes de iniciar.",
-      "content_section": "A gestão de conteúdos do Início mostra os mundos, mods, pacotes e mais da instância atual; escolha uma linha para a abrir.",
+      "mods_card": "O cartão de Mods mostra os mods ativados para a instância atual e abre a página completa de mods com um clique.",
+      "content_counts_card": "O cartão de Conteúdo mostra a contagem de mundos, pacotes de recursos e pacotes de comportamento, e cada linha abre a página correspondente.",
       "content_download_sources": "Use o cartão de descarga para explorar fontes de conteúdo CurseForge ou LeviMC Mods sem sair do launcher.",
       "settings_personalize": "As Definições permitem ajustar o tema, cor, fundo e outras opções de aparência para se adequarem à sua configuração.",
       "settings_storage_path": "Pode alterar os caminhos de armazenamento nas Definições. Certifique-se de que o diretório de destino tem permissões de escrita antes de mover conteúdo.",

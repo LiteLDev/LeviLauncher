@@ -39,11 +39,6 @@ export const TopBar: React.FC<TopBarProps> = ({
     useNavigationHistory();
 
   const pathnames = location.pathname.split("/").filter((x) => x);
-  // `/content` only groups the content pages, which belong to Home, so the
-  // trail reads Home > Worlds rather than naming a page that does not exist.
-  const crumbs = pathnames
-    .map((_, index) => `/${pathnames.slice(0, index + 1).join("/")}`)
-    .filter((to) => to !== ROUTES.content);
   // The expanded rail already shows the wordmark beside the logo.
   const rootLabel =
     pathnames.length === 0 && !railExpanded ? "LeviLauncher" : t("nav.home");
@@ -153,8 +148,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                 {rootLabel}
               </Link>
             )}
-            {crumbs.map((to, index) => {
-              const isLast = index === crumbs.length - 1;
+            {pathnames.map((_, index) => {
+              const to = `/${pathnames.slice(0, index + 1).join("/")}`;
+              const isLast = index === pathnames.length - 1;
               const name = isLast && currentTitle ? currentTitle : t(getRouteLabelKey(to));
               const isNonClickable = !ROUTE_LABEL_KEYS[to];
 

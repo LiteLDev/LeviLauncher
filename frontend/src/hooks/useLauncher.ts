@@ -12,6 +12,7 @@ import {
   startActivityTask,
   type ActivityLogLevel,
 } from "@/utils/activity";
+import { compareVersions } from "@/utils/version";
 import {
   readCurrentVersionName,
   saveCurrentVersionName,
@@ -20,9 +21,13 @@ import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/a
 import {
   EnsureGameInputInteractive,
   EnsureVcRuntimeInteractive,
+  ListDir,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import * as contentService from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as modsService from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 import * as versionService from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
+import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import { ROUTES } from "@/constants/routes";
 import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { normalizePackageType } from "@/utils/packageType";
@@ -225,10 +230,18 @@ export const useLauncher = (args: any) => {
     : undefined;
 
   const navigate = useNavigate();
+  const [contentCounts, setContentCounts] = React.useState<{
+    worlds: number;
+    resourcePacks: number;
+    behaviorPacks: number;
+  }>({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
   const [logoDataUrl, setLogoDataUrl] = React.useState<string>("");
+  const [versionQuery, setVersionQuery] = React.useState<string>("");
   const [logoByName, setLogoByName] = React.useState<Map<string, string>>(
     new Map(),
   );
+  const [isLoadingVersions, setIsLoadingVersions] =
+    React.useState<boolean>(false);
   const [tipIndex, setTipIndex] = React.useState<number>(0);
   const tipTimerRef = React.useRef<number | null>(null);
   const launchRequestActiveRef = React.useRef<boolean>(false);
@@ -360,7 +373,8 @@ export const useLauncher = (args: any) => {
     [activeLaunchFlow, commitLaunchFlow],
   );
 
-  // Follow the app-wide current instance, which the top bar switches.
+  // Follow the app-wide current instance, which the top bar's picker and
+  // this page's dropdown both switch.
   const { currentVersionName: selectedInstance } = useCurrentVersion();
   const logoByNameRef = React.useRef(logoByName);
   logoByNameRef.current = logoByName;
@@ -460,6 +474,63 @@ export const useLauncher = (args: any) => {
       }
     } catch {}
   }, []);
+
+  const sortedVersionNames = React.useMemo(() => {
+    const entries = Array.from(localVersionMap.entries()).map(
+      ([name, info]) => ({
+        name,
+        version: String(info?.version || ""),
+        isPreview: !!info?.isPreview,
+      }),
+    );
+    entries.sort((a, b) => {
+      const byVer = compareVersions(b.version, a.version);
+      if (byVer !== 0) return byVer;
+      const byPreview = b.isPreview === a.isPreview ? 0 : b.isPreview ? 1 : -1;
+      if (byPreview !== 0) return byPreview;
+      return a.name.localeCompare(b.name);
+    });
+    return entries.map((e) => e.name);
+  }, [localVersionMap, compareVersions]);
+
+  const filteredVersionNames = React.useMemo(() => {
+    const q = versionQuery.trim().toLowerCase();
+    if (!q) return sortedVersionNames;
+    return sortedVersionNames.filter((name) => {
+      const ver = String(localVersionMap.get(name)?.version || "");
+      return name.toLowerCase().includes(q) || ver.toLowerCase().includes(q);
+    });
+  }, [versionQuery, sortedVersionNames, localVersionMap]);
+
+  const buildVersionMenuItems = React.useCallback(
+    (emptyLabel: string) => {
+      if (filteredVersionNames.length === 0) {
+        return [
+          {
+            key: "__empty",
+            name: emptyLabel,
+            version: "",
+            isRegistered: false,
+            isDisabled: true,
+          },
+        ];
+      }
+      return filteredVersionNames.map((name) => ({
+        key: name,
+        name,
+        version: String(localVersionMap.get(name)?.version || ""),
+        packageType: normalizePackageType(localVersionMap.get(name)?.packageType),
+        type: String(localVersionMap.get(name)?.type || "release"),
+        isRegistered: Boolean(localVersionMap.get(name)?.isRegistered),
+        isLeviLaminaInstalled: Boolean(
+          localVersionMap.get(name)?.isLeviLaminaInstalled,
+        ),
+        isDisabled: false,
+        logo: logoByName.get(name),
+      }));
+    },
+    [filteredVersionNames, localVersionMap, logoByName],
+  );
 
   const failLaunch = React.useCallback(
     (code: string) => {
@@ -1160,6 +1231,103 @@ export const useLauncher = (args: any) => {
     };
   }, [updateLaunchStep]);
 
+  const refreshContentCounts = React.useCallback(async () => {
+    const countDir = async (path: string): Promise<number> => {
+      try {
+        const entries = await ListDir(path);
+        return (entries || []).filter((e: any) => e.isDir).length;
+      } catch {
+        return 0;
+      }
+    };
+    try {
+      const name = readCurrentVersionName();
+      if (!name) {
+        setContentCounts({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
+        return;
+      }
+      const roots = await contentService.GetContentRoots(name);
+      const safe = roots || {
+        base: "",
+        usersRoot: "",
+        resourcePacks: "",
+        behaviorPacks: "",
+        isIsolation: false,
+        isPreview: false,
+      };
+      let worlds = 0;
+
+      let res = 0;
+      let bp = 0;
+      try {
+        const resEntries = await ListDir(safe.resourcePacks);
+        const resDirs = (resEntries || []).filter((e: any) => e.isDir);
+        res = resDirs.length;
+
+        bp = await countDir(safe.behaviorPacks);
+      } catch {}
+
+      if (roots?.packageType === "uwp") {
+        worlds = roots.worlds ? await countDir(roots.worlds) : 0;
+        setContentCounts({ worlds, resourcePacks: res, behaviorPacks: bp });
+        return;
+      }
+      if (safe.usersRoot) {
+        try {
+          const players = await listPlayers(safe.usersRoot);
+          let nextPlayer = players[0] || "";
+
+          if (nextPlayer) {
+            const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
+            const defaultWorlds = await countDir(wp);
+            setContentCounts({
+              worlds: defaultWorlds,
+              resourcePacks: res,
+              behaviorPacks: bp,
+            });
+          } else {
+            setContentCounts({
+              worlds: 0,
+              resourcePacks: res,
+              behaviorPacks: bp,
+            });
+          }
+
+          (async () => {
+            try {
+              const tag = await (userService as any)?.GetLocalUserGamertag?.();
+              if (tag) {
+                const map = await getPlayerGamertagMap(safe.usersRoot);
+
+                let matchedPlayer = "";
+                for (const p of players) {
+                  if (map[p] === tag) {
+                    matchedPlayer = p;
+                    break;
+                  }
+                }
+
+                if (matchedPlayer && matchedPlayer !== nextPlayer) {
+                  const wp = `${safe.usersRoot}\\${matchedPlayer}\\games\\com.mojang\\minecraftWorlds`;
+                  const newWorlds = await countDir(wp);
+                  setContentCounts((prev) => ({ ...prev, worlds: newWorlds }));
+                }
+              }
+            } catch {}
+          })();
+          return;
+        } catch {}
+      }
+      setContentCounts({ worlds: 0, resourcePacks: res, behaviorPacks: bp });
+    } catch {
+      setContentCounts({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshContentCounts();
+  }, [refreshContentCounts, currentVersion]);
+
   useEffect(() => {
     const unlistenMcStart = Events.On("mc.launch.start", () => {
       if (!launchRequestActiveRef.current) return;
@@ -1202,6 +1370,7 @@ export const useLauncher = (args: any) => {
 
   useEffect(() => {
     const registrationRevision = registrationRevisionRef.current;
+    setIsLoadingVersions(true);
 
     const processMetas = (metas: any[]) => {
       const newLocalVersionMap = new Map();
@@ -1312,6 +1481,7 @@ export const useLauncher = (args: any) => {
 
       const fullMetas = await slowFn();
       processMetas(fullMetas);
+      setIsLoadingVersions(false);
       const details = await Promise.all(
         (Array.isArray(fullMetas) ? fullMetas : []).map(async (meta: any) => {
           const name = String(meta?.name || "");
@@ -1344,6 +1514,7 @@ export const useLauncher = (args: any) => {
       fastFn()
         .then((metas: any[]) => {
           processMetas(metas);
+          setIsLoadingVersions(false);
 
           if (typeof detailsFn === "function") {
             detailsFn()
@@ -1355,15 +1526,34 @@ export const useLauncher = (args: any) => {
         })
         .catch(() => {
           if (typeof slowFn === "function") {
-            void loadLegacyDetails().catch(() => {});
+            void loadLegacyDetails().catch(() => setIsLoadingVersions(false));
           } else {
+            setIsLoadingVersions(false);
           }
         });
     } else if (typeof slowFn === "function") {
-      void loadLegacyDetails().catch(() => {});
+      void loadLegacyDetails().catch(() => setIsLoadingVersions(false));
     } else {
+      setIsLoadingVersions(false);
     }
   }, [args.count]);
+
+  const handleVersionSelect = React.useCallback(
+    (keys: any) => {
+      const selected = Array.from(keys)[0] as string;
+      if (selected) {
+        setCurrentVersion(selected);
+        setDisplayName(selected);
+        const ver = localVersionMap.get(selected)?.version || "";
+        setDisplayVersion(ver || "None");
+        try {
+          saveCurrentVersionName(selected, "launcher.select");
+          setLogoDataUrl(logoByName.get(selected) || "");
+        } catch {}
+      }
+    },
+    [localVersionMap, logoByName],
+  );
 
   const installDependency = React.useCallback(
     (id: "vcRuntime" | "gameInput") => {
@@ -1492,8 +1682,12 @@ export const useLauncher = (args: any) => {
     displayVersion,
     displayName,
     localVersionMap,
+    contentCounts,
     logoDataUrl,
+    versionQuery,
+    setVersionQuery,
     logoByName,
+    isLoadingVersions,
     registrationPendingAction,
     launchPending,
     launchStepRunning,
@@ -1505,6 +1699,7 @@ export const useLauncher = (args: any) => {
     navigate,
 
     // Computed
+    buildVersionMenuItems,
 
     // Tip timer
     startTipTimer,
@@ -1517,6 +1712,7 @@ export const useLauncher = (args: any) => {
     doCreateShortcut,
     doOpenFolder,
     doRegister,
+    handleVersionSelect,
     installDependency,
     recheckDependency,
     skipDependency,

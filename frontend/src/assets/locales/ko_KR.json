@@ -131,12 +131,13 @@
       "unknown": "알 수 없음"
     },
     "tip": {
-      "version_selector": "상단 바의 인스턴스 선택기에서 현재 인스턴스를 바꾸면 인스턴스를 사용하는 모든 페이지에 반영됩니다.",
-      "sidebar_toggle": "사이드바 아래쪽 버튼으로 라벨을 표시하거나 숨길 수 있습니다.",
-      "manage_versions": "사이드바의 인스턴스 목록에서 인스턴스를 설치, 가져오기 또는 정리할 수 있습니다.",
+      "version_selector": "인스턴스 드롭다운에서 현재 인스턴스를 빠르게 전환할 수 있습니다.",
+      "version_search": "드롭다운 목록에서 선택하기 전에 인스턴스 이름 또는 게임 버전을 검색하세요.",
+      "manage_versions": "드롭다운 패널의 \"인스턴스 목록\"에서 인스턴스를 설치, 가져오기, 정리할 수 있습니다.",
       "quick_actions_menu": "실행 버튼 옆 메뉴는 인스턴스 설정, 바탕 화면 바로 가기, 게임 폴더 및 시스템 등록 작업을 제공합니다.",
       "launch_dependencies": "GameInput, Visual C++ 런타임 또는 Gaming Services가 없으면 LeviLauncher가 실행 전에 설치를 안내합니다.",
-      "content_section": "홈의 콘텐츠 관리에는 현재 인스턴스의 월드, 모드, 팩 등이 표시됩니다. 항목을 선택하면 열립니다.",
+      "mods_card": "모드 카드는 현재 인스턴스에 활성화된 모드를 표시하며, 클릭 한 번으로 전체 모드 페이지를 엽니다.",
+      "content_counts_card": "콘텐츠 카드는 월드, 리소스 팩, 행동 팩의 수를 표시하며, 각 행은 해당 페이지를 엽니다.",
       "content_download_sources": "다운로드 카드를 사용하여 런처를 벗어나지 않고 CurseForge 또는 LeviMC Mods 콘텐츠 소스를 탐색하세요.",
       "settings_personalize": "설정에서 테마, 색상, 배경 및 기타 모양 옵션을 조정하여 설정에 맞게 맞춤화할 수 있습니다.",
       "settings_storage_path": "설정에서 저장 경로를 변경할 수 있습니다. 콘텐츠를 이동하기 전에 대상 디렉토리에 쓰기 권한이 있는지 확인하세요.",

@@ -131,12 +131,13 @@
       "unknown": "Inconnu"
     },
     "tip": {
-      "version_selector": "Changez l'instance actuelle depuis le sélecteur de la barre supérieure ; toutes les pages qui utilisent une instance la suivent.",
-      "sidebar_toggle": "Utilisez le bouton en bas de la barre latérale pour afficher ou masquer ses libellés.",
-      "manage_versions": "Ouvrez Instances dans la barre latérale pour installer, importer ou organiser des instances.",
+      "version_selector": "Utilise la liste déroulante des instances pour changer rapidement d'instance.",
+      "version_search": "Recherchez par nom d'instance ou version du jeu avant de sélectionner dans la liste déroulante.",
+      "manage_versions": "Sélectionne « Instances » dans le panneau déroulant pour installer, importer ou organiser des instances.",
       "quick_actions_menu": "Le menu à côté du bouton de lancement offre les paramètres de l'instance, le raccourci bureau, le dossier du jeu et les actions d'enregistrement système.",
       "launch_dependencies": "Si GameInput, le runtime Visual C++ ou Gaming Services manquent, LeviLauncher t'accompagne pour les installer avant le lancement.",
-      "content_section": "La gestion du contenu de l'accueil affiche les mondes, mods, packs et plus de l'instance actuelle ; choisissez une ligne pour l'ouvrir.",
+      "mods_card": "La carte Mods affiche les mods activés pour l'instance actuelle et ouvre la page complète des mods en un clic.",
+      "content_counts_card": "La carte Contenu affiche le nombre de mondes, packs de ressources et packs de comportement, et chaque ligne ouvre la page correspondante.",
       "content_download_sources": "Utilisez la carte de téléchargement pour parcourir les sources de contenu CurseForge ou LeviMC Mods sans quitter le lanceur.",
       "settings_personalize": "Les Paramètres vous permettent d'ajuster le thème, la couleur, l'arrière-plan et d'autres options d'apparence pour les adapter à votre configuration.",
       "settings_storage_path": "Vous pouvez modifier les chemins de stockage dans les Paramètres. Assurez-vous que le répertoire cible est accessible en écriture avant de déplacer du contenu.",

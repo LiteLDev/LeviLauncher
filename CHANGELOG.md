@@ -8,9 +8,9 @@ All notable changes to this project will be documented in this file.
 
 - Replaced the external lip package manager with a built-in lip-compatible package manager, so lip and the .NET runtime no longer need to be installed or updated from Settings; existing `tooth_lock.json` installs keep working
 - Aligned the built-in lip with lip 0.38.0-beta.1: packages are recorded in `.lip/workspace.yaml` and read from `lip.yaml`, existing `tooth_lock.json` installs are migrated automatically on the first package operation, the GitHub proxy is read from lip's `config.yaml` (a `liprc.json` is converted), and packages are installed without the `#client` variant while already installed `#client` packages are updated and uninstalled in place
-- The sidebar keeps its released icons and order, and a button at its bottom expands it to show labels (the choice is remembered); content pages and content downloads (LeviMC mods, CurseForge) are listed under Home
-- Content management moved onto Home: the content card under the launch card lists every kind of content, with mods second after worlds, next to the content download card
-- The current instance is picked only in the top bar, which every page that acts on an instance follows; the picker is hidden on the instance list, downloads and settings
+- The sidebar and Home look as in 1.0.7; a button above the theme switch expands the sidebar to show labels (the choice is remembered), and the expanded sidebar lists the content pages and content downloads (LeviMC mods, CurseForge) under Launch
+- Mods are part of content management, listed second after worlds
+- The top bar has an instance picker that stays in step with Home's instance menu; every page that acts on an instance follows it, content pages no longer have their own picker, and it is hidden on the instance list, downloads and settings
 
 ## [1.0.7] - 2026-11-04
 

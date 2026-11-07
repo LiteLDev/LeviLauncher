@@ -131,12 +131,13 @@
       "unknown": "Sconosciuto"
     },
     "tip": {
-      "version_selector": "Cambia l'istanza corrente dal selettore nella barra superiore; tutte le pagine che usano un'istanza la seguono.",
-      "sidebar_toggle": "Usa il pulsante in fondo alla barra laterale per mostrare o nascondere le etichette.",
-      "manage_versions": "Apri Istanze nella barra laterale per installare, importare o organizzare le istanze.",
+      "version_selector": "Usa l'elenco a discesa delle istanze per cambiare rapidamente istanza.",
+      "version_search": "Cerca per nome istanza o versione del gioco prima di selezionare dall'elenco a tendina.",
+      "manage_versions": "Seleziona «Istanze» nel pannello a discesa per installare, importare o organizzare le istanze.",
       "quick_actions_menu": "Il menu accanto al pulsante di avvio offre impostazioni istanza, collegamento desktop, cartella gioco e azioni di registrazione di sistema.",
       "launch_dependencies": "Se mancano GameInput, il runtime Visual C++ o Gaming Services, LeviLauncher ti guida nell'installazione prima dell'avvio.",
-      "content_section": "La gestione contenuti della Home mostra mondi, mod, pacchetti e altro dell'istanza corrente; scegli una riga per aprirla.",
+      "mods_card": "La scheda Mod mostra le mod attivate per l'istanza corrente e apre la pagina completa delle mod con un clic.",
+      "content_counts_card": "La scheda Contenuti mostra il conteggio di mondi, pacchetti risorse e pacchetti comportamento, e ogni riga apre la pagina corrispondente.",
       "content_download_sources": "Usa la scheda download per esplorare le fonti di contenuti CurseForge o LeviMC Mods senza uscire dal launcher.",
       "settings_personalize": "Le Impostazioni ti permettono di regolare tema, colore, sfondo e altre opzioni estetiche per adattarle alla tua configurazione.",
       "settings_storage_path": "Puoi cambiare i percorsi di archiviazione nelle Impostazioni. Assicurati che la directory di destinazione abbia permessi di scrittura prima di spostare contenuti.",

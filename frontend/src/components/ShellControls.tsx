@@ -75,7 +75,7 @@ const NAV_ICONS: Record<PrimaryNavKey, IconComponent> = {
 };
 
 const NAV_LABEL_KEYS: Record<PrimaryNavKey, string> = {
-  home: "nav.home",
+  home: "launcherpage.launch_button",
   download: "downloadmodal.download_button",
   instances: "nav.versions",
   about: "nav.about",

@@ -131,12 +131,13 @@
       "unknown": "Nieznana"
     },
     "tip": {
-      "version_selector": "Zmieniaj bieżącą instancję w selektorze na górnym pasku; wszystkie strony korzystające z instancji podążają za nią.",
-      "sidebar_toggle": "Przycisk na dole paska bocznego pokazuje lub ukrywa jego etykiety.",
-      "manage_versions": "Otwórz Instancje na pasku bocznym, aby instalować, importować lub porządkować instancje.",
+      "version_selector": "Użyj listy rozwijanej instancji, aby szybko przełączyć bieżącą instancję.",
+      "version_search": "Wyszukaj według nazwy instancji lub wersji gry, zanim wybierzesz pozycję z listy rozwijanej.",
+      "manage_versions": "Wybierz „Instancje” w panelu rozwijanym, aby instalować, importować lub porządkować instancje.",
       "quick_actions_menu": "Menu obok przycisku uruchamiania udostępnia ustawienia instancji, skrót na pulpicie, folder gry oraz rejestrację w systemie.",
       "launch_dependencies": "Jeśli brakuje GameInput, środowiska Visual C++ Runtime lub Gaming Services, LeviLauncher przeprowadzi Cię przez ich instalację przed uruchomieniem.",
-      "content_section": "Zarządzanie treścią na stronie głównej pokazuje światy, mody, paczki i więcej z bieżącej instancji; wybierz wiersz, aby go otworzyć.",
+      "mods_card": "Karta Mody pokazuje włączone mody bieżącej instancji i jednym kliknięciem otwiera pełną stronę modów.",
+      "content_counts_card": "Karta Zawartość pokazuje liczbę światów, pakietów zasobów i pakietów zachowań, a każdy wiersz otwiera odpowiednią stronę.",
       "content_download_sources": "Użyj karty pobierania, aby przeglądać zasoby z CurseForge lub LeviMC Mods bez opuszczania launchera.",
       "settings_personalize": "W Ustawieniach dostosujesz motyw, kolor, tło i inne opcje wyglądu do swoich preferencji.",
       "settings_storage_path": "Ścieżki przechowywania możesz zmienić w Ustawieniach. Przed przeniesieniem zawartości upewnij się, że katalog docelowy jest zapisywalny.",

@@ -67,7 +67,7 @@ async function run(viewport) {
     await page.evaluate(content => {
       history.pushState({ usr: null, key: 'uwp-content', idx: 1 }, '', `#${content}`);
       dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
-    }, ROUTES.home);
+    }, ROUTES.content);
     const openContent = page.getByRole('button', { name: translations.common.open, exact: true });
     await openContent.waitFor();
     await page.getByText(translations.common.yes, { exact: true }).waitFor();
@@ -114,7 +114,7 @@ async function run(viewport) {
     await page.evaluate(content => {
       history.pushState({ usr: null, key: 'uwp-shared-content', idx: 2 }, '', `#${content}`);
       dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
-    }, ROUTES.home);
+    }, ROUTES.content);
     await page.getByText(translations.uwp.shared_content, { exact: true }).waitFor();
     await page.getByRole('button', { name: translations.contentpage.transfer_resources_button, exact: true }).click();
     transfer = page.getByRole('dialog');

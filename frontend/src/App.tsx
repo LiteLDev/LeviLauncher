@@ -72,6 +72,7 @@ const InstanceSelectPage = lazy(() =>
 const InstanceSettingsPage = lazy(() => import("@/pages/InstanceSettingsPage"));
 const ModsPage = lazy(() => import("@/pages/ModsPage"));
 const UpdatingPage = lazy(() => import("@/pages/UpdatingPage"));
+const ContentPage = lazy(() => import("@/pages/ContentPage"));
 const WorldsListPage = lazy(() => import("@/pages/WorldsListPage"));
 const WorldLevelDatEditorPage = lazy(
   () => import("@/pages/WorldLevelDatEditorPage"),
@@ -458,10 +459,7 @@ function App() {
                               />
                               <Route
                                 path={ROUTES.content}
-                                element={
-                                  // Content management lives on Home.
-                                  <Navigate to={ROUTES.home} replace />
-                                }
+                                element={<ContentPage />}
                               />
                               <Route
                                 path={ROUTES.contentWorlds}

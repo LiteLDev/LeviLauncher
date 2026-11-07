@@ -131,12 +131,13 @@
       "unknown": "Desconocido"
     },
     "tip": {
-      "version_selector": "Cambia la instancia actual desde el selector de la barra superior; todas las páginas que usan una instancia la siguen.",
-      "sidebar_toggle": "Usa el botón de la parte inferior de la barra lateral para mostrar u ocultar sus etiquetas.",
-      "manage_versions": "Abre Instancias en la barra lateral para instalar, importar u organizar instancias.",
+      "version_selector": "Usa la lista desplegable de instancias para cambiar rápidamente de instancia.",
+      "version_search": "Busque por nombre de instancia o versión del juego antes de seleccionar de la lista desplegable.",
+      "manage_versions": "Selecciona «Instancias» en el panel desplegable para instalar, importar u organizar instancias.",
       "quick_actions_menu": "El menú junto al botón de inicio proporciona configuración de instancia, acceso directo al escritorio, carpeta del juego y acciones de registro del sistema.",
       "launch_dependencies": "Si faltan GameInput, el tiempo de ejecución de Visual C++ o Gaming Services, LeviLauncher te guiará para instalarlos antes de iniciar.",
-      "content_section": "La gestión de contenido de Inicio muestra los mundos, mods, paquetes y más de la instancia actual; elige una fila para abrirla.",
+      "mods_card": "La tarjeta de Mods muestra los mods habilitados para la instancia actual y abre la página completa de Mods con un clic.",
+      "content_counts_card": "La tarjeta de Contenido muestra las cantidades de mundos, paquetes de recursos y paquetes de comportamiento, y cada fila abre la página correspondiente.",
       "content_download_sources": "Use la tarjeta de descarga para navegar por fuentes de contenido de CurseForge o LeviMC Mods sin salir del lanzador.",
       "settings_personalize": "Configuración le permite ajustar el tema, color, fondo y otras opciones de apariencia para que coincidan con su configuración.",
       "settings_storage_path": "Puede cambiar las rutas de almacenamiento en Configuración. Asegúrese de que el directorio de destino tenga permisos de escritura antes de mover contenido.",

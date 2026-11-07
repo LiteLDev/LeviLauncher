@@ -1,0 +1,11 @@
+{
+  "shell": {
+    "nav": {
+      "content": "內容",
+      "discover": "探索"
+    },
+    "search": "搜尋命令",
+    "search_placeholder": "搜尋…",
+    "activity_unread": "動態，{{count}} 則未讀"
+  }
+}

@@ -33,7 +33,7 @@ async function run(viewport, tc) {
     await page.goto(`${baseURL}?${params}#${ROUTES.instanceSettings}`);
     const toggle = page.getByRole('switch', { name: translations.versions.edit.enable_editor_mode, exact: true });
     await toggle.waitFor();
-    await page.getByText(tc.version, { exact: true }).waitFor();
+    await page.locator('main').getByText(tc.version, { exact: true }).waitFor();
     const minimum = tc.channel === 'preview' ? '1.19.80.20' : '1.21.50';
     const hint = page.getByText(translations.versions.edit.editor_min_version.replace('{{version}}', minimum), { exact: true });
     await hint.waitFor();
@@ -67,7 +67,7 @@ async function run(viewport, tc) {
       dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
     }, { usr: state, route: ROUTES.instanceSettings });
     await toggle.waitFor();
-    await page.getByText(tc.version, { exact: true }).waitFor();
+    await page.locator('main').getByText(tc.version, { exact: true }).waitFor();
     if (tc.supported) {
       await page.waitForFunction(() => !document.querySelector('input[role="switch"]').disabled);
       assert.equal(await toggle.isChecked(), true, 'supported setting must persist after reopening');

@@ -1,0 +1,11 @@
+{
+  "shell": {
+    "nav": {
+      "content": "Contenu",
+      "discover": "Découvrir"
+    },
+    "search": "Rechercher des commandes",
+    "search_placeholder": "Rechercher…",
+    "activity_unread": "Activité, {{count}} non lues"
+  }
+}

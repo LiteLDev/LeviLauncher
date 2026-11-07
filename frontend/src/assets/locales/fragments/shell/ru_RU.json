@@ -1,0 +1,11 @@
+{
+  "shell": {
+    "nav": {
+      "content": "Контент",
+      "discover": "Обзор"
+    },
+    "search": "Поиск команд",
+    "search_placeholder": "Поиск…",
+    "activity_unread": "Активность, непрочитанных: {{count}}"
+  }
+}

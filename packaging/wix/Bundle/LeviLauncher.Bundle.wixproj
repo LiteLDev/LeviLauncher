@@ -1,0 +1,22 @@
+<Project Sdk="WixToolset.Sdk/7.0.1">
+
+  <PropertyGroup>
+    <OutputType>Bundle</OutputType>
+    <OutputName>LeviLauncher-setup</OutputName>
+    <AcceptEula>wix7</AcceptEula>
+    <IconFile>$(MSBuildThisFileDirectory)..\..\..\build\windows\icon.ico</IconFile>
+    <!-- The .wxl files are payloads of the bootstrapper application, not localizations of the bundle. -->
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <DefineConstants>$(DefineConstants);BundleVersion=$(BundleVersion);IconFile=$(IconFile);VCRuntimeArch=$(Platform);VCRuntimeInstaller=$(VCRuntimeInstaller);WebView2Installer=$(WebView2Installer)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.BootstrapperApplications.wixext" Version="7.0.1" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="7.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Package\LeviLauncher.Package.wixproj" />
+  </ItemGroup>
+
+</Project>

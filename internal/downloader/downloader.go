@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type Events struct {
@@ -63,6 +63,20 @@ type state struct {
 	running          bool
 	transferComplete bool
 	cancelFn         context.CancelFunc
+	// unlock releases dest's lock file (see lockDownload); nil when the
+	// task holds none.
+	unlock func()
+}
+
+// dropTask removes s from the tasks and releases its lock. m.mu is held.
+func (m *Manager) dropTask(s *state) {
+	if cur, ok := m.tasks[s.dest]; ok && cur == s {
+		delete(m.tasks, s.dest)
+	}
+	if s.unlock != nil {
+		s.unlock()
+		s.unlock = nil
+	}
 }
 
 func NewManager(events Events, opts Options) *Manager {
@@ -74,22 +88,36 @@ func NewManager(events Events, opts Options) *Manager {
 		opts:   opts,
 		tasks:  map[string]*state{},
 		emitEvent: func(name string, data ...any) bool {
-			return application.Get().Event.Emit(name, data...)
+			eventsink.Emit(name, data...)
+			return true
 		},
 	}
 }
 
+// Start starts a download to dest. A download that cannot start (another
+// process holds dest's lock) is reported as an error event.
 func (m *Manager) Start(ctx context.Context, src string, dest string, md5sum string) string {
+	if _, err := m.start(ctx, src, dest, md5sum, nil); err != nil {
+		m.emitError(err.Error(), dest)
+	}
+	return dest
+}
+
+// StartChecked is Start for a caller that reports a download that cannot
+// start itself: it returns the error (ErrBusy when another process is
+// downloading dest) and emits no event.
+func (m *Manager) StartChecked(ctx context.Context, src, dest, md5sum string) (string, error) {
 	return m.start(ctx, src, dest, md5sum, nil)
 }
 
 // StartVerified publishes the final file only after a package-specific integrity
 // check. Progress and cancellation retain the same destination and event shape.
-func (m *Manager) StartVerified(ctx context.Context, src, dest string, verify func(string) error) string {
+// Like StartChecked, it returns the error of a download that cannot start.
+func (m *Manager) StartVerified(ctx context.Context, src, dest string, verify func(string) error) (string, error) {
 	return m.start(ctx, src, dest, "", verify)
 }
 
-func (m *Manager) start(ctx context.Context, src, dest, md5sum string, verify func(string) error) string {
+func (m *Manager) start(ctx context.Context, src, dest, md5sum string, verify func(string) error) (string, error) {
 	dir := filepath.Dir(dest)
 	if dir != "" {
 		_ = os.MkdirAll(dir, 0o755)
@@ -101,7 +129,7 @@ func (m *Manager) start(ctx context.Context, src, dest, md5sum string, verify fu
 	if existing, ok := m.tasks[dest]; ok && existing != nil && existing.running {
 		m.mu.Unlock()
 		m.emitStatus("started", dest)
-		return dest
+		return dest, nil
 	}
 	local := &state{
 		ctx:         ctx,
@@ -111,11 +139,24 @@ func (m *Manager) start(ctx context.Context, src, dest, md5sum string, verify fu
 		verify:      verify,
 		running:     true,
 	}
+	// The task keeps dest's lock until it ends, so another process (the
+	// command line) does not write the same partial file meanwhile. A
+	// paused task being replaced hands its lock over.
+	if existing, ok := m.tasks[dest]; ok && existing != nil && existing.unlock != nil {
+		local.unlock, existing.unlock = existing.unlock, nil
+	} else {
+		unlock, err := lockDownload(dest)
+		if err != nil {
+			m.mu.Unlock()
+			return "", err
+		}
+		local.unlock = unlock
+	}
 	m.tasks[dest] = local
 	m.mu.Unlock()
 	go m.run(local)
 	m.emitStatus("started", dest)
-	return dest
+	return dest, nil
 }
 
 func (m *Manager) Pause() {
@@ -152,7 +193,7 @@ func (m *Manager) Resume() {
 
 func (m *Manager) Cancel() {
 	m.mu.Lock()
-	for dest, st := range m.tasks {
+	for _, st := range m.tasks {
 		if st == nil {
 			continue
 		}
@@ -164,7 +205,7 @@ func (m *Manager) Cancel() {
 			if m.opts.RemoveOnCancel {
 				_ = os.Remove(fsx.PartialPath(st.dest))
 			}
-			delete(m.tasks, dest)
+			m.dropTask(st)
 		}
 		m.emitStatus("cancelled", st.dest)
 	}
@@ -205,7 +246,7 @@ func (m *Manager) CancelTask(dest string) {
 			if m.opts.RemoveOnCancel {
 				_ = os.Remove(fsx.PartialPath(st.dest))
 			}
-			delete(m.tasks, dest)
+			m.dropTask(st)
 		}
 		m.emitStatus("cancelled", st.dest)
 	}
@@ -223,7 +264,7 @@ func (m *Manager) run(s *state) {
 		if local != nil {
 			local.running = false
 			if local.cancelled {
-				delete(m.tasks, local.dest)
+				m.dropTask(local)
 			}
 		}
 		m.mu.Unlock()
@@ -260,7 +301,7 @@ func (m *Manager) run(s *state) {
 		if m.tasks[local.dest] != local || local.cancelled || local.paused {
 			local.running = false
 			if local.cancelled && m.tasks[local.dest] == local {
-				delete(m.tasks, local.dest)
+				m.dropTask(local)
 			}
 			m.mu.Unlock()
 			cancel()
@@ -481,7 +522,7 @@ func (m *Manager) verifyAndPublish(local *state, downloadDest string) bool {
 	err := os.Rename(downloadDest, local.dest)
 	progress := DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest}
 	local.running = false
-	delete(m.tasks, local.dest)
+	m.dropTask(local)
 	m.mu.Unlock()
 	if err != nil {
 		m.emitError(err.Error(), local.dest)
@@ -532,11 +573,7 @@ func (m *Manager) finishRunning(s *state) {
 	cancel := s.cancelFn
 	s.cancelFn = nil
 	if s.cancelled || !s.paused {
-		if m.tasks != nil {
-			if cur, ok := m.tasks[s.dest]; ok && cur == s {
-				delete(m.tasks, s.dest)
-			}
-		}
+		m.dropTask(s)
 	}
 	m.mu.Unlock()
 	if cancel != nil {

@@ -1,0 +1,220 @@
+<Wix
+  xmlns="http://wixtoolset.org/schemas/v4/wxs"
+  xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <Package
+    Name="LeviLauncher"
+    Manufacturer="LeviMC"
+    Version="$(ProductVersion)"
+    UpgradeCode="{7CC930FD-384A-41C0-B5C0-286DDA4A0257}"
+    Scope="perMachine">
+
+    <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
+      DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!--
+      The package owns its install folder, so its files always replace what is there. With the
+      default "omus", a LeviLauncher.exe of a higher version, such as one an Inno Setup
+      installer put there, makes Windows Installer skip the whole component.
+    -->
+    <Property Id="REINSTALLMODE" Value="amus" />
+
+    <Icon Id="LeviLauncher.ico" SourceFile="$(IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="LeviLauncher.ico" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/LiteLDev/LeviLauncher" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/LiteLDev/LeviLauncher/issues" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" />
+
+    <!--
+      Set by setup.exe from its options and uninstall pages. Secure, so that they also reach
+      the elevated part of an msiexec installation started by a standard user.
+    -->
+    <Property Id="INSTALLFOLDER" Secure="yes" />
+    <!-- 1 creates the desktop shortcut. -->
+    <Property Id="DESKTOPSHORTCUT" Secure="yes" />
+    <!-- 1 deletes the matching folder of the instance library on uninstall. -->
+    <Property Id="DELETEINSTALLERS" Value="0" Secure="yes" />
+    <Property Id="DELETEBACKUPS" Value="0" Secure="yes" />
+    <Property Id="DELETEVERSIONS" Value="0" Secure="yes" />
+
+    <!--
+      Without setup.exe, which remembers them itself, an upgrade keeps the install folder and
+      the desktop shortcut of the installed version, or upgrades an Inno Setup installation in
+      place. Searched into separate properties, as AppSearch would override the command line.
+    -->
+    <Property Id="PREVIOUSINSTALLFOLDER">
+      <RegistrySearch Root="HKLM" Key="SOFTWARE\LeviMC\LeviLauncher" Name="InstallFolder" Type="raw" Bitness="always64" />
+    </Property>
+    <Property Id="PREVIOUSDESKTOPSHORTCUT">
+      <RegistrySearch Root="HKLM" Key="SOFTWARE\LeviMC\LeviLauncher" Name="DesktopShortcut" Type="raw" Bitness="always64" />
+    </Property>
+    <Property Id="INNOINSTALLFOLDER">
+      <RegistrySearch
+        Root="HKLM"
+        Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\org.levimc.launcher_is1"
+        Name="InstallLocation"
+        Type="raw"
+        Bitness="always64" />
+    </Property>
+    <SetProperty
+      Id="INSTALLFOLDER"
+      Action="SetInstallFolderFromInno"
+      Value="[INNOINSTALLFOLDER]"
+      Before="CostInitialize"
+      Sequence="both"
+      Condition="NOT INSTALLFOLDER AND NOT PREVIOUSINSTALLFOLDER AND INNOINSTALLFOLDER" />
+    <SetProperty
+      Id="INSTALLFOLDER"
+      Action="SetInstallFolderFromPrevious"
+      Value="[PREVIOUSINSTALLFOLDER]"
+      Before="SetInstallFolderFromInno"
+      Sequence="both"
+      Condition="NOT INSTALLFOLDER AND PREVIOUSINSTALLFOLDER" />
+    <!-- A registry DWORD reads as #1. setup.exe always passes 0 or 1, which takes precedence. -->
+    <SetProperty
+      Id="DESKTOPSHORTCUT"
+      Value="1"
+      Before="CostInitialize"
+      Sequence="both"
+      Condition="NOT DESKTOPSHORTCUT AND PREVIOUSDESKTOPSHORTCUT" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="LEVIMCFOLDER" Name="LeviMC">
+        <Directory Id="INSTALLFOLDER" Name="LeviLauncher" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <!-- The Start Menu group of the Inno Setup installer. -->
+      <Directory Id="InnoProgramMenuFolder" Name="LeviLauncher" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Component Id="LeviLauncher" Directory="INSTALLFOLDER">
+      <File Id="LeviLauncherExe" Source="$(BinDir)\LeviLauncher.exe">
+        <Shortcut
+          Id="StartMenuShortcut"
+          Directory="ProgramMenuFolder"
+          Name="LeviLauncher"
+          WorkingDirectory="INSTALLFOLDER"
+          Advertise="no" />
+      </File>
+
+      <!-- Read by setup.exe, so that an upgrade keeps the install folder and the desktop shortcut choice. -->
+      <RegistryValue
+        Root="HKLM"
+        Key="SOFTWARE\LeviMC\LeviLauncher"
+        Name="InstallFolder"
+        Type="string"
+        Value="[INSTALLFOLDER]" />
+
+      <!-- Windows Installer keeps directories that already existed, e.g. from an Inno Setup installation. -->
+      <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
+      <!-- Only removed when empty, like the Inno Setup uninstaller did. -->
+      <RemoveFolder Id="RemoveLeviMCFolder" Directory="LEVIMCFOLDER" On="uninstall" />
+    </Component>
+
+    <!--
+      A component of its own, keyed by a registry value rather than a versioned file, so that it
+      is installed whatever the version of a LeviLauncher.exe found in the install folder.
+    -->
+    <Component Id="LegacyInstallerCleanup" Directory="INSTALLFOLDER">
+      <RegistryValue
+        Root="HKLM"
+        Key="SOFTWARE\LeviMC\LeviLauncher"
+        Name="LegacyInstallerCleanup"
+        Type="integer"
+        Value="1"
+        KeyPath="yes" />
+
+      <!--
+        Versions up to 1.0.7 were installed by an Inno Setup installer, and earlier ones by NSIS.
+        Their uninstallers are not run: the Inno Setup one deletes config.json and other user data
+        of the launcher. Instead the files they left in the install folder, their shortcuts and
+        their entries in Installed Apps are removed here. Entries of NSIS in HKCU belong to the
+        user who installed it, which a per-machine package cannot reliably reach; the Inno Setup
+        installer already removed them when it upgraded such an installation.
+      -->
+      <RemoveFile Id="RemoveInnoUninstaller" Name="unins000.exe" On="install" />
+      <RemoveFile Id="RemoveInnoUninstallerData" Name="unins000.dat" On="install" />
+      <RemoveFile Id="RemoveNsisUninstaller" Name="uninstall.exe" On="install" />
+      <RemoveFile Id="RemoveInnoStartMenuShortcut" Directory="InnoProgramMenuFolder" Name="LeviLauncher.lnk" On="install" />
+      <RemoveFolder Id="RemoveInnoStartMenuFolder" Directory="InnoProgramMenuFolder" On="install" />
+      <!-- The desktop shortcut below is created after this removal when it is wanted. -->
+      <RemoveFile Id="RemoveInnoDesktopShortcut" Directory="DesktopFolder" Name="LeviLauncher.lnk" On="install" />
+      <RemoveRegistryKey
+        Root="HKLM"
+        Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\org.levimc.launcher_is1"
+        Action="removeOnInstall" />
+      <RemoveRegistryKey
+        Root="HKLM"
+        Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\LeviMCLeviLauncher"
+        Action="removeOnInstall" />
+      <RemoveRegistryKey
+        Root="HKLM"
+        Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\LeviLauncher"
+        Action="removeOnInstall" />
+    </Component>
+
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Condition="DESKTOPSHORTCUT = 1">
+      <Shortcut
+        Id="DesktopShortcut"
+        Name="LeviLauncher"
+        Target="[INSTALLFOLDER]LeviLauncher.exe"
+        WorkingDirectory="INSTALLFOLDER" />
+      <RegistryValue
+        Root="HKLM"
+        Key="SOFTWARE\LeviMC\LeviLauncher"
+        Name="DesktopShortcut"
+        Type="integer"
+        Value="1"
+        KeyPath="yes" />
+    </Component>
+
+    <!--
+      A running launcher keeps EBWebView open and would write config.json again after the
+      cleanup below, so it is closed first: politely, then forcibly after 5 seconds. Restart
+      Manager alone would leave the decision to the user, and to nobody in a quiet uninstall.
+    -->
+    <util:CloseApplication
+      Id="CloseLauncher"
+      Target="LeviLauncher.exe"
+      CloseMessage="yes"
+      ElevatedCloseMessage="yes"
+      RebootPrompt="no"
+      TerminateProcess="1"
+      Timeout="5" />
+
+    <!--
+      Deletes the data of the launcher in %APPDATA% and %LOCALAPPDATA%, and the folders of its data root
+      selected on the uninstall page of setup.exe. Impersonated, because that data belongs to the
+      user who uninstalls, not to LocalSystem. Not run by upgrades, which keep all data.
+    -->
+    <CustomAction
+      Id="UninstallCleanup"
+      FileRef="LeviLauncherExe"
+      ExeCommand="--uninstall-cleanup --delete-installers=[DELETEINSTALLERS] --delete-backups=[DELETEBACKUPS] --delete-versions=[DELETEVERSIONS]"
+      Execute="deferred"
+      Impersonate="yes"
+      Return="ignore" />
+
+    <InstallExecuteSequence>
+      <!-- The util extension schedules it just before InstallFiles, after the cleanup. -->
+      <Custom
+        Action="override Wix4CloseApplications_$(sys.BUILDARCHSHORT)"
+        Before="UninstallCleanup"
+        Condition="VersionNT &gt; 400" />
+      <Custom
+        Action="UninstallCleanup"
+        Before="RemoveFiles"
+        Condition="REMOVE~=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+
+  </Package>
+
+</Wix>

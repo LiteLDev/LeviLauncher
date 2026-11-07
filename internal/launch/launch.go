@@ -13,6 +13,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/versions"
@@ -50,12 +51,14 @@ func QuitRequested() bool {
 // through here.
 func QuitLauncher() {
 	quitRequested.Store(true)
-	application.Get().Quit()
+	if app := application.Get(); app != nil {
+		app.Quit()
+	}
 }
 
 func EnsureGamingServicesInstalled(ctx context.Context) bool {
 	if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err != nil {
-		application.Get().Event.Emit(EventGamingServicesMissing, struct{}{})
+		eventsink.From(ctx).Emit(EventGamingServicesMissing, struct{}{})
 		return false
 	}
 	return true
@@ -191,30 +194,75 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 	monitorGameProcess(ctx, versionDir, launchPID, false)
 }
 
+// Default limits of the game monitor: how long it waits for the game
+// process, and then for its window.
+const (
+	defaultProcessTimeout = 120 * time.Second
+	defaultWindowTimeout  = 60 * time.Second
+)
+
+type monitorTimeoutsKey struct{}
+
+type monitorTimeouts struct{ process, window time.Duration }
+
+// WithMonitorTimeouts makes a monitor started under ctx wait up to process
+// for the game process and then up to window for its window, instead of the
+// defaults (120s and 60s). A value <= 0 keeps that default.
+func WithMonitorTimeouts(ctx context.Context, process, window time.Duration) context.Context {
+	return context.WithValue(ctx, monitorTimeoutsKey{}, monitorTimeouts{process, window})
+}
+
+func timeoutsFrom(ctx context.Context) (process, window time.Duration) {
+	process, window = defaultProcessTimeout, defaultWindowTimeout
+	if t, ok := ctx.Value(monitorTimeoutsKey{}).(monitorTimeouts); ok {
+		if t.process > 0 {
+			process = t.process
+		}
+		if t.window > 0 {
+			window = t.window
+		}
+	}
+	return process, window
+}
+
 // The caller owns the activeMonitors entry, including during UWP activation.
 func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, launchBehaviorApplied bool) {
 	defer activeMonitors.Delete(versionDir)
+	process, window := timeoutsFrom(ctx)
+	monitorWithTimeouts(ctx, versionDir, launchPID, launchBehaviorApplied, process, window)
+}
 
+// monitorWithTimeouts waits up to processTimeout for the game process and
+// then up to windowTimeout for its window, and reports the outcome.
+func monitorWithTimeouts(ctx context.Context, versionDir string, launchPID int, launchBehaviorApplied bool, processTimeout, windowTimeout time.Duration) {
 	var pid uint32
 	if launchPID > 0 {
 		pid = uint32(launchPID)
 	}
 
-	found, launchExited, canceled := waitForGameProcess(ctx, versionDir, pid, 120*time.Second)
+	found, launchExited, canceled := waitForGameProcess(ctx, versionDir, pid, processTimeout)
 	if canceled {
 		return
 	}
+
+	// Without a launcher window (the command line) there is nothing to
+	// minimise, restore or quit, and no Discord presence to update: the
+	// monitor only reports the outcome.
+	gui := eventsink.HasApplication()
+	sink := eventsink.From(ctx)
 
 	if !found {
 		if launchBehaviorApplied && !userHidLauncher.Load() {
 			RestoreLauncherWindow()
 		}
 		if launchExited {
-			application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
+			sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
 		} else {
-			application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_TIMEOUT")
+			sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_TIMEOUT")
 		}
-		discord.SetLauncherIdle()
+		if gui {
+			discord.SetLauncherIdle()
+		}
 		return
 	}
 
@@ -222,7 +270,7 @@ func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, l
 	// have minimized the game since then; do not wait for it to reappear.
 	visible := launchBehaviorApplied
 	if !visible {
-		found, visible, canceled = waitForGameWindow(ctx, versionDir, 60*time.Second)
+		found, visible, canceled = waitForGameWindow(ctx, versionDir, windowTimeout)
 	}
 	if canceled {
 		return
@@ -232,12 +280,24 @@ func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, l
 		if launchBehaviorApplied && !userHidLauncher.Load() {
 			RestoreLauncherWindow()
 		}
-		application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
-		discord.SetLauncherIdle()
+		sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
+		if gui {
+			discord.SetLauncherIdle()
+		}
 		return
 	}
 
-	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+	if !gui {
+		// Without a window to restore, a game that never showed one is a
+		// timeout for the caller (the command line), not a success.
+		if !visible {
+			sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_TIMEOUT")
+			return
+		}
+		sink.Emit(EventMcLaunchDone, struct{}{})
+		return
+	}
+	sink.Emit(EventMcLaunchDone, struct{}{})
 
 	// waitForGameWindow reports found without visible when it times out: the
 	// game process is alive but never put a window on screen. Getting the
@@ -288,7 +348,11 @@ func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, l
 // yet: a monitor started from the single-instance pipe can run before the
 // window is created.
 func GetMainWindow() application.Window {
-	w, ok := application.Get().Window.GetByName("main")
+	app := application.Get()
+	if app == nil || app.Window == nil {
+		return nil
+	}
+	w, ok := app.Window.GetByName("main")
 	if !ok {
 		return nil
 	}

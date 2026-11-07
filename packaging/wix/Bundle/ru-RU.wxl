@@ -1,0 +1,74 @@
+<!-- Translated from HyperlinkTheme.wxl of WiX Toolset v7.0.1. Copyright (c) .NET Foundation and contributors. All rights reserved. Licensed under the Microsoft Reciprocal License. The strings of the options and uninstall pages are those of the former Inno Setup installer. -->
+
+
+<WixLocalization Culture="ru-ru" Language="1049" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="Caption" Value="Установка [WixBundleName]" />
+  <String Id="Title" Value="[WixBundleName]" />
+  <String Id="CheckingForUpdatesLabel" Value="Проверка обновлений" />
+  <String Id="UpdateButton" Value="&amp;Обновить до версии [WixStdBAUpdateAvailable]" />
+  <String Id="InstallHeader" Value="Добро пожаловать" />
+  <String Id="InstallMessage" Value="Программа установит [WixBundleName] на ваш компьютер. Нажмите «Установить», чтобы продолжить, или «Отмена», чтобы выйти." />
+  <String Id="InstallMessageOptions" Value="Программа установит [WixBundleName] на ваш компьютер. Нажмите «Установить», чтобы продолжить, «Параметры», чтобы настроить установку, или «Отмена», чтобы выйти." />
+  <String Id="InstallVersion" Value="Версия [WixBundleVersion]" />
+  <String Id="ConfirmCancelMessage" Value="Вы действительно хотите отменить установку?" />
+  <String Id="ExecuteUpgradeRelatedBundleMessage" Value="Предыдущая версия" />
+  <String Id="HelpHeader" Value="Справка по установке" />
+  <String Id="HelpText" Value="/install | /repair | /uninstall | /layout [directory] - установка, восстановление, удаление&#xA;   или создание полной локальной копии пакета в directory. По умолчанию — установка.&#xA;&#xA;/passive | /quiet - минимальный интерфейс без запросов или работа без интерфейса&#xA;   и запросов. По умолчанию отображаются интерфейс и все запросы.&#xA;&#xA;/norestart   - не выполнять перезагрузку. По умолчанию перед перезагрузкой выводится запрос.&#xA;/log log.txt - запись журнала в указанный файл. По умолчанию журнал создаётся в %TEMP%." />
+  <String Id="HelpCloseButton" Value="&amp;Закрыть" />
+  <String Id="InstallLicenseLinkText" Value="[WixBundleName] — свободное программное обеспечение, распространяемое по лицензии &lt;a href=&quot;#&quot;&gt;GNU General Public License v3&lt;/a&gt;." />
+  <String Id="InstallOptionsButton" Value="&amp;Параметры" />
+  <String Id="InstallInstallButton" Value="&amp;Установить" />
+  <String Id="InstallCancelButton" Value="&amp;Отмена" />
+  <String Id="OptionsHeader" Value="Параметры установки" />
+  <String Id="OptionsLocationLabel" Value="Папка установки:" />
+  <String Id="OptionsDesktopShortcutCheckbox" Value="Создать значок на &amp;Рабочем столе" />
+  <String Id="OptionsBrowseButton" Value="&amp;Обзор" />
+  <String Id="OptionsOkButton" Value="&amp;ОК" />
+  <String Id="OptionsCancelButton" Value="&amp;Отмена" />
+  <String Id="ProgressHeader" Value="Ход установки" />
+  <String Id="ProgressLabel" Value="Обработка:" />
+  <String Id="OverallProgressPackageText" Value="Инициализация..." />
+  <String Id="ProgressCancelButton" Value="&amp;Отмена" />
+  <String Id="ModifyHeader" Value="Изменение установки" />
+  <String Id="UninstallOptionsDesc" Value="Данные библиотеки сборок сохраняются по умолчанию. При удалении будут удалены только выбранные ниже элементы." />
+  <String Id="UninstallDeleteInstallers" Value="Удалить загруженные пакеты (Cache)" />
+  <String Id="UninstallDeleteBackups" Value="Удалить резервные копии (Backups)" />
+  <String Id="UninstallDeleteVersions" Value="[Высокий риск] Удалить сборки игры (Instances)" />
+  <String Id="UninstallDangerNote" Value="Выбранные папки будут удалены безвозвратно." />
+  <String Id="ModifyRepairButton" Value="&amp;Восстановить" />
+  <String Id="ModifyUninstallButton" Value="&amp;Удалить" />
+  <String Id="ModifyCancelButton" Value="&amp;Отмена" />
+  <String Id="SuccessHeader" Value="Установка выполнена" />
+  <String Id="SuccessCacheHeader" Value="Кэширование успешно завершено" />
+  <String Id="SuccessInstallHeader" Value="Установка успешно завершена" />
+  <String Id="SuccessLayoutHeader" Value="Создание копии успешно завершено" />
+  <String Id="SuccessModifyHeader" Value="Изменение успешно завершено" />
+  <String Id="SuccessRepairHeader" Value="Восстановление успешно завершено" />
+  <String Id="SuccessUninstallHeader" Value="Удаление успешно завершено" />
+  <String Id="SuccessUnsafeUninstallHeader" Value="Удаление успешно завершено" />
+  <String Id="SuccessLaunchButton" Value="&amp;Запустить" />
+  <String Id="SuccessRestartText" Value="Перед использованием программы необходимо перезагрузить компьютер." />
+  <String Id="SuccessUninstallRestartText" Value="Для завершения удаления программы необходимо перезагрузить компьютер." />
+  <String Id="SuccessRestartButton" Value="&amp;Перезагрузить" />
+  <String Id="SuccessCloseButton" Value="&amp;Закрыть" />
+  <String Id="FailureHeader" Value="Ошибка установки" />
+  <String Id="FailureCacheHeader" Value="Ошибка кэширования" />
+  <String Id="FailureInstallHeader" Value="Ошибка установки" />
+  <String Id="FailureLayoutHeader" Value="Ошибка создания копии" />
+  <String Id="FailureModifyHeader" Value="Ошибка изменения" />
+  <String Id="FailureRepairHeader" Value="Ошибка восстановления" />
+  <String Id="FailureUninstallHeader" Value="Ошибка удаления" />
+  <String Id="FailureUnsafeUninstallHeader" Value="Ошибка удаления" />
+  <String Id="FailureHyperlinkLogText" Value="Установка не выполнена из-за одной или нескольких проблем. Устраните их и повторите установку. Подробности см. в &lt;a href=&quot;#&quot;&gt;файле журнала&lt;/a&gt;." />
+  <String Id="FailureRestartText" Value="Для завершения отката программы необходимо перезагрузить компьютер." />
+  <String Id="FailureRestartButton" Value="&amp;Перезагрузить" />
+  <String Id="FailureCloseButton" Value="&amp;Закрыть" />
+  <String Id="FilesInUseTitle" Value="Файлы используются" />
+  <String Id="FilesInUseLabel" Value="Следующие приложения используют файлы, которые необходимо обновить:" />
+  <String Id="FilesInUseNetfxCloseRadioButton" Value="&amp;Закрыть приложения." />
+  <String Id="FilesInUseCloseRadioButton" Value="&amp;Закрыть приложения и попытаться перезапустить их." />
+  <String Id="FilesInUseDontCloseRadioButton" Value="&amp;Не закрывать приложения. Потребуется перезагрузка." />
+  <String Id="FilesInUseRetryButton" Value="&amp;Повторить" />
+  <String Id="FilesInUseIgnoreButton" Value="&amp;Пропустить" />
+  <String Id="FilesInUseExitButton" Value="&amp;Выход" />
+</WixLocalization>

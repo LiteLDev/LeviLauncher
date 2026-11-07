@@ -12,21 +12,17 @@ import (
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	lipconfig "github.com/liteldev/LeviLauncher/internal/lipcore/config"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/lipdirs"
 	"github.com/liteldev/LeviLauncher/internal/utils"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 const defaultLipGithubProxy = "https://github.bibk.top"
 
 // emitEvent sends an application event; replaced in tests.
 var emitEvent = func(event string, data any) {
-	app := application.Get()
-	if app == nil {
-		return
-	}
-	app.Event.Emit(event, data)
+	eventsink.Emit(event, data)
 }
 
 // Proxy configuration sources; replaced in tests.

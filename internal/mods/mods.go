@@ -596,7 +596,8 @@ func ImportDllToMods(mcname string, dllFileName string, data []byte, modName str
 	if finalName == "" {
 		finalName = base
 	}
-	if finalName == "" {
+	// The name is one folder under mods: never a path that leaves it.
+	if finalName == "" || finalName == "." || finalName == ".." || strings.ContainsAny(finalName, `/\:`) {
 		return "ERR_INVALID_NAME"
 	}
 	if strings.TrimSpace(modType) == "" {

@@ -1,0 +1,21 @@
+<Project Sdk="WixToolset.Sdk/7.0.1">
+
+  <PropertyGroup>
+    <OutputName>LeviLauncher</OutputName>
+    <AcceptEula>wix7</AcceptEula>
+    <IconFile>$(MSBuildThisFileDirectory)..\..\..\build\windows\icon.ico</IconFile>
+    <DefineConstants>$(DefineConstants);ProductVersion=$(ProductVersion);BinDir=$(BinDir);IconFile=$(IconFile)</DefineConstants>
+    <!--
+      ICE09, ICE32 and ICE61 are implemented in VBScript, which recent Windows versions no longer
+      ship. ICE38, ICE43 and ICE57 expect shortcuts in the user's profile, but a per-machine
+      package installs them to the Start Menu and desktop of all users. ICE40 warns about the
+      REINSTALLMODE that Package.wxs sets on purpose.
+    -->
+    <SuppressIces>ICE09;ICE32;ICE61;ICE38;ICE43;ICE57;ICE40</SuppressIces>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="7.0.1" />
+  </ItemGroup>
+
+</Project>

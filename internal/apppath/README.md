@@ -73,9 +73,13 @@ N9 保留的名称：
 
 旧布局是 `%APPDATA%\<exe 名>\`，里面放 `config.json`、`logs\`、`microsoft-account\`、`EBWebView\`、`user_gamertag_map.json`、`gdk_pending_versions.json`，数据根下是 `versions\`、`backups\`、`installers\`、`updates\`。实例里则是 `version.json`、`LargeLogo.ico` 和 `.levilauncher-xbox-auth-key-v1`。
 
-`internal/storage` 在启动时迁移旧布局：拿到单实例锁之后、读 `config.json` 之前执行，只在新的 `config.json` 不存在时运行。
+`internal/storage` 在启动时迁移旧布局：拿到单实例锁之后、读 `config.json` 之前执行。是否迁移只看旧数据，不看新布局：旧目录里还有 `config.json`（旧版启动器第一次启动就会写），或者默认数据根下还有 `versions\`、`backups\`、`installers\`、`updates\`（按原大小写匹配），就要迁移，不管新的 `config.json` 是否已经存在。`microsoft-account\`、`EBWebView\`、`logs\` 单独存在不算，因为跨卷迁移会复制它们并保留原件。
 
-- **无损：** 只在同一个卷上 rename；跨卷时复制，并保留旧文件。旧布局里的文件一个都不删，旧的 `config.json` 也原样保留。目标已存在时合并目录，同名的一项改名为 `<名称>-legacy` 后保留。
+- **无损：** 只在同一个卷上 rename；跨卷时复制，并保留旧文件。旧布局里的文件一个都不删。旧的 `config.json` 原地改名为 `config.migrated.json`，这样旧目录不再被当成待迁移；已经有 `config.migrated.json` 时改名为 `config.migrated-2.json`，依此类推。目录的子项全部 rename 走之后，空的旧目录会删除（同样记进日志，撤销时重建）。
+- **合并进已有的新布局：** 目标已存在时合并目录，同名的一项改名为 `<名称>-legacy` 后保留。`config.json` 按键合并，只在一边有的键都保留，`base_root` 以迁移结果为准。冲突时以谁为准取决于有没有 `storage-migration.json`：
+  - 没有迁移记录时，新布局是在没有用户数据的情况下建出来的（比如某次启动跳过了迁移，或者由工具写入），所以以旧数据为准：`config.json` 中旧值优先；`Accounts\`、`WebView2\EBWebView\`、`gamertags.json`、`gdk-pending-versions.json` 整体换成旧的，已有的一项改名为 `<名称>-before-migration` 后保留。
+  - 已有迁移记录时，旧数据只可能来自之后又运行了旧版本，所以以新数据为准：`config.json` 中新值优先，上面这几项也按目录合并。新的迁移记录追加到原有记录之后。
+  - 被替换的 `config.json` 和 `storage-migration.json` 先改名为 `<名称>-before-migration.json` 记进日志，提交后删除，撤销时还原。
 - **数据不跨卷搬：** 自己设置过 `base_root` 的用户，数据留在原处，只改目录名。默认数据根与 `%LOCALAPPDATA%` 不在同一个卷时（比如漫游配置文件被重定向），数据也留在原处，`base_root` 写成旧目录。
 - **全有或全无：** 每一步先写进 `storage-migration.journal` 并刷盘，然后才执行，做法与 lip 的 `.lip/journal` 相同。失败时按日志倒序撤销。进程中途退出的话，下次启动先撤销再重试。
 - **暂时无法迁移时：** 例如游戏还在从某个实例运行，目录无法 rename。这时撤销全部改动，本次以旧布局运行（`apppath.SetLegacyMode`），下次启动再试。

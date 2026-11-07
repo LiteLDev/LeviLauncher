@@ -20,7 +20,7 @@ func SetBaseRoot(root string) string {
 	if err := utils.CreateDir(r); err != nil {
 		return "ERR_CREATE_TARGET_DIR"
 	}
-	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = r }); err != nil {
+	if err := config.SetBaseRoot(r); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
@@ -29,7 +29,7 @@ func SetBaseRoot(root string) string {
 // ResetBaseRoot returns to the default data root. config.json then names no
 // base_root, so the default follows the layout rather than being pinned.
 func ResetBaseRoot() string {
-	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = "" }); err != nil {
+	if err := config.SetBaseRoot(""); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""

@@ -1,0 +1,48 @@
+{
+  "mods": {
+    "notify": {
+      "action_done": "{{action}}完成",
+      "action_failed": "{{action}}失敗",
+      "import_failed": "模組匯入失敗",
+      "import_busy_title": "已有匯入正在進行",
+      "import_busy_body": "請等目前的匯入完成後再拖入這些檔案。"
+    },
+    "no_instance": {
+      "title": "選擇一個實例",
+      "body": "模組按實例安裝。在這裡選擇實例，本頁會直接載入它的模組。",
+      "none_title": "還沒有實例",
+      "none_body": "請先下載一個遊戲版本，它的模組會顯示在這裡。",
+      "download": "下載遊戲版本"
+    },
+    "import_log": {
+      "waiting": "等待你的選擇",
+      "importing": "正在匯入…",
+      "imported": "已匯入",
+      "overwritten": "已覆蓋",
+      "skipped": "已略過",
+      "failed": "失敗",
+      "reason_exists": "已存在同名資料夾的模組",
+      "reason_cancelled": "已取消"
+    },
+    "import_summary": "已匯入 {{imported}} 個 · 略過 {{skipped}} 個 · 失敗 {{failed}} 個",
+    "import_dialog": {
+      "open_activity": "開啟活動記錄",
+      "log_label": "匯入日誌",
+      "nothing_imported": "未匯入任何檔案"
+    },
+    "import_prompt": {
+      "skip": "略過",
+      "import": "匯入",
+      "overwrite": "覆蓋",
+      "apply_all": "對其餘重複項執行相同操作"
+    },
+    "batch_result": {
+      "demoted": "已保留為依賴"
+    },
+    "batch_more_actions": "所選模組的更多操作",
+    "uninstall": {
+      "dependency_note": "如果其他已安裝的模組仍依賴此套件，它會被保留為依賴而不會被移除。",
+      "demoted_title": "已保留為依賴"
+    }
+  }
+}

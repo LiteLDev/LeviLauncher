@@ -1,5 +1,5 @@
 import { openDirectory, openModsDirectory } from "@/utils/explorer";
-import { toast, useOverlayState } from "@heroui/react";
+import { useOverlayState } from "@heroui/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { useNavigate, useBlocker } from "react-router-dom";
@@ -37,8 +37,16 @@ import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
-import { ROUTES, routeTo } from "@/constants/routes";
+import { routeTo } from "@/constants/routes";
 import { getPathBaseName, normalizeDroppedFiles } from "@/utils/fs";
+import { resolveImportError } from "@/utils/importError";
+import {
+  appendTaskLog,
+  finishActivityTask,
+  notify,
+  setTaskProgress,
+  startActivityTask,
+} from "@/utils/activity";
 
 const ERR_LL_MANAGED_IN_VERSION_SETTINGS = "ERR_LL_MANAGED_IN_VERSION_SETTINGS";
 const ERR_NO_UPDATE_SOURCE = "ERR_NO_UPDATE_SOURCE";
@@ -65,6 +73,32 @@ export type VisibleItem = ModListItem | LipGroupItem;
 
 type TaskLogLevel = "info" | "success" | "warning" | "error";
 type TaskLogger = (level: TaskLogLevel, message: string) => void;
+
+// One line per imported file. Lines are appended as files start and keep
+// their final result, so the whole run stays readable after it finishes.
+export type ImportLogStatus =
+  | "waiting"
+  | "importing"
+  | "imported"
+  | "overwritten"
+  | "skipped"
+  | "failed";
+export type ImportLogEntry = {
+  id: number;
+  name: string;
+  status: ImportLogStatus;
+  reason?: string;
+};
+// A question the import needs answered before it can continue; shown inside
+// the import dialog instead of a separate modal.
+export type ImportPrompt = { kind: "dll" | "duplicate"; file: string };
+
+export type BatchResult = {
+  action: "update" | "uninstall";
+  success: string[];
+  failed: Array<{ name: string; err: string }>;
+  demoted: string[];
+};
 
 const parseErrorCode = (value: unknown): string => {
   const source =
@@ -115,13 +149,11 @@ export const useModsPage = (
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [errorFile, setErrorFile] = useState("");
-  const [resultSuccess, setResultSuccess] = useState<string[]>([]);
-  const [resultFailed, setResultFailed] = useState<
-    Array<{ name: string; err: string }>
-  >([]);
-  const [currentFile, setCurrentFile] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importLog, setImportLog] = useState<ImportLogEntry[]>([]);
+  const [importPrompt, setImportPrompt] = useState<ImportPrompt | null>(null);
+  const [importError, setImportError] = useState("");
+  const [dupApplyAll, setDupApplyAll] = useState(false);
   const [importProgress, setImportProgress] = useState({ done: 0, total: 0 });
   const importInProgressRef = useRef(false);
   const [activeMod, setActiveMod] = useState<types.ModInfo | null>(null);
@@ -136,7 +168,7 @@ export const useModsPage = (
   const [deleting, setDeleting] = useState<boolean>(false);
   const [batchUpdating, setBatchUpdating] = useState<boolean>(false);
   const [batchUninstalling, setBatchUninstalling] = useState<boolean>(false);
-  const [demotedWarningNames, setDemotedWarningNames] = useState<string[]>([]);
+  const [batchResult, setBatchResult] = useState<BatchResult | null>(null);
   const [actionConfirmTitle, setActionConfirmTitle] = useState("");
   const [actionConfirmBody, setActionConfirmBody] = useState("");
   const [actionConfirming, setActionConfirming] = useState<boolean>(false);
@@ -157,66 +189,18 @@ export const useModsPage = (
   const [lipInstallStateByIdentifier, setLipInstallStateByIdentifier] =
     useState<Map<string, LIPPackageInstallState>>(new Map());
 
-  const dllResolveRef = useRef<((ok: boolean) => void) | null>(null);
+  const promptResolveRef = useRef<((answer: boolean) => void) | null>(null);
   const dllConfirmRef = useRef<{
     name: string;
     type: string;
     version: string;
   } | null>(null);
-  const dupResolveRef = useRef<((overwrite: boolean) => void) | null>(null);
-  const dupNameRef = useRef<string>("");
+  // "Do the same for remaining duplicates" for the running import.
+  const dupPolicyRef = useRef<"ask" | "overwrite" | "skip">("ask");
   const actionConfirmRunnerRef = useRef<(() => Promise<void>) | null>(null);
   const lastScrollTopRef = useRef<number>(0);
   const restorePendingRef = useRef<boolean>(false);
 
-  const {
-    isOpen: errOpen,
-    open: errOnOpen,
-    setOpen: errOnOpenChange,
-    close: errOnClose,
-  } = useOverlayState();
-  const {
-    isOpen: delOpen,
-    open: delOnOpen,
-    setOpen: delOnOpenChange,
-    close: delOnClose,
-  } = useOverlayState();
-  const {
-    isOpen: dllOpen,
-    open: dllOnOpen,
-    setOpen: setDllOpen,
-    close: dllOnClose,
-  } = useOverlayState();
-  const {
-    isOpen: dupOpen,
-    open: dupOnOpen,
-    setOpen: setDupOpen,
-    close: dupOnClose,
-  } = useOverlayState();
-  // Escape or a backdrop click closes these prompts through onOpenChange
-  // without calling onCancel. Settle the pending import prompt as a cancel so
-  // doImportFromPaths can move on (and release importInProgressRef). After a
-  // confirm/cancel the promise is already settled, so this is a no-op.
-  const dllOnOpenChange = React.useCallback(
-    (open: boolean) => {
-      setDllOpen(open);
-      if (open) return;
-      const resolve = dllResolveRef.current;
-      dllResolveRef.current = null;
-      resolve?.(false);
-    },
-    [setDllOpen],
-  );
-  const dupOnOpenChange = React.useCallback(
-    (open: boolean) => {
-      setDupOpen(open);
-      if (open) return;
-      const resolve = dupResolveRef.current;
-      dupResolveRef.current = null;
-      resolve?.(false);
-    },
-    [setDupOpen],
-  );
   const {
     isOpen: delCfmOpen,
     open: delCfmOnOpen,
@@ -245,11 +229,6 @@ export const useModsPage = (
     open: batchUninstallOnOpen,
     setOpen: batchUninstallOnOpenChange,
     close: batchUninstallOnClose,
-  } = useOverlayState();
-  const {
-    isOpen: demotedWarningOpen,
-    open: demotedWarningOnOpen,
-    close: demotedWarningOnClose,
   } = useOverlayState();
   const {
     isOpen: actionConfirmOpen,
@@ -693,37 +672,41 @@ export const useModsPage = (
     return Boolean(installState.installed) && !installState.explicitInstalled;
   };
 
-  const showActionToast = (
+  // Notices go through notify() so they stay in the activity history; errors
+  // carry a title naming the action that failed.
+  const notifyAction = (
     type: "success" | "error",
     actionLabel: string,
     name: string,
     err?: unknown,
   ) => {
     if (type === "success") {
-      toast(t("common.success"), {
+      notify({
         variant: "success",
-        description: `${actionLabel}: ${name}`,
-        timeout: 2000,
+        title: t("mods.notify.action_done", { action: actionLabel }),
+        description: name,
+        source: "mods",
       });
       return;
     }
 
-    toast(t("common.error"), {
+    notify({
       variant: "danger",
-      description: `${actionLabel}: ${resolveErrorText(t, err)}`,
-      timeout: 2000,
+      title: t("mods.notify.action_failed", { action: actionLabel }),
+      description: name
+        ? `${name}: ${resolveErrorText(t, err)}`
+        : resolveErrorText(t, err),
+      source: "mods",
     });
   };
 
-  const showActionResult = (
-    success: string[],
-    failed: Array<{ name: string; err: string }>,
-  ) => {
-    setResultSuccess(success);
-    setResultFailed(failed);
-    if (success.length > 0 || failed.length > 0) {
-      delOnOpen();
-    }
+  const notifyNoInstance = () => {
+    notify({
+      variant: "warning",
+      title: t("mods.no_instance.title"),
+      description: t("mods.no_instance.body"),
+      source: "mods",
+    });
   };
 
   const populateEditForm = (mod: types.ModInfo) => {
@@ -773,10 +756,11 @@ export const useModsPage = (
     const nextName = editName.trim();
 
     if (!name || !mod || !folder || !nextName) {
-      toast(t("common.error"), {
+      notify({
         variant: "danger",
+        title: t("mods.notify.action_failed", { action: t("common.save") }),
         description: t("mods.err_invalid_name"),
-        timeout: 2000,
+        source: "mods",
       });
       return;
     }
@@ -808,7 +792,7 @@ export const useModsPage = (
       );
 
       if (err) {
-        showActionToast("error", t("common.save"), mod.name, err);
+        notifyAction("error", t("common.save"), mod.name, err);
         return;
       }
 
@@ -822,11 +806,11 @@ export const useModsPage = (
       );
       setEditMod(nextMod);
       await refreshInstance(name, "mods-edit");
-      showActionToast("success", t("common.save"), nextMod.name);
+      notifyAction("success", t("common.save"), nextMod.name);
       editOnClose();
       resetEditForm();
     } catch (error) {
-      showActionToast(
+      notifyAction(
         "error",
         t("common.save"),
         mod.name,
@@ -837,164 +821,275 @@ export const useModsPage = (
     }
   };
 
-  const openDemotedWarning = (names: string[]) => {
-    const uniqueNames = Array.from(
-      new Set(names.map((item) => String(item || "").trim()).filter(Boolean)),
-    );
-    if (uniqueNames.length === 0) return;
-    setDemotedWarningNames(uniqueNames);
-    demotedWarningOnOpen();
+  const askImportPrompt = async (prompt: ImportPrompt) => {
+    setImportPrompt(prompt);
+    return new Promise<boolean>((resolve) => {
+      promptResolveRef.current = resolve;
+    });
   };
 
-  const closeDemotedWarning = () => {
-    setDemotedWarningNames([]);
-    demotedWarningOnClose();
+  // Answers the pending inline prompt. For a DLL, `accept` imports it with the
+  // form values; for a duplicate, `accept` overwrites the existing mod.
+  // `dismissed` (Escape/backdrop) skips only this file, never the rest.
+  const answerImportPrompt = (accept: boolean, dismissed = false) => {
+    const resolve = promptResolveRef.current;
+    if (!resolve) return;
+    if (importPrompt?.kind === "dll") {
+      const nm = dllName.trim();
+      if (accept && !nm) return;
+      dllConfirmRef.current = accept
+        ? {
+            name: nm,
+            type: dllType.trim() || "preload-native",
+            version: dllVersion.trim() || "0.0.0",
+          }
+        : null;
+    } else if (importPrompt?.kind === "duplicate" && dupApplyAll && !dismissed) {
+      dupPolicyRef.current = accept ? "overwrite" : "skip";
+    }
+    promptResolveRef.current = null;
+    setImportPrompt(null);
+    resolve(accept);
   };
 
-  const demotedWarningOnOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
-      demotedWarningOnOpen();
+  const closeImportDialog = () => {
+    if (importInProgressRef.current) return;
+    setImportOpen(false);
+  };
+
+  // Escape or a backdrop click while a prompt is pending skips that file so
+  // the import can move on; once finished, it closes the dialog.
+  const importOnOpenChange = (open: boolean) => {
+    if (open) return;
+    if (promptResolveRef.current) {
+      answerImportPrompt(false, true);
       return;
     }
-    closeDemotedWarning();
+    closeImportDialog();
   };
 
   const doImportFromPaths = async (paths: string[]) => {
-    if (importInProgressRef.current) return;
+    if (importInProgressRef.current) {
+      if (normalizeDroppedFiles(paths).length > 0) {
+        notify({
+          variant: "warning",
+          title: t("mods.notify.import_busy_title"),
+          description: t("mods.notify.import_busy_body"),
+          source: "mods",
+        });
+      }
+      return;
+    }
     importInProgressRef.current = true;
+    let taskId = "";
+    let aborted = false;
+    const counts: Record<ImportLogStatus, number> = {
+      waiting: 0,
+      importing: 0,
+      imported: 0,
+      overwritten: 0,
+      skipped: 0,
+      failed: 0,
+    };
     try {
       const normalizedPaths = normalizeDroppedFiles(paths);
       if (!normalizedPaths.length) return;
       const name = activeVersionName;
       if (!name) {
-        setErrorMsg(t("launcherpage.currentVersion_none") as string);
+        notifyNoInstance();
         return;
       }
-      let started = false;
-      const startImporting = () => {
-        if (started) return;
-        setImporting(true);
-        started = true;
-      };
-      const succFiles: string[] = [];
-      const errPairs: Array<{ name: string; err: string }> = [];
       const total = normalizedPaths.length;
       let done = 0;
+      let changed = false;
+      let seq = 0;
+      dupPolicyRef.current = "ask";
+      setDupApplyAll(false);
+      setImportLog([]);
+      setImportError("");
       setImportProgress({ done, total });
+      setImporting(true);
+      setImportOpen(true);
+      taskId = startActivityTask({
+        title: t("mods.importing_title"),
+        description: name,
+        source: "mods",
+      });
 
-      const askOverwrite = async (label: string) => {
-        dupNameRef.current = label;
-        await new Promise<void>((r) => setTimeout(r, 0));
-        dupOnOpen();
-        return new Promise<boolean>((resolve) => {
-          dupResolveRef.current = resolve;
-        });
+      const begin = (file: string, status: ImportLogStatus) => {
+        seq += 1;
+        const id = seq;
+        setImportLog((prev) => [...prev, { id, name: file, status }]);
+        return id;
+      };
+      const mark = (id: number, status: ImportLogStatus) => {
+        setImportLog((prev) =>
+          prev.map((entry) => (entry.id === id ? { ...entry, status } : entry)),
+        );
+      };
+      const settle = (
+        id: number,
+        file: string,
+        status: ImportLogStatus,
+        reason?: string,
+      ) => {
+        counts[status] += 1;
+        setImportLog((prev) =>
+          prev.map((entry) =>
+            entry.id === id ? { ...entry, status, reason } : entry,
+          ),
+        );
+        appendTaskLog(
+          taskId,
+          `${file}: ${t(`mods.import_log.${status}`)}${reason ? ` (${reason})` : ""}`,
+          status === "failed"
+            ? "error"
+            : status === "skipped"
+              ? "warning"
+              : "success",
+        );
+      };
+      const failReason = (err: unknown) =>
+        resolveImportError(parseErrorCode(err) || "IMPORT_ERROR", t as any);
+      const shouldOverwrite = async (file: string) => {
+        if (dupPolicyRef.current !== "ask") {
+          return dupPolicyRef.current === "overwrite";
+        }
+        return askImportPrompt({ kind: "duplicate", file });
       };
 
-      const importPackage = async (p: string, base: string) => {
-        startImporting();
-        setCurrentFile(base);
-        let err = await ImportModZipPath(name, p, false);
-        if (err && String(err) === "ERR_DUPLICATE_FOLDER") {
-          if (!(await askOverwrite(base))) return;
-          err = await ImportModZipPath(name, p, true);
+      // Runs one import call and resolves a duplicate folder inline.
+      const runImport = async (
+        id: number,
+        base: string,
+        importWith: (overwrite: boolean) => Promise<string>,
+        mapErr: (err: string) => string = (err) => err,
+      ) => {
+        let err = String((await importWith(false)) || "");
+        let overwritten = false;
+        if (err === "ERR_DUPLICATE_FOLDER") {
+          mark(id, "waiting");
+          if (!(await shouldOverwrite(base))) {
+            settle(id, base, "skipped", t("mods.import_log.reason_exists"));
+            return;
+          }
+          mark(id, "importing");
+          overwritten = true;
+          err = String((await importWith(true)) || "");
         }
         if (err) {
-          // ERR_OPEN_ZIP is shared with content imports; name the mod package.
-          errPairs.push({
-            name: base,
-            err: String(err) === "ERR_OPEN_ZIP" ? ERR_OPEN_MOD_PACKAGE : err,
-          });
+          settle(id, base, "failed", failReason(mapErr(err)));
           return;
         }
-        succFiles.push(base);
+        changed = true;
+        settle(id, base, overwritten ? "overwritten" : "imported");
       };
 
-      const importDll = async (p: string, base: string) => {
-        const baseNoExt = base.replace(/\.[^/.]+$/, "");
-        setDllName(baseNoExt);
+      const importPackage = (p: string, base: string, id: number) =>
+        runImport(
+          id,
+          base,
+          (overwrite) => ImportModZipPath(name, p, overwrite),
+          // ERR_OPEN_ZIP is shared with content imports; name the mod package.
+          (err) => (err === "ERR_OPEN_ZIP" ? ERR_OPEN_MOD_PACKAGE : err),
+        );
+
+      const importDll = async (p: string, base: string, id: number) => {
+        setDllName(base.replace(/\.[^/.]+$/, ""));
         setDllType("preload-native");
         setDllVersion("0.0.0");
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
-        dllOnOpen();
-        const ok = await new Promise<boolean>((resolve) => {
-          dllResolveRef.current = resolve;
-        });
-        if (!ok) return;
-        startImporting();
-        setCurrentFile(base);
-        const vals = dllConfirmRef.current || {
-          name: dllName,
-          type: dllType,
-          version: dllVersion,
-        };
         dllConfirmRef.current = null;
-        const importWith = (overwrite: boolean) =>
+        const ok = await askImportPrompt({ kind: "dll", file: base });
+        const vals = dllConfirmRef.current as {
+          name: string;
+          type: string;
+          version: string;
+        } | null;
+        dllConfirmRef.current = null;
+        if (!ok || !vals) {
+          settle(id, base, "skipped", t("mods.import_log.reason_cancelled"));
+          return;
+        }
+        mark(id, "importing");
+        await runImport(id, base, (overwrite) =>
           ImportModDllPath(
             name,
             p,
             vals.name,
-            vals.type || "preload-native",
-            vals.version || "0.0.0",
+            vals.type,
+            vals.version,
             overwrite,
-          );
-        let err = await importWith(false);
-        if (err && String(err) === "ERR_DUPLICATE_FOLDER") {
-          if (!(await askOverwrite(base))) return;
-          err = await importWith(true);
-        }
-        if (err) {
-          errPairs.push({ name: base, err });
-          return;
-        }
-        succFiles.push(base);
+          ),
+        );
       };
 
       for (const p of normalizedPaths) {
         const base = getPathBaseName(p) || p;
         const kind = resolveModImportKind(p);
+        const id = begin(base, kind === "dll" ? "waiting" : "importing");
         try {
           if (kind === "package") {
-            await importPackage(p, base);
+            await importPackage(p, base, id);
           } else if (kind === "dll") {
-            await importDll(p, base);
+            await importDll(p, base, id);
           } else {
-            errPairs.push({ name: base, err: ERR_UNSUPPORTED_MOD_FILE });
+            settle(id, base, "failed", failReason(ERR_UNSUPPORTED_MOD_FILE));
           }
         } catch (e) {
-          errPairs.push({ name: base, err: parseErrorCode(e) || "IMPORT_ERROR" });
+          settle(id, base, "failed", failReason(e));
         }
         done += 1;
         setImportProgress({ done, total });
+        setTaskProgress(taskId, (done / total) * 100);
       }
-      if (started) {
+      if (changed) {
         await refreshInstance(name, "mods-import-complete");
       }
-      setResultSuccess(succFiles);
-      setResultFailed(errPairs);
-      if (succFiles.length > 0 || errPairs.length > 0) {
-        errOnOpen();
-      }
     } catch (e: any) {
-      setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
+      const message = String(e?.message || e || "IMPORT_ERROR");
+      aborted = true;
+      // Shown in the import dialog itself (which marks the run failed); the
+      // silent notice keeps a copy in the activity history.
+      setImportError(message);
+      notify({
+        silent: true,
+        variant: "danger",
+        title: t("mods.notify.import_failed"),
+        description: message,
+        source: "mods",
+      });
+      if (taskId) appendTaskLog(taskId, message, "error");
     } finally {
+      if (taskId) {
+        const succeeded = counts.imported + counts.overwritten;
+        finishActivityTask(
+          taskId,
+          aborted || (counts.failed > 0 && succeeded === 0)
+            ? "error"
+            : succeeded === 0 && counts.failed === 0
+              ? "cancelled"
+              : "success",
+          t("mods.import_summary", {
+            imported: succeeded,
+            skipped: counts.skipped,
+            failed: counts.failed,
+          }),
+        );
+      }
       importInProgressRef.current = false;
-      dllResolveRef.current = null;
-      dupResolveRef.current = null;
+      promptResolveRef.current = null;
+      setImportPrompt(null);
       setImporting(false);
-      setCurrentFile("");
-      setImportProgress({ done: 0, total: 0 });
     }
   };
 
   const doImportRef = useRef(doImportFromPaths);
   doImportRef.current = doImportFromPaths;
 
+  // Switching instance in place starts from a clean selection.
   useEffect(() => {
-    if (!activeVersionName) {
-      navigate(ROUTES.instances, { replace: true });
-    }
-  }, [activeVersionName, navigate]);
+    setSelectedKeys(new Set());
+  }, [activeVersionName]);
 
   useEffect(() => {
     return Events.On("files-dropped", (event) => {
@@ -1207,11 +1302,7 @@ export const useModsPage = (
   ) => {
     const name = activeVersionName;
     if (!name) {
-      toast(t("common.error"), {
-        variant: "danger",
-        description: t("launcherpage.currentVersion_none"),
-        timeout: 2000,
-      });
+      notifyNoInstance();
       return;
     }
 
@@ -1306,22 +1397,76 @@ export const useModsPage = (
 
   const openBatchUpdateConfirm = () => {
     if (selectedItems.length === 0) return;
+    setBatchResult(null);
     batchUpdateOnOpen();
   };
 
   const openBatchUninstallConfirm = () => {
     if (selectedItems.length === 0) return;
+    setBatchResult(null);
     batchUninstallOnOpen();
+  };
+
+  // A clean batch closes its confirm dialog with a notice. Anything the user
+  // should read (failures, packages kept as dependencies) turns the same
+  // dialog into the result view instead of stacking another modal.
+  const finishBatch = (
+    action: BatchResult["action"],
+    success: string[],
+    failed: BatchResult["failed"],
+    demoted: string[],
+    close: () => void,
+  ) => {
+    const actionLabel = t(
+      action === "update" ? "mods.action_update" : "mods.action_uninstall",
+    );
+    if (failed.length > 0 || demoted.length > 0) {
+      // Store readable reasons so the dialog and the history read the same.
+      setBatchResult({
+        action,
+        success,
+        failed: failed.map((item) => ({
+          name: item.name,
+          err: resolveErrorText(t, item.err),
+        })),
+        demoted,
+      });
+      notify({
+        silent: true,
+        variant: failed.length > 0 ? "danger" : "warning",
+        title: t(
+          failed.length > 0
+            ? "mods.notify.action_failed"
+            : "mods.notify.action_done",
+          { action: actionLabel },
+        ),
+        description: [
+          ...failed.map(
+            (item) => `${item.name}: ${resolveErrorText(t, item.err)}`,
+          ),
+          ...demoted.map(
+            (item) => `${item}: ${t("mods.batch_result.demoted")}`,
+          ),
+        ].join("\n"),
+        source: "mods",
+      });
+      return;
+    }
+    close();
+    if (success.length > 0) {
+      notify({
+        variant: "success",
+        title: t("mods.notify.action_done", { action: actionLabel }),
+        description: success.join(", "),
+        source: "mods",
+      });
+    }
   };
 
   const handleBatchUpdate = async () => {
     const name = activeVersionName;
     if (!name) {
-      toast(t("common.error"), {
-        variant: "danger",
-        description: t("launcherpage.currentVersion_none"),
-        timeout: 2000,
-      });
+      notifyNoInstance();
       return;
     }
 
@@ -1408,16 +1553,7 @@ export const useModsPage = (
 
       if (hasSuccess) await refreshAll();
       setSelectedKeys(new Set());
-      batchUpdateOnClose();
-      if (failed.length > 0) {
-        showActionResult(success, failed);
-      } else if (hasSuccess) {
-        toast(t("common.success"), {
-          variant: "success",
-          description: `${t("mods.action_update")} x${success.length}`,
-          timeout: 2000,
-        });
-      }
+      finishBatch("update", success, failed, [], batchUpdateOnClose);
     } finally {
       setBatchUpdating(false);
     }
@@ -1426,11 +1562,7 @@ export const useModsPage = (
   const handleBatchUninstall = async () => {
     const name = activeVersionName;
     if (!name) {
-      toast(t("common.error"), {
-        variant: "danger",
-        description: t("launcherpage.currentVersion_none"),
-        timeout: 2000,
-      });
+      notifyNoInstance();
       return;
     }
     if (selectedItems.length === 0) return;
@@ -1532,19 +1664,7 @@ export const useModsPage = (
 
       if (hasStateChanged) await refreshAll();
       setSelectedKeys(new Set());
-      batchUninstallOnClose();
-      if (failed.length > 0) {
-        showActionResult(success, failed);
-      } else if (success.length > 0) {
-        toast(t("common.success"), {
-          variant: "success",
-          description: `${t("mods.action_uninstall")} x${success.length}`,
-          timeout: 2000,
-        });
-      }
-      if (demoted.length > 0) {
-        openDemotedWarning(demoted);
-      }
+      finishBatch("uninstall", success, failed, demoted, batchUninstallOnClose);
     } finally {
       setBatchUninstalling(false);
     }
@@ -1580,11 +1700,7 @@ export const useModsPage = (
   const executeUpdateMod = async (mod: types.ModInfo) => {
     const name = activeVersionName;
     if (!name) {
-      toast(t("common.error"), {
-        variant: "danger",
-        description: t("launcherpage.currentVersion_none"),
-        timeout: 2000,
-      });
+      notifyNoInstance();
       return;
     }
 
@@ -1607,7 +1723,7 @@ export const useModsPage = (
         },
       );
     } catch (error) {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_update"),
         mod.name,
@@ -1617,13 +1733,13 @@ export const useModsPage = (
     }
 
     await refreshAll();
-    showActionToast("success", t("mods.action_update"), mod.name);
+    notifyAction("success", t("mods.action_update"), mod.name);
   };
 
   const handleUpdateMod = async (mod: types.ModInfo) => {
     const lipState = getModLIPState(mod);
     if (lipState.sourceType !== "unique") {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_update"),
         mod.name,
@@ -1632,7 +1748,7 @@ export const useModsPage = (
       return;
     }
     if (!lipState.canUpdate) {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_update"),
         mod.name,
@@ -1654,11 +1770,7 @@ export const useModsPage = (
   const executeUpdateLipGroup = async (group: LipGroupItem) => {
     const name = activeVersionName;
     if (!name) {
-      toast(t("common.error"), {
-        variant: "danger",
-        description: t("launcherpage.currentVersion_none"),
-        timeout: 2000,
-      });
+      notifyNoInstance();
       return;
     }
 
@@ -1681,7 +1793,7 @@ export const useModsPage = (
         },
       );
     } catch (error) {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_update"),
         group.packageName,
@@ -1691,12 +1803,12 @@ export const useModsPage = (
     }
 
     await refreshAll();
-    showActionToast("success", t("mods.action_update"), group.packageName);
+    notifyAction("success", t("mods.action_update"), group.packageName);
   };
 
   const handleUpdateLipGroup = async (group: LipGroupItem) => {
     if (group.lipState.sourceType !== "unique") {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_update"),
         group.packageName,
@@ -1705,7 +1817,7 @@ export const useModsPage = (
       return;
     }
     if (!group.lipState.canUpdate) {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_update"),
         group.packageName,
@@ -1731,11 +1843,7 @@ export const useModsPage = (
   ) => {
     const name = activeVersionName;
     if (!name) {
-      toast(t("common.error"), {
-        variant: "danger",
-        description: t("launcherpage.currentVersion_none"),
-        timeout: 2000,
-      });
+      notifyNoInstance();
       return;
     }
 
@@ -1761,7 +1869,7 @@ export const useModsPage = (
         },
       );
     } catch (error) {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_promote_install"),
         group.packageName,
@@ -1771,23 +1879,22 @@ export const useModsPage = (
     }
 
     await refreshAll();
-    toast(t("common.success"), {
+    notify({
       variant: "success",
+      title: t("mods.notify.action_done", {
+        action: t("mods.action_promote_install"),
+      }),
       description: t("mods.action_promote_install_success", {
         name: group.packageName,
       }),
-      timeout: 2000,
+      source: "mods",
     });
   };
 
   const handlePromoteLipGroup = async (group: LipGroupItem) => {
     const name = activeVersionName;
     if (!name) {
-      toast(t("common.error"), {
-        variant: "danger",
-        description: t("launcherpage.currentVersion_none"),
-        timeout: 2000,
-      });
+      notifyNoInstance();
       return;
     }
 
@@ -1796,7 +1903,7 @@ export const useModsPage = (
       group.identifierKey,
     );
     if (!requestIdentifier) {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_promote_install"),
         group.packageName,
@@ -1807,7 +1914,7 @@ export const useModsPage = (
 
     const installState = await queryLipGroupInstallState(group);
     if (installState.error) {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_promote_install"),
         group.packageName,
@@ -1820,7 +1927,7 @@ export const useModsPage = (
       installedVersion: installState.installedVersion || group.installedVersion,
     });
     if (!version) {
-      showActionToast(
+      notifyAction(
         "error",
         t("mods.action_promote_install"),
         group.packageName,
@@ -1839,15 +1946,38 @@ export const useModsPage = (
     );
   };
 
+  // Uninstall errors are thrown so the confirm dialog shows them inline and
+  // stays open; the activity history keeps a copy.
+  const failUninstall = (name: string, err: unknown): never => {
+    const text = resolveErrorText(t, err);
+    notify({
+      silent: true,
+      variant: "danger",
+      title: t("mods.notify.action_failed", {
+        action: t("mods.action_uninstall"),
+      }),
+      description: `${name}: ${text}`,
+      source: "mods",
+    });
+    throw new Error(text);
+  };
+
+  // A package other mods still need is kept as a dependency; say so in a
+  // notice that also lands in the activity history.
+  const notifyDemoted = (names: string[]) => {
+    notify({
+      variant: "warning",
+      title: t("mods.uninstall.demoted_title"),
+      description: `${names.join(", ")}: ${t("errors.ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY")}`,
+      source: "mods",
+    });
+  };
+
   const handleDeleteMod = async () => {
     if (!activeMod) return;
     const name = activeVersionName;
     if (!name) {
-      toast(t("common.error"), {
-        variant: "danger",
-        description: t("launcherpage.currentVersion_none"),
-        timeout: 2000,
-      });
+      notifyNoInstance();
       return;
     }
 
@@ -1879,14 +2009,11 @@ export const useModsPage = (
         },
       );
     } catch (error) {
-      showActionToast(
-        "error",
-        t("mods.action_uninstall"),
+      setDeleting(false);
+      failUninstall(
         activeMod.name,
         parseErrorCode(error) || "ERR_LIP_PACKAGE_UNINSTALL_FAILED",
       );
-      setDeleting(false);
-      return;
     }
 
     await refreshAll();
@@ -1896,12 +2023,12 @@ export const useModsPage = (
       } catch {}
     });
     if (demotedToDependency) {
-      openDemotedWarning([activeMod.name]);
+      notifyDemoted([activeMod.name]);
       infoOnClose();
       setDeleting(false);
       return;
     }
-    showActionToast("success", t("mods.action_uninstall"), activeMod.name);
+    notifyAction("success", t("mods.action_uninstall"), activeMod.name);
     infoOnClose();
     setDeleting(false);
   };
@@ -1911,23 +2038,16 @@ export const useModsPage = (
 
     const name = activeVersionName;
     if (!name) {
-      toast(t("common.error"), {
-        variant: "danger",
-        description: t("launcherpage.currentVersion_none"),
-        timeout: 2000,
-      });
+      notifyNoInstance();
       return;
     }
 
     const latestState = await queryLipGroupInstallState(activeLipGroup);
     if (latestState.installed && !latestState.explicitInstalled) {
-      showActionToast(
-        "error",
-        t("mods.action_uninstall"),
+      failUninstall(
         activeLipGroup.packageName,
         ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS,
       );
-      return;
     }
 
     const pos = scrollRef.current?.scrollTop || 0;
@@ -1962,14 +2082,11 @@ export const useModsPage = (
         },
       );
     } catch (error) {
-      showActionToast(
-        "error",
-        t("mods.action_uninstall"),
+      setDeleting(false);
+      failUninstall(
         activeLipGroup.packageName,
         parseErrorCode(error) || "ERR_LIP_PACKAGE_UNINSTALL_FAILED",
       );
-      setDeleting(false);
-      return;
     }
 
     await refreshAll();
@@ -1979,11 +2096,12 @@ export const useModsPage = (
       } catch {}
     });
     if (demotedToDependency) {
-      openDemotedWarning([activeLipGroup.packageName]);
+      notifyDemoted([activeLipGroup.packageName]);
+      infoOnClose();
       setDeleting(false);
       return;
     }
-    showActionToast(
+    notifyAction(
       "success",
       t("mods.action_uninstall"),
       activeLipGroup.packageName,
@@ -1994,13 +2112,10 @@ export const useModsPage = (
   const handleDeleteCurrentTarget = async () => {
     if (activeLipIdentifier) {
       if (activeDeleteBlocked && activeLipGroup) {
-        showActionToast(
-          "error",
-          t("mods.action_uninstall"),
+        failUninstall(
           activeLipGroup.packageName,
           ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS,
         );
-        return;
       }
       await handleDeleteLipGroup();
       return;
@@ -2011,7 +2126,7 @@ export const useModsPage = (
   const openFolder = () => {
     const name = activeVersionName;
     if (!name) {
-      navigate(ROUTES.instances);
+      notifyNoInstance();
       return;
     }
     void openModsDirectory(name);
@@ -2083,6 +2198,18 @@ export const useModsPage = (
     ? activeLipGroup.packageName
     : activeMod?.name || "";
 
+  // LIP-managed uninstalls may keep the package as a dependency; the confirm
+  // dialog says so up front instead of a follow-up warning modal.
+  const activeDeleteMayDemote = activeLipGroup
+    ? true
+    : activeMod
+      ? uninstallRunsLipTask(activeMod)
+      : false;
+
+  const selectedLipManagedCount = selectedItems.filter((item) =>
+    item.kind === "lip" ? true : uninstallRunsLipTask(item.mod),
+  ).length;
+
   const activeDeleteKind: "mod" | "lip" | "none" = activeLipGroup
     ? "lip"
     : activeMod
@@ -2096,15 +2223,15 @@ export const useModsPage = (
     setQuery,
     loading,
     importing,
-    errorMsg,
-    setErrorMsg,
-    errorFile,
-    setErrorFile,
-    resultSuccess,
-    setResultSuccess,
-    resultFailed,
-    setResultFailed,
-    currentFile,
+    importOpen,
+    importOnOpenChange,
+    closeImportDialog,
+    importLog,
+    importPrompt,
+    importError,
+    answerImportPrompt,
+    dupApplyAll,
+    setDupApplyAll,
     importProgress,
     activeMod,
     setActiveMod,
@@ -2131,7 +2258,9 @@ export const useModsPage = (
     deleting,
     batchUpdating,
     batchUninstalling,
-    demotedWarningNames,
+    batchResult,
+    activeDeleteMayDemote,
+    selectedLipManagedCount,
     actionConfirmTitle,
     actionConfirmBody,
     actionConfirming,
@@ -2159,29 +2288,6 @@ export const useModsPage = (
     selectedItems,
     selectedUpdatableCount,
 
-    dllResolveRef,
-    dllConfirmRef,
-    dupResolveRef,
-    dupNameRef,
-    lastScrollTopRef,
-    restorePendingRef,
-
-    errOpen,
-    errOnOpen,
-    errOnClose,
-    errOnOpenChange,
-    delOpen,
-    delOnOpen,
-    delOnClose,
-    delOnOpenChange,
-    dllOpen,
-    dllOnOpen,
-    dllOnClose,
-    dllOnOpenChange,
-    dupOpen,
-    dupOnOpen,
-    dupOnClose,
-    dupOnOpenChange,
     delCfmOpen,
     delCfmOnOpen,
     delCfmOnClose,
@@ -2202,9 +2308,6 @@ export const useModsPage = (
     batchUninstallOnOpen,
     batchUninstallOnClose,
     batchUninstallOnOpenChange,
-    demotedWarningOpen,
-    demotedWarningOnOpenChange,
-    closeDemotedWarning,
     actionConfirmOpen,
     actionConfirmOnClose: closeActionConfirm,
     actionConfirmOnOpenChange: handleActionConfirmOpenChange,

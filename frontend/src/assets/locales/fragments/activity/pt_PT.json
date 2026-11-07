@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "Filtrar atividade",
+    "filter_all": "Tudo",
+    "filter_errors": "Problemas",
+    "filter_tasks": "Tarefas",
+    "running": "Em curso",
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "copy_entry": "Copiar entrada",
+    "copied": "Copiado",
+    "copy_failed": "Falha ao copiar",
+    "remove_entry": "Remover entrada",
+    "clear_confirm": "Limpar {{count}} entradas concluídas? As tarefas em curso são mantidas.",
+    "empty_filtered": "Nada corresponde a este filtro",
+    "view_in_activity": "Ver na Atividade",
+    "delete_failed_title": "Não foi possível eliminar alguns itens"
+  }
+}

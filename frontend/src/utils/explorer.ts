@@ -1,13 +1,15 @@
-import { toast } from "@heroui/react";
+import { notify } from "@/utils/activity";
 import i18n from "@/i18n";
 import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { OpenModsExplorer } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 
 export function showDirectoryOpenError(error: unknown): void {
   const message = error instanceof Error ? error.message : String(error ?? "");
-  toast.danger(i18n.t("common.open_folder_failed"), {
+  notify({
+    variant: "danger",
+    title: i18n.t("common.open_folder_failed"),
     description: message || undefined,
-    timeout: 6000,
+    source: "explorer",
   });
 }
 

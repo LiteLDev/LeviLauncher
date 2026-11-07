@@ -68,6 +68,15 @@ export type LipLegacyProgress = {
   message: string;
 };
 
+// One line of the step history of a session: every distinct stage, batch item
+// and progress message is appended once and stays listed after it ends.
+export type LipProgressStep = {
+  key: string;
+  at: number;
+  label: string;
+  detail: string;
+};
+
 export type LipTaskProgressSnapshot = {
   status: "idle" | "running" | "success" | "failed";
   target: string;
@@ -75,6 +84,9 @@ export type LipTaskProgressSnapshot = {
   secondary: LipProgressBar[];
   outer: LipOuterProgress | null;
   legacy: LipLegacyProgress | null;
+  // Step history, oldest first, and the keys of the steps still in progress.
+  steps?: LipProgressStep[];
+  activeStepKeys?: string[];
 };
 
 export type LipProgressBarsState = {
@@ -221,6 +233,44 @@ export const selectLipSecondaryBars = (
         bar.stage !== "",
     )
     .sort((a, b) => a.order - b.order);
+
+// Key of the step a bar belongs to. The task bar names the package being
+// applied, so each package is its own step; other bars are one step each.
+export const lipStepKey = (bar: LipProgressBar): string =>
+  bar.stage === "task" && bar.item
+    ? `bar:${bar.key}:${bar.item}`
+    : `bar:${bar.key}`;
+
+// Keys of the steps that are still in progress in the given state.
+export const activeLipStepKeys = (
+  state: LipProgressBarsState,
+  legacy: LipLegacyProgress | null,
+  outer: LipOuterProgress | null,
+): string[] => {
+  const keys = Object.values(state.bars)
+    .filter((bar) => bar.stage !== "" && !bar.done)
+    .map(lipStepKey);
+  if (legacy?.message) keys.push(`legacy:${legacy.message}`);
+  if (outer && outer.completed < outer.total) {
+    keys.push(`outer:${outer.current}:${outer.label}`);
+  }
+  return keys;
+};
+
+// Overall percentage of a session, or undefined while it is unknown. A batch
+// counts its finished items plus the share of the running one.
+export const overallLipPercentage = (
+  primary: LipProgressBar | null,
+  legacy: LipLegacyProgress | null,
+  outer: LipOuterProgress | null,
+): number | undefined => {
+  const inner = primary ? primary.percentage : legacy?.percentage;
+  if (outer && outer.total > 0) {
+    const share = outer.completed < outer.total ? (inner ?? 0) / 100 : 0;
+    return clampPercentage(((outer.completed + share) / outer.total) * 100);
+  }
+  return inner === undefined ? undefined : clampPercentage(inner);
+};
 
 export const clampPercentage = (value: unknown): number => {
   const n = Number(value);

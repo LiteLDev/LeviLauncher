@@ -1,0 +1,43 @@
+{
+  "curseforge": {
+    "install": {
+      "type": {
+        "mcworld": "Mundo",
+        "mcaddon": "Add-on",
+        "mcpack": "Pacote de recursos ou comportamentos",
+        "skin_pack": "Pacote de skins",
+        "unknown": "Pacote desconhecido"
+      },
+      "dialog_title": "Instalar {{name}}",
+      "setup_body": "Escolha o que instalar e onde. A transferência e a importação são feitas de uma vez.",
+      "file_label": "Ficheiro",
+      "file_placeholder": "Escolher um ficheiro",
+      "files_loading": "A carregar ficheiros…",
+      "no_files": "Este projeto não tem ficheiros para transferir.",
+      "no_instances": "Ainda não há instâncias instaladas. Adicione uma na página de transferências.",
+      "no_players": "Esta instância ainda não tem perfis de jogador. Inicie o jogo uma vez com ela e tente novamente.",
+      "player_hint_skin": "Só é usado se este pacote for um pacote de skins.",
+      "player_required": "Escolha um jogador para instalar um mundo.",
+      "install": "Instalar",
+      "quick_install_aria": "Instalar {{name}}",
+      "task_title": "Instalar {{name}}",
+      "task_desc": "{{file}} → {{instance}}",
+      "step_download": "Transferir {{name}}",
+      "step_download_done": "{{size}} transferidos",
+      "step_detect": "Identificar pacote",
+      "step_import": "Importar para {{instance}}",
+      "step_import_done": "Importado",
+      "duplicate_found": "Já instalado nesta instância",
+      "duplicate_body": "Substituir a cópia existente por este ficheiro?",
+      "keep_existing": "Manter existente",
+      "overwrite": "Substituir",
+      "duplicate_kept": "A cópia existente foi mantida; nada mudou.",
+      "duplicate_overwriting": "A substituir a cópia existente…",
+      "done_success": "{{name}} instalado em {{instance}}.",
+      "done_kept": "Nada mudou. A cópia existente foi mantida.",
+      "cancelled": "Transferência cancelada",
+      "success_title_named": "{{name}} instalado",
+      "error_title_named": "Não foi possível instalar {{name}}"
+    }
+  }
+}

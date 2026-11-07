@@ -1,0 +1,43 @@
+{
+  "curseforge": {
+    "install": {
+      "type": {
+        "mcworld": "Mondo",
+        "mcaddon": "Add-on",
+        "mcpack": "Pacchetto risorse o comportamenti",
+        "skin_pack": "Pacchetto skin",
+        "unknown": "Pacchetto sconosciuto"
+      },
+      "dialog_title": "Installa {{name}}",
+      "setup_body": "Scegli cosa installare e dove. Download e importazione avvengono in un solo passaggio.",
+      "file_label": "File",
+      "file_placeholder": "Scegli un file",
+      "files_loading": "Caricamento file…",
+      "no_files": "Questo progetto non ha file scaricabili.",
+      "no_instances": "Nessuna istanza installata. Aggiungine una dalla pagina Download.",
+      "no_players": "Questa istanza non ha ancora profili giocatore. Avvia il gioco una volta con essa e riprova.",
+      "player_hint_skin": "Usato solo se questo pacchetto è un pacchetto skin.",
+      "player_required": "Scegli un giocatore per installare un mondo.",
+      "install": "Installa",
+      "quick_install_aria": "Installa {{name}}",
+      "task_title": "Installa {{name}}",
+      "task_desc": "{{file}} → {{instance}}",
+      "step_download": "Scarica {{name}}",
+      "step_download_done": "Scaricati {{size}}",
+      "step_detect": "Identifica pacchetto",
+      "step_import": "Importa in {{instance}}",
+      "step_import_done": "Importato",
+      "duplicate_found": "Già installato in questa istanza",
+      "duplicate_body": "Sostituire la copia esistente con questo file?",
+      "keep_existing": "Mantieni esistente",
+      "overwrite": "Sovrascrivi",
+      "duplicate_kept": "Copia esistente mantenuta; nessuna modifica.",
+      "duplicate_overwriting": "Sostituzione della copia esistente…",
+      "done_success": "{{name}} installato in {{instance}}.",
+      "done_kept": "Nessuna modifica. La copia esistente è stata mantenuta.",
+      "cancelled": "Download annullato",
+      "success_title_named": "{{name}} installato",
+      "error_title_named": "Impossibile installare {{name}}"
+    }
+  }
+}

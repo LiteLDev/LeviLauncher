@@ -39,6 +39,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/storage"
 	"github.com/liteldev/LeviLauncher/internal/tray"
 	"github.com/liteldev/LeviLauncher/internal/types"
+	"github.com/liteldev/LeviLauncher/internal/uninstallcleanup"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
@@ -576,6 +577,13 @@ func launcherWindowTitle() string {
 }
 
 func main() {
+	// The MSI uninstaller runs this headless; handle it before anything that
+	// can open a window, take the single-instance lock or write logs.
+	if opts, ok := uninstallcleanup.ParseArgs(os.Args[1:]); ok {
+		uninstallcleanup.Run(opts)
+		os.Exit(0)
+	}
+
 	processStart := time.Now()
 	initialURL, autoLaunchVersion, waitForPreviousInstance, debugMode := parseArgs()
 	var debugConsoleErr error

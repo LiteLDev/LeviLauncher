@@ -33,6 +33,9 @@ type AppConfig struct {
 	// MirrorSourceEnabled is nil until the user flips the global mirror
 	// switch; a nil value means "follow the China-user detection".
 	MirrorSourceEnabled *bool `json:"mirror_source_enabled,omitempty"`
+	// CurrentInstance is the default instance of the command line ("use"),
+	// the instance commands act on when none is named.
+	CurrentInstance string `json:"current_instance,omitempty"`
 }
 
 const (
@@ -65,20 +68,19 @@ func Reload() (AppConfig, error) {
 	return reloadLocked()
 }
 
-// Update applies mutate to the current config and writes the result back,
-// holding the write lock throughout. Read-modify-write through Load and Save
-// leaves a window in which a concurrent writer's change is read back stale and
-// then overwritten.
+// Update applies mutate to the config and writes the result back, holding
+// the write lock throughout. Read-modify-write through Load and Save leaves a
+// window in which a concurrent writer's change is read back stale and then
+// overwritten. The config is re-read from disk first, so a change that
+// another launcher process (the window or the command line) saved since this
+// one loaded it is kept rather than overwritten with a stale copy.
 func Update(mutate func(*AppConfig)) error {
 	configMutex.Lock()
 	defer configMutex.Unlock()
 
-	c := cachedConfig
-	if !isLoaded {
-		var err error
-		if c, err = reloadLocked(); err != nil {
-			return err
-		}
+	c, err := reloadLocked()
+	if err != nil {
+		return err
 	}
 	mutate(&c)
 	return saveLocked(c)
@@ -255,4 +257,24 @@ func GetLipGithubProxyOverride() string {
 
 	c, _ := Load()
 	return strings.TrimSpace(c.LipGithubProxy)
+}
+
+// GetCurrentInstance returns the saved default instance name, or "".
+func GetCurrentInstance() string {
+	configMutex.RLock()
+	if isLoaded {
+		v := strings.TrimSpace(cachedConfig.CurrentInstance)
+		configMutex.RUnlock()
+		return v
+	}
+	configMutex.RUnlock()
+
+	c, _ := Load()
+	return strings.TrimSpace(c.CurrentInstance)
+}
+
+// SetCurrentInstance saves the default instance name; "" clears it.
+func SetCurrentInstance(name string) error {
+	name = strings.TrimSpace(name)
+	return Update(func(c *AppConfig) { c.CurrentInstance = name })
 }

@@ -5,6 +5,7 @@ package nativeinstall
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"os"
 	"path/filepath"
 	"sync"
@@ -48,6 +49,33 @@ func SignInSharedAccount(ctx context.Context, dir string, hwnd uintptr, dispatch
 	return xbox.SignIn(ctx, hwnd, func(id string) (err error) {
 		return saveSharedAccountSelection(dir, id)
 	}, dispatch)
+}
+
+// ForgetSharedAccount signs the launcher out: it deletes the saved account
+// selection together with the content keys cached for it, and drops the
+// in-memory Xbox session so nothing falls back to the old account. Signing
+// out when no account is saved is not an error. The Microsoft account itself
+// stays known to Windows.
+func ForgetSharedAccount(dir string) (err error) {
+	if dir == "" {
+		return errors.New("invalid account directory")
+	}
+	selectionMu.Lock()
+	defer selectionMu.Unlock()
+	defer recoverFailure(&err)
+	if _, statErr := os.Stat(dir); os.IsNotExist(statErr) {
+		xbox.ConfigureAccountSelection("", nil)
+		return nil
+	}
+	lock := lockAccountSelection(dir)
+	defer windows.CloseHandle(lock)
+	if e := os.Remove(filepath.Join(dir, "wam-account.dpapi")); e != nil && !os.IsNotExist(e) {
+		return &Error{Code: "ERR_AUTH_ACCOUNT_SELECTION", Reason: "cannot remove saved account", cause: e}
+	}
+	selectionEpoch.Add(1)
+	xbox.ConfigureAccountSelection("", nil)
+	_ = xbox.ResetSession()
+	return nil
 }
 
 func saveSharedAccountSelection(dir, id string) (err error) {

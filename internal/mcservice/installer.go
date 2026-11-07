@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/nativeinstall"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/versions"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type VersionStatus struct {
@@ -62,7 +62,7 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 		RequireFullLicense: true,
 		Prepare:            func(staging string) error { return leviloader.EnsureForVersion(ctx, staging) },
 		Progress: func(p nativeinstall.Progress) {
-			application.Get().Event.Emit(EventExtractProgress, types.ExtractProgress{
+			eventsink.From(ctx).Emit(EventExtractProgress, types.ExtractProgress{
 				Dir: outDir, Bytes: p.FileCurrent, TotalBytes: p.FileTotal,
 				GlobalCurrent: p.Current, GlobalTotal: p.Total, CurrentFile: p.File, Ts: time.Now().UnixMilli(),
 			})
@@ -77,10 +77,10 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 		if errors.Is(err, context.Canceled) {
 			code = "ERR_CANCELED"
 		}
-		application.Get().Event.Emit(EventExtractError, code)
+		eventsink.From(ctx).Emit(EventExtractError, code)
 		return code
 	}
-	application.Get().Event.Emit(EventExtractDone, outDir)
+	eventsink.From(ctx).Emit(EventExtractDone, outDir)
 	return ""
 }
 

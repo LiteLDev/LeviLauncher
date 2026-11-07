@@ -12,6 +12,7 @@ import (
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
@@ -20,7 +21,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
-	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/sys/windows"
 )
 
@@ -99,7 +99,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		if isProcessRunningAtPath(exe) {
 			return "ERR_GAME_ALREADY_RUNNING"
 		}
-		application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
+		eventsink.From(ctx).Emit(launch.EventMcLaunchStart, struct{}{})
 		prepare, err := uwpNativePreparation(dir, name, exe, meta.EnableConsole)
 		if err != nil {
 			return "ERR_UWP_PREPARE: " + err.Error()
@@ -131,7 +131,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	if !utils.FileExists(exe) {
 		return "ERR_NOT_FOUND_EXE"
 	}
-	application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
+	eventsink.From(ctx).Emit(launch.EventMcLaunchStart, struct{}{})
 	if _, err := leviloader.PatchAndActivate(ctx, dir); err != nil {
 		log.Printf("Failed to activate loader for %s: %v", exe, err)
 		return "ERR_LAUNCH_GAME"

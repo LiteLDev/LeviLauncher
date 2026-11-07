@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type Events struct {
@@ -74,7 +74,8 @@ func NewManager(events Events, opts Options) *Manager {
 		opts:   opts,
 		tasks:  map[string]*state{},
 		emitEvent: func(name string, data ...any) bool {
-			return application.Get().Event.Emit(name, data...)
+			eventsink.Emit(name, data...)
+			return true
 		},
 	}
 }

@@ -1,0 +1,9 @@
+{
+  "primitives": {
+    "log_title": "Dziennik",
+    "log_empty": "Brak danych wyjściowych",
+    "copy": "Kopiuj",
+    "copied": "Skopiowano",
+    "page_of": "Strona {{page}} / {{total}}"
+  }
+}

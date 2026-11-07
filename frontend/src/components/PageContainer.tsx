@@ -6,11 +6,13 @@ import { cn } from "@/utils/cn";
 interface PageContainerProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   animate?: boolean;
+  /** Drop the `--page-max-width` cap, e.g. for edge-to-edge media pages. */
+  fullBleed?: boolean;
 }
 
 export const PageContainer = forwardRef<HTMLDivElement, PageContainerProps>(
-  ({ children, className, animate = true, ...props }, ref) => {
-    const styles = cn(LAYOUT.PAGE.CONTAINER, className);
+  ({ children, className, animate = true, fullBleed = false, ...props }, ref) => {
+    const styles = cn(LAYOUT.PAGE.CONTAINER, fullBleed && "max-w-none", className);
 
     if (!animate) {
       return (

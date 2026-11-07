@@ -96,7 +96,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           </ModalPanel>
         )}
         {!!itemNames?.length && (
-          <ul className="max-h-40 overflow-y-auto rounded-xl border border-border/70 bg-surface-secondary/50 p-4 text-sm font-mono leading-6 [overflow-wrap:anywhere]">
+          <ul className="select-text max-h-[clamp(6rem,calc(100dvh-16rem),24rem)] overflow-y-auto overscroll-contain custom-scrollbar rounded-xl border border-border/70 bg-surface-secondary/50 p-4 text-sm font-mono leading-6 [overflow-wrap:anywhere]">
             {itemNames.map((name, index) => <li key={`${index}-${name}`}>{name}</li>)}
           </ul>
         )}
@@ -113,7 +113,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="max-h-48 overflow-y-auto"
+              className="max-h-[clamp(6rem,30vh,20rem)] overflow-y-auto"
             >
               <ModalNotice role="alert" tone="danger">{error || confirmError}</ModalNotice>
             </motion.div>

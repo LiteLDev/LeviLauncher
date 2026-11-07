@@ -51,6 +51,38 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Installs, upgrades and uninstalls the installers for real: the runner is disposable and elevated. They
+      # run first, as they need a user for whom LeviLauncher has never run, which the Go tests would break.
+      - uses: actions/download-artifact@v8
+        with:
+          name: LeviLauncher.exe
+          path: bin
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10
+
+      # test.ps1 upgrades 0.0.1 to 0.0.2, and from the last release built with Inno Setup.
+      - name: Prepare installer tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for version in 0.0.1 0.0.2; do
+            pwsh packaging/wix/build.ps1 -Version "$version" -Arch x64 -BinDir bin -OutDir installer-test
+          done
+          gh release download v1.0.7 --repo "$GITHUB_REPOSITORY" --pattern LeviLauncher-amd64-installer.exe --dir inno
+
+      # Windows PowerShell 5.1, the oldest shell test.ps1 supports.
+      - name: Installer tests
+        shell: powershell
+        run: ./packaging/wix/test.ps1 -ArtifactsDir installer-test -Arch x64 -InnoSetup inno/LeviLauncher-amd64-installer.exe
+
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer-test-logs
+          path: installer-test/logs/
+
       - uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: "3.0.9"
@@ -88,37 +120,6 @@ jobs:
         run: |
           npm ci --prefix frontend
           node --test "frontend/scripts/*.test.mjs" "build/*.test.mjs"
-
-      # Installs, upgrades and uninstalls the installers for real: the runner is disposable and elevated.
-      - uses: actions/download-artifact@v8
-        with:
-          name: LeviLauncher.exe
-          path: bin
-
-      - uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: 10
-
-      # test.ps1 upgrades 0.0.1 to 0.0.2, and from the last release built with Inno Setup.
-      - name: Prepare installer tests
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for version in 0.0.1 0.0.2; do
-            pwsh packaging/wix/build.ps1 -Version "$version" -Arch x64 -BinDir bin -OutDir installer-test
-          done
-          gh release download v1.0.7 --repo "$GITHUB_REPOSITORY" --pattern LeviLauncher-amd64-installer.exe --dir inno
-
-      # Windows PowerShell 5.1, the oldest shell test.ps1 supports.
-      - name: Installer tests
-        shell: powershell
-        run: ./packaging/wix/test.ps1 -ArtifactsDir installer-test -Arch x64 -InnoSetup inno/LeviLauncher-amd64-installer.exe
-
-      - if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: installer-test-logs
-          path: installer-test/logs/
 
   # The one check for the branch ruleset to require.
   ci-ok:

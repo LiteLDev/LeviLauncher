@@ -3,6 +3,7 @@ package mcservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/lip"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
 )
 
 func TestResolveSupportedLeviLaminaVersionsUsesExactGameVersionOnly(t *testing.T) {
@@ -133,7 +135,7 @@ func TestInstallLeviLaminaSwitchesToUpdateWhenAlreadyExplicit(t *testing.T) {
 	}
 	ws := &fakeLipWorkspace{
 		states:     map[string]lip.PackageInstallState{},
-		installErr: []error{errors.New("Cannot install 'github.com/LiteLDev/LeviLamina@0.13.1': package 'github.com/LiteLDev/LeviLamina' is already explicitly installed (version 0.13.0).")},
+		installErr: []error{fmt.Errorf("Cannot install 'github.com/LiteLDev/LeviLamina@0.13.1': package 'github.com/LiteLDev/LeviLamina' is already explicitly installed (version 0.13.0). %w", engine.ErrAlreadyExplicitlyInstalled)},
 	}
 	useFakeLipWorkspace(t, ws)
 	lipResolveTargetDir = resolveLIPTargetDir

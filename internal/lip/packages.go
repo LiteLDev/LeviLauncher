@@ -2,6 +2,7 @@ package lip
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -460,13 +461,7 @@ func IsPackageExplicitlyInstalled(ctx context.Context, workDir string, packageRe
 // isAlreadyExplicitlyInstalled reports whether err is lip's refusal to
 // install a package that is already explicitly installed.
 func isAlreadyExplicitlyInstalled(err error) bool {
-	// TODO(wave3): errors.Is(err, engine.ErrAlreadyExplicitlyInstalled)
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(formatEngineError(err))
-	return strings.Contains(msg, "already explicitly installed") ||
-		(strings.Contains(msg, "cannot install package") && strings.Contains(msg, "already installed"))
+	return errors.Is(err, engine.ErrAlreadyExplicitlyInstalled)
 }
 
 // IsAlreadyExplicitlyInstalled reports whether err is lip's refusal to
@@ -479,11 +474,10 @@ func IsAlreadyExplicitlyInstalled(err error) bool {
 // formatEngineError is the full message of an engine error, as lip prints
 // it.
 func formatEngineError(err error) string {
-	// TODO(wave3): engine.FormatError(err)
 	if err == nil {
 		return ""
 	}
-	return err.Error()
+	return engine.FormatError(err)
 }
 
 // ErrorMessage is the full message of an error of a package operation, as

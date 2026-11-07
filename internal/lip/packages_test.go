@@ -437,8 +437,9 @@ func TestIsAlreadyExplicitlyInstalled(t *testing.T) {
 	}{
 		{nil, false},
 		{errors.New("boom"), false},
-		{errors.New("Cannot install 'github.com/a/b@1.0.0': package 'github.com/a/b' is already explicitly installed (version 1.0.0). To change its version, run 'lip update github.com/a/b@1.0.0' instead."), true},
-		{fmt.Errorf("wrapped: %w", errors.New("Cannot install package 'x' because it is already explicitly installed.")), true},
+		{errors.New("Cannot install 'github.com/a/b@1.0.0': package 'github.com/a/b' is already explicitly installed (version 1.0.0)."), false},
+		{engine.ErrAlreadyExplicitlyInstalled, true},
+		{fmt.Errorf("wrapped: %w", engine.ErrAlreadyExplicitlyInstalled), true},
 	}
 	for _, tt := range tests {
 		if got := IsAlreadyExplicitlyInstalled(tt.err); got != tt.want {

@@ -3,10 +3,12 @@ package mcservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/liteldev/LeviLauncher/internal/lip"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
 	"github.com/liteldev/LeviLauncher/internal/types"
 )
 
@@ -141,14 +143,14 @@ func TestInstallLIPPackageOtherVariantIsInstalled(t *testing.T) {
 }
 
 func TestIsLipAlreadyExplicitlyInstalledForMatchesWholeID(t *testing.T) {
-	err := errors.New("Cannot install 'github.com/LiteLDev/LeviLaminaExt@1.0.0': package 'github.com/LiteLDev/LeviLaminaExt' is already explicitly installed (version 1.0.0).")
+	err := fmt.Errorf("Cannot install 'github.com/LiteLDev/LeviLaminaExt@1.0.0': package 'github.com/LiteLDev/LeviLaminaExt' is already explicitly installed (version 1.0.0). %w", engine.ErrAlreadyExplicitlyInstalled)
 	if isLipAlreadyExplicitlyInstalledFor(err, leviLaminaPackageID) {
 		t.Fatal("LeviLaminaExt must not match LeviLamina")
 	}
 	if !isLipAlreadyExplicitlyInstalledFor(err, "github.com/LiteLDev/LeviLaminaExt") {
 		t.Fatal("expected a match")
 	}
-	migrated := errors.New("Cannot install 'github.com/LiteLDev/LeviLamina#client@1.0.0': package 'github.com/LiteLDev/LeviLamina#client' is already explicitly installed (version 1.0.0).")
+	migrated := fmt.Errorf("Cannot install 'github.com/LiteLDev/LeviLamina#client@1.0.0': package 'github.com/LiteLDev/LeviLamina#client' is already explicitly installed (version 1.0.0). %w", engine.ErrAlreadyExplicitlyInstalled)
 	if !isLipAlreadyExplicitlyInstalledFor(migrated, leviLaminaPackageID) {
 		t.Fatal("expected a match for the #client identity")
 	}
@@ -198,7 +200,7 @@ func TestInstallLIPPackageRetriesWithoutPinnedLeviLamina(t *testing.T) {
 		states: map[string]lip.PackageInstallState{
 			"github.com/liteldev/levilamina": migratedState("github.com/LiteLDev/LeviLamina", "", "1.2.3", false),
 		},
-		installErr: []error{errors.New("Cannot install 'github.com/LiteLDev/LeviLamina@1.2.3': package 'github.com/LiteLDev/LeviLamina' is already explicitly installed (version 1.2.3).")},
+		installErr: []error{fmt.Errorf("Cannot install 'github.com/LiteLDev/LeviLamina@1.2.3': package 'github.com/LiteLDev/LeviLamina' is already explicitly installed (version 1.2.3). %w", engine.ErrAlreadyExplicitlyInstalled)},
 	}
 	useFakeLipWorkspace(t, ws)
 
@@ -214,7 +216,7 @@ func TestInstallLIPPackageRetriesWithoutPinnedLeviLamina(t *testing.T) {
 func TestInstallLIPPackageFallsBackToUpdateWhenAlreadyExplicit(t *testing.T) {
 	ws := &fakeLipWorkspace{
 		states:     map[string]lip.PackageInstallState{},
-		installErr: []error{errors.New("Cannot install 'github.com/LiteLDev/Foo@1.0.0': package 'github.com/LiteLDev/Foo' is already explicitly installed (version 0.9.0).")},
+		installErr: []error{fmt.Errorf("Cannot install 'github.com/LiteLDev/Foo@1.0.0': package 'github.com/LiteLDev/Foo' is already explicitly installed (version 0.9.0). %w", engine.ErrAlreadyExplicitlyInstalled)},
 	}
 	useFakeLipWorkspace(t, ws)
 

@@ -1,0 +1,187 @@
+<Wix
+  xmlns="http://wixtoolset.org/schemas/v4/wxs"
+  xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal"
+  xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!--
+    DisableModify="yes" leaves a single Uninstall entry in Installed Apps. WixStdBA still shows
+    its Modify page for an interactive /uninstall, which holds the data cleanup options.
+  -->
+  <Bundle
+    Name="LeviLauncher"
+    Manufacturer="LeviMC"
+    Version="$(BundleVersion)"
+    UpgradeCode="{365CBE25-3CA0-4039-96E4-627F9C289133}"
+    AboutUrl="https://github.com/LiteLDev/LeviLauncher"
+    HelpUrl="https://github.com/LiteLDev/LeviLauncher/issues"
+    IconSourceFile="$(IconFile)"
+    DisableModify="yes"
+    bal:CommandLineVariables="caseInsensitive">
+
+    <!--
+      GPLv3 section 9 grants the right to run the program without accepting the license, so the
+      theme links to it instead of asking for consent.
+    -->
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication
+        Theme="hyperlinkLicense"
+        ThemeFile="LeviLauncher.thm"
+        LocalizationFile="en-US.wxl"
+        LogoFile="logo.png"
+        LicenseUrl="https://github.com/LiteLDev/LeviLauncher/blob/main/COPYING"
+        LaunchTarget="[InstallFolder]\LeviLauncher.exe"
+        ShowVersion="yes" />
+      <Payload Name="1031\thm.wxl" SourceFile="de-DE.wxl" />
+      <Payload Name="1033\thm.wxl" SourceFile="en-US.wxl" />
+      <Payload Name="1036\thm.wxl" SourceFile="fr-FR.wxl" />
+      <Payload Name="1041\thm.wxl" SourceFile="ja-JP.wxl" />
+      <Payload Name="1042\thm.wxl" SourceFile="ko-KR.wxl" />
+      <Payload Name="1049\thm.wxl" SourceFile="ru-RU.wxl" />
+      <Payload Name="2052\thm.wxl" SourceFile="zh-CN.wxl" />
+      <Payload Name="3082\thm.wxl" SourceFile="es-ES.wxl" />
+    </BootstrapperApplication>
+
+    <!--
+      Options of the install and uninstall pages, which can also be given on the command line,
+      e.g. setup.exe /uninstall /quiet DeleteBackups=1. Variables without a value are set by the
+      searches below unless the command line or an earlier run of this bundle already set them.
+    -->
+    <Variable Name="InstallFolder" Persisted="yes" bal:Overridable="yes" />
+    <Variable Name="DesktopShortcut" Persisted="yes" bal:Overridable="yes" />
+    <Variable Name="DeleteInstallers" Type="numeric" Value="0" bal:Overridable="yes" />
+    <Variable Name="DeleteBackups" Type="numeric" Value="0" bal:Overridable="yes" />
+    <Variable Name="DeleteVersions" Type="numeric" Value="0" bal:Overridable="yes" />
+
+    <!-- Written by the MSI package, so that upgrades keep the choices of the installed version. -->
+    <util:RegistrySearch
+      Id="PreviousInstallFolderSearch"
+      Variable="PreviousInstallFolder"
+      Root="HKLM"
+      Key="SOFTWARE\LeviMC\LeviLauncher"
+      Value="InstallFolder"
+      Bitness="always64" />
+    <util:RegistrySearch
+      Id="PreviousDesktopShortcutSearch"
+      Variable="PreviousDesktopShortcut"
+      Root="HKLM"
+      Key="SOFTWARE\LeviMC\LeviLauncher"
+      Value="DesktopShortcut"
+      Result="exists"
+      Bitness="always64"
+      After="PreviousInstallFolderSearch" />
+
+    <SetVariable
+      Id="InstallFolderFromPrevious"
+      Variable="InstallFolder"
+      Value="[PreviousInstallFolder]"
+      Type="formatted"
+      After="PreviousInstallFolderSearch"
+      Condition="NOT InstallFolder AND PreviousInstallFolder" />
+    <!-- Upgrades the Inno Setup installation in place, wherever the user installed it. -->
+    <util:RegistrySearch
+      Id="InnoInstallFolderSearch"
+      Variable="InstallFolder"
+      Root="HKLM"
+      Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\org.levimc.launcher_is1"
+      Value="InstallLocation"
+      Bitness="always64"
+      After="InstallFolderFromPrevious"
+      Condition="NOT InstallFolder" />
+    <SetVariable
+      Id="DefaultInstallFolder"
+      Variable="InstallFolder"
+      Value="[ProgramFiles6432Folder]LeviMC\LeviLauncher"
+      Type="formatted"
+      After="InnoInstallFolderSearch"
+      Condition="NOT InstallFolder" />
+
+    <!--
+      A command line value is a non-empty string, so "0" counts as set. Only a value persisted
+      by the checkbox can be numeric 0, which then follows the installed state again.
+    -->
+    <SetVariable
+      Id="DesktopShortcutOn"
+      Variable="DesktopShortcut"
+      Value="1"
+      Type="numeric"
+      After="PreviousDesktopShortcutSearch"
+      Condition="NOT DesktopShortcut AND (NOT PreviousInstallFolder OR PreviousDesktopShortcut)" />
+    <SetVariable
+      Id="DesktopShortcutOff"
+      Variable="DesktopShortcut"
+      Value="0"
+      Type="numeric"
+      After="DesktopShortcutOn"
+      Condition="NOT DesktopShortcut" />
+
+    <!-- Mirrors internal/vcruntime: any registered v14 runtime, in either registry view. -->
+    <util:RegistrySearch
+      Id="VCRuntime32Search"
+      Variable="VCRuntimeInstalled32"
+      Root="HKLM"
+      Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\$(VCRuntimeArch)"
+      Value="Installed"
+      Bitness="always32" />
+    <util:RegistrySearch
+      Id="VCRuntime64Search"
+      Variable="VCRuntimeInstalled64"
+      Root="HKLM"
+      Key="SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\$(VCRuntimeArch)"
+      Value="Installed"
+      Bitness="always64" />
+
+    <!--
+      Edge Update registers machine-wide runtimes in the 32-bit view. A runtime of the
+      administrator's HKCU would not be available to other users.
+    -->
+    <util:RegistrySearch
+      Id="WebView2Search"
+      Variable="WebView2Version"
+      Root="HKLM"
+      Key="SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+      Value="pv"
+      Bitness="always32" />
+
+    <Chain>
+      <!--
+        Embedded like in the former Inno Setup installer, so that setup.exe needs no download
+        of its own. Cache="remove" drops them once installed.
+      -->
+      <ExePackage
+        Id="VCRuntime"
+        SourceFile="$(VCRuntimeInstaller)"
+        Compressed="yes"
+        Cache="remove"
+        PerMachine="yes"
+        Permanent="yes"
+        Vital="yes"
+        DetectCondition="VCRuntimeInstalled32 = 1 OR VCRuntimeInstalled64 = 1"
+        InstallArguments="/install /quiet /norestart">
+        <!-- ERROR_PRODUCT_VERSION: a newer runtime is already installed. -->
+        <ExitCode Value="1638" Behavior="success" />
+      </ExePackage>
+
+      <!-- The bootstrapper downloads the runtime itself, so this one needs Internet access. -->
+      <ExePackage
+        Id="WebView2Runtime"
+        SourceFile="$(WebView2Installer)"
+        Compressed="yes"
+        Cache="remove"
+        PerMachine="yes"
+        Permanent="yes"
+        Vital="yes"
+        DetectCondition="WebView2Version AND WebView2Version &lt;&gt; &quot;0.0.0.0&quot;"
+        InstallArguments="/silent /install" />
+
+      <MsiPackage SourceFile="$(LeviLauncher.Package.TargetPath)">
+        <MsiProperty Name="INSTALLFOLDER" Value="[InstallFolder]" />
+        <MsiProperty Name="DESKTOPSHORTCUT" Value="[DesktopShortcut]" />
+        <MsiProperty Name="DELETEINSTALLERS" Value="[DeleteInstallers]" />
+        <MsiProperty Name="DELETEBACKUPS" Value="[DeleteBackups]" />
+        <MsiProperty Name="DELETEVERSIONS" Value="[DeleteVersions]" />
+      </MsiPackage>
+    </Chain>
+
+  </Bundle>
+
+</Wix>

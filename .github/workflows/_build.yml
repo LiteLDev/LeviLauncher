@@ -1,0 +1,77 @@
+name: Build
+
+# Not run on its own: ci.yml and release.yml call it to build LeviLauncher.exe and the installers.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version stamped into LeviLauncher.exe and the installers. A leading "v" is dropped.
+        type: string
+        default: 0.0.0-ci
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - run: echo "VERSION=${VERSION#v}" >> "$GITHUB_ENV"
+        env:
+          VERSION: ${{ inputs.version }}
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: "3.0.9"
+
+      - name: Build native loader
+        working-directory: native/levilauncher
+        run: |
+          xmake f -p windows -a x64 -m release --toolchain=msvc --deploy=y -y
+          xmake -y
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10
+
+      # The production frontend build also type-checks it and enforces the bundle budget.
+      - name: Build LeviLauncher.exe
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.77
+          wails3 task windows:build PRODUCTION=true
+
+      - name: Build installers
+        run: pwsh packaging/wix/build.ps1 -Version "$VERSION" -Arch x64 -BinDir bin -OutDir dist
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: bin/LeviLauncher.exe
+          archive: false
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: dist/LeviLauncher-${{ env.VERSION }}-win-x64.msi
+          archive: false
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v7
+        with:
+          path: dist/LeviLauncher-${{ env.VERSION }}-win-x64-setup.exe
+          archive: false
+          if-no-files-found: error

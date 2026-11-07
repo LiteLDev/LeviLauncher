@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    # The merge queue's temporary branches are tested by merge_group.
+    branches-ignore:
+      - gh-readonly-queue/**
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    env:
+      GOOS: windows
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: gofmt
+        run: test -z "$(gofmt -l . | tee /dev/stderr)"
+
+      - name: go mod tidy
+        run: go mod tidy -diff
+
+      # main.go embeds the frontend build, which go vet only needs to exist.
+      - name: go vet
+        run: |
+          mkdir -p frontend/dist && touch frontend/dist/index.html
+          go vet ./...
+
+      - uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
+
+  build:
+    uses: ./.github/workflows/_build.yml
+
+  test:
+    needs: build
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: "3.0.9"
+
+      # Also deploys the loader built from source for the Go tests.
+      - name: Native tests
+        working-directory: native/levilauncher
+        run: |
+          xmake f -p windows -a x64 -m release --toolchain=msvc --deploy=y -y
+          xmake -y native_tests
+          xmake run native_tests
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      # main.go embeds the frontend build, which the Go tests only need to exist.
+      - name: Go tests
+        run: |
+          mkdir -p frontend/dist && touch frontend/dist/index.html
+          go test ./...
+          go test -race ./internal/downloader ./internal/curseforge/client
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend tests
+        run: |
+          npm ci --prefix frontend
+          node --test "frontend/scripts/*.test.mjs" "build/*.test.mjs"
+
+      # Installs, upgrades and uninstalls the installers for real: the runner is disposable and elevated.
+      - uses: actions/download-artifact@v8
+        with:
+          name: LeviLauncher.exe
+          path: bin
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10
+
+      # test.ps1 upgrades 0.0.1 to 0.0.2, and from the last release built with Inno Setup.
+      - name: Prepare installer tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for version in 0.0.1 0.0.2; do
+            pwsh packaging/wix/build.ps1 -Version "$version" -Arch x64 -BinDir bin -OutDir installer-test
+          done
+          gh release download v1.0.7 --repo "$GITHUB_REPOSITORY" --pattern LeviLauncher-amd64-installer.exe --dir inno
+
+      # Windows PowerShell 5.1, the oldest shell test.ps1 supports.
+      - name: Installer tests
+        shell: powershell
+        run: ./packaging/wix/test.ps1 -ArtifactsDir installer-test -Arch x64 -InnoSetup inno/LeviLauncher-amd64-installer.exe
+
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer-test-logs
+          path: installer-test/logs/
+
+  # The one check for the branch ruleset to require.
+  ci-ok:
+    if: always()
+    needs: [lint, build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: exit 1

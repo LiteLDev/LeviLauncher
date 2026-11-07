@@ -13,17 +13,25 @@ import { useTranslation } from "react-i18next";
 import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
 import { ROUTES } from "@/constants/routes";
 import { getRouteLabelKey, ROUTE_LABEL_KEYS } from "@/constants/routeLabels";
+import {
+  ActivityButton,
+  CommandPaletteButton,
+  ShellInstancePicker,
+} from "@/components/ShellControls";
 
 interface TopBarProps {
   navLocked: boolean;
   isOnboardingMode: boolean;
   tryNavigate: (path: string | number) => void;
+  /** The sidebar shows labels, so the logo column shows the wordmark too. */
+  railExpanded: boolean;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   navLocked,
   isOnboardingMode,
   tryNavigate,
+  railExpanded,
 }) => {
   const { t } = useTranslation();
   const location = useLocation();
@@ -31,6 +39,9 @@ export const TopBar: React.FC<TopBarProps> = ({
     useNavigationHistory();
 
   const pathnames = location.pathname.split("/").filter((x) => x);
+  // The expanded rail already shows the wordmark beside the logo.
+  const rootLabel =
+    pathnames.length === 0 && !railExpanded ? "LeviLauncher" : t("nav.home");
 
   const getHistoryTitle = (entry: ReturnType<typeof getBackEntry>, fallback: string) =>
     entry ? entry.title || t(getRouteLabelKey(entry.pathname)) : t(fallback);
@@ -39,11 +50,21 @@ export const TopBar: React.FC<TopBarProps> = ({
     <>
       <div
         id="wails-draggable"
-        className="fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4"
+        className="fixed top-0 right-0 left-0 h-[var(--topbar-h)] z-[60] flex items-center justify-between gap-2 pr-2 sm:pr-4"
       >
-        <div className="flex items-center gap-2 overflow-hidden">
-          <div className="w-14 shrink-0 flex items-center justify-center">
+        <div className="flex items-center gap-2 overflow-hidden min-w-0">
+          <div
+            className={cn(
+              "w-[var(--rail-w)] shrink-0 flex items-center gap-2.5",
+              railExpanded ? "px-4" : "justify-center",
+            )}
+          >
             <LeviIcon width={32} height={32} />
+            {railExpanded && (
+              <span className="truncate font-bold tracking-tight text-brand-700 dark:text-brand-300">
+                LeviLauncher
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
@@ -109,7 +130,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                     : "text-muted dark:text-zinc-400"
                 }`}
               >
-                {pathnames.length === 0 ? "LeviLauncher" : t("nav.home")}
+                {rootLabel}
               </span>
             ) : (
               <Link
@@ -124,7 +145,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                     : "text-muted dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-200"
                 }`}
               >
-                {pathnames.length === 0 ? "LeviLauncher" : t("nav.home")}
+                {rootLabel}
               </Link>
             )}
             {pathnames.map((_, index) => {
@@ -167,7 +188,10 @@ export const TopBar: React.FC<TopBarProps> = ({
           </nav>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <CommandPaletteButton isDisabled={navLocked} />
+          <ShellInstancePicker isDisabled={navLocked} />
+          <ActivityButton />
           <AdministratorBadge />
           <div
             className={`hidden sm:block ${navLocked ? "pointer-events-none opacity-50" : ""}`}
@@ -188,7 +212,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
       </div>
 
-      <div className="fixed top-0 right-0 h-14 z-[80] flex items-center justify-end pr-4 pointer-events-none">
+      <div className="fixed top-0 right-0 h-[var(--topbar-h)] z-[80] flex items-center justify-end pr-2 sm:pr-4 pointer-events-none">
         <div className="pointer-events-auto">
           <WindowControls
             navLocked={navLocked}

@@ -34,7 +34,7 @@ async function run(viewport, mode, version, supported) {
     const label = mode === 'settings' ? translations.versions.edit.enable_isolation : translations.downloadpage.install_folder.enable_isolation;
     const toggle = page.getByRole('switch', { name: label, exact: true });
     await toggle.waitFor();
-    if (mode === 'settings') await page.getByText(version, { exact: true }).waitFor();
+    if (mode === 'settings') await page.locator('main').getByText(version, { exact: true }).waitFor();
     // Local package versions are determined from their manifest after extraction.
     const selectable = mode === 'local' || supported;
     assert.equal(await toggle.isDisabled(), !selectable);

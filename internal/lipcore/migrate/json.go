@@ -293,6 +293,9 @@ func writeJSONString(buf *bytes.Buffer, s string) {
 
 func jstr(s string) *jvalue { return &jvalue{kind: jString, str: s} }
 
+// jnull is a JSON null.
+func jnull() *jvalue { return &jvalue{kind: jNull} }
+
 // jstrp encodes a nullable string.
 func jstrp(s *string) *jvalue {
 	if s == nil {

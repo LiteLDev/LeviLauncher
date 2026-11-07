@@ -367,7 +367,9 @@ func TestToV3KeyOrder(t *testing.T) {
 	}
 }
 
-func TestToV3WildcardPlatformInsertsRIDVariant(t *testing.T) {
+// TestToV3WildcardPlatformInsertsEmptyVariant: lip v0.38 inserts a variant
+// without a platform whatever runtime reads it (rid is unused).
+func TestToV3WildcardPlatformInsertsEmptyVariant(t *testing.T) {
 	useGoldenRanges(t)
 	in := `{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0",
 	  "info":{"name":"n","description":"d","author":"a","tags":[]},
@@ -393,7 +395,7 @@ func TestToV3WildcardPlatformInsertsRIDVariant(t *testing.T) {
 	for _, v := range doc.Variants {
 		platforms = append(platforms, v.Platform)
 	}
-	if got := strings.Join(platforms, ","); got != "linux-arm64,win-*,linux-arm64" {
+	if got := strings.Join(platforms, ","); got != ",win-*,linux-arm64" {
 		t.Errorf("platforms = %s", got)
 	}
 	if a := doc.Variants[1].Assets; len(a) != 1 || a[0].Type != "zip" || a[0].URLs[0] != "https://x/1.0.0.zip" {
@@ -508,5 +510,71 @@ func TestParsePackageID(t *testing.T) {
 		if ok != tt.ok || got != tt.want {
 			t.Errorf("parsePackageID(%q) = %q, %v; want %q, %v", tt.in, got, ok, tt.want, tt.ok)
 		}
+	}
+}
+
+// migratedVariant decodes a variant of the output of ToFormat3.
+type migratedVariant struct {
+	Platform string `json:"platform"`
+	Assets   []struct {
+		Type       string `json:"type"`
+		Placements []struct {
+			Type string `json:"type"`
+			Src  string `json:"src"`
+			Dest string `json:"dest"`
+		} `json:"placements"`
+	} `json:"assets"`
+	Scripts struct {
+		PostInstall []string `json:"post_install"`
+	} `json:"scripts"`
+}
+
+func migrated(t *testing.T, in string) []migratedVariant {
+	t.Helper()
+	out, err := ToFormat3([]byte(in))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		Variants []migratedVariant `json:"variants"`
+	}
+	if err := json.Unmarshal(out, &doc); err != nil {
+		t.Fatal(err)
+	}
+	return doc.Variants
+}
+
+// Ports Migrate_V2PlatformWithoutGoarch_AddsEmptyVariantWithoutPlatform of
+// PackageManifestMigrationTests.cs (v0.38.0-beta.1).
+func TestToFormat3V2PlatformWithoutGoarchAddsEmptyVariantWithoutPlatform(t *testing.T) {
+	v := migrated(t, `{
+	  "format_version": 2, "tooth": "github.com/test/tool", "version": "1.0.0",
+	  "info": { "name": "", "description": "", "author": "", "tags": [] },
+	  "platforms": [ { "goos": "windows", "commands": { "post_install": ["echo"] } } ]
+	}`)
+	if len(v) != 2 || v[0].Platform != "" || v[1].Platform != "win-*" {
+		t.Fatalf("variants = %+v", v)
+	}
+	if len(v[0].Scripts.PostInstall) != 0 || len(v[0].Assets) != 0 {
+		t.Errorf("inserted variant = %+v", v[0])
+	}
+	if strings.Join(v[1].Scripts.PostInstall, ",") != "echo" {
+		t.Errorf("post_install = %v", v[1].Scripts.PostInstall)
+	}
+}
+
+// Ports Migrate_V2WithoutPlatforms_PlacesWithoutAssetUrlAreOfASelfAsset.
+func TestToFormat3V2WithoutPlatformsPlacesWithoutAssetURLAreOfASelfAsset(t *testing.T) {
+	v := migrated(t, `{
+	  "format_version": 2, "tooth": "github.com/test/tool", "version": "1.0.0",
+	  "info": { "name": "", "description": "", "author": "", "tags": [] },
+	  "files": { "place": [ { "src": "a/*", "dest": "b" } ] }
+	}`)
+	if len(v) != 1 || v[0].Platform != "" || len(v[0].Assets) != 1 || v[0].Assets[0].Type != "self" {
+		t.Fatalf("variants = %+v", v)
+	}
+	p := v[0].Assets[0].Placements
+	if len(p) != 1 || p[0].Src != "a/" || p[0].Dest != "b" || p[0].Type != "dir" {
+		t.Errorf("placements = %+v", p)
 	}
 }

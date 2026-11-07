@@ -1,6 +1,8 @@
 // Package migrate converts tooth.json documents of any supported format
-// (1, 2, 3) into a rendered format 3 document, porting lip 0.37.0
-// src/Lip.Core/Migration/PackageManifests/*.
+// (1, 2, 3) into a rendered format 3 document, porting
+// src/Lip.Core/Migration/PackageManifests/* of lip 0.37.0 with the changes
+// of lip v0.38.0-beta.1 (an empty variant without a platform for platform
+// patterns; see ToFormat3).
 //
 // Template rendering implements the subset of Scriban 7.5 that manifests use
 // (see renderTemplate); constructs outside it fail with
@@ -28,7 +30,7 @@ var ErrUnsupportedFormat = errors.New("migrate: unsupported format_version")
 // formatUUID is PackageManifest's format 3 UUID.
 const formatUUID = "289f771f-2c9a-4d73-9f3f-8492495a924d"
 
-// ToV3 takes raw tooth.json bytes and returns format 3 JSON bytes
+// ToFormat3 takes raw tooth.json bytes and returns format 3 JSON bytes
 // (compact; object member order is preserved, so "dependencies" keep their
 // order).
 //
@@ -41,13 +43,14 @@ const formatUUID = "289f771f-2c9a-4d73-9f3f-8492495a924d"
 //     with model {version, path}; GOOS/GOARCH -> RID; asset type inferred
 //     from URL extension; place src ending in "*" -> dir placement; script
 //     mapping; invalid dependencies dropped; when any variant platform
-//     contains "*", an empty variant with platform = rid is inserted at
-//     index 0), then rendered. The output has every field lip serializes;
+//     contains "*", an empty variant without a platform is inserted at
+//     index 0, as lip v0.38 does), then rendered. The output has every field lip serializes;
 //     "version" is copied unnormalized and tooth path, tags and placement
 //     destinations are left for manifest.Parse to validate.
 //
-// rid is the current .NET runtime identifier (e.g. "win-x64").
-func ToV3(raw []byte, rid string) ([]byte, error) {
+// Any error means lip cannot read the tooth.json as format 3 (lip v0.38's
+// ToothCompat.ReadToothJson turns every one into a PackageFormatException).
+func ToFormat3(raw []byte) ([]byte, error) {
 	root, err := parseJSON(raw)
 	if err != nil {
 		return nil, fmt.Errorf("migrate: %w", err)
@@ -67,7 +70,7 @@ func ToV3(raw []byte, rid string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		if out, err = migrateV2ToV3(v2, rid); err != nil {
+		if out, err = migrateV2ToV3(v2); err != nil {
 			return nil, err
 		}
 	case 2:
@@ -75,7 +78,7 @@ func ToV3(raw []byte, rid string) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		if out, err = migrateV2ToV3(v2, rid); err != nil {
+		if out, err = migrateV2ToV3(v2); err != nil {
 			return nil, err
 		}
 	case 3:
@@ -89,6 +92,13 @@ func ToV3(raw []byte, rid string) ([]byte, error) {
 	encodeJSON(&buf, out)
 	return buf.Bytes(), nil
 }
+
+// ToV3 is ToFormat3. lip v0.37.0 named its own runtime identifier as the
+// platform of the variant it inserted for platform patterns; since lip
+// v0.38 that variant has no platform, so rid is unused.
+//
+// Deprecated: use ToFormat3.
+func ToV3(raw []byte, rid string) ([]byte, error) { return ToFormat3(raw) }
 
 // FormatVersion returns the "format_version" field of raw, or an error.
 // Like JsonElement.GetProperty(...).GetInt32() it requires an object root

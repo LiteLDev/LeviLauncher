@@ -31,9 +31,9 @@
   <String Id="ProgressCancelButton" Value="&amp;Cancelar" />
   <String Id="ModifyHeader" Value="Modificar la instalación" />
   <String Id="UninstallOptionsDesc" Value="Tu biblioteca de instancias se conserva por defecto. Solo se eliminarán los elementos seleccionados a continuación." />
-  <String Id="UninstallDeleteInstallers" Value="Eliminar paquetes descargados (installers)" />
-  <String Id="UninstallDeleteBackups" Value="Eliminar copias de seguridad (backups)" />
-  <String Id="UninstallDeleteVersions" Value="[Riesgo alto] Eliminar instancias (versions)" />
+  <String Id="UninstallDeleteInstallers" Value="Eliminar paquetes descargados (Cache)" />
+  <String Id="UninstallDeleteBackups" Value="Eliminar copias de seguridad (Backups)" />
+  <String Id="UninstallDeleteVersions" Value="[Riesgo alto] Eliminar instancias (Instances)" />
   <String Id="UninstallDangerNote" Value="Las carpetas seleccionadas se eliminarán de forma permanente." />
   <String Id="ModifyRepairButton" Value="&amp;Reparar" />
   <String Id="ModifyUninstallButton" Value="&amp;Desinstalar" />

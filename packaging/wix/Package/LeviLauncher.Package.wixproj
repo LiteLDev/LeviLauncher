@@ -8,9 +8,10 @@
     <!--
       ICE09, ICE32 and ICE61 are implemented in VBScript, which recent Windows versions no longer
       ship. ICE38, ICE43 and ICE57 expect shortcuts in the user's profile, but a per-machine
-      package installs them to the Start Menu and desktop of all users.
+      package installs them to the Start Menu and desktop of all users. ICE40 warns about the
+      REINSTALLMODE that Package.wxs sets on purpose.
     -->
-    <SuppressIces>ICE09;ICE32;ICE61;ICE38;ICE43;ICE57</SuppressIces>
+    <SuppressIces>ICE09;ICE32;ICE61;ICE38;ICE43;ICE57;ICE40</SuppressIces>
   </PropertyGroup>
 
   <ItemGroup>

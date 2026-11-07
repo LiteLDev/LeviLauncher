@@ -15,6 +15,13 @@
 
     <MediaTemplate EmbedCab="yes" />
 
+    <!--
+      The package owns its install folder, so its files always replace what is there. With the
+      default "omus", a LeviLauncher.exe of a higher version, such as one an Inno Setup
+      installer put there, makes Windows Installer skip the whole component.
+    -->
+    <Property Id="REINSTALLMODE" Value="amus" />
+
     <Icon Id="LeviLauncher.ico" SourceFile="$(IconFile)" />
     <Property Id="ARPPRODUCTICON" Value="LeviLauncher.ico" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/LiteLDev/LeviLauncher" />
@@ -110,6 +117,20 @@
       <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
       <!-- Only removed when empty, like the Inno Setup uninstaller did. -->
       <RemoveFolder Id="RemoveLeviMCFolder" Directory="LEVIMCFOLDER" On="uninstall" />
+    </Component>
+
+    <!--
+      A component of its own, keyed by a registry value rather than a versioned file, so that it
+      is installed whatever the version of a LeviLauncher.exe found in the install folder.
+    -->
+    <Component Id="LegacyInstallerCleanup" Directory="INSTALLFOLDER">
+      <RegistryValue
+        Root="HKLM"
+        Key="SOFTWARE\LeviMC\LeviLauncher"
+        Name="LegacyInstallerCleanup"
+        Type="integer"
+        Value="1"
+        KeyPath="yes" />
 
       <!--
         Versions up to 1.0.7 were installed by an Inno Setup installer, and earlier ones by NSIS.
@@ -170,7 +191,7 @@
       Timeout="5" />
 
     <!--
-      Deletes the data of the launcher in %APPDATA%, and the folders of the instance library
+      Deletes the data of the launcher in %APPDATA% and %LOCALAPPDATA%, and the folders of its data root
       selected on the uninstall page of setup.exe. Impersonated, because that data belongs to the
       user who uninstalls, not to LocalSystem. Not run by upgrades, which keep all data.
     -->

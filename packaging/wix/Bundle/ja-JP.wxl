@@ -31,9 +31,9 @@
   <String Id="ProgressCancelButton" Value="キャンセル(&amp;C)" />
   <String Id="ModifyHeader" Value="セットアップの変更" />
   <String Id="UninstallOptionsDesc" Value="インスタンスライブラリのデータは標準で保持されます。アンインストール時には下で選択した項目だけを削除します。" />
-  <String Id="UninstallDeleteInstallers" Value="ダウンロード済みのパッケージを削除 (installers)" />
-  <String Id="UninstallDeleteBackups" Value="バックアップを削除 (backups)" />
-  <String Id="UninstallDeleteVersions" Value="[危険] ゲームインスタンスを削除 (versions)" />
+  <String Id="UninstallDeleteInstallers" Value="ダウンロード済みのパッケージを削除 (Cache)" />
+  <String Id="UninstallDeleteBackups" Value="バックアップを削除 (Backups)" />
+  <String Id="UninstallDeleteVersions" Value="[危険] ゲームインスタンスを削除 (Instances)" />
   <String Id="UninstallDangerNote" Value="選択したフォルダーは完全に削除されます。" />
   <String Id="ModifyRepairButton" Value="修復(&amp;R)" />
   <String Id="ModifyUninstallButton" Value="アンインストール(&amp;U)" />

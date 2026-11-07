@@ -31,9 +31,9 @@
   <String Id="ProgressCancelButton" Value="취소(&amp;C)" />
   <String Id="ModifyHeader" Value="설치 수정" />
   <String Id="UninstallOptionsDesc" Value="인스턴스 라이브러리 데이터는 기본적으로 유지됩니다. 제거할 때 아래에서 선택한 항목만 삭제됩니다." />
-  <String Id="UninstallDeleteInstallers" Value="다운로드한 패키지 삭제 (installers)" />
-  <String Id="UninstallDeleteBackups" Value="백업 삭제 (backups)" />
-  <String Id="UninstallDeleteVersions" Value="[높은 위험] 게임 인스턴스 삭제 (versions)" />
+  <String Id="UninstallDeleteInstallers" Value="다운로드한 패키지 삭제 (Cache)" />
+  <String Id="UninstallDeleteBackups" Value="백업 삭제 (Backups)" />
+  <String Id="UninstallDeleteVersions" Value="[높은 위험] 게임 인스턴스 삭제 (Instances)" />
   <String Id="UninstallDangerNote" Value="선택한 폴더는 영구적으로 삭제됩니다." />
   <String Id="ModifyRepairButton" Value="복구(&amp;R)" />
   <String Id="ModifyUninstallButton" Value="제거(&amp;U)" />

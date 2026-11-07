@@ -31,9 +31,9 @@
   <String Id="ProgressCancelButton" Value="取消(&amp;C)" />
   <String Id="ModifyHeader" Value="修改安装" />
   <String Id="UninstallOptionsDesc" Value="默认保留实例库中的数据。卸载时仅删除你在下方勾选的项目。" />
-  <String Id="UninstallDeleteInstallers" Value="删除已下载的安装包 (installers)" />
-  <String Id="UninstallDeleteBackups" Value="删除备份文件 (backups)" />
-  <String Id="UninstallDeleteVersions" Value="[高风险] 删除游戏实例 (versions)" />
+  <String Id="UninstallDeleteInstallers" Value="删除已下载的安装包 (Cache)" />
+  <String Id="UninstallDeleteBackups" Value="删除备份文件 (Backups)" />
+  <String Id="UninstallDeleteVersions" Value="[高风险] 删除游戏实例 (Instances)" />
   <String Id="UninstallDangerNote" Value="所选文件夹将被永久删除。" />
   <String Id="ModifyRepairButton" Value="修复(&amp;R)" />
   <String Id="ModifyUninstallButton" Value="卸载(&amp;U)" />

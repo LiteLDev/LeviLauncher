@@ -2,7 +2,8 @@
 .SYNOPSIS
 Installs, upgrades and uninstalls the Windows installers of LeviLauncher on this machine, and
 checks the result of each step. Must run elevated, on a disposable machine where LeviLauncher
-is not installed and has never run: uninstalling deletes the launcher data in %APPDATA%.
+is not installed and has never run: uninstalling deletes the launcher data in %APPDATA% and
+%LOCALAPPDATA%.
 Compatible with Windows PowerShell 5.1, so that it also runs in Windows Server Core containers.
 
 .PARAMETER ArtifactsDir
@@ -38,8 +39,11 @@ $innoUninstallKey = "$uninstallKey\org.levimc.launcher_is1"
 $startMenuShortcut = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\LeviLauncher.lnk'
 $innoStartMenuFolder = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\LeviLauncher'
 $desktopShortcut = Join-Path $env:PUBLIC 'Desktop\LeviLauncher.lnk'
-$dataDir = Join-Path $env:APPDATA 'levilauncher.exe'
-$configFile = Join-Path $dataDir 'config.json'
+# The storage layout of the launcher (internal/apppath/README.md), and the legacy one that the
+# launchers installed by Inno Setup used.
+$configDir = Join-Path $env:APPDATA 'LeviLauncher'
+$localDir = Join-Path $env:LOCALAPPDATA 'LeviLauncher'
+$legacyDir = Join-Path $env:APPDATA 'levilauncher.exe'
 $baseRoot = Join-Path $ArtifactsDir 'base_root'
 
 function Assert([bool] $Condition, [string] $Message) {
@@ -141,17 +145,31 @@ function Assert-NotInstalled {
     Assert ($entries.Count -eq 0) "Installed Apps does not list LeviLauncher (got $($entries.DisplayName -join ', '))"
 }
 
-# Stands in for the data of a launcher that has run, with an instance library in $baseRoot.
+# Stands in for the data of a launcher that has run, with its data root in $baseRoot.
 function New-LauncherData {
-    $null = New-Item -ItemType Directory -Force $dataDir
-    foreach ($folder in 'installers', 'backups', 'versions') {
+    foreach ($folder in 'Instances', 'Backups', 'Cache\Installers') {
         $null = New-Item -ItemType Directory -Force (Join-Path $baseRoot $folder)
     }
-    $json = @{ base_root = $baseRoot } | ConvertTo-Json
-    [IO.File]::WriteAllText($configFile, $json)
+    $null = New-Item -ItemType Directory -Force $configDir, (Join-Path $localDir 'WebView2')
+    [IO.File]::WriteAllText((Join-Path $configDir 'config.json'), (@{ base_root = $baseRoot } | ConvertTo-Json))
 }
 
-Assert (-not (Test-Path $dataDir)) "LeviLauncher has never run for this user ($dataDir does not exist)"
+# The same in the legacy layout, as a launcher installed by Inno Setup left it.
+function New-LegacyLauncherData {
+    foreach ($folder in 'versions', 'backups', 'installers') {
+        $null = New-Item -ItemType Directory -Force (Join-Path $baseRoot $folder)
+    }
+    $null = New-Item -ItemType Directory -Force (Join-Path $legacyDir 'EBWebView')
+    [IO.File]::WriteAllText((Join-Path $legacyDir 'config.json'), (@{ base_root = $baseRoot } | ConvertTo-Json))
+}
+
+function Remove-LauncherData {
+    Remove-Item -Recurse -Force $configDir, $localDir, $legacyDir, $baseRoot -ErrorAction SilentlyContinue
+}
+
+foreach ($dir in $configDir, $localDir, $legacyDir) {
+    Assert (-not (Test-Path $dir)) "LeviLauncher has never run for this user ($dir does not exist)"
+}
 Assert-NotInstalled
 
 if ($Scenario -contains 'Inno') {
@@ -160,18 +178,20 @@ if ($Scenario -contains 'Inno') {
     Invoke-Installer 'Inno Setup install' $InnoSetup @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=`"$logDir\inno.log`"")
     Assert (Test-Path $innoUninstallKey) 'the Inno Setup installation is registered'
     Assert (Test-Path (Join-Path $installDir 'unins000.exe')) 'the Inno Setup uninstaller exists'
-    New-LauncherData
+    New-LegacyLauncherData
 
     Invoke-Msi '/i' '0.0.1'
     Assert (-not (Test-Path $innoUninstallKey)) 'the Inno Setup installation is unregistered'
-    Assert (Test-Path $configFile) 'the upgrade keeps config.json'
+    Assert (Test-Path (Join-Path $legacyDir 'config.json')) 'the upgrade keeps config.json'
     Assert-Installed '0.0.1' $false
 
-    Invoke-Msi '/x' '0.0.1'
+    Invoke-Msi '/x' '0.0.1' 0 @('DELETEINSTALLERS=1')
     Assert-NotInstalled
-    Assert (-not (Test-Path $configFile)) 'the uninstall deletes config.json'
-    Assert (Test-Path (Join-Path $baseRoot 'versions')) 'the uninstall keeps the instance library by default'
-    Remove-Item -Recurse -Force $dataDir, $baseRoot -ErrorAction SilentlyContinue
+    Assert (-not (Test-Path $legacyDir)) 'the uninstall deletes the legacy config.json and WebView2 data'
+    Assert (-not (Test-Path (Join-Path $baseRoot 'installers'))) 'DELETEINSTALLERS=1 deletes the legacy installers'
+    Assert (Test-Path (Join-Path $baseRoot 'versions')) 'the uninstall keeps the legacy game versions'
+    Assert (Test-Path (Join-Path $baseRoot 'backups')) 'the uninstall keeps the legacy backups'
+    Remove-LauncherData
 }
 
 if ($Scenario -contains 'Msi') {
@@ -189,7 +209,7 @@ if ($Scenario -contains 'Msi') {
 
     Invoke-Msi '/x' '0.0.2'
     Assert-NotInstalled
-    Remove-Item -Recurse -Force $dataDir -ErrorAction SilentlyContinue
+    Remove-LauncherData
 }
 
 if ($Scenario -contains 'Bundle') {
@@ -203,11 +223,12 @@ if ($Scenario -contains 'Bundle') {
     New-LauncherData
     Invoke-Bundle '/uninstall' '0.0.2' @('DeleteBackups=1')
     Assert-NotInstalled
-    Assert (-not (Test-Path $configFile)) 'the uninstall deletes config.json'
-    Assert (-not (Test-Path (Join-Path $baseRoot 'backups'))) 'DeleteBackups=1 deletes the backups'
-    Assert (Test-Path (Join-Path $baseRoot 'installers')) 'the uninstall keeps the downloaded installers'
-    Assert (Test-Path (Join-Path $baseRoot 'versions')) 'the uninstall keeps the game versions'
-    Remove-Item -Recurse -Force $dataDir, $baseRoot -ErrorAction SilentlyContinue
+    Assert (-not (Test-Path $configDir)) 'the uninstall deletes config.json'
+    Assert (-not (Test-Path (Join-Path $localDir 'WebView2'))) 'the uninstall deletes the WebView2 data'
+    Assert (-not (Test-Path (Join-Path $baseRoot 'Backups'))) 'DeleteBackups=1 deletes the backups'
+    Assert (Test-Path (Join-Path $baseRoot 'Cache\Installers')) 'the uninstall keeps the downloaded installers'
+    Assert (Test-Path (Join-Path $baseRoot 'Instances')) 'the uninstall keeps the game instances'
+    Remove-LauncherData
 
     Write-Host '# setup.exe without a desktop shortcut'
     Invoke-Bundle '/install' '0.0.1' @('DesktopShortcut=0')
@@ -219,7 +240,7 @@ if ($Scenario -contains 'Bundle') {
 
     Invoke-Bundle '/uninstall' '0.0.2'
     Assert-NotInstalled
-    Remove-Item -Recurse -Force $dataDir -ErrorAction SilentlyContinue
+    Remove-LauncherData
 }
 
 Write-Host 'All installer tests passed.'

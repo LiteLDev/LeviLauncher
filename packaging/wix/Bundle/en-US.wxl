@@ -31,9 +31,9 @@
   <String Id="ProgressCancelButton" Value="&amp;Cancel" />
   <String Id="ModifyHeader" Value="Modify Setup" />
   <String Id="UninstallOptionsDesc" Value="Your instance library is kept by default. Only the items selected below will be deleted on uninstall." />
-  <String Id="UninstallDeleteInstallers" Value="Delete downloaded packages (installers)" />
-  <String Id="UninstallDeleteBackups" Value="Delete backups (backups)" />
-  <String Id="UninstallDeleteVersions" Value="[High risk] Delete game instances (versions)" />
+  <String Id="UninstallDeleteInstallers" Value="Delete downloaded packages (Cache)" />
+  <String Id="UninstallDeleteBackups" Value="Delete backups (Backups)" />
+  <String Id="UninstallDeleteVersions" Value="[High risk] Delete game instances (Instances)" />
   <String Id="UninstallDangerNote" Value="Selected folders will be permanently deleted." />
   <String Id="ModifyRepairButton" Value="&amp;Repair" />
   <String Id="ModifyUninstallButton" Value="&amp;Uninstall" />

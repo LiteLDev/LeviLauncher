@@ -31,9 +31,9 @@
   <String Id="ProgressCancelButton" Value="&amp;Отмена" />
   <String Id="ModifyHeader" Value="Изменение установки" />
   <String Id="UninstallOptionsDesc" Value="Данные библиотеки сборок сохраняются по умолчанию. При удалении будут удалены только выбранные ниже элементы." />
-  <String Id="UninstallDeleteInstallers" Value="Удалить загруженные пакеты (installers)" />
-  <String Id="UninstallDeleteBackups" Value="Удалить резервные копии (backups)" />
-  <String Id="UninstallDeleteVersions" Value="[Высокий риск] Удалить сборки игры (versions)" />
+  <String Id="UninstallDeleteInstallers" Value="Удалить загруженные пакеты (Cache)" />
+  <String Id="UninstallDeleteBackups" Value="Удалить резервные копии (Backups)" />
+  <String Id="UninstallDeleteVersions" Value="[Высокий риск] Удалить сборки игры (Instances)" />
   <String Id="UninstallDangerNote" Value="Выбранные папки будут удалены безвозвратно." />
   <String Id="ModifyRepairButton" Value="&amp;Восстановить" />
   <String Id="ModifyUninstallButton" Value="&amp;Удалить" />

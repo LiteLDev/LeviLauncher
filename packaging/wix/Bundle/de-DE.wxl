@@ -31,9 +31,9 @@
   <String Id="ProgressCancelButton" Value="Abbre&amp;chen" />
   <String Id="ModifyHeader" Value="Setup ändern" />
   <String Id="UninstallOptionsDesc" Value="Ihre Instanzbibliothek bleibt standardmäßig erhalten. Nur die unten ausgewählten Elemente werden gelöscht." />
-  <String Id="UninstallDeleteInstallers" Value="Heruntergeladene Pakete löschen (installers)" />
-  <String Id="UninstallDeleteBackups" Value="Sicherungen löschen (backups)" />
-  <String Id="UninstallDeleteVersions" Value="[Hohes Risiko] Spielinstanzen löschen (versions)" />
+  <String Id="UninstallDeleteInstallers" Value="Heruntergeladene Pakete löschen (Cache)" />
+  <String Id="UninstallDeleteBackups" Value="Sicherungen löschen (Backups)" />
+  <String Id="UninstallDeleteVersions" Value="[Hohes Risiko] Spielinstanzen löschen (Instances)" />
   <String Id="UninstallDangerNote" Value="Die ausgewählten Ordner werden endgültig gelöscht." />
   <String Id="ModifyRepairButton" Value="&amp;Reparieren" />
   <String Id="ModifyUninstallButton" Value="&amp;Deinstallieren" />

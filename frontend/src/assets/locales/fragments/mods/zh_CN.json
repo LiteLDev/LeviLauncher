@@ -1,0 +1,48 @@
+{
+  "mods": {
+    "notify": {
+      "action_done": "{{action}}完成",
+      "action_failed": "{{action}}失败",
+      "import_failed": "模组导入失败",
+      "import_busy_title": "已有导入正在进行",
+      "import_busy_body": "请等当前导入完成后再拖入这些文件。"
+    },
+    "no_instance": {
+      "title": "选择一个实例",
+      "body": "模组按实例安装。在这里选择实例，本页会直接加载它的模组。",
+      "none_title": "还没有实例",
+      "none_body": "请先下载一个游戏版本，它的模组会显示在这里。",
+      "download": "下载游戏版本"
+    },
+    "import_log": {
+      "waiting": "等待你的选择",
+      "importing": "正在导入…",
+      "imported": "已导入",
+      "overwritten": "已覆盖",
+      "skipped": "已跳过",
+      "failed": "失败",
+      "reason_exists": "已存在同名文件夹的模组",
+      "reason_cancelled": "已取消"
+    },
+    "import_summary": "已导入 {{imported}} 个 · 跳过 {{skipped}} 个 · 失败 {{failed}} 个",
+    "import_dialog": {
+      "open_activity": "打开活动记录",
+      "log_label": "导入日志",
+      "nothing_imported": "未导入任何文件"
+    },
+    "import_prompt": {
+      "skip": "跳过",
+      "import": "导入",
+      "overwrite": "覆盖",
+      "apply_all": "对其余重复项执行相同操作"
+    },
+    "batch_result": {
+      "demoted": "已保留为依赖"
+    },
+    "batch_more_actions": "所选模组的更多操作",
+    "uninstall": {
+      "dependency_note": "如果其他已安装的模组仍依赖此包，它会被保留为依赖而不会被移除。",
+      "demoted_title": "已保留为依赖"
+    }
+  }
+}

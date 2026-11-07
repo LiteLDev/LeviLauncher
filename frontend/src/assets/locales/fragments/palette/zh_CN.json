@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "命令面板",
+    "placeholder": "搜索页面、设置和操作…",
+    "results": "命令",
+    "empty": "没有与“{{query}}”匹配的命令",
+    "nav_locked": "当前无法跳转页面，仅列出可用操作。",
+    "hint_move": "移动",
+    "hint_run": "执行",
+    "hint_close": "关闭",
+    "open_activity": "打开活动记录",
+    "theme_light": "切换到浅色主题",
+    "theme_dark": "切换到深色主题",
+    "show_shortcuts": "键盘快捷键",
+    "instance_settings": "实例设置：{{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "切换实例到 {{name}}",
+    "current": "当前",
+    "group": {
+      "recent": "最近使用",
+      "actions": "操作",
+      "navigate": "前往",
+      "settings": "设置",
+      "instances": "实例"
+    },
+    "shortcuts_title": "键盘快捷键",
+    "shortcut_open": "打开命令面板",
+    "shortcut_settings": "打开设置"
+  }
+}

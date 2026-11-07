@@ -60,6 +60,46 @@ const parseCombo = (combo: string) => {
   };
 };
 
+/** Elements that own the keyboard while they are open. */
+export const OVERLAY_SELECTOR = '[role="dialog"], [role="menu"], [role="listbox"]';
+
+export const isOverlayOpen = () =>
+  typeof document !== "undefined" &&
+  Boolean(document.querySelector(OVERLAY_SELECTOR));
+
+const KEY_LABELS: Record<string, string> = {
+  ctrl: "Ctrl",
+  control: "Ctrl",
+  shift: "Shift",
+  alt: "Alt",
+  meta: "Win",
+  cmd: "Win",
+  command: "Win",
+  escape: "Esc",
+  arrowleft: "←",
+  arrowright: "→",
+  arrowup: "↑",
+  arrowdown: "↓",
+  enter: "Enter",
+};
+
+/** Splits a combo into display labels, e.g. "ctrl+arrowleft" -> ["Ctrl", "←"]. */
+export const formatCombo = (combo: string): string[] => {
+  const parts = combo
+    .split("+")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  // Shift is implied by printable symbols such as "?".
+  const key = parts[parts.length - 1] || "";
+  const visible =
+    key.length === 1 && !/[a-z0-9]/i.test(key)
+      ? parts.filter((p) => p.toLowerCase() !== "shift")
+      : parts;
+  return visible.map(
+    (p) => KEY_LABELS[p.toLowerCase()] ?? (p.length === 1 ? p.toUpperCase() : p),
+  );
+};
+
 export const KeybindingProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -91,10 +131,7 @@ export const KeybindingProvider: React.FC<{ children: React.ReactNode }> = ({
       const target = e.target as HTMLElement;
       if (
         e.key === "Escape" &&
-        (target.closest('[role="dialog"], [role="menu"], [role="listbox"]') ||
-          document.querySelector(
-            '[role="dialog"], [role="menu"], [role="listbox"]',
-          ))
+        (target.closest(OVERLAY_SELECTOR) || isOverlayOpen())
       ) {
         return;
       }

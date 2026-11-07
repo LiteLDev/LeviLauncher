@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "コマンドパレット",
+    "placeholder": "ページ、設定、操作を検索…",
+    "results": "コマンド",
+    "empty": "「{{query}}」に一致するコマンドはありません",
+    "nav_locked": "現在ページを移動できないため、操作のみ表示しています。",
+    "hint_move": "移動",
+    "hint_run": "実行",
+    "hint_close": "閉じる",
+    "open_activity": "アクティビティを開く",
+    "theme_light": "ライトテーマに切り替え",
+    "theme_dark": "ダークテーマに切り替え",
+    "show_shortcuts": "キーボードショートカット",
+    "instance_settings": "インスタンス設定: {{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "インスタンスを {{name}} に切り替え",
+    "current": "現在",
+    "group": {
+      "recent": "最近",
+      "actions": "操作",
+      "navigate": "移動先",
+      "settings": "設定",
+      "instances": "インスタンス"
+    },
+    "shortcuts_title": "キーボードショートカット",
+    "shortcut_open": "コマンドパレットを開く",
+    "shortcut_settings": "設定を開く"
+  }
+}

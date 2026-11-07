@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "명령 팔레트",
+    "placeholder": "페이지, 설정, 작업 검색…",
+    "results": "명령",
+    "empty": "“{{query}}”와 일치하는 명령이 없습니다",
+    "nav_locked": "지금은 페이지를 이동할 수 없어 작업만 표시합니다.",
+    "hint_move": "이동",
+    "hint_run": "실행",
+    "hint_close": "닫기",
+    "open_activity": "활동 열기",
+    "theme_light": "라이트 테마로 전환",
+    "theme_dark": "다크 테마로 전환",
+    "show_shortcuts": "키보드 단축키",
+    "instance_settings": "인스턴스 설정: {{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "인스턴스를 {{name}}(으)로 전환",
+    "current": "현재",
+    "group": {
+      "recent": "최근",
+      "actions": "작업",
+      "navigate": "이동",
+      "settings": "설정",
+      "instances": "인스턴스"
+    },
+    "shortcuts_title": "키보드 단축키",
+    "shortcut_open": "명령 팔레트 열기",
+    "shortcut_settings": "설정 열기"
+  }
+}

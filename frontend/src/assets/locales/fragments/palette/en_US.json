@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "Command palette",
+    "placeholder": "Search pages, settings and actions…",
+    "results": "Commands",
+    "empty": "No commands match “{{query}}”",
+    "nav_locked": "Navigation is unavailable right now, so only actions are listed.",
+    "hint_move": "move",
+    "hint_run": "run",
+    "hint_close": "close",
+    "open_activity": "Open Activity",
+    "theme_light": "Switch to light theme",
+    "theme_dark": "Switch to dark theme",
+    "show_shortcuts": "Keyboard shortcuts",
+    "instance_settings": "Instance settings: {{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "Switch instance to {{name}}",
+    "current": "current",
+    "group": {
+      "recent": "Recent",
+      "actions": "Actions",
+      "navigate": "Go to",
+      "settings": "Settings",
+      "instances": "Instances"
+    },
+    "shortcuts_title": "Keyboard shortcuts",
+    "shortcut_open": "Open command palette",
+    "shortcut_settings": "Open settings"
+  }
+}

@@ -9,13 +9,10 @@ import {
   InputGroup,
   Label,
   Spinner,
-  Table,
   TextField,
   Tooltip,
-  toast,
   useOverlayState,
 } from "@heroui/react";
-import { PagePagination } from "@/components/PagePagination";
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from "react";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
@@ -36,10 +33,11 @@ import { createPortal } from "react-dom";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useTranslation } from "react-i18next";
-import { motion, Variants } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
-import { useDownloads } from "@/utils/DownloadsContext";
+import { isDownloadActive, useDownloads } from "@/utils/DownloadsContext";
+import { notify } from "@/utils/activity";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -62,10 +60,22 @@ type VersionItem = {
   uuid?: string;
 };
 
+type DownloadIntent = "install" | "download";
+
+// Rows rendered per step while scrolling.
+const LIST_CHUNK = 60;
+
+// Column template shared by the header and rows once the list is ~48rem wide.
+const VERSION_ROW_COLUMNS =
+  "@3xl:grid-cols-[minmax(8rem,1.4fr)_minmax(6rem,1fr)_minmax(7rem,1fr)_minmax(7rem,1fr)_minmax(10rem,auto)]";
+
+// Kept across visits so returning from the install page restores the list.
+const pageMemory = { query: "", scrollTop: 0, visibleCount: LIST_CHUNK };
+
 export const DownloadPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { startDownload, isDownloading } = useDownloads();
+  const { startDownload, isDownloading, downloads } = useDownloads();
   const [items, setItems] = useState<VersionItem[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(true);
   const [versionsError, setVersionsError] = useState(false);
@@ -77,7 +87,7 @@ export const DownloadPage: React.FC = () => {
     refreshing,
   } = useVersionStatus();
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => pageMemory.query);
   const {
     typeFilter,
     setTypeFilter,
@@ -88,9 +98,11 @@ export const DownloadPage: React.FC = () => {
     packageFilter,
     setPackageFilter,
   } = useDownloadFilters();
-  const [rowsPerPage, setRowsPerPage] = useState<number>(6);
-  const [page, setPage] = useState<number>(1);
-  const tableAreaRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(() =>
+    Math.max(LIST_CHUNK, pageMemory.visibleCount),
+  );
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const {
     isOpen,
@@ -333,7 +345,6 @@ export const DownloadPage: React.FC = () => {
     setVersionsLoading(true);
     setVersionsError(false);
     setItems([]);
-    setPage(1);
     try {
       const cached = JSON.parse(localStorage.getItem(`ll.version_items.${packageFilter}`) || "[]");
       if (Array.isArray(cached)) setItems(cached);
@@ -417,52 +428,127 @@ export const DownloadPage: React.FC = () => {
     isLLSupported,
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  const paged = useMemo(
-    () => filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage),
-    [filtered, page, rowsPerPage],
+  // The list scrolls and renders progressively instead of paging by
+  // measured height, so small windows still reach every row.
+  const visible = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount],
   );
 
+  const filterKey = `${query}|${typeFilter}|${statusFilter}|${llFilter}|${packageFilter}`;
+  const lastFilterKey = useRef(filterKey);
   useEffect(() => {
-    setPage(1);
-  }, [query, typeFilter, statusFilter, llFilter]);
+    if (lastFilterKey.current === filterKey) return;
+    lastFilterKey.current = filterKey;
+    setVisibleCount(LIST_CHUNK);
+    listScrollRef.current?.scrollTo({ top: 0 });
+  }, [filterKey]);
 
+  useEffect(() => {
+    pageMemory.query = query;
+    pageMemory.visibleCount = visibleCount;
+  }, [query, visibleCount]);
+
+  // Restore the scroll position once rows exist (e.g. after returning from install).
+  const scrollRestored = useRef(false);
   useLayoutEffect(() => {
-    const area = tableAreaRef.current;
-    if (!area) return;
-
-    const calcRows = () => {
-      const header = area.querySelector("thead");
-      const rows = Array.from(area.querySelectorAll("tbody tr"));
-      if (!header || paged.length === 0 || rows.length === 0) return;
-
-      // Measure the space left after the toolbar, warning and pagination.
-      // Actual row heights also account for font scaling and translated labels.
-      const rowHeight = Math.max(
-        ...rows.map((row) => row.getBoundingClientRect().height),
-      );
-      if (rowHeight <= 0) return;
-      setRowsPerPage(
-        Math.max(
-          1,
-          Math.floor(
-            (area.clientHeight - header.getBoundingClientRect().height - 1) /
-            rowHeight,
-          ),
-        ),
-      );
-    };
-    calcRows();
-    const observer = new ResizeObserver(calcRows);
-    observer.observe(area);
-    const table = area.querySelector("table");
-    if (table) observer.observe(table);
-    return () => observer.disconnect();
-  }, [paged]);
+    if (scrollRestored.current || visible.length === 0) return;
+    scrollRestored.current = true;
+    if (listScrollRef.current) listScrollRef.current.scrollTop = pageMemory.scrollTop;
+  }, [visible.length]);
 
   useEffect(() => {
-    setPage(1);
-  }, [rowsPerPage]);
+    const sentinel = loadMoreRef.current;
+    const root = listScrollRef.current;
+    if (!sentinel || !root || visibleCount >= filtered.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleCount((count) => Math.min(filtered.length, count + LIST_CHUNK));
+        }
+      },
+      { root, rootMargin: "0px 0px 400px 0px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [visibleCount, filtered.length]);
+
+  const activeDownloads = useMemo(() => {
+    const byVersion = new Map<string, (typeof downloads)[number]>();
+    downloads.forEach((dl) => {
+      if (!dl.installer || !isDownloadActive(dl.status)) return;
+      byVersion.set(
+        versionStatusKey(dl.installer.version, normalizeVersionChannel(dl.installer.type), dl.installer.packageType || "gdk"),
+        dl,
+      );
+    });
+    return byVersion;
+  }, [downloads]);
+  const activeDownloadFor = (it: VersionItem) =>
+    activeDownloads.get(versionStatusKey(it.short, it.type, it.packageType));
+
+  // "Download & install": follow the download on the install page, where the
+  // options can be set while it runs and installation continues afterwards.
+  const followOnInstallPage = (dest: string, it: { short: string; type: ItemType; packageType: PackageType }) => {
+    navigate(ROUTES.install, {
+      state: {
+        mirrorVersion: it.short,
+        mirrorType: it.type,
+        packageType: it.packageType,
+        isLeviLaminaSupported: it.packageType === "gdk" && isLLSupported(it.short),
+        pendingDownload: dest,
+        returnTo: ROUTES.download,
+      },
+    });
+  };
+
+  const startUWPDownload = async (item: VersionItem, intent: DownloadIntent, e?: any) => {
+    const key = versionStatusKey(item.short, item.type, item.packageType);
+    setResolvingUWP((previous) => new Set(previous).add(key));
+    try {
+      const dest = await startDownload(`uwp:${item.uuid}`, `Minecraft-UWP-${item.type}-${item.short}.appx`, "", {
+        version: item.short, type: item.type, packageType: "uwp", uuid: item.uuid, isLeviLaminaSupported: false,
+      });
+      if (!dest) return;
+      if (intent === "install") followOnInstallPage(dest, item);
+      else if (e) triggerAnimation(e);
+    } finally {
+      setResolvingUWP((previous) => { const next = new Set(previous); next.delete(key); return next; });
+    }
+  };
+
+  const openMirrorPicker = (item: VersionItem) => {
+    const urls = item.urls || [];
+    setMirrorUrls(urls);
+    setMirrorVersion(item.short);
+    setMirrorType(item.type);
+    setSelectedUrl(null);
+    onOpen();
+    startMirrorTests(urls);
+  };
+
+  const submitMirror = async (intent: DownloadIntent, e: any) => {
+    if (!selectedUrl) return;
+    const type = mirrorType || "Release";
+    const desired = `${type} ${mirrorVersion}.msixvc`;
+    const item = items.find(
+      (i) => i.short === mirrorVersion && i.type === mirrorType && i.packageType === "gdk",
+    );
+    const dest = await startDownload(
+      selectedUrl,
+      desired,
+      item?.md5,
+      { version: mirrorVersion, type, isLeviLaminaSupported: isLLSupported(mirrorVersion) },
+    );
+    if (!dest) return;
+    if (intent === "install") {
+      onClose();
+      followOnInstallPage(dest, { short: mirrorVersion, type, packageType: "gdk" });
+    } else {
+      triggerAnimation(e);
+      onClose();
+    }
+  };
 
   const getVersionStatus = (it: VersionItem) => {
     return (
@@ -478,36 +564,10 @@ export const DownloadPage: React.FC = () => {
 
   const isDownloaded = (it: VersionItem) => getVersionStatus(it).isDownloaded;
 
-  const cardVariants: Variants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.1,
-        duration: 0.4,
-        ease: "easeOut",
-      },
-    }),
-  };
-
-  const rowVariants: Variants = {
-    hidden: { opacity: 0, y: 10 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.05,
-        duration: 0.3,
-        ease: "easeOut",
-      },
-    }),
-  };
-
   return (
     <>
       <PageContainer
-        className="relative h-dvh min-h-0 overflow-hidden"
+        className={cn("relative", LAYOUT.CATALOG.PAGE)}
         animate={false}
       >
         <motion.div
@@ -844,136 +904,85 @@ export const DownloadPage: React.FC = () => {
 
         <motion.div
           data-material-motion
-          custom={0}
-          initial="hidden"
-          animate="visible"
-          variants={cardVariants}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
           className="flex-1 min-h-0 flex flex-col"
         >
           <Card className={cn("flex-1 min-h-0 gap-0 p-0 overflow-hidden", LAYOUT.GLASS_CARD.BASE)}>
             <Card.Content className="p-0 flex flex-1 min-h-0 flex-col overflow-hidden relative">
               {versionsError && items.length > 0 && (
-                <div role="alert" className="flex shrink-0 items-center justify-between gap-3 p-3 text-sm bg-warning/10 text-foreground">
+                <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-3 p-3 text-sm bg-warning/10 text-foreground">
                   <span>{t("audit.primary.download.stale")}</span>
                   <Button size="sm" variant="secondary" onPress={reloadAll} isDisabled={versionsLoading}>{t("download_manager.actions.retry")}</Button>
                 </div>
               )}
-              <Table
-                ref={tableAreaRef}
-                className="flex-1 min-h-0 overflow-hidden"
-                variant="secondary"
+              {/* Rows are a grid table on wide panels and stacked cards below ~48rem. */}
+              <div
+                ref={listScrollRef}
+                onScroll={(e) => { pageMemory.scrollTop = e.currentTarget.scrollTop; }}
+                className="@container flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
               >
-                <Table.ScrollContainer className="h-full overflow-hidden">
-                  <Table.Content
-                    aria-label={
-                      t("downloadpage.table.aria_label") as unknown as string
-                    }
-                    className="min-w-full [&_td]:whitespace-nowrap"
+                <div
+                  aria-hidden="true"
+                  className={cn(
+                    "hidden @3xl:grid sticky top-0 z-10 gap-3 px-4 py-2.5 text-xs font-semibold text-muted border-b border-border dark:border-white/10",
+                    VERSION_ROW_COLUMNS,
+                    COMPONENT_STYLES.tableSticky.thead,
+                  )}
+                >
+                  <span>{t("downloadpage.table.header.version")}</span>
+                  <span>{t("downloadpage.table.header.type")}</span>
+                  <span>{t("downloadpage.table.header.status")}</span>
+                  <span>{t("downloadpage.table.header.loader")}</span>
+                  <span className="text-right">{t("downloadpage.table.header.actions")}</span>
+                </div>
+                {visible.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-muted gap-2">
+                    {versionsLoading ? <Spinner /> : <FaBoxOpen className="w-10 h-10 opacity-20" />}
+                    <p role={versionsError ? "alert" : "status"}>{t(versionsLoading ? "common.loading" : versionsError ? "audit.primary.download.failed" : items.length > 0 ? "audit.primary.download.no_matches" : "downloadpage.table.empty")}</p>
+                    {!versionsLoading && (versionsError || items.length === 0 ? (
+                      <Button size="sm" variant="secondary" onPress={reloadAll}>{t("download_manager.actions.retry")}</Button>
+                    ) : (
+                      <Button size="sm" variant="secondary" onPress={() => { setQuery(""); setTypeFilter("all"); setStatusFilter("all"); setLlFilter("all"); }}>{t("audit.primary.clear_filters")}</Button>
+                    ))}
+                  </div>
+                ) : (
+                  <ul
+                    aria-label={t("downloadpage.table.aria_label") as unknown as string}
+                    className="flex flex-col"
                   >
-                    <Table.Header
-                      className={cn(
-                        "sticky top-0 z-10",
-                        COMPONENT_STYLES.tableSticky.thead,
-                      )}
-                    >
-                      <Table.Column
-                        className={cn(COMPONENT_STYLES.tableSticky.th)}
-                        key="version"
-                        width={180}
-                        id={"version"}
-                        isRowHeader
-                      >
-                        {t("downloadpage.table.header.version")}
-                      </Table.Column>
-                      <Table.Column
-                        className={cn(COMPONENT_STYLES.tableSticky.th)}
-                        key="type"
-                        width={140}
-                        id={"type"}
-                      >
-                        {t("downloadpage.table.header.type")}
-                      </Table.Column>
-                      <Table.Column
-                        className={cn(COMPONENT_STYLES.tableSticky.th)}
-                        key="status"
-                        width={160}
-                        id={"status"}
-                      >
-                        {t("downloadpage.table.header.status")}
-                      </Table.Column>
-                      <Table.Column
-                        className={cn(COMPONENT_STYLES.tableSticky.th)}
-                        key="loader"
-                        width={160}
-                        id={"loader"}
-                      >
-                        {t("downloadpage.table.header.loader")}
-                      </Table.Column>
-                      <Table.Column
-                        key="actions"
-                        id={"actions"}
-                        className={cn(
-                          COMPONENT_STYLES.tableSticky.th,
-                          "text-right",
-                        )}
-                      >
-                        {t("downloadpage.table.header.actions")}
-                      </Table.Column>
-                    </Table.Header>
-                    <Table.Body
-                      renderEmptyState={() => (
-                        <div className="flex flex-col items-center justify-center h-40 text-muted gap-2">
-                          {versionsLoading ? <Spinner /> : <FaBoxOpen className="w-10 h-10 opacity-20" />}
-                          <p role={versionsError ? "alert" : "status"}>{t(versionsLoading ? "common.loading" : versionsError ? "audit.primary.download.failed" : items.length > 0 ? "audit.primary.download.no_matches" : "downloadpage.table.empty")}</p>
-                          {!versionsLoading && (versionsError || items.length === 0 ? (
-                            <Button size="sm" variant="secondary" onPress={reloadAll}>{t("download_manager.actions.retry")}</Button>
-                          ) : (
-                            <Button size="sm" variant="secondary" onPress={() => { setQuery(""); setTypeFilter("all"); setStatusFilter("all"); setLlFilter("all"); }}>{t("audit.primary.clear_filters")}</Button>
-                          ))}
-                        </div>
-                      )}
-                    >
-                      {paged.map((item, index) => (
-                        <Table.Row
+                    {visible.map((item) => {
+                      const key = versionStatusKey(item.short, item.type, item.packageType);
+                      const resolving = resolvingUWP.has(key);
+                      const checking = !hasStatus(item) && refreshing;
+                      const active = activeDownloadFor(item);
+                      const activePercent =
+                        active?.progress && active.progress.total > 0
+                          ? Math.floor((active.progress.downloaded / active.progress.total) * 100)
+                          : null;
+                      return (
+                        <li
+                          key={key}
+                          data-version-row
                           className={cn(
-                            "group transition-colors hover:bg-surface/50 dark:hover:bg-surface-secondary/30",
+                            "grid items-center gap-x-3 gap-y-1.5 px-3 py-2.5 @3xl:px-4 border-b border-border/50 dark:border-white/5 last:border-0 transition-colors hover:bg-surface/50 dark:hover:bg-surface-secondary/30",
+                            "grid-cols-[minmax(0,1fr)_auto]",
+                            VERSION_ROW_COLUMNS,
                           )}
-                          key={versionStatusKey(item.short, item.type, item.packageType)}
-                          id={versionStatusKey(item.short, item.type, item.packageType)}
                         >
-                          <Table.Cell
-                            className={cn(
-                              "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
+                          <span className="col-start-1 row-start-1 min-w-0 truncate text-sm font-medium @3xl:font-normal text-foreground dark:text-white">
+                            {item.short}
+                            {packageFilter === "all" && (
+                              <span className="ml-2 text-xs text-muted font-mono">{item.packageType.toUpperCase()}</span>
                             )}
-                          >
-                            <motion.div
-                              custom={index}
-                              initial="hidden"
-                              animate="visible"
-                              variants={rowVariants}
-                            >
-                              <span className="text-foreground dark:text-white text-sm">
-                                {item.short}
-                              </span>
-                            </motion.div>
-                          </Table.Cell>
-                          <Table.Cell
-                            className={cn(
-                              "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
-                            )}
-                          >
-                            <motion.div
-                              custom={index}
-                              initial="hidden"
-                              animate="visible"
-                              variants={rowVariants}
-                            >
+                          </span>
+                          <div className="col-start-1 row-start-2 flex min-w-0 flex-wrap items-center gap-1.5 @3xl:contents">
+                            <div className="@3xl:row-start-1">
                               <Chip
                                 size="sm"
                                 variant="soft"
-                                color={
-                                  item.type === "Release" ? "success" : "warning"
-                                }
+                                color={item.type === "Release" ? "success" : "warning"}
                                 className={"font-medium"}
                               >
                                 <Chip.Label>
@@ -982,20 +991,9 @@ export const DownloadPage: React.FC = () => {
                                     : t("downloadpage.table.type.preview")}
                                 </Chip.Label>
                               </Chip>
-                            </motion.div>
-                          </Table.Cell>
-                          <Table.Cell
-                            className={cn(
-                              "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
-                            )}
-                          >
-                            <motion.div
-                              custom={index}
-                              initial="hidden"
-                              animate="visible"
-                              variants={rowVariants}
-                            >
-                              {!hasStatus(item) && refreshing ? (
+                            </div>
+                            <div className="@3xl:row-start-1">
+                              {checking ? (
                                 <div className="flex items-center gap-2 text-muted">
                                   <FaCircleNotch className="animate-spin text-xs" />
                                   <span className="text-sm">
@@ -1003,96 +1001,148 @@ export const DownloadPage: React.FC = () => {
                                   </span>
                                 </div>
                               ) : isDownloaded(item) ? (
-                                <Chip
-                                  size="sm"
-                                  variant="soft"
-                                  color={"success"}
-                                  className={"gap-1 px-2"}
-                                >
-                                  <Chip.Label>
-                                    {t("downloadpage.status.downloaded")}
-                                  </Chip.Label>
+                                <Chip size="sm" variant="soft" color={"success"} className={"gap-1 px-2"}>
+                                  <Chip.Label>{t("downloadpage.status.downloaded")}</Chip.Label>
                                 </Chip>
                               ) : (
-                                <Chip
-                                  size="sm"
-                                  variant="soft"
-                                  color={"danger"}
-                                  className={"gap-1 px-2"}
-                                >
-                                  <Chip.Label>
-                                    {t("downloadpage.status.not_downloaded")}
-                                  </Chip.Label>
+                                <Chip size="sm" variant="soft" color={"danger"} className={"gap-1 px-2"}>
+                                  <Chip.Label>{t("downloadpage.status.not_downloaded")}</Chip.Label>
                                 </Chip>
                               )}
-                            </motion.div>
-                          </Table.Cell>
-                          <Table.Cell
-                            className={cn(
-                              "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
-                            )}
-                          >
-                            <motion.div
-                              custom={index}
-                              initial="hidden"
-                              animate="visible"
-                              variants={rowVariants}
-                            >
+                            </div>
+                            <div className="@3xl:row-start-1">
                               {item.packageType === "gdk" && isLLSupported(item.short) ? (
-                                <div className="flex items-center gap-1.5 text-brand-600 dark:text-brand-400 bg-brand-100/50 dark:bg-brand-900/20 px-2 py-1 rounded-lg w-fit">
-                                  <span className="text-sm">LeviLamina</span>
+                                <div className="flex items-center gap-1.5 text-brand-600 dark:text-brand-400 bg-brand-100/50 dark:bg-brand-900/20 px-2 py-0.5 rounded-lg w-fit">
+                                  <span className="text-xs @3xl:text-sm">LeviLamina</span>
                                 </div>
                               ) : (
-                                <span className="text-muted dark:text-zinc-600 ml-2">
-                                  -
-                                </span>
+                                <span className="hidden @3xl:inline text-muted dark:text-zinc-600 ml-2">-</span>
                               )}
-                            </motion.div>
-                          </Table.Cell>
-                          <Table.Cell
-                            className={cn(
-                              "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
-                            )}
-                          >
-                            <motion.div
-                              custom={index}
-                              initial="hidden"
-                              animate="visible"
-                              variants={rowVariants}
-                              className="flex justify-end"
-                            >
-                              {isDownloaded(item) ? (
-                                <ButtonGroup
-                                  size="sm"
+                            </div>
+                          </div>
+                          <div className="col-start-2 row-start-1 row-span-2 @3xl:col-start-5 @3xl:row-span-1 flex justify-end">
+                            {active ? (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="rounded-full h-8 min-w-[7.5rem] font-medium"
+                                onPress={() => followOnInstallPage(active.dest, item)}
+                              >
+                                <FaCircleNotch className="animate-spin" size={12} />
+                                {activePercent === null
+                                  ? t("common.downloading")
+                                  : t("download_flow.row.downloading", { percent: activePercent })}
+                              </Button>
+                            ) : isDownloaded(item) ? (
+                              <ButtonGroup
+                                size="sm"
+                                variant={"secondary"}
+                                className={cn("rounded-full", "bg-transparent")}
+                              >
+                                <Button
+                                  onPress={() => {
+                                    navigate(ROUTES.install, {
+                                      state: {
+                                        mirrorVersion: item.short,
+                                        mirrorType: item.type,
+                                        packageType: item.packageType,
+                                        returnTo: ROUTES.download,
+                                        isLeviLaminaSupported: item.packageType === "gdk" && isLLSupported(item.short),
+                                      },
+                                    });
+                                  }}
                                   variant={"secondary"}
-                                  className={cn(
-                                    "rounded-full",
-                                    "bg-transparent",
-                                  )}
+                                  className={
+                                    "px-3 h-8 font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-surface-tertiary/50 min-w-[5.5rem]"
+                                  }
                                 >
+                                  {<FaBoxOpen size={14} />}
+                                  {t("downloadpage.mirror.install_button")}
+                                </Button>
+                                <Dropdown>
                                   <Button
-                                    onPress={() => {
-                                      navigate(ROUTES.install, {
-                                        state: {
-                                          mirrorVersion: item.short,
-                                          mirrorType: item.type,
-                                          packageType: item.packageType,
-                                          returnTo: ROUTES.download,
-                                          isLeviLaminaSupported: item.packageType === "gdk" && isLLSupported(item.short),
-                                        },
-                                      });
-                                    }}
+                                    isIconOnly
+                                    aria-label={t("downloadpage.table.header.actions")}
                                     variant={"secondary"}
                                     className={
-                                      "px-2 h-8 font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-surface-tertiary/50 w-[88px]"
+                                      "h-8 min-w-8 w-8 px-0 bg-surface-secondary dark:bg-surface-tertiary/50"
                                     }
                                   >
-                                    {<FaBoxOpen size={14} />}
-                                    {t("downloadpage.mirror.install_button")}
+                                    <FaChevronDown size={12} />
                                   </Button>
+                                  <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
+                                    <Dropdown.Menu
+                                      aria-label={t("downloadpage.table.header.actions")}
+                                      onAction={async (actionKey) => {
+                                        if (String(actionKey) !== "delete_msixvc") return;
+                                        setDeleteError("");
+                                        setDeleteLoading(false);
+                                        let fname = "";
+                                        try {
+                                          if (typeof minecraft?.ResolveDownloadedMsixvc === "function") {
+                                            fname = item.packageType === "uwp"
+                                              ? await minecraft.ResolveDownloadedUWP(item.short, item.type.toLowerCase())
+                                              : await minecraft.ResolveDownloadedMsixvc(
+                                                `${item.type} ${item.short}`,
+                                                String(item.type).toLowerCase(),
+                                              );
+                                          }
+                                        } catch { }
+                                        setDeleteItem({
+                                          short: item.short,
+                                          type: item.type,
+                                          packageType: item.packageType,
+                                          fileName: fname || `${item.type} ${item.short}`,
+                                        });
+                                        deleteDisclosure.open();
+                                      }}
+                                    >
+                                      <Dropdown.Item
+                                        key="delete_msixvc"
+                                        id={"delete_msixvc"}
+                                        textValue={t("downloadpage.actions.delete_installer")}
+                                        variant="danger"
+                                      >
+                                        {<FaTrash size={12} />}
+                                        <Label>{t("downloadpage.actions.delete_installer")}</Label>
+                                        <Dropdown.ItemIndicator />
+                                      </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                  </Dropdown.Popover>
+                                </Dropdown>
+                              </ButtonGroup>
+                            ) : (
+                              <ButtonGroup
+                                size="sm"
+                                variant={"secondary"}
+                                className={cn("rounded-full", "bg-transparent")}
+                              >
+                                <Button
+                                  isDisabled={checking || resolving}
+                                  isPending={resolving}
+                                  aria-label={`${t("download_flow.download_install")} ${item.type} ${item.short} ${item.packageType.toUpperCase()}`}
+                                  onPress={() => {
+                                    if (item.packageType === "uwp") void startUWPDownload(item, "install");
+                                    else openMirrorPicker(item);
+                                  }}
+                                  variant={"secondary"}
+                                  className={
+                                    "px-3 h-8 font-medium bg-surface-secondary dark:bg-surface-tertiary/50 text-foreground dark:text-zinc-200 hover:bg-surface-tertiary dark:hover:bg-surface-quaternary transition-all min-w-[7.5rem]"
+                                  }
+                                >
+                                  {<FaDownload size={14} />}
+                                  {resolving
+                                    ? t("uwp.resolving_download")
+                                    : checking
+                                      ? t("downloadpage.status.checking")
+                                      : t("download_flow.download_install")}
+                                </Button>
+                                {item.packageType === "uwp" && (
                                   <Dropdown>
                                     <Button
                                       isIconOnly
+                                      isDisabled={checking || resolving}
+                                      aria-label={`${t("download_flow.more_options")} ${item.short}`}
                                       variant={"secondary"}
                                       className={
                                         "h-8 min-w-8 w-8 px-0 bg-surface-secondary dark:bg-surface-tertiary/50"
@@ -1100,128 +1150,45 @@ export const DownloadPage: React.FC = () => {
                                     >
                                       <FaChevronDown size={12} />
                                     </Button>
-                                    <Dropdown.Popover
-                                      className={
-                                        COMPONENT_STYLES.dropdown.content
-                                      }
-                                    >
+                                    <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
                                       <Dropdown.Menu
-                                        aria-label="Actions"
-                                        onAction={async (key) => {
-                                          if (String(key) !== "delete_msixvc")
-                                            return;
-                                          setDeleteError("");
-                                          setDeleteLoading(false);
-                                          let fname = "";
-                                          try {
-                                            if (
-                                              typeof minecraft?.ResolveDownloadedMsixvc ===
-                                              "function"
-                                            ) {
-                                              fname = item.packageType === "uwp"
-                                                ? await minecraft.ResolveDownloadedUWP(item.short, item.type.toLowerCase())
-                                                : await minecraft.ResolveDownloadedMsixvc(
-                                                  `${item.type} ${item.short}`,
-                                                  String(
-                                                    item.type,
-                                                  ).toLowerCase(),
-                                                );
-                                            }
-                                          } catch { }
-                                          setDeleteItem({
-                                            short: item.short,
-                                            type: item.type,
-                                            packageType: item.packageType,
-                                            fileName:
-                                              fname ||
-                                              `${item.type} ${item.short}`,
-                                          });
-                                          deleteDisclosure.open();
+                                        aria-label={t("download_flow.more_options")}
+                                        onAction={(actionKey) => {
+                                          if (String(actionKey) === "download_only") {
+                                            void startUWPDownload(item, "download");
+                                          }
                                         }}
                                       >
-                                        <Dropdown.Item
-                                          key="delete_msixvc"
-                                          id={"delete_msixvc"}
-                                          textValue={t(
-                                            "downloadpage.actions.delete_installer",
-                                          )}
-                                          variant="danger"
-                                        >
-                                          {<FaTrash size={12} />}
-                                          <Label>
-                                            {t(
-                                              "downloadpage.actions.delete_installer",
-                                            )}
-                                          </Label>
-                                          <Dropdown.ItemIndicator />
+                                        <Dropdown.Item id="download_only" textValue={t("download_flow.download_only")}>
+                                          {<FaCloudDownloadAlt size={12} />}
+                                          <Label>{t("download_flow.download_only")}</Label>
                                         </Dropdown.Item>
                                       </Dropdown.Menu>
                                     </Dropdown.Popover>
                                   </Dropdown>
-                                </ButtonGroup>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  isDisabled={(!hasStatus(item) && refreshing) || resolvingUWP.has(versionStatusKey(item.short, item.type, item.packageType))}
-                                  isPending={resolvingUWP.has(versionStatusKey(item.short, item.type, item.packageType))}
-                                  aria-label={`${t("downloadmodal.download_button")} ${item.type} ${item.short} ${item.packageType.toUpperCase()}`}
-                                  onPress={async () => {
-                                    if (item.packageType === "uwp") {
-                                      const key = versionStatusKey(item.short, item.type, item.packageType);
-                                      setResolvingUWP((previous) => new Set(previous).add(key));
-                                      try {
-                                        await startDownload(`uwp:${item.uuid}`, `Minecraft-UWP-${item.type}-${item.short}.appx`, "", {
-                                          version: item.short, type: item.type, packageType: "uwp", uuid: item.uuid, isLeviLaminaSupported: false,
-                                        });
-                                      } finally {
-                                        setResolvingUWP((previous) => { const next = new Set(previous); next.delete(key); return next; });
-                                      }
-                                      return;
-                                    }
-                                    const urls = item.urls || [];
-                                    setMirrorUrls(urls);
-                                    setMirrorVersion(item.short);
-                                    setMirrorType(item.type);
-                                    setSelectedUrl(null);
-                                    onOpen();
-                                    startMirrorTests(urls);
-                                  }}
-                                  variant={"secondary"}
-                                  className={cn(
-                                    "rounded-full",
-                                    "px-0 h-8 font-medium bg-surface-secondary dark:bg-surface-tertiary/50 text-foreground dark:text-zinc-200 hover:bg-surface-tertiary dark:hover:bg-surface-quaternary transition-all w-[120px]",
-                                  )}
-                                >
-                                  {<FaDownload size={14} />}
-                                  {resolvingUWP.has(versionStatusKey(item.short, item.type, item.packageType))
-                                    ? t("uwp.resolving_download")
-                                    : !hasStatus(item) && refreshing
-                                      ? t("downloadpage.status.checking")
-                                      : t("downloadmodal.download_button")}
-                                </Button>
-                              )}
-                            </motion.div>
-                          </Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table.Content>
-                </Table.ScrollContainer>
-              </Table>
-              {/* Footer Pagination */}
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border dark:border-white/10 bg-transparent shrink-0 z-10">
-                <div className="text-sm text-muted dark:text-zinc-400 shrink-0 whitespace-nowrap">
+                                )}
+                              </ButtonGroup>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {visibleCount < filtered.length && (
+                  <div ref={loadMoreRef} className="flex justify-center py-3">
+                    <Button size="sm" variant="ghost" onPress={() => setVisibleCount((count) => count + LIST_CHUNK)}>
+                      {t("download_flow.show_more", { count: filtered.length - visibleCount })}
+                    </Button>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-3 px-4 py-2 border-t border-border dark:border-white/10 bg-transparent shrink-0 z-10">
+                <div className="text-sm text-muted dark:text-zinc-400 whitespace-nowrap">
                   {t("downloadpage.bottomcontent.total", {
                     count: filtered.length,
                   })}
                 </div>
-                <PagePagination
-                  size="sm"
-                  pageCount={totalPages}
-                  currentPage={page}
-                  onPageChange={setPage}
-                  pageClassName="rounded-full"
-                />
               </div>
             </Card.Content>
           </Card>
@@ -1239,7 +1206,7 @@ export const DownloadPage: React.FC = () => {
           showConfirmButton={false}
           showCancelButton={false}
           footer={
-            <div className="flex w-full justify-end gap-2">
+            <div className="flex w-full flex-wrap justify-end gap-2">
               <ModalAction
                 onPress={onClose}
                 variant="secondary"
@@ -1256,32 +1223,21 @@ export const DownloadPage: React.FC = () => {
                 {t("downloadpage.mirror.retest")}
               </ModalAction>
               <ModalAction
-                size="lg"
                 isDisabled={!selectedUrl}
-                onPress={async (e) => {
-                  if (!selectedUrl) return;
-                  const desired = `${mirrorType || "Release"
-                    } ${mirrorVersion}.msixvc`;
-                  const item = items.find(
-                    (i) =>
-                      i.short === mirrorVersion && i.type === mirrorType,
-                  );
-                  const md5sum = item?.md5;
-                  const success = await startDownload(
-                    selectedUrl,
-                    desired,
-                    md5sum,
-                    { version: mirrorVersion, type: mirrorType || "Release", isLeviLaminaSupported: isLLSupported(mirrorVersion) },
-                  );
-                  if (success) {
-                    triggerAnimation(e);
-                    onClose();
-                  }
-                }}
+                onPress={(e) => submitMirror("download", e)}
                 variant={"secondary"}
               >
+                <FaCloudDownloadAlt />
+                {t("download_flow.download_only")}
+              </ModalAction>
+              <ModalAction
+                size="lg"
+                isDisabled={!selectedUrl}
+                onPress={(e) => submitMirror("install", e)}
+                variant={"primary"}
+              >
                 <FaDownload />
-                {t("downloadpage.mirror.download_selected")}
+                {t("download_flow.download_install")}
               </ModalAction>
             </div>
           }
@@ -1321,7 +1277,7 @@ export const DownloadPage: React.FC = () => {
                   const fname = fileNameFromUrl(target);
                   return (
                     <div className="flex items-center gap-3 min-w-0 bg-surface/50 dark:bg-surface/20 rounded-xl px-3 py-1.5 border border-black/5 dark:border-white/5">
-                      <div className="text-sm truncate max-w-[400px] text-foreground dark:text-zinc-300">
+                      <div className="text-sm truncate min-w-0 max-w-[25rem] text-foreground dark:text-zinc-300">
                         <span className="font-semibold text-brand-600 dark:text-brand-500">
                           {domain}
                         </span>
@@ -1333,9 +1289,9 @@ export const DownloadPage: React.FC = () => {
                         onPress={async () => {
                           try {
                             await Clipboard.SetText(target);
-                            toast.success(t("audit.mods.link_copied"));
+                            notify({ variant: "success", source: "downloads", title: t("audit.mods.link_copied") });
                           } catch {
-                            toast.danger(t("audit.mods.copy_failed"));
+                            notify({ variant: "danger", source: "downloads", title: t("audit.mods.copy_failed") });
                           }
                         }}
                         variant={"secondary"}
@@ -1399,7 +1355,7 @@ export const DownloadPage: React.FC = () => {
                       <div className="flex items-center gap-3 shrink-0 z-10">
                         <div className="flex flex-col items-end">
                           <span className="text-xs text-muted dark:text-zinc-400 font-medium">
-                            延迟
+                            {t("download_flow.latency")}
                           </span>
                           <span
                             className={`text-base font-bold ${bestMirror.ok ? "text-brand-500" : "text-rose-500"}`}
@@ -1530,7 +1486,7 @@ export const DownloadPage: React.FC = () => {
               const displayName = /\.(msixvc|appx|msix|appxbundle|msixbundle)$/i.test(fileName)
                 ? fileName
                 : `${fileName}.${packageType === "uwp" ? "appx" : "msixvc"}`;
-              toast(`${t("downloadpage.delete.success_body")} ${displayName}`, { variant: "success", timeout: 2000 });
+              notify({ variant: "success", source: "downloads", title: t("downloadpage.delete.success_body"), description: displayName });
             } catch (error) {
               setDeleteError(error instanceof Error ? error.message : String(error));
               throw error;

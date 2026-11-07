@@ -1,20 +1,28 @@
-import { toast } from "@heroui/react";
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
   useState,
 } from "react";
 import { Events } from "@wailsio/runtime";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ROUTES } from "@/constants/routes";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { ModalDescription } from "@/components/ModalPrimitives";
 import { resolveInstallError } from "@/utils/installError";
+import {
+  appendTaskLog,
+  finishActivityTask,
+  notify,
+  setTaskProgress,
+  startActivityTask,
+} from "@/utils/activity";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 
 export interface DownloadItem {
   dest: string;
@@ -38,17 +46,51 @@ export const isDownloadActive = (status: string): boolean =>
 export const isDownloadTerminal = (status: string): boolean =>
   ["done", "cancelled", "error"].includes(status);
 
+/** Route state that opens the install page for a finished or running download. */
+export const installStateForDownload = (item: DownloadItem, returnTo: string) => ({
+  mirrorVersion: item.installer?.version || "",
+  mirrorType: item.installer?.type || "Release",
+  packageType: item.installer?.packageType,
+  isLeviLaminaSupported: Boolean(item.installer?.isLeviLaminaSupported),
+  // A running download is followed on the install page and installed when done.
+  ...(item.status === "done"
+    ? { installerPath: item.dest }
+    : { pendingDownload: item.dest }),
+  returnTo,
+});
+
+export const downloadErrorText = (
+  error: string,
+  t: TFunction,
+): string => (error.includes("ERR_UWP_") ? resolveInstallError(error, t) : error);
+
+// Progress is mirrored into the activity task at most this often.
+const ACTIVITY_PROGRESS_INTERVAL_MS = 1000;
+
+type DownloadActivity = {
+  id: string;
+  startedAt: number;
+  finished: boolean;
+  lastProgressAt: number;
+  lastPercent: number;
+};
+
 interface DownloadsContextType {
   downloads: DownloadItem[];
+  /** Resolves to the task key (the destination path) or null when it did not start. */
   startDownload: (
     url: string,
     filename?: string,
     md5sum?: string,
     installer?: DownloadItem["installer"],
-  ) => Promise<boolean>;
+  ) => Promise<string | null>;
   cancelDownload: (dest?: string) => void;
   removeDownload: (dest: string) => void;
   clearError: (dest?: string) => void;
+  /** Suppress the global "install now?" prompt while a page follows this download. */
+  watchInstall: (dest: string) => () => void;
+  /** The download was handed to the install page; never prompt for it again. */
+  dismissInstallPrompt: (dest: string) => void;
   isDownloading: boolean;
 }
 
@@ -59,10 +101,12 @@ export const useDownloads = () => {
   if (!context) {
     return {
       downloads: [],
-      startDownload: () => Promise.resolve(false),
+      startDownload: () => Promise.resolve(null),
       cancelDownload: () => {},
       removeDownload: () => {},
       clearError: () => {},
+      watchInstall: () => () => {},
+      dismissInstallPrompt: () => {},
       isDownloading: false,
     };
   }
@@ -74,20 +118,77 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [dismissedInstallPrompts, setDismissedInstallPrompts] = useState<Set<string>>(
     () => new Set(),
   );
-  const [downloadsMap, setDownloadsMap] = useState<
-    Record<string, DownloadItem>
-  >({});
+  const [watchedInstalls, setWatchedInstalls] = useState<Record<string, number>>({});
+  const [downloadsMap, setDownloadsMap] = useState<Record<string, DownloadItem>>({});
   const speedRef = useRef<Record<string, { ts: number; bytes: number }>>({});
   const downloadsRef = useRef<Record<string, DownloadItem>>({});
   const cancelledRef = useRef<Set<string>>(new Set());
   const startingRef = useRef<Set<string>>(new Set());
+  const activityRef = useRef<Record<string, DownloadActivity>>({});
+  const outcomeRef = useRef<
+    Record<string, { at: number; status: "success" | "error" | "cancelled"; summary: string }>
+  >({});
+  const tRef = useRef(t);
+  tRef.current = t;
 
   const getFileNameFromDest = (dest: string) => {
     if (!dest || typeof dest !== "string") return "";
     return dest.split(/[\\/]/).pop() || "";
+  };
+
+  const displayNameOf = (dest: string) =>
+    downloadsRef.current[dest]?.fileName || getFileNameFromDest(dest) || dest;
+
+  // Every download is mirrored as an activity task so its history survives
+  // after the row or toast is gone.
+  const activityFor = (dest: string, fresh = false): DownloadActivity => {
+    const existing = activityRef.current[dest];
+    if (existing && !fresh) return existing;
+    const entry: DownloadActivity = {
+      id: startActivityTask({
+        title: tRef.current("download_flow.activity.title", { name: displayNameOf(dest) }),
+        source: "downloads",
+      }),
+      startedAt: Date.now(),
+      finished: false,
+      lastProgressAt: 0,
+      lastPercent: -1,
+    };
+    activityRef.current[dest] = entry;
+    return entry;
+  };
+
+  const finishActivity = (
+    dest: string,
+    status: "success" | "error" | "cancelled",
+    summary: string,
+  ) => {
+    outcomeRef.current[dest] = { at: Date.now(), status, summary };
+    const activity = activityFor(dest);
+    if (activity.finished) return;
+    activity.finished = true;
+    appendTaskLog(
+      activity.id,
+      summary,
+      status === "success" ? "success" : status === "error" ? "error" : "warning",
+    );
+    finishActivityTask(activity.id, status, summary);
+  };
+
+  const logStatus = (dest: string, status: string) => {
+    const activity = activityFor(dest);
+    if (activity.finished) return;
+    if (status === "cancelled") {
+      finishActivity(dest, "cancelled", tRef.current("download_flow.status.cancelled"));
+      return;
+    }
+    if (["starting", "started", "resumed", "verifying"].includes(status)) {
+      appendTaskLog(activity.id, tRef.current(`download_flow.status.${status}`));
+    }
   };
 
   const updateDownload = (
@@ -95,7 +196,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
     updater: (current: DownloadItem) => DownloadItem,
   ) => {
     if (!dest) return;
-    setDownloadsMap((prev) => {
+    const apply = (prev: Record<string, DownloadItem>) => {
       const existing = prev[dest];
       const base: DownloadItem = existing || {
         dest,
@@ -105,14 +206,32 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         error: "",
         fileName: getFileNameFromDest(dest),
       };
-      const next = updater(base);
-      return { ...prev, [dest]: next };
-    });
+      return { ...prev, [dest]: updater(base) };
+    };
+    // Keep the ref current before React commits so events that arrive in
+    // between (e.g. a dest-less error right after start) see this row.
+    downloadsRef.current = apply(downloadsRef.current);
+    setDownloadsMap(apply);
   };
 
   useEffect(() => {
     downloadsRef.current = downloadsMap;
   }, [downloadsMap]);
+
+  const failDownload = (dest: string, msg: string) => {
+    const text = downloadErrorText(msg, tRef.current);
+    finishActivity(dest, "error", text);
+    notify({
+      variant: "danger",
+      source: "downloads",
+      title: tRef.current("download_flow.failed_title", { name: displayNameOf(dest) }),
+      description: text,
+      actionProps: {
+        children: tRef.current("download_flow.view_tasks"),
+        onPress: () => navigate(ROUTES.downloadTasks),
+      },
+    });
+  };
 
   useEffect(() => {
     const offs: (() => void)[] = [];
@@ -124,10 +243,23 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         const dest = String(event?.data?.Dest || "");
         if (!dest || cancelledRef.current.has(dest)) return;
 
+        const activity = activityFor(dest);
+        const now = Date.now();
+        if (!activity.finished && total > 0) {
+          const percent = Math.floor((downloaded / total) * 100);
+          if (
+            percent !== activity.lastPercent &&
+            (percent >= 100 || now - activity.lastProgressAt >= ACTIVITY_PROGRESS_INTERVAL_MS)
+          ) {
+            activity.lastPercent = percent;
+            activity.lastProgressAt = now;
+            setTaskProgress(activity.id, percent);
+          }
+        }
+
         updateDownload(dest, (prev) => {
           let speed = prev.speed;
           try {
-            const now = Date.now();
             const prevRef = speedRef.current[dest];
             if (prevRef) {
               const dt = (now - prevRef.ts) / 1000;
@@ -164,6 +296,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         if (dest && cancelledRef.current.has(dest)) return;
 
         const applyStatus = (key: string) => {
+          logStatus(key, status);
           updateDownload(key, (prev) => {
             const next = { ...prev, status };
             if (
@@ -188,7 +321,11 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         if (dest) {
           applyStatus(dest);
         } else {
-          Object.keys(downloadsRef.current).forEach(applyStatus);
+          // A status without a destination applies to running tasks only;
+          // finished rows keep their own outcome.
+          Object.keys(downloadsRef.current)
+            .filter((key) => isDownloadActive(downloadsRef.current[key]?.status || ""))
+            .forEach(applyStatus);
         }
       }),
     );
@@ -204,32 +341,28 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (dest && cancelledRef.current.has(dest)) return;
 
-        if (dest) {
-          updateDownload(dest, (prev) => ({
+        const targets = dest
+          ? [dest]
+          : Object.keys(downloadsRef.current).filter((key) =>
+              isDownloadActive(downloadsRef.current[key]?.status || ""),
+            );
+        targets.forEach((key) => {
+          updateDownload(key, (prev) => ({
             ...prev,
             error: msg,
             status: "error",
             speed: 0,
           }));
-        } else {
-          setDownloadsMap((prev) => {
-            const next: Record<string, DownloadItem> = { ...prev };
-            Object.keys(next).forEach((key) => {
-              next[key] = {
-                ...next[key],
-                error: msg,
-                status: "error",
-                speed: 0,
-              };
-            });
-            return next;
+          failDownload(key, msg);
+        });
+        if (targets.length === 0) {
+          notify({
+            variant: "danger",
+            source: "downloads",
+            title: tRef.current("download_flow.failed"),
+            description: downloadErrorText(msg, tRef.current),
           });
         }
-        toast(undefined, {
-          description: msg.includes("ERR_UWP_") ? resolveInstallError(msg, t) : msg,
-          variant: "danger",
-          timeout: 2000,
-        });
       }),
     );
 
@@ -243,6 +376,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         updateDownload(dest, (prev) => ({
           ...prev,
           status: "done",
+          error: "",
           progress: {
             downloaded: prev.progress?.total || prev.progress?.downloaded || 0,
             total: prev.progress?.total || 0,
@@ -252,9 +386,12 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
           fileName: fname || prev.fileName,
         }));
         speedRef.current[dest] = { ts: 0, bytes: 0 };
-        toast(t("downloadpage.download.success_body") + " " + (fname || ""), {
+        finishActivity(dest, "success", tRef.current("download_flow.status.done"));
+        notify({
           variant: "success",
-          timeout: 2000,
+          source: "downloads",
+          title: tRef.current("download_flow.done_title"),
+          description: fname || dest,
         });
       }),
     );
@@ -262,15 +399,15 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       offs.forEach((off) => off());
     };
-  }, [t]);
+  }, []);
 
   const startDownload = async (
     url: string,
     filename?: string,
     md5sum?: string,
     installer?: DownloadItem["installer"],
-  ): Promise<boolean> => {
-    if (typeof minecraft === "undefined") return false;
+  ): Promise<string | null> => {
+    if (typeof minecraft === "undefined") return null;
 
     const displayName = filename
       ? filename
@@ -284,23 +421,31 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         })();
 
-    const isAlreadyDownloading = startingRef.current.has(displayName || url) || Object.values(downloadsRef.current).some(
+    const running = Object.values(downloadsRef.current).find(
       (dl) =>
         (dl.fileName === displayName ||
           (dl.dest && getFileNameFromDest(dl.dest) === displayName)) &&
-        (dl.status === "started" ||
-          dl.status === "resumed" ||
-          dl.status === "starting" ||
-          dl.status === "verifying"),
+        isDownloadActive(dl.status),
     );
-
-    if (isAlreadyDownloading) {
-      toast(undefined, {
+    if (running) {
+      // The same file is already on its way; hand back that task so callers
+      // can follow it instead of failing.
+      notify({
+        variant: "warning",
+        source: "downloads",
+        title: t("download_flow.already_title"),
         description: t("downloadpage.error.already_downloading"),
-        variant: "danger",
-        timeout: 2000,
       });
-      return false;
+      return running.dest;
+    }
+    if (startingRef.current.has(displayName || url)) {
+      notify({
+        variant: "warning",
+        source: "downloads",
+        title: t("download_flow.already_title"),
+        description: t("downloadpage.error.already_downloading"),
+      });
+      return null;
     }
 
     let urlWithFilename = url;
@@ -315,6 +460,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
     startingRef.current.add(displayName || url);
+    const calledAt = Date.now();
     try {
       const downloadsBeforeStart = downloadsRef.current;
       const dest = installer?.packageType === "uwp"
@@ -345,18 +491,30 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
           installer,
         };
       });
-      toast(t("downloadpage.mirror.download_started"), {
-        variant: "success",
-        timeout: 2000,
-      });
-      return true;
+      // A retry gets its own activity entry; events that arrived while the
+      // start call was pending already created one for this attempt.
+      const previous = activityRef.current[key];
+      const activity =
+        previous && previous.startedAt >= calledAt
+          ? previous
+          : activityFor(key, true);
+      if (!activity.finished) {
+        appendTaskLog(activity.id, t("download_flow.status.starting"));
+        // It may already have ended while the start call was pending.
+        const outcome = outcomeRef.current[key];
+        if (outcome && outcome.at >= calledAt) {
+          finishActivity(key, outcome.status, outcome.summary);
+        }
+      }
+      return key;
     } catch (e) {
-      toast(undefined, {
-        description: String(e).includes("ERR_UWP_") ? resolveInstallError(String(e), t) : String(e),
+      notify({
         variant: "danger",
-        timeout: 2000,
+        source: "downloads",
+        title: t("download_flow.start_failed_title", { name: displayName }),
+        description: downloadErrorText(String(e), t),
       });
-      return false;
+      return null;
     } finally {
       startingRef.current.delete(displayName || url);
     }
@@ -376,10 +534,15 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         error: "",
         speed: 0,
       }));
+      logStatus(dest, "cancelled");
       return;
     }
 
     minecraft.CancelMsixvcDownload();
+    // Verifying tasks are not cancellable and keep their own outcome.
+    Object.keys(downloadsRef.current)
+      .filter((key) => ["started", "starting", "resumed"].includes(downloadsRef.current[key]?.status || ""))
+      .forEach((key) => logStatus(key, "cancelled"));
     setDownloadsMap((prev) => {
       const next = { ...prev };
       Object.keys(next).forEach((key) => {
@@ -400,9 +563,11 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   };
 
+  // Rows are only removed when the user asks; finished and failed tasks stay.
   const removeDownload = (dest: string) => {
     if (!isDownloadTerminal(downloadsRef.current[dest]?.status || "")) return;
     cancelledRef.current.add(dest);
+    delete activityRef.current[dest];
     setDownloadsMap((prev) => {
       const next = { ...prev };
       delete next[dest];
@@ -411,47 +576,45 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const clearError = (dest?: string) => {
-    if (dest) {
-      setDownloadsMap((prev) => {
-        const next = { ...prev };
-        if (
-          next[dest]?.status === "done" ||
-          next[dest]?.status === "cancelled" ||
-          next[dest]?.status === "error"
-        ) {
-          delete next[dest];
-        } else {
-          next[dest] = { ...next[dest], error: "" };
-        }
-        return next;
-      });
-      return;
-    }
     setDownloadsMap((prev) => {
       const next: Record<string, DownloadItem> = { ...prev };
-      Object.keys(next).forEach((key) => {
-        if (
-          next[key]?.status === "done" ||
-          next[key]?.status === "cancelled" ||
-          next[key]?.status === "error"
-        ) {
-          delete next[key];
-        } else {
-          next[key] = { ...next[key], error: "" };
-        }
+      (dest ? [dest] : Object.keys(next)).forEach((key) => {
+        if (next[key]) next[key] = { ...next[key], error: "" };
       });
       return next;
     });
   };
 
+  const watchInstall = useCallback((dest: string) => {
+    setWatchedInstalls((prev) => ({ ...prev, [dest]: (prev[dest] || 0) + 1 }));
+    return () =>
+      setWatchedInstalls((prev) => {
+        const next = { ...prev };
+        if ((next[dest] || 0) <= 1) delete next[dest];
+        else next[dest] -= 1;
+        return next;
+      });
+  }, []);
+
+  const dismissInstallPrompt = useCallback((dest: string) => {
+    setDismissedInstallPrompts((prev) => new Set(prev).add(dest));
+  }, []);
+
   const downloads = Object.values(downloadsMap);
   const isDownloading = downloads.some((dl) => isDownloadActive(dl.status));
-  const installPrompt = downloads.find((dl) =>
-    dl.status === "done" && dl.installer && !dismissedInstallPrompts.has(dl.dest),
-  );
-  const dismissInstallPrompt = () => {
-    if (!installPrompt) return;
-    setDismissedInstallPrompts((prev) => new Set(prev).add(installPrompt.dest));
+  // The install page continues its own download; the prompt only picks up
+  // downloads nobody is following so the original intent still completes.
+  const onInstallPage = location.pathname === ROUTES.install;
+  const installPrompt = onInstallPage
+    ? undefined
+    : downloads.find((dl) =>
+        dl.status === "done" &&
+        dl.installer &&
+        !dismissedInstallPrompts.has(dl.dest) &&
+        !watchedInstalls[dl.dest],
+      );
+  const closeInstallPrompt = () => {
+    if (installPrompt) dismissInstallPrompt(installPrompt.dest);
   };
 
   return (
@@ -462,30 +625,27 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         cancelDownload,
         removeDownload,
         clearError,
+        watchInstall,
+        dismissInstallPrompt,
         isDownloading,
       }}
     >
       {children}
       <UnifiedModal
         isOpen={!!installPrompt}
-        onOpenChange={(open) => { if (!open) dismissInstallPrompt(); }}
+        onOpenChange={(open) => { if (!open) closeInstallPrompt(); }}
         type="success"
         title={t("download_manager.install_prompt.title")}
         confirmText={t("download_manager.install_prompt.confirm")}
         cancelText={t("download_manager.install_prompt.later")}
         showCancelButton
-        onCancel={dismissInstallPrompt}
+        onCancel={closeInstallPrompt}
         onConfirm={() => {
           if (!installPrompt?.installer) return;
-          dismissInstallPrompt();
-          navigate(ROUTES.install, { state: {
-            mirrorVersion: installPrompt.installer.version,
-            mirrorType: installPrompt.installer.type,
-            isLeviLaminaSupported: installPrompt.installer.isLeviLaminaSupported,
-            packageType: installPrompt.installer.packageType,
-            installerPath: installPrompt.dest,
-            returnTo: ROUTES.downloadTasks,
-          } });
+          closeInstallPrompt();
+          navigate(ROUTES.install, {
+            state: installStateForDownload(installPrompt, location.pathname),
+          });
         }}
       >
         <ModalDescription>

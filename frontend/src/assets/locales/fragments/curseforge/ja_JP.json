@@ -1,0 +1,43 @@
+{
+  "curseforge": {
+    "install": {
+      "type": {
+        "mcworld": "ワールド",
+        "mcaddon": "アドオン",
+        "mcpack": "リソースパックまたはビヘイビアパック",
+        "skin_pack": "スキンパック",
+        "unknown": "不明なパッケージ"
+      },
+      "dialog_title": "{{name}} をインストール",
+      "setup_body": "インストールするファイルと場所を選ぶと、ダウンロードとインポートをまとめて実行します。",
+      "file_label": "ファイル",
+      "file_placeholder": "ファイルを選択",
+      "files_loading": "ファイルを読み込み中…",
+      "no_files": "このプロジェクトにはダウンロードできるファイルがありません。",
+      "no_instances": "インスタンスがまだありません。先にダウンロードページで追加してください。",
+      "no_players": "このインスタンスにはまだプレイヤープロファイルがありません。一度ゲームを起動してから再試行してください。",
+      "player_hint_skin": "このパックがスキンパックの場合にのみ使用します。",
+      "player_required": "ワールドをインストールするにはプレイヤーを選択してください。",
+      "install": "インストール",
+      "quick_install_aria": "{{name}} をインストール",
+      "task_title": "{{name}} をインストール",
+      "task_desc": "{{file}} → {{instance}}",
+      "step_download": "{{name}} をダウンロード",
+      "step_download_done": "{{size}} ダウンロード済み",
+      "step_detect": "パッケージの種類を判別",
+      "step_import": "{{instance}} にインポート",
+      "step_import_done": "インポート完了",
+      "duplicate_found": "このインスタンスには既にインストールされています",
+      "duplicate_body": "既存のものをこのファイルで置き換えますか？",
+      "keep_existing": "既存を保持",
+      "overwrite": "上書き",
+      "duplicate_kept": "既存のものを保持しました。変更はありません。",
+      "duplicate_overwriting": "既存のものを置き換えています…",
+      "done_success": "{{name}} を {{instance}} にインストールしました。",
+      "done_kept": "変更はありません。既存のものを保持しました。",
+      "cancelled": "ダウンロードをキャンセルしました",
+      "success_title_named": "{{name}} をインストールしました",
+      "error_title_named": "{{name}} をインストールできませんでした"
+    }
+  }
+}

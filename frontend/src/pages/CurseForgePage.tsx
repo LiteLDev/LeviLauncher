@@ -43,8 +43,16 @@ import {
   LuGamepad2,
 } from "react-icons/lu";
 import { motion } from "framer-motion";
+import {
+  CurseForgeInstallDialog,
+  type CurseForgeInstallTarget,
+} from "@/components/CurseForgeInstallDialog";
 
 const CURSEFORGE_GAME_ID = "78022";
+// Result cards keep a readable width; wide windows get more columns instead.
+// Written out (not LAYOUT.GRID.AUTO) so Tailwind sees the class.
+const RESULTS_GRID =
+  "grid gap-[var(--page-gap)] grid-cols-[repeat(auto-fill,minmax(min(100%,36rem),1fr))]";
 
 const getLatestSupportedVersion = (mod: ModData) => {
   const versions = new Set<string>();
@@ -106,6 +114,9 @@ export const CurseForgePage: React.FC = () => {
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
   const lastScrollTopRef = React.useRef(0);
   const searchSeqRef = React.useRef(0);
+  const [installTarget, setInstallTarget] =
+    useState<CurseForgeInstallTarget | null>(null);
+  const [installOpen, setInstallOpen] = useState(false);
 
   const classes = useMemo(() => {
     return allCategories
@@ -133,7 +144,7 @@ export const CurseForgePage: React.FC = () => {
     return Array(5)
       .fill(0)
       .map((_, index) => (
-        <div key={index} className="w-full flex items-center gap-3 p-3">
+        <div key={index} className="w-full min-w-0 flex items-center gap-3 p-3">
           <div>
             <Skeleton className="flex rounded-lg w-20 h-20 sm:w-24 sm:h-24" />
           </div>
@@ -157,7 +168,8 @@ export const CurseForgePage: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      setScrollPosition(getScrollTop());
+      // The results list is already detached here, so use the last value seen.
+      setScrollPosition(lastScrollTopRef.current);
     };
   }, []);
 
@@ -680,22 +692,23 @@ export const CurseForgePage: React.FC = () => {
                   </Button>
                 </div>
               ) : loading || !hasSearched ? (
-                <div className="flex flex-col gap-3">{renderSkeletons()}</div>
+                <div className={RESULTS_GRID}>{renderSkeletons()}</div>
               ) : mods.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-muted dark:text-zinc-400">
                   <p>{t("curseforge.no_results")}</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className={RESULTS_GRID} data-testid="catalog-result-list">
                   {mods.map((mod) => (
                     <motion.div
                       key={mod.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.2 }}
+                      className="@container group relative flex min-w-0 rounded-2xl bg-surface/50 dark:bg-surface/5 hover:bg-surface-secondary/50 dark:hover:bg-surface/10 transition-all shadow-sm hover:shadow-md border border-border dark:border-white/5"
                     >
                       <Link
-                        className="w-full p-4 bg-surface/50 dark:bg-surface/5 hover:bg-surface-secondary/50 dark:hover:bg-surface/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        className="min-w-0 flex-1 p-4 pr-2 cursor-pointer rounded-2xl flex gap-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                         to={routeTo.curseForgeMod(mod.id)}
                         aria-label={t("audit.mods.view_details", { name: mod.name })}
                         onClick={saveScrollPosition}
@@ -704,7 +717,7 @@ export const CurseForgePage: React.FC = () => {
                           <img
                             src={mod.logo?.thumbnailUrl || mod.logo?.url || ""}
                             alt={mod.name}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-surface-tertiary shadow-sm"
+                            className="size-16 @[30rem]:size-24 rounded-2xl object-cover bg-surface-tertiary shadow-sm"
                             loading="lazy"
                           />
                         </div>
@@ -812,6 +825,29 @@ export const CurseForgePage: React.FC = () => {
                           </div>
                         </div>
                       </Link>
+                      {/* Quick install: same dialog as the mod page, without leaving the list. */}
+                      <div className="flex shrink-0 items-start p-3 pl-0">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          aria-label={t("curseforge.install.quick_install_aria", {
+                            name: mod.name,
+                          })}
+                          data-testid="catalog-quick-install"
+                          onPress={() => {
+                            setInstallTarget({
+                              modId: mod.id,
+                              modName: mod.name,
+                            });
+                            setInstallOpen(true);
+                          }}
+                        >
+                          <LuDownload />
+                          <span className="hidden @[34rem]:inline">
+                            {t("curseforge.install.install")}
+                          </span>
+                        </Button>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -834,6 +870,13 @@ export const CurseForgePage: React.FC = () => {
           </Card.Content>
         </Card>
       </motion.div>
+      {installTarget && (
+        <CurseForgeInstallDialog
+          target={installTarget}
+          isOpen={installOpen}
+          onClose={() => setInstallOpen(false)}
+        />
+      )}
     </PageContainer>
   );
 };

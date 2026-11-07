@@ -1,0 +1,43 @@
+{
+  "curseforge": {
+    "install": {
+      "type": {
+        "mcworld": "Monde",
+        "mcaddon": "Add-on",
+        "mcpack": "Pack de ressources ou de comportements",
+        "skin_pack": "Pack de skins",
+        "unknown": "Paquet inconnu"
+      },
+      "dialog_title": "Installer {{name}}",
+      "setup_body": "Choisissez quoi installer et où. Le téléchargement et l'import s'enchaînent ensuite.",
+      "file_label": "Fichier",
+      "file_placeholder": "Choisir un fichier",
+      "files_loading": "Chargement des fichiers…",
+      "no_files": "Ce projet n'a aucun fichier téléchargeable.",
+      "no_instances": "Aucune instance installée. Ajoutez-en une depuis la page Téléchargement.",
+      "no_players": "Cette instance n'a pas encore de profil joueur. Lancez le jeu une fois avec elle, puis réessayez.",
+      "player_hint_skin": "Utilisé uniquement si ce pack est un pack de skins.",
+      "player_required": "Choisissez un joueur pour installer un monde.",
+      "install": "Installer",
+      "quick_install_aria": "Installer {{name}}",
+      "task_title": "Installer {{name}}",
+      "task_desc": "{{file}} → {{instance}}",
+      "step_download": "Télécharger {{name}}",
+      "step_download_done": "{{size}} téléchargés",
+      "step_detect": "Identifier le paquet",
+      "step_import": "Importer dans {{instance}}",
+      "step_import_done": "Importé",
+      "duplicate_found": "Déjà installé dans cette instance",
+      "duplicate_body": "Remplacer la copie existante par ce fichier ?",
+      "keep_existing": "Garder l'existant",
+      "overwrite": "Écraser",
+      "duplicate_kept": "Copie existante conservée ; rien n'a changé.",
+      "duplicate_overwriting": "Remplacement de la copie existante…",
+      "done_success": "{{name}} a été installé dans {{instance}}.",
+      "done_kept": "Rien n'a changé. La copie existante a été conservée.",
+      "cancelled": "Téléchargement annulé",
+      "success_title_named": "{{name}} installé",
+      "error_title_named": "Impossible d'installer {{name}}"
+    }
+  }
+}

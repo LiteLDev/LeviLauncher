@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "ミラーソースを切り替えられませんでした",
+    "cache_clean_failed": "LIP キャッシュを削除できませんでした",
+    "updating": {
+      "log_title": "ステップ",
+      "error_code": "エラーコード",
+      "details": "詳細",
+      "download_line": "{{percent}}% ダウンロード済み（{{downloaded}} / {{total}} MB）",
+      "retry_line": "更新を再試行しています（{{count}} 回目）"
+    },
+    "onboarding": {
+      "footer_hint": "これらは後から設定で変更できます。"
+    }
+  }
+}

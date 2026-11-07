@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "Não foi possível alterar a fonte espelho",
+    "cache_clean_failed": "Não foi possível limpar a cache do LIP",
+    "updating": {
+      "log_title": "Passos",
+      "error_code": "Código de erro",
+      "details": "Detalhes",
+      "download_line": "Transferido {{percent}}% ({{downloaded}} / {{total}} MB)",
+      "retry_line": "A tentar novamente a atualização (tentativa {{count}})"
+    },
+    "onboarding": {
+      "footer_hint": "Pode alterar isto mais tarde nas Definições."
+    }
+  }
+}

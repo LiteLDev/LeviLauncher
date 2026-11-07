@@ -9,6 +9,11 @@ interface PagePaginationProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   pageClassName?: string;
+  /**
+   * `auto` (default) shows numbered pages on wide windows and only
+   * prev / "page x / y" / next below 768px; `compact` and `full` force one.
+   */
+  variant?: "auto" | "full" | "compact";
 }
 export function PagePagination({
   pageCount,
@@ -17,6 +22,7 @@ export function PagePagination({
   size = "sm",
   className,
   pageClassName,
+  variant = "auto",
 }: PagePaginationProps) {
   const { t } = useTranslation();
   const lastPage = Math.max(1, pageCount);
@@ -31,6 +37,10 @@ export function PagePagination({
     else if (previous && p - previous > 2) items.push(`gap-${p}`);
     items.push(p);
   }
+  const numberedClass =
+    variant === "compact" ? "hidden" : variant === "auto" ? "max-md:hidden" : "";
+  const summaryClass =
+    variant === "full" ? "hidden" : variant === "auto" ? "md:hidden" : "";
   return (
     <Pagination size={size} className={className}>
       <Pagination.Content>
@@ -43,8 +53,15 @@ export function PagePagination({
             <Pagination.PreviousIcon />
           </Pagination.Previous>
         </Pagination.Item>
+        <Pagination.Item className={summaryClass}>
+          <span
+            className="px-2 text-sm font-medium tabular-nums whitespace-nowrap text-foreground"
+          >
+            {t("primitives.page_of", { page, total: lastPage })}
+          </span>
+        </Pagination.Item>
         {items.map((item) => (
-          <Pagination.Item key={item}>
+          <Pagination.Item key={item} className={numberedClass}>
             {typeof item === "number" ? (
               <Pagination.Link
                 isActive={page === item}

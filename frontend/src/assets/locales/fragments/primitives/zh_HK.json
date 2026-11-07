@@ -1,0 +1,9 @@
+{
+  "primitives": {
+    "log_title": "日誌",
+    "log_empty": "暫無輸出",
+    "copy": "複製",
+    "copied": "已複製",
+    "page_of": "第 {{page}} / {{total}} 頁"
+  }
+}

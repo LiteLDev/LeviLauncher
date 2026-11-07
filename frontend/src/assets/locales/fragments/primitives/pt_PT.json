@@ -1,0 +1,9 @@
+{
+  "primitives": {
+    "log_title": "Registo",
+    "log_empty": "Ainda sem saída",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "page_of": "Página {{page}} / {{total}}"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "primitives": {
+    "log_title": "Journal",
+    "log_empty": "Aucune sortie pour l'instant",
+    "copy": "Copier",
+    "copied": "Copié",
+    "page_of": "Page {{page}} / {{total}}"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "primitives": {
+    "log_title": "Журнал",
+    "log_empty": "Пока нет вывода",
+    "copy": "Копировать",
+    "copied": "Скопировано",
+    "page_of": "Страница {{page}} / {{total}}"
+  }
+}

@@ -24,7 +24,12 @@ import { DownloadsProvider } from "@/utils/DownloadsContext";
 import { LipTaskConsoleProvider } from "@/utils/LipTaskConsoleContext";
 import { CurrentVersionProvider } from "@/utils/CurrentVersionContext";
 import { ModIntelligenceProvider } from "@/utils/ModIntelligenceContext";
-import { useLayoutMode } from "@/hooks/useLayoutMode";
+import {
+  SHELL_SIZE,
+  useLayoutMode,
+  useRailExpanded,
+} from "@/hooks/useLayoutMode";
+import { DiscoverRedirect } from "@/components/ShellControls";
 import { useAnimations } from "@/hooks/useAnimations";
 import { useBackgroundImage } from "@/hooks/useBackgroundImage";
 import { useBackgroundAppearance } from "@/hooks/useBackgroundAppearance";
@@ -70,7 +75,6 @@ const BehaviorPacksPage = lazy(() => import("@/pages/BehaviorPacksPage"));
 const SkinPacksPage = lazy(() => import("@/pages/SkinPacksPage"));
 const ScreenshotsPage = lazy(() => import("@/pages/ScreenshotsPage"));
 const InstallPage = lazy(() => import("@/pages/InstallPage"));
-const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const OnboardingPage = lazy(() => import("@/pages/OnboardingPage"));
 const CurseForgePage = lazy(() => import("@/pages/CurseForgePage"));
 const CurseForgeModPage = lazy(() => import("@/pages/CurseForgeModPage"));
@@ -166,6 +170,8 @@ function App() {
 
   // Extracted hooks
   const { layoutMode } = useLayoutMode();
+  const railExpanded = useRailExpanded();
+  const railRem = railExpanded ? SHELL_SIZE.RAIL_EXPANDED_REM : SHELL_SIZE.RAIL_REM;
   useAnimations();
   const { themeColorsReady } = useThemeColors(resolvedTheme);
   const background = useBackgroundImage();
@@ -284,7 +290,11 @@ function App() {
                         data-readability={appearance.readability ? "true" : undefined}
                         style={
                           {
-                             "--content-pt": "4.5rem",
+                            "--topbar-h": `${SHELL_SIZE.TOPBAR_REM}rem`,
+                            "--rail-w":
+                              layoutMode === "sidebar" ? `${railRem}rem` : "0rem",
+                            // Pages start one small gap below the top bar.
+                            "--content-pt": "calc(var(--topbar-h) + min(1rem, var(--page-gutter)))",
                           } as React.CSSProperties
                         }
                         className={`app-backdrop relative isolate w-full h-dvh flex ${
@@ -302,16 +312,21 @@ function App() {
                           />
                         ) : (
                           <>
-                            <NavigationFrame />
+                            <NavigationFrame
+                              railRem={railRem}
+                              topRem={SHELL_SIZE.TOPBAR_REM}
+                            />
                             <Sidebar
                               navLocked={effectiveNavLocked}
                               themeMode={themeMode}
                               tryNavigate={tryNavigate}
+                              expanded={railExpanded}
                             />
                             <TopBar
                               navLocked={effectiveNavLocked}
                               isOnboardingMode={isOnboardingMode}
                               tryNavigate={tryNavigate}
+                              railExpanded={railExpanded}
                             />
                           </>
                         )}
@@ -320,7 +335,7 @@ function App() {
                           id="main-content"
                           tabIndex={-1}
                           className={`w-full flex-1 min-h-0 overflow-hidden ${
-                            layoutMode === "sidebar" ? "pl-14" : ""
+                            layoutMode === "sidebar" ? "pl-[var(--rail-w)]" : ""
                           }`}
                         >
                           <Suspense
@@ -425,7 +440,16 @@ function App() {
                               />
                               <Route
                                 path={ROUTES.about}
-                                element={<AboutPage />}
+                                element={
+                                  <Navigate
+                                    to={`${ROUTES.settings}?tab=about`}
+                                    replace
+                                  />
+                                }
+                              />
+                              <Route
+                                path={ROUTES.discover}
+                                element={<DiscoverRedirect />}
                               />
                               <Route
                                 path="*"

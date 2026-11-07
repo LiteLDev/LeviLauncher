@@ -1,8 +1,7 @@
-import { Button, Dropdown, Label, Tooltip } from "@heroui/react";
+import { Button, Tooltip } from "@heroui/react";
 import { cn } from "@/utils/cn";
 
 import React from "react";
-import { useLocation } from "react-router-dom";
 
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -10,18 +9,15 @@ import { AdministratorBadge } from "@/components/AdministratorBadge";
 import { LeviIcon } from "@/icons/LeviIcon";
 import { WindowControls } from "@/components/WindowControls";
 import {
-  FaRocket,
-  FaDownload,
-  FaCog,
-  FaEllipsisH,
-  FaList,
-  FaInfoCircle,
-} from "react-icons/fa";
+  ActivityButton,
+  CommandPaletteButton,
+  ShellInstancePicker,
+  useNavPress,
+  usePrimaryNav,
+} from "@/components/ShellControls";
 import { IoArrowBack } from "react-icons/io5";
 import { useTranslation } from "react-i18next";
 import { LAYOUT } from "@/constants/layout";
-import { COMPONENT_STYLES } from "@/constants/componentStyles";
-import { ROUTES, isRouteActive } from "@/constants/routes";
 
 interface GlobalNavbarProps {
   isBeta: boolean;
@@ -31,6 +27,11 @@ interface GlobalNavbarProps {
   tryNavigate: (path: string | number) => void;
 }
 
+const itemClass = (isActive: boolean) =>
+  isActive
+    ? "bg-surface-secondary text-zinc-900 dark:text-zinc-100"
+    : "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white";
+
 export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   isBeta,
   navLocked,
@@ -39,71 +40,9 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   tryNavigate,
 }) => {
   const { t } = useTranslation();
-  const location = useLocation();
+  const { items, catalogs } = usePrimaryNav();
 
-  const navItems = [
-    {
-      key: "home",
-      label: t("launcherpage.launch_button"),
-      path: ROUTES.home,
-      icon: <FaRocket size={18} />,
-      navbarClass: "flex",
-    },
-    {
-      key: "download",
-      label: t("downloadmodal.download_button"),
-      path: ROUTES.download,
-      icon: <FaDownload size={18} />,
-      navbarClass: "flex",
-    },
-    {
-      key: "versions",
-      label: t("nav.versions"),
-      path: ROUTES.instances,
-      icon: <FaList size={18} />,
-      navbarClass: "hidden lg:flex",
-      menuClass: "flex lg:hidden",
-      breakpoint: "lg",
-    },
-    {
-      key: "about",
-      label: t("nav.about"),
-      path: ROUTES.about,
-      icon: <FaInfoCircle size={18} />,
-      navbarClass: "hidden lg:flex",
-      menuClass: "flex lg:hidden",
-      breakpoint: "lg",
-    },
-    {
-      key: "settings",
-      label: t("app.settings"),
-      path: ROUTES.settings,
-      icon: <FaCog size={18} />,
-      navbarClass: "flex",
-    },
-  ];
-
-  const extraItems = navItems.filter((item) => item.menuClass);
-
-  const activeExtraItem = extraItems.find((item) =>
-    isRouteActive(location.pathname, item.path),
-  );
-
-  const moreButtonClass = React.useMemo(() => {
-    const base = "min-w-0 px-3 h-10 rounded-xl transition-all duration-200";
-    const inactive =
-      "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium";
-    const active =
-      "bg-surface-secondary text-zinc-900 dark:text-zinc-100 font-medium";
-
-    if (!activeExtraItem) return `${base} ${inactive}`;
-
-    if (activeExtraItem.breakpoint === "lg") {
-      return `${base} ${active} lg:bg-transparent lg:dark:bg-transparent lg:text-zinc-700 lg:dark:text-zinc-300 lg:hover:text-black lg:dark:hover:text-white`;
-    }
-
-    return `${base} ${active}`;
-  }, [activeExtraItem]);
+  const go = useNavPress(tryNavigate);
 
   return (
     <div
@@ -111,9 +50,9 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       className="fixed top-0 left-0 right-0 z-50 flex justify-center"
     >
       <div
-        className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} border-b border-border/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 px-4 py-2 flex items-center gap-4`}
+        className={`pointer-events-auto w-full h-[var(--topbar-h)] ${LAYOUT.NAVBAR_BG} border-b border-border/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 px-2 sm:px-4 flex items-center gap-2 sm:gap-4`}
       >
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Button
             isIconOnly
             size="sm"
@@ -128,16 +67,19 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
           >
             <IoArrowBack size={20} />
           </Button>
-          <div className="p-1">
-            <LeviIcon width={28} height={28} />
-          </div>
-          <div className="hidden sm:flex flex-col leading-none gap-0.5">
-            <p className="font-bold text-[16px] tracking-tight text-brand-700 dark:text-brand-300">
+          <LeviIcon width={28} height={28} />
+          {isBeta && (
+            <span className="lg:hidden text-[0.625rem] font-bold text-amber-500 uppercase tracking-wider">
+              Beta
+            </span>
+          )}
+          <div className="hidden lg:flex flex-col leading-none gap-0.5">
+            <p className="font-bold text-base tracking-tight text-brand-700 dark:text-brand-300">
               LeviLauncher
             </p>
             <div className="flex items-center gap-2">
               {isBeta && (
-                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">
+                <span className="text-[0.625rem] font-bold text-amber-500 uppercase tracking-wider">
                   Beta
                 </span>
               )}
@@ -146,84 +88,77 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap overflow-x-auto px-2 scrollbar-hide">
-          {navItems.map((item) => {
-            const isActive = isRouteActive(location.pathname, item.path);
-            return (
-              <Tooltip key={item.key} delay={500} closeDelay={0}>
+        <nav
+          aria-label={t("audit.usability.main_nav")}
+          // Scrolls instead of overlapping the right-hand controls if a
+          // locale or an extra badge leaves too little room.
+          className="flex-1 min-w-0 flex items-center justify-[safe_center] gap-0.5 sm:gap-1 whitespace-nowrap overflow-x-auto scrollbar-hide py-1"
+        >
+          {items.map((item) => (
+            <React.Fragment key={item.key}>
+              <Tooltip delay={300} closeDelay={0}>
                 <Button
                   aria-label={item.label}
+                  aria-current={item.isActive ? "page" : undefined}
                   isDisabled={navLocked}
-                  onPress={(e) => {
-                    tryNavigate(item.path);
-                    if (e.pointerType !== "keyboard") {
-                      (e.target as HTMLElement).blur();
-                    }
-                  }}
-                  variant={isActive ? "secondary" : "ghost"}
-                  className={`min-w-0 px-3 h-10 rounded-xl transition-all duration-200 ${item.navbarClass} ${
-                    isActive
-                      ? "bg-surface-secondary text-zinc-900 dark:text-zinc-100 font-medium"
-                      : "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium"
-                  }`}
+                  onPress={go(item.path)}
+                  variant={item.isActive ? "secondary" : "ghost"}
+                  className={cn(
+                    "min-w-0 h-9 px-2.5 xl:px-3 rounded-xl font-medium transition-colors duration-200",
+                    itemClass(item.isActive),
+                  )}
                 >
-                  {
-                    <span>{item.icon}</span>
-                  }
-                  <span className="hidden md:inline">{item.label}</span>
+                  <item.Icon size={17} />
+                  <span className="hidden xl:inline">{item.label}</span>
                 </Button>
                 <Tooltip.Content>{item.label}</Tooltip.Content>
               </Tooltip>
-            );
-          })}
-
-          <div className="lg:hidden">
-            <Dropdown>
-              <Button
-                aria-label={t("nav.more")}
-                isDisabled={navLocked}
-                variant={"ghost"}
-                className={moreButtonClass}
-              >
-                {<FaEllipsisH size={18} />}
-                <span className="hidden md:inline">{t("nav.more")}</span>
-              </Button>
-              <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
-                <Dropdown.Menu
-                  aria-label={t("nav.more")}
-                  onAction={(key) => {
-                    const item = extraItems.find((i) => i.key === key);
-                    if (item) tryNavigate(item.path);
-                  }}
+              {/* Both catalogs stay one click away while Discover is open. */}
+              {item.key === "discover" && item.isActive && (
+                <div
+                  role="group"
+                  aria-label={item.label}
+                  className="flex items-center gap-0.5 rounded-xl bg-surface-secondary/60 p-0.5"
                 >
-                  {extraItems.map((item) => (
-                    <Dropdown.Item
-                      key={item.key}
-                      className={item.menuClass}
-                      id={item.key}
-                      textValue={item.label}
-                    >
-                      {React.cloneElement(item.icon as any, {
-                        size: 14,
-                      })}
-                      <Label>{item.label}</Label>
-                      <Dropdown.ItemIndicator />
-                    </Dropdown.Item>
+                  {catalogs.map((catalog) => (
+                    <Tooltip key={catalog.key} delay={300} closeDelay={0}>
+                      <Button
+                        size="sm"
+                        isIconOnly
+                        aria-label={catalog.label}
+                        aria-current={catalog.isActive ? "page" : undefined}
+                        isDisabled={navLocked}
+                        onPress={go(catalog.path)}
+                        variant="ghost"
+                        className={cn(
+                          "size-8 min-w-8 rounded-lg",
+                          catalog.isActive && "bg-surface shadow-sm",
+                        )}
+                      >
+                        <catalog.Icon size={15} className={catalog.iconClassName} />
+                      </Button>
+                      <Tooltip.Content>{catalog.label}</Tooltip.Content>
+                    </Tooltip>
                   ))}
-                </Dropdown.Menu>
-              </Dropdown.Popover>
-            </Dropdown>
-          </div>
-        </div>
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </nav>
 
-        <div className="flex items-center gap-3 shrink-0 justify-end">
-          <div className="h-8 w-px bg-surface-tertiary mx-1 hidden sm:block" />
-
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0 justify-end">
+          <CommandPaletteButton isDisabled={navLocked} density="navbar" />
+          <ShellInstancePicker isDisabled={navLocked} density="navbar" />
+          <ActivityButton />
           {themeMode !== "auto" &&
             themeMode !== "schedule" &&
-            themeMode !== "system" && <ThemeSwitcher isDisabled={navLocked} />}
+            themeMode !== "system" && (
+              <div className="hidden md:block">
+                <ThemeSwitcher isDisabled={navLocked} />
+              </div>
+            )}
           <div
-            className={`hidden sm:block ${navLocked ? "pointer-events-none opacity-50" : ""}`}
+            className={`hidden md:block ${navLocked ? "pointer-events-none opacity-50" : ""}`}
           >
             <UserAvatar />
           </div>

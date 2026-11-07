@@ -43,8 +43,18 @@ tasks:
     label: build:frontend (PRODUCTION={{.PRODUCTION}})
     summary: Build the frontend project
     dir: frontend
+    # List the build inputs explicitly: a "**/*" glob makes Task walk and hash
+    # all of node_modules on every build, which can stall for minutes.
     sources:
-      - "**/*"
+      - src/**/*
+      - public/**/*
+      - bindings/**/*
+      - scripts/**/*
+      - index.html
+      - package.json
+      - package-lock.json
+      - tsconfig*.json
+      - vite.config.*
     generates:
       - dist/**/*
     deps:

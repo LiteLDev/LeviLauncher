@@ -21,6 +21,9 @@ go.work
 
 build/bin
 build/versions
+packaging/wix/**/bin/
+packaging/wix/**/obj/
+.tmp/
 # `wails3 update build-assets` regenerates these on every build; the launcher targets Windows.
 build/darwin/
 build/ios/

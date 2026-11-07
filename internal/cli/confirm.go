@@ -22,7 +22,7 @@ func (c *Ctx) CanPrompt() bool {
 //   - a console: asks "[y/N]"; yes returns nil, anything else an
 //     ERR_CANCELED error (exit 10);
 //   - no console, --no-input or --json: an ERR_CONFIRMATION_REQUIRED error
-//     (exit 2) whose hint names --yes.
+//     (exit 2), "confirmation required: <question>", whose hint names --yes.
 func (c *Ctx) Confirm(question string) error {
 	return c.ConfirmWith(question, "--yes")
 }
@@ -37,7 +37,9 @@ func (c *Ctx) ConfirmWith(question, answerFlag string) error {
 	}
 	question = strings.TrimSpace(question)
 	if !c.CanPrompt() {
-		return UsageError("%s needs confirmation", strings.TrimSuffix(question, "?")).
+		// The question is kept verbatim: it may span several sentences
+		// ("Remove X from Alpha? Mods that need it will no longer load.").
+		return UsageError("confirmation required: %s", question).
 			WithHint("add %s to confirm without a prompt", answerFlag).
 			withCode("ERR_CONFIRMATION_REQUIRED")
 	}

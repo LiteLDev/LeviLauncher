@@ -157,6 +157,12 @@ func modState(all, any bool) string {
 	return "off"
 }
 
+// modOutdated is whether mod update would update a mod: never one newer than
+// the catalogue's latest stable version, which mod update holds back.
+func modOutdated(canUpdate bool, installed, target string) bool {
+	return canUpdate && !modUpdateWouldDowngrade(installed, target)
+}
+
 // modListItems turns a view into list entries: packages first, then local
 // mods, each sorted by name.
 func modListItems(v *modView) []modListItem {
@@ -164,7 +170,7 @@ func modListItems(v *modView) []modListItem {
 	for _, g := range v.listing.Groups {
 		it := modListItem{
 			Ref: lipShortID(g.Identifier), Name: g.PackageName, Version: g.InstalledVersion,
-			Latest: g.TargetVersion, Outdated: g.CanUpdate, Source: "catalog",
+			Latest: g.TargetVersion, Outdated: modOutdated(g.CanUpdate, g.InstalledVersion, g.TargetVersion), Source: "catalog",
 			Package: &modPackageInfo{ID: g.Identifier, Installed: true, Explicit: g.Explicit, InstalledVersion: g.InstalledVersion},
 			Enabled: g.AllEnabled, State: modState(g.AllEnabled, g.AnyEnabled),
 			Folders: append([]string{}, g.Folders...), Mods: []modFolderInfo{},
@@ -182,7 +188,7 @@ func modListItems(v *modView) []modListItem {
 			Folders: []string{item.Folder}, Mods: []modFolderInfo{f},
 		}
 		if item.State.Source == lipindex.SourceUnique {
-			it.Latest, it.Outdated = item.State.TargetVersion, item.State.CanUpdate
+			it.Latest, it.Outdated = item.State.TargetVersion, modOutdated(item.State.CanUpdate, item.Mod.Version, item.State.TargetVersion)
 			it.Package = &modPackageInfo{ID: item.State.Identifier}
 		}
 		out = append(out, it)

@@ -33,6 +33,7 @@ func newLaunchFakes(t *testing.T) *launchFakes {
 	f := &launchFakes{instFakes: newInstFakes(t), pids: map[string][]uint32{}, startPID: 4242, vc: true, gi: true, gs: true}
 	instSave(f.instFakes, &launchGame)
 	instSave(f.instFakes, &launchGamePIDs)
+	instSave(f.instFakes, &launchWindowUp)
 	instSave(f.instFakes, &launchWaitPID)
 	instSave(f.instFakes, &launchWaitGameExit)
 	instSave(f.instFakes, &launchNeedsMigration)
@@ -73,6 +74,7 @@ func newLaunchFakes(t *testing.T) *launchFakes {
 		defer f.mu.Unlock()
 		return append([]uint32(nil), f.pids[dir]...)
 	}
+	launchWindowUp = func([]uint32) bool { return true }
 	launchWaitPID = func(ctx context.Context, pid uint32) (uint32, error) { return f.exitCode, nil }
 	launchWaitGameExit = func(context.Context, string) error { return nil }
 	launchNeedsMigration = func() bool { return !f.migrated }
@@ -103,9 +105,54 @@ func TestLaunchWaitsForWindow(t *testing.T) {
 	if code != ExitConflict || !strings.Contains(errOut, "--force") || !strings.Contains(errOut, "[ERR_GAME_ALREADY_RUNNING]") {
 		t.Fatalf("already running: %d %s", code, errOut)
 	}
+	// The second copy is reported, not the one already running.
+	f.startPID = 5151
 	code, out, _ = f.h.run("launch", "Survival", "--force", "-q")
-	if code != 0 || out != "4242\n" || f.launches[1] != "Survival check=false" {
+	if code != 0 || out != "5151\n" || f.launches[1] != "Survival check=false" {
 		t.Fatalf("force: %d %q %v", code, out, f.launches)
+	}
+	f.startPID = 6161
+	code, out, _ = f.h.run("launch", "Survival", "--force", "--detach", "-q")
+	if code != 0 || out != "6161\n" {
+		t.Fatalf("force detach: %d %q", code, out)
+	}
+}
+
+func TestLaunchForceNewCopyFails(t *testing.T) {
+	f := newLaunchFakes(t)
+	inst := f.add("Survival", "1.21.50.07", "release", "gdk", false)
+	f.pids[inst.Dir] = []uint32{100}
+	// The second copy never appears: the window of the running copy must
+	// not count as this launch's.
+	launchGame = func(ctx context.Context, name string, checkRunning bool) string {
+		eventsink.From(ctx).Emit(launch.EventMcLaunchDone, struct{}{})
+		return ""
+	}
+	code, _, errOut := f.h.run("launch", "Survival", "--force", "--timeout", "100ms")
+	if code == 0 || !strings.Contains(errOut, "[ERR_LAUNCH_TIMEOUT]") {
+		t.Fatalf("no new copy: %d %s", code, errOut)
+	}
+	code, _, errOut = f.h.run("launch", "Survival", "--force", "--detach", "--timeout", "100ms")
+	if code == 0 || !strings.Contains(errOut, "[ERR_LAUNCH_TIMEOUT]") {
+		t.Fatalf("no new copy, detach: %d %s", code, errOut)
+	}
+	// The new copy starts and exits before showing a window.
+	launchWindowUp = func([]uint32) bool { return false }
+	launchGame = func(ctx context.Context, name string, checkRunning bool) string {
+		f.mu.Lock()
+		f.pids[inst.Dir] = append(f.pids[inst.Dir], 200)
+		f.mu.Unlock()
+		go func() {
+			time.Sleep(30 * time.Millisecond)
+			f.mu.Lock()
+			f.pids[inst.Dir] = []uint32{100}
+			f.mu.Unlock()
+		}()
+		return ""
+	}
+	code, _, errOut = f.h.run("launch", "Survival", "--force", "--timeout", "5s")
+	if code != ExitFailure || !strings.Contains(errOut, "[ERR_LAUNCH_GAME]") {
+		t.Fatalf("new copy exited: %d %s", code, errOut)
 	}
 }
 

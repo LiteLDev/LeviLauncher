@@ -200,9 +200,14 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	}
 	cmd.Dir = filepath.Dir(toRun)
 	if enableConsole {
+		// The console game gets a console of its own: started from the
+		// command line it would otherwise share the user's terminal, and
+		// Ctrl-C or closing that terminal would end the game. A launcher
+		// without a console (the window) got one implicitly already.
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			HideWindow:       false,
 			NoInheritHandles: true,
+			CreationFlags:    windows.CREATE_NEW_CONSOLE,
 		}
 	}
 	if err := cmd.Start(); err != nil {

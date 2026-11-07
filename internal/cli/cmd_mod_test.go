@@ -320,6 +320,23 @@ func TestModImport(t *testing.T) {
 	if code, _, errs = w.h.run("mod", "import", dll, pkg, "--name", "X"); code != ExitUsage {
 		t.Fatalf("--name with two files = %d %q", code, errs)
 	}
+	// A .dll name must be one folder name inside mods.
+	n := len(w.calls)
+	for _, name := range []string{"../../evil", `..\evil`, "a/b", "..", "C:x", "x."} {
+		if code, _, errs = w.h.run("mod", "import", dll, "--name", name); code != ExitUsage || !strings.Contains(errs, "one folder name") {
+			t.Fatalf("--name %q = %d %q", name, code, errs)
+		}
+	}
+	if code, _, errs = w.h.run("mod", "import", file("..dll", "MZ")); code != ExitUsage || !strings.Contains(errs, ProgramName+" mod import ") || !strings.Contains(errs, "--name <name>") {
+		t.Fatalf("bad file name = %d %q", code, errs)
+	}
+	if len(w.calls) != n {
+		t.Fatalf("bad names reached the backend: %v", w.calls[n:])
+	}
+	// An empty --name falls back to the file name.
+	if code, _, errs = w.h.run("mod", "import", dll, "--name", " "); code != 0 || !strings.Contains(w.calls[len(w.calls)-1], "name=Tool ") {
+		t.Fatalf("--name empty = %d %q %v", code, errs, w.calls[n:])
+	}
 	if code, _, errs = w.h.run("mod", "import", file("a.mcpack", "")); code != ExitUsage || !strings.Contains(errs, "pack import") {
 		t.Fatalf("mcpack = %d %q", code, errs)
 	}
@@ -463,6 +480,25 @@ func TestModUpdate(t *testing.T) {
 	if code != 0 || out != "updated LegacyMoney 0.9.1 -> 0.9.2\n" || w.calls[len(w.calls)-1] != "install Survival github.com/LiteLDev/LegacyMoney@0.9.2" {
 		t.Fatalf("update = %d %q %q %v", code, out, errs, w.calls)
 	}
+	// An installed pre-release newer than the latest stable is not
+	// "updated" back to it.
+	w.states["Survival"]["github.com/liteldev/legacymoney"] = types.LIPPackageInstallState{Installed: true, ExplicitInstalled: true, InstalledVersion: "1.0.0-beta.1"}
+	n := len(w.calls)
+	code, out, errs = w.h.run("mod", "update", "--all", "-y")
+	if code != 0 || out != "" || !strings.Contains(errs, "newer than the catalogue's latest stable 0.9.2") || !strings.Contains(errs, "mod install LiteLDev/LegacyMoney@0.9.2") || len(w.calls) != n {
+		t.Fatalf("pre-release = %d %q %q %v", code, out, errs, w.calls[n:])
+	}
+	// --json still says why.
+	code, _, errs = w.h.run("mod", "update", "LegacyMoney", "--json", "-y")
+	if code != 0 || !strings.Contains(errs, "warning: LegacyMoney 1.0.0-beta.1 is newer") || len(w.calls) != n {
+		t.Fatalf("pre-release --json = %d %q %v", code, errs, w.calls[n:])
+	}
+	if modOutdated(true, "1.0.0-beta.1", "0.9.2") || !modOutdated(true, "0.9.1", "0.9.2") {
+		t.Fatal("modOutdated")
+	}
+	if !modUpdateWouldDowngrade("2.0.0-beta.2", "1.9.0") || modUpdateWouldDowngrade("1.0.0-rc.1", "1.0.0") || modUpdateWouldDowngrade("1.0", "0.9.2") {
+		t.Fatal("modUpdateWouldDowngrade")
+	}
 	code, _, errs = w.h.run("mod", "update", "Tweaks")
 	if code != 0 || !strings.Contains(errs, "not installed from the mod catalogue") {
 		t.Fatalf("local = %d %q", code, errs)
@@ -480,6 +516,13 @@ func TestModSearchAndShow(t *testing.T) {
 	code, out, errs := w.h.run("mod", "search")
 	if code != 0 || !strings.Contains(out, "LiteLDev/LegacyMoney") || strings.Contains(out, "Some/Chat") || !strings.Contains(errs, "Minecraft 1.26.60.05") {
 		t.Fatalf("search = %d %q %q", code, out, errs)
+	}
+	// A default instance LeviLamina does not support filters nothing, and
+	// says so.
+	w.h.current = w.h.add("Alpha", "1.21.50.07", "release", versions.PackageTypeGDK).Name
+	code, out, errs = w.h.run("mod", "search")
+	if code != 0 || !strings.Contains(out, "Some/Chat") || !strings.Contains(errs, "does not support Minecraft 1.21.50.07 (instance Alpha); showing mods for every game version") {
+		t.Fatalf("unsupported default = %d %q %q", code, out, errs)
 	}
 	w.h.current = ""
 	w.h.add("Other", "1.26.51.01", "release", versions.PackageTypeGDK)

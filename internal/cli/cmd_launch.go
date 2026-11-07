@@ -23,6 +23,7 @@ var (
 		return versionlaunch.New(false).Launch(ctx, name, checkRunning)
 	}
 	launchGamePIDs       = launch.GameProcessIDs
+	launchWindowUp       = launch.GameWindowVisible
 	launchWaitPID        = launch.WaitPIDExit
 	launchWaitGameExit   = launch.WaitGameExit
 	launchNeedsMigration = leviloader.NeedsMigration
@@ -48,6 +49,8 @@ const launchGSStoreURL = "ms-windows-store://pdp/?ProductId=9MWPM2CQNLHN"
 func init() {
 	RegisterBackendErrors(map[string]BackendError{
 		"ERR_UWP_LAUNCH": {Exit: ExitFailure, Message: "Windows could not start the UWP game"},
+		"ERR_UWP_PREPARE": {Exit: ExitFailure, Message: "could not prepare the UWP game files for registration",
+			Hint: "run again with -v for details, or check that the instance folder is writable"},
 	})
 	Register(&Command{
 		Path:    "launch",
@@ -116,6 +119,15 @@ func runLaunch(c *Ctx) error {
 
 	launchMigrateLoader(c)
 	launchAdvisories(c, inst)
+	// With --force the copies already running are not this launch: the
+	// window and PID reported must be those of the new copy.
+	var before map[uint32]bool
+	if force {
+		before = map[uint32]bool{}
+		for _, pid := range launchGamePIDs(inst.Dir) {
+			before[pid] = true
+		}
+	}
 
 	res := launchResult{Instance: inst.Name, PackageType: inst.PackageType, Channel: inst.Channel,
 		Registered: inst.Meta.Registered, EditorMode: inst.Meta.EnableEditorMode}
@@ -143,7 +155,11 @@ func runLaunch(c *Ctx) error {
 		}
 		next.Emit(name, data...)
 	})
-	ctx, wait := launch.Watch(c.Context(), filtered)
+	// The monitor's own limits follow --timeout: either phase may use all
+	// of it, so a window that comes late after a fast process start is still
+	// waited for; the wait below bounds the total.
+	monitorCtx := launch.WithMonitorTimeouts(c.Context(), timeout, timeout)
+	ctx, wait := launch.Watch(monitorCtx, filtered)
 	code := launchGame(ctx, inst.Name, !force)
 	if bc, _, _ := SplitBackendCode(code); bc == "ERR_UWP_NOT_REGISTERED" && inst.IsUWP() && !registeredNow {
 		// The registration was lost since it was checked: register again
@@ -154,7 +170,7 @@ func runLaunch(c *Ctx) error {
 			return err
 		}
 		res.Registered = reg.Registered
-		ctx, wait = launch.Watch(c.Context(), filtered)
+		ctx, wait = launch.Watch(monitorCtx, filtered)
 		p.Phase("%s", launchDescription(inst))
 		code = launchGame(ctx, inst.Name, !force)
 	}
@@ -166,7 +182,7 @@ func runLaunch(c *Ctx) error {
 	}
 
 	if detach {
-		pid, err := launchWaitProcess(c, inst, wait, start.Add(timeout))
+		pid, err := launchWaitProcess(c, inst, before, wait, start.Add(timeout))
 		p.Done()
 		if err != nil {
 			return err
@@ -182,22 +198,32 @@ func runLaunch(c *Ctx) error {
 	}
 
 	p.Phase("Waiting for the game window")
-	out, err := wait(timeout)
-	p.Done()
-	switch {
-	case errors.Is(err, launch.ErrWaitTimeout):
-		return Backend("ERR_LAUNCH_TIMEOUT").WithDetail(fmt.Sprintf("no game window after %s", timeout)).
-			WithHint("the game may still be starting; check with: %s ps", ProgramName)
-	case err != nil:
-		return err
-	case out.Code != "":
-		return launchError(inst, out.Code)
+	if len(before) > 0 {
+		// The monitor sees the running copy's window at once: follow the
+		// new copy instead.
+		pid, err := launchWaitNewWindow(c, inst, before, start, timeout)
+		p.Done()
+		if err != nil {
+			return err
+		}
+		res.PID = pid
+	} else {
+		out, err := wait(timeout)
+		p.Done()
+		switch {
+		case errors.Is(err, launch.ErrWaitTimeout):
+			return launchTimeoutError(timeout)
+		case err != nil:
+			return err
+		case out.Code != "":
+			return launchError(inst, out.Code)
+		}
+		if pids := launchGamePIDs(inst.Dir); len(pids) > 0 {
+			pid := int(pids[0])
+			res.PID = &pid
+		}
 	}
 	res.State = "running"
-	if pids := launchGamePIDs(inst.Dir); len(pids) > 0 {
-		pid := int(pids[0])
-		res.PID = &pid
-	}
 	res.DurationMs = time.Since(start).Milliseconds()
 	if res.PID != nil {
 		c.Notice("Game window is up (pid %d, %.1fs)", *res.PID, time.Since(start).Seconds())
@@ -267,7 +293,7 @@ func launchError(inst Instance, code string) *Error {
 		}
 	case "ERR_UWP_NOT_REGISTERED":
 		e.Hint = fmt.Sprintf("%s instance register %s", ProgramName, name)
-	case "ERR_LAUNCH_GAME", "ERR_UWP_LAUNCH", "ERR_UWP_PREPARE":
+	case "ERR_LAUNCH_GAME", "ERR_UWP_LAUNCH":
 		e.Hint = fmt.Sprintf("run again with -v for details, or check the mods of the instance: %s mod list -i %s", ProgramName, name)
 	case "ERR_LAUNCH_TIMEOUT":
 		e.Hint = fmt.Sprintf("the game may still be starting; check with: %s ps", ProgramName)
@@ -277,11 +303,40 @@ func launchError(inst Instance, code string) *Error {
 	return e
 }
 
-// launchWaitProcess waits until the game process of inst exists (--detach),
-// the monitor reports a failure, or deadline passes.
-func launchWaitProcess(c *Ctx, inst Instance, wait func(time.Duration) (launch.Outcome, error), deadline time.Time) (*int, error) {
+func launchTimeoutError(timeout time.Duration) *Error {
+	return Backend("ERR_LAUNCH_TIMEOUT").WithDetail(fmt.Sprintf("no game window after %s", timeout)).
+		WithHint("the game may still be starting; check with: %s ps", ProgramName)
+}
+
+// launchNewPIDs returns the game PIDs of inst that are not in before.
+func launchNewPIDs(inst Instance, before map[uint32]bool) []uint32 {
+	var out []uint32
+	for _, pid := range launchGamePIDs(inst.Dir) {
+		if !before[pid] {
+			out = append(out, pid)
+		}
+	}
+	return out
+}
+
+// launchPoll sleeps one poll interval, or returns ctx.Err() when ctx ends.
+func launchPoll(ctx context.Context) error {
+	t := time.NewTimer(launchPollInterval)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
+}
+
+// launchWaitProcess waits until a game process of inst that is not in
+// before exists (--detach), the monitor reports a failure, or deadline
+// passes.
+func launchWaitProcess(c *Ctx, inst Instance, before map[uint32]bool, wait func(time.Duration) (launch.Outcome, error), deadline time.Time) (*int, error) {
 	for {
-		if pids := launchGamePIDs(inst.Dir); len(pids) > 0 {
+		if pids := launchNewPIDs(inst, before); len(pids) > 0 {
 			pid := int(pids[0])
 			return &pid, nil
 		}
@@ -297,6 +352,12 @@ func launchWaitProcess(c *Ctx, inst Instance, wait func(time.Duration) (launch.O
 			return nil, err
 		case out.Code != "":
 			return nil, launchError(inst, out.Code)
+		case out.Up && len(before) > 0:
+			// The monitor saw a copy that was already running: keep
+			// looking for the new one.
+			if err := launchPoll(c.Context()); err != nil {
+				return nil, err
+			}
 		case out.Up:
 			// The window is up already; the process exists even when it
 			// was not found by path (it is reported once found).
@@ -305,6 +366,32 @@ func launchWaitProcess(c *Ctx, inst Instance, wait func(time.Duration) (launch.O
 				return &pid, nil
 			}
 			return nil, nil
+		}
+	}
+}
+
+// launchWaitNewWindow waits until a game process of inst that is not in
+// before shows its window. It fails when that process exits first or
+// timeout passes since start.
+func launchWaitNewWindow(c *Ctx, inst Instance, before map[uint32]bool, start time.Time, timeout time.Duration) (*int, error) {
+	deadline := start.Add(timeout)
+	seen := false
+	for {
+		pids := launchNewPIDs(inst, before)
+		switch {
+		case len(pids) > 0 && launchWindowUp(pids):
+			pid := int(pids[0])
+			return &pid, nil
+		case len(pids) > 0:
+			seen = true
+		case seen:
+			return nil, launchError(inst, "ERR_LAUNCH_GAME").WithDetail("the new game process exited")
+		}
+		if !time.Now().Before(deadline) {
+			return nil, launchTimeoutError(timeout)
+		}
+		if err := launchPoll(c.Context()); err != nil {
+			return nil, err
 		}
 	}
 }

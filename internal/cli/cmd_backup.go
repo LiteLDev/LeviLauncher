@@ -637,9 +637,22 @@ func runBackupRestore(c *Ctx) error {
 		}
 	}
 	dry := c.Bool("dry-run")
-	if !dry && bkGameRunning(inst.Dir) {
-		return ConflictError("Minecraft is running for instance %s", inst.Name).
-			WithHint("%s stop %s", ProgramName, quoteArg(inst.Name)).withCode("ERR_GAME_RUNNING")
+	if !dry {
+		restoring := scopes
+		if len(restoring) == 0 {
+			restoring = info.IncludedScopes
+		}
+		// Game data may be shared with other instances or the Store game,
+		// so any Minecraft using it counts, not only this instance's own.
+		if containsFold(restoring, bkBackendGameData) {
+			if err := contentEnsureStopped(inst, "game data"); err != nil {
+				return err
+			}
+		}
+		if bkGameRunning(inst.Dir) {
+			return ConflictError("Minecraft is running for instance %s", inst.Name).
+				WithHint("%s stop %s", ProgramName, quoteArg(inst.Name)).withCode("ERR_GAME_RUNNING")
+		}
 	}
 
 	prog := c.Progress()

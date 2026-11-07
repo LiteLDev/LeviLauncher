@@ -138,6 +138,12 @@ func runModImport(c *Ctx) error {
 	if (c.Changed("name") || c.Changed("type") || c.Changed("mod-version")) && (dlls != 1 || len(c.Args) != 1) {
 		return UsageError("--name, --type and --mod-version describe a single .dll; import other files separately")
 	}
+	// An empty --name falls back to the file name, as without it.
+	if name := strings.TrimSpace(c.String("name")); name != "" {
+		if err := checkModFolderName(name); err != nil {
+			return err
+		}
+	}
 	inst, err := c.ResolveInstance("")
 	if err != nil {
 		return err
@@ -148,6 +154,14 @@ func runModImport(c *Ctx) error {
 			break
 		}
 		label := filepath.Base(path)
+		dllName := strings.TrimSpace(c.String("name"))
+		if kinds[i] == "dll" && dllName == "" {
+			dllName = strings.TrimSpace(strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))
+			if err := checkModFolderName(dllName); err != nil {
+				b.fail(label, err.WithHint("%s mod import %s --name <name>", ProgramName, quoteArg(path)))
+				continue
+			}
+		}
 		data, err := os.ReadFile(path)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -159,11 +173,7 @@ func runModImport(c *Ctx) error {
 		}
 		run := func(overwrite bool) string {
 			if kinds[i] == "dll" {
-				name := strings.TrimSpace(c.String("name"))
-				if name == "" {
-					name = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-				}
-				return modOps.importDll(inst, filepath.Base(path), data, name, c.String("type"), c.String("mod-version"), overwrite)
+				return modOps.importDll(inst, filepath.Base(path), data, dllName, c.String("type"), c.String("mod-version"), overwrite)
 			}
 			return modOps.importZip(inst, data, overwrite)
 		}
@@ -195,6 +205,23 @@ func runModImport(c *Ctx) error {
 		b.ok(modBatchResult{Item: label, Status: status}, label, status+" "+label)
 	}
 	return b.done()
+}
+
+// checkModFolderName rejects a .dll mod name that is not one plain folder
+// name, so the mod cannot land outside (or nested inside) the mods folder.
+func checkModFolderName(name string) *Error {
+	bad := name == "" || strings.ContainsAny(name, `<>:"/\|?*`) ||
+		strings.HasSuffix(name, ".") || strings.HasSuffix(name, " ")
+	for _, r := range name {
+		if r < 32 {
+			bad = true
+		}
+	}
+	if bad {
+		return UsageError(`the mod name %q must be one folder name without < > : " / \ | ? * or a trailing dot or space`, name).
+			withCode("ERR_INVALID_NAME")
+	}
+	return nil
 }
 
 // modRemovePlan is how one mod is removed.

@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
@@ -472,6 +473,48 @@ func TestInstanceRename(t *testing.T) {
 	if code != 0 || !strings.Contains(strings.Join(f.calls, ";"), "rename Survival SURVIVAL") {
 		t.Fatalf("case rename: %d %v %s", code, f.calls, errOut)
 	}
+	// The folder itself takes the new case.
+	g := f.add("Gamma", "1.21.50.07", "release", "gdk", false)
+	if code, _, errOut = f.h.run("instance", "rename", "Gamma", "GAMMA"); code != 0 {
+		t.Fatalf("case rename on disk: %d %s", code, errOut)
+	}
+	es, err := os.ReadDir(filepath.Dir(g.Dir))
+	if err != nil || len(es) != 1 || es[0].Name() != "GAMMA" {
+		t.Fatalf("folder after case rename: %v %v", es, err)
+	}
+}
+
+func TestInstanceRemoveStopsOnInterrupt(t *testing.T) {
+	f := newInstFakes(t)
+	for _, n := range []string{"A", "B", "C"} {
+		f.add(n, "1.21.50.07", "release", "gdk", false)
+	}
+	sigs := make(chan chan<- os.Signal, 1)
+	notifyInterrupt = func(ch chan<- os.Signal) func() { sigs <- ch; return func() {} }
+	cancelled := make(chan struct{})
+	interruptCancelled = func() { close(cancelled) }
+	t.Cleanup(func() { interruptCancelled = func() {} })
+	del := instDeleteFolder
+	instDeleteFolder = func(name string) string {
+		if name == "A" {
+			// Ctrl-C while A is being deleted.
+			(<-sigs) <- os.Interrupt
+			select {
+			case <-cancelled:
+			case <-time.After(10 * time.Second):
+				t.Error("the interrupt never cancelled the context")
+			}
+		}
+		return del(name)
+	}
+	code, out, errOut := f.h.run("instance", "remove", "A", "B", "C", "-y")
+	if code != ExitInterrupted || out != "Removed A\n" || !strings.Contains(errOut, "not removed: B, C") ||
+		!strings.Contains(errOut, "instance remove B C") {
+		t.Fatalf("interrupted: %d %q %s", code, out, errOut)
+	}
+	if strings.Contains(strings.Join(f.calls, ";"), "delete B") {
+		t.Fatalf("deleted after Ctrl-C: %v", f.calls)
+	}
 }
 
 func TestInstanceRemove(t *testing.T) {
@@ -526,6 +569,13 @@ func TestInstanceRegister(t *testing.T) {
 	if code != ExitUsage || !strings.Contains(errOut, "replacing instance Other") || len(f.calls) != 0 {
 		t.Fatalf("displacement: %d %s", code, errOut)
 	}
+	// A running holder would be closed by Windows: refused even with --yes.
+	f.running["Other"] = []int{77}
+	code, _, errOut = f.h.run("instance", "register", "New", "--yes")
+	if code != ExitConflict || !strings.Contains(errOut, "would close it") || !strings.Contains(errOut, "stop Other") || len(f.calls) != 0 {
+		t.Fatalf("running holder: %d %s", code, errOut)
+	}
+	delete(f.running, "Other")
 	f.devMode = false
 	code, _, errOut = f.h.run("instance", "register", "New", "--yes")
 	if code != ExitSystem || !strings.Contains(errOut, "Developer Mode") || len(f.calls) != 0 {

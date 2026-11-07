@@ -129,7 +129,7 @@ func TestInstanceCreateOptions(t *testing.T) {
 		{[]string{"install", "1.21.50.07", "--loader"}, ExitUsage, "does not support Minecraft 1.21.50.07"},
 		{[]string{"install", "1.21.51", "--loader-version", "2.0.0"}, ExitNotFound, "LeviLamina 2.0.0 does not support"},
 		{[]string{"install", "1.21.124", "--loader"}, ExitUsage, "only has pre-release"},
-		{[]string{"install", "1.21.124", "--loader-version", "1.8.0-rc.1"}, ExitUsage, "needs confirmation"},
+		{[]string{"install", "1.21.124", "--loader-version", "1.8.0-rc.1"}, ExitUsage, "confirmation required"},
 		{[]string{"install", "1.21.51", "--copy-data-from", "Nope"}, ExitNotFound, "no instance named"},
 		{[]string{"install", "1.16.0.51", "--type", "gdk", "--channel", "beta"}, ExitUsage, "beta builds exist only for UWP"},
 		{[]string{"install", "1.19.60.4", "--no-shared-data"}, ExitUsage, "cannot keep their own game data"},

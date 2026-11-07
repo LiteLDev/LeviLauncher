@@ -10,7 +10,6 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/downloader"
-	"github.com/liteldev/LeviLauncher/internal/eventsink"
 )
 
 const (
@@ -63,15 +62,17 @@ type DownloadError struct {
 	Dest  string
 }
 
-func StartDownload(ctx context.Context, rawurl string, md5sum string) string {
+// StartDownload starts downloading an installer. It returns an error when the
+// download cannot start, for example downloader.ErrBusy when another process
+// is downloading the same file.
+func StartDownload(ctx context.Context, rawurl string, md5sum string) (string, error) {
 	dir, err := apppath.InstallersDir()
 	if err != nil {
-		eventsink.From(ctx).Emit(EventDownloadError, err.Error())
-		return ""
+		return "", err
 	}
 	fname := deriveFilename(rawurl)
 	dest := filepath.Join(dir, fname)
-	return msixMgr.Start(ctx, stripFilenameParam(rawurl), dest, md5sum)
+	return msixMgr.StartChecked(ctx, stripFilenameParam(rawurl), dest, md5sum)
 }
 
 // StartNamedDownload shares task controls/events with MSIXVC downloads while
@@ -84,7 +85,7 @@ func StartNamedDownload(ctx context.Context, rawurl, filename string, verify fun
 	if err != nil {
 		return "", err
 	}
-	return msixMgr.StartVerified(ctx, rawurl, filepath.Join(dir, filename), verify), nil
+	return msixMgr.StartVerified(ctx, rawurl, filepath.Join(dir, filename), verify)
 }
 
 // InstallerPath returns where StartDownload and DownloadSync store the

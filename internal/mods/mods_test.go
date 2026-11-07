@@ -464,3 +464,18 @@ func setupModsTestVersionsDir(t *testing.T) string {
 	}
 	return versionsDir
 }
+
+func TestImportDllToModsRejectsNamesOutsideMods(t *testing.T) {
+	versionsDir := setupModsTestVersionsDir(t)
+	if err := os.MkdirAll(filepath.Join(versionsDir, "T1", "mods"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"../../evil", `..\..\evil`, "..", "a/b", `C:evil`} {
+		if got := ImportDllToMods("T1", "T.dll", []byte("dll"), name, "", "", true); got != "ERR_INVALID_NAME" {
+			t.Fatalf("ImportDllToMods(name %q) = %q, want ERR_INVALID_NAME", name, got)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(versionsDir, "evil")); !os.IsNotExist(err) {
+		t.Fatalf("a mod was written outside mods: %v", err)
+	}
+}

@@ -274,6 +274,61 @@ func TestUnknownCommandSuggests(t *testing.T) {
 	}
 }
 
+func TestMistypedVerbUnderDefault(t *testing.T) {
+	h := newHarness(t)
+	h.add("Alpha123", "1.21.50", "release", "gdk")
+	for _, args := range [][]string{
+		{"instance", "remov", "foo"},
+		{"instance", "lst", "-h"},
+		{"help", "instance", "lst"},
+	} {
+		code, out, errOut := h.run(args...)
+		if code != ExitUsage || out != "" || !strings.Contains(errOut, `unknown command "instance `) || !strings.Contains(errOut, "did you mean") {
+			t.Errorf("%v: code %d\nstdout %q\nstderr %s", args, code, out, errOut)
+		}
+	}
+	// help takes command words only.
+	code, _, errOut := h.run("help", "instance", "Alpha123")
+	if code != ExitUsage || !strings.Contains(errOut, `unknown command "instance Alpha123"`) || !strings.Contains(errOut, "help instance") {
+		t.Errorf("help with an instance name: code %d\n%s", code, errOut)
+	}
+	// An instance name with -h still shows the default verb's help.
+	code, out, _ := h.run("instance", "Alpha123", "-h")
+	if code != 0 || !strings.Contains(out, "instance show") {
+		t.Errorf("instance <name> -h: code %d\n%s", code, out)
+	}
+	// Too many arguments for a word that is no verb keep the usage error.
+	code, _, errOut = h.run("instance", "Alpha123", "extra")
+	if code != ExitUsage || !strings.Contains(errOut, "too many arguments") {
+		t.Errorf("too many arguments: code %d\n%s", code, errOut)
+	}
+}
+
+func TestJSONErrorAfterBadToken(t *testing.T) {
+	h := newHarness(t)
+	for _, args := range [][]string{
+		{"instance", "list", "--bogus", "--json"},
+		{"instnace", "list", "--json"},
+		{"versoin", "--json=true"},
+	} {
+		code, _, errOut := h.run(args...)
+		var body struct {
+			Error struct{ Code string } `json:"error"`
+		}
+		if code != ExitUsage || json.Unmarshal([]byte(errOut), &body) != nil || body.Error.Code != "ERR_USAGE" {
+			t.Errorf("%v: code %d, stderr %q", args, code, errOut)
+		}
+	}
+	for _, args := range [][]string{
+		{"versoin", "--json", "--no-json"},
+		{"versoin", "--", "--json"},
+	} {
+		if _, _, errOut := h.run(args...); !strings.HasPrefix(errOut, "error: ") {
+			t.Errorf("%v: stderr %q", args, errOut)
+		}
+	}
+}
+
 func TestVersion(t *testing.T) {
 	h := newHarness(t)
 	code, out, _ := h.run("version")
@@ -476,6 +531,13 @@ func TestConfirm(t *testing.T) {
 	if e := FromError(err); e.Exit != ExitUsage || e.Code != "ERR_CONFIRMATION_REQUIRED" || !strings.Contains(e.Hint, "--yes") {
 		t.Fatalf("no console: %+v", e)
 	}
+	if e := FromError(err); e.Message != "confirmation required: Remove instance X?" {
+		t.Fatalf("message: %q", e.Message)
+	}
+	multi := "Remove LeviLamina 1.0 from Alpha? Mods that need it will no longer load."
+	if e := FromError(c.Confirm(multi)); e.Message != "confirmation required: "+multi {
+		t.Fatalf("multi-sentence message: %q", e.Message)
+	}
 	if e := FromError(c.ConfirmWith("Overwrite?", "--overwrite")); !strings.Contains(e.Hint, "--overwrite") {
 		t.Fatalf("policy flag hint: %+v", e)
 	}
@@ -510,7 +572,7 @@ func TestErrorMapping(t *testing.T) {
 		{"ERR_TEST_THING", ExitConflict, "ERR_TEST_THING", "thing is busy"},
 		{"ERR_GAME_ALREADY_RUNNING", ExitConflict, "ERR_GAME_ALREADY_RUNNING", "Minecraft is already running for this instance"},
 		{"ERR_LAUNCH_TIMEOUT", ExitTimeout, "ERR_LAUNCH_TIMEOUT", ""},
-		{"ERR_UWP_PREPARE: console mods need x64", ExitFailure, "ERR_UWP_PREPARE", "console mods need x64"},
+		{"ERR_UWP_PREPARE: console mods need x64", ExitFailure, "ERR_UWP_PREPARE", "could not prepare the UWP game files for registration"},
 		{"ERR_UPDATE_ADMIN_REQUIRED: access denied", ExitSystem, "ERR_UPDATE_ADMIN_REQUIRED", "the launcher folder is not writable"},
 		{"ERR_AUTH_SOMETHING_NEW", ExitAuth, "ERR_AUTH_SOMETHING_NEW", ""},
 		{"ERR_WORLD_NOT_FOUND", ExitNotFound, "ERR_WORLD_NOT_FOUND", ""},
@@ -639,5 +701,60 @@ func TestInterruptExits130(t *testing.T) {
 	code, _, errOut := h.run("zz-block")
 	if code != ExitInterrupted || !strings.Contains(errOut, "[ERR_INTERRUPTED]") || forced != 0 {
 		t.Fatalf("exit %d, forced %d, stderr %q", code, forced, errOut)
+	}
+}
+
+func TestInterruptReplacesExitCode(t *testing.T) {
+	h := newHarness(t)
+	sigs := make(chan chan<- os.Signal, 1)
+	notifyInterrupt = func(ch chan<- os.Signal) func() { sigs <- ch; return func() {} }
+	saved := pending
+	built = nil
+	t.Cleanup(func() { regMu.Lock(); pending, built = saved, nil; regMu.Unlock() })
+	started := make(chan struct{})
+	Register(&Command{Path: "zz-batch", Summary: "test", Hidden: true, Run: func(c *Ctx) error {
+		close(started)
+		<-c.Context().Done()
+		return ExitCode(7)
+	}})
+	go func() {
+		ch := <-sigs
+		<-started
+		ch <- os.Interrupt
+	}()
+	code, _, errOut := h.run("zz-batch")
+	if code != ExitInterrupted || !strings.Contains(errOut, "error: interrupted") || strings.Contains(errOut, "exit status") {
+		t.Fatalf("exit %d, stderr %q", code, errOut)
+	}
+}
+
+func TestInterruptDuringBootstrapSkipsCommand(t *testing.T) {
+	h := newHarness(t)
+	sigs := make(chan chan<- os.Signal, 1)
+	notifyInterrupt = func(ch chan<- os.Signal) func() { sigs <- ch; return func() {} }
+	saved := pending
+	built = nil
+	t.Cleanup(func() { regMu.Lock(); pending, built = saved, nil; regMu.Unlock() })
+	ran := false
+	Register(&Command{Path: "zz-destroy", Summary: "test", Hidden: true, Run: func(c *Ctx) error {
+		ran = true
+		return nil
+	}})
+	// The second Ctrl-C reaches exit only after the first one cancelled the
+	// context; exit is a no-op here.
+	forced := make(chan struct{})
+	savedExit := exit
+	exit = func(int) { close(forced) }
+	t.Cleanup(func() { exit = savedExit })
+	bootstrap = func() error {
+		ch := <-sigs
+		ch <- os.Interrupt
+		ch <- os.Interrupt
+		<-forced
+		return nil
+	}
+	code, _, errOut := h.run("zz-destroy")
+	if code != ExitInterrupted || ran || !strings.Contains(errOut, "[ERR_INTERRUPTED]") {
+		t.Fatalf("exit %d, ran %v, stderr %q", code, ran, errOut)
 	}
 }

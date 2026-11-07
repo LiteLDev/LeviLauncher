@@ -124,6 +124,8 @@ func runModSearch(c *Ctx) error {
 				if len(q.DB.Versions(g)) > 0 {
 					q.GameVersion = g
 					c.Notice("Showing mods for Minecraft %s (instance %s); add --any-version to see all", g, inst.Name)
+				} else {
+					c.Warn("LeviLamina does not support Minecraft %s (instance %s); showing mods for every game version", Dash(g), inst.Name)
 				}
 			}
 		}

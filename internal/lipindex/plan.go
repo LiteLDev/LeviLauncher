@@ -89,6 +89,18 @@ func SortedFiles(v Variant) []File {
 	return files
 }
 
+// comparePlanVersions orders two versions by semantic version precedence
+// when both parse, so a pre-release ranks below its release, and by the
+// window's dotted compare otherwise.
+func comparePlanVersions(a, b string) int {
+	if _, ok := ParseSemver(a); ok {
+		if _, ok := ParseSemver(b); ok {
+			return CompareSemverLike(a, b)
+		}
+	}
+	return CompareVersions(a, b)
+}
+
 // Decide works out what installing a package version means for an
 // instance.
 func Decide(in PlanInput) Plan {
@@ -110,10 +122,17 @@ func Decide(in PlanInput) Plan {
 			return p
 		}
 	} else {
+		// Prefer a stable release, so a pre-release the dotted order ranks
+		// above its own release (1.0.0-rc.1 > 1.0.0) is not picked.
 		for i := range files {
-			if in.supportsGame(files[i], game) {
+			if IsStable(files[i].Version) && in.supportsGame(files[i], game) {
 				file = &files[i]
 				break
+			}
+		}
+		for i := 0; file == nil && i < len(files); i++ {
+			if in.supportsGame(files[i], game) {
+				file = &files[i]
 			}
 		}
 		if file == nil && len(files) > 0 {
@@ -162,7 +181,7 @@ func Decide(in PlanInput) Plan {
 			}
 		}
 		p.LoaderDowngrade = p.ReplacesLoader && p.InstalledLoader != "" && p.LoaderVersion != "" &&
-			CompareVersions(p.LoaderVersion, p.InstalledLoader) < 0
+			comparePlanVersions(p.LoaderVersion, p.InstalledLoader) < 0
 	}
 	p.InstalledVersion = strings.TrimSpace(in.Pkg.InstalledVersion)
 	switch {
@@ -171,7 +190,7 @@ func Decide(in PlanInput) Plan {
 	case p.InstalledVersion == "":
 		p.Action = ActionReinstall
 	default:
-		switch d := CompareVersions(p.Version, p.InstalledVersion); {
+		switch d := comparePlanVersions(p.Version, p.InstalledVersion); {
 		case d > 0:
 			p.Action = ActionUpgrade
 		case d < 0:

@@ -1,0 +1,15 @@
+{
+  "activity": {
+    "title": "Attività",
+    "empty": "Nessuna attività",
+    "copy_all": "Copia tutto",
+    "clear": "Cancella cronologia",
+    "log_lines": "{{count}} righe di log",
+    "open": "Attività"
+  },
+  "instance_picker": {
+    "label": "Istanza",
+    "placeholder": "Scegli un'istanza",
+    "none_installed": "Nessuna istanza installata"
+  }
+}

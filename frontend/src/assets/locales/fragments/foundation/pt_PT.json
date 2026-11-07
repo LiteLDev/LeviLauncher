@@ -1,0 +1,15 @@
+{
+  "activity": {
+    "title": "Atividade",
+    "empty": "Sem atividade",
+    "copy_all": "Copiar tudo",
+    "clear": "Limpar histórico",
+    "log_lines": "{{count}} linhas de registo",
+    "open": "Atividade"
+  },
+  "instance_picker": {
+    "label": "Instância",
+    "placeholder": "Escolher instância",
+    "none_installed": "Nenhuma instância instalada"
+  }
+}

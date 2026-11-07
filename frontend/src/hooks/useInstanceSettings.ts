@@ -27,6 +27,7 @@ import {
   readCurrentVersionName,
 } from "@/utils/currentVersion";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
+import { normalizeIdentifierLookupKey } from "@/utils/modIntelligenceResolver";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { useTranslation } from "react-i18next";
 import { ROUTES } from "@/constants/routes";
@@ -66,6 +67,10 @@ type InstanceBackupInfo = {
 
 type InstanceBackupModsLIPPackage = {
   identifier: string;
+  // Filled in by the backend when the backup is created: the lip package id
+  // and the identity the workspace recorded.
+  packageId: string | undefined;
+  identity: string | undefined;
   version: string;
   explicitInstalled: boolean;
   folders: string[];
@@ -274,6 +279,8 @@ const toInstanceBackupModsLIPPackage = (
   const record = asRecord(value);
   return {
     identifier: String(record.identifier ?? "").trim(),
+    packageId: String(record.packageId ?? "").trim() || undefined,
+    identity: String(record.identity ?? "").trim() || undefined,
     version: String(record.version ?? "").trim(),
     explicitInstalled: Boolean(record.explicitInstalled),
     folders: toStringArray(record.folders),
@@ -566,12 +573,12 @@ export const useInstanceSettings = () => {
         const identifierKey = String(
           group?.identifierKey || group?.identifier || "",
         ).trim();
-        const lookupKey = identifierKey.toLowerCase();
-        if (!identifier || !identifierKey || seen.has(lookupKey)) {
+        const lookupKey = normalizeIdentifierLookupKey(identifierKey);
+        if (!identifier || !lookupKey || seen.has(lookupKey)) {
           continue;
         }
 
-        const installState = installStateMap.get(identifierKey);
+        const installState = installStateMap.get(lookupKey);
         if (!installState?.installed) {
           continue;
         }
@@ -613,6 +620,8 @@ export const useInstanceSettings = () => {
         seen.add(lookupKey);
         packages.push({
           identifier,
+          packageId: undefined,
+          identity: undefined,
           version,
           explicitInstalled: Boolean(installState?.explicitInstalled),
           folders,
@@ -620,7 +629,9 @@ export const useInstanceSettings = () => {
       }
 
       const leviLaminaState = snapshot?.llState;
-      const leviLaminaLookupKey = LEVILAMINA_BACKUP_IDENTIFIER.toLowerCase();
+      const leviLaminaLookupKey = normalizeIdentifierLookupKey(
+        LEVILAMINA_BACKUP_IDENTIFIER,
+      );
       if (
         Boolean(leviLaminaState?.installed) &&
         !seen.has(leviLaminaLookupKey)
@@ -664,6 +675,8 @@ export const useInstanceSettings = () => {
           seen.add(leviLaminaLookupKey);
           packages.push({
             identifier: LEVILAMINA_BACKUP_IDENTIFIER,
+            packageId: undefined,
+            identity: undefined,
             version,
             explicitInstalled: Boolean(leviLaminaState?.explicitInstalled),
             folders,

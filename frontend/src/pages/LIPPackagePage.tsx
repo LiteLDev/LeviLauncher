@@ -70,7 +70,10 @@ import {
 } from "@/utils/LipTaskConsoleContext";
 import { compareVersions } from "@/utils/version";
 import { ROUTES } from "@/constants/routes";
-import type { LIPPackageInstallState } from "@/utils/modIntelligenceResolver";
+import {
+  normalizeIdentifierLookupKey,
+  type LIPPackageInstallState,
+} from "@/utils/modIntelligenceResolver";
 import {
   fetchLIPPackageDetail,
   isLeviLaminaVersionCompatible,
@@ -281,7 +284,9 @@ const LIPPackagePage: React.FC = () => {
   useRouteTitle(
     !loading &&
       !error &&
-      pkg?.identifier.toLowerCase() === identifier.split("#")[0].toLowerCase()
+      Boolean(pkg?.identifier) &&
+      normalizeIdentifierLookupKey(pkg?.identifier || "") ===
+        normalizeIdentifierLookupKey(identifier)
       ? pkg?.name
       : undefined,
   );

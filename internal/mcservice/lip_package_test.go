@@ -16,12 +16,13 @@ func TestGetLIPPackageInstallStatesBatchQuery(t *testing.T) {
 		}
 		return `C:\demo`, ""
 	}
-	lipListPackageStatesViaDaemon = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
+	lipListPackageStates = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
 		if workDir != `C:\demo` {
 			t.Fatalf("unexpected work dir: %s", workDir)
 		}
 		return map[string]lip.PackageInstallState{
-			"github.com/liteldev/foo#client": {
+			"github.com/liteldev/foo": {
+				Identity:          "github.com/LiteLDev/Foo#client",
 				Installed:         true,
 				ExplicitInstalled: true,
 				InstalledVersion:  "1.2.3",
@@ -60,7 +61,7 @@ func TestGetLIPPackageInstallStatesTimeoutOrCancellation(t *testing.T) {
 	lipResolveTargetDir = func(targetName string) (string, string) {
 		return `C:\demo`, ""
 	}
-	lipListPackageStatesViaDaemon = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
+	lipListPackageStates = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
 		<-ctx.Done()
 		return nil, ctx.Err()
 	}
@@ -82,7 +83,7 @@ func TestGetLIPPackageInstallStatesRPCFailure(t *testing.T) {
 	lipResolveTargetDir = func(targetName string) (string, string) {
 		return `C:\demo`, ""
 	}
-	lipListPackageStatesViaDaemon = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
+	lipListPackageStates = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
 		return nil, errors.New("rpc exploded")
 	}
 
@@ -97,10 +98,16 @@ func TestGetLIPPackageInstallStatesRPCFailure(t *testing.T) {
 
 func restoreLipQueryDeps(t *testing.T) {
 	t.Helper()
-	originalList := lipListPackageStatesViaDaemon
+	originalList := lipListPackageStates
 	originalResolve := lipResolveTargetDir
+	originalInstall := lipInstallPackages
+	originalUpdate := lipUpdatePackages
+	originalUninstall := lipUninstallPackages
 	t.Cleanup(func() {
-		lipListPackageStatesViaDaemon = originalList
+		lipListPackageStates = originalList
 		lipResolveTargetDir = originalResolve
+		lipInstallPackages = originalInstall
+		lipUpdatePackages = originalUpdate
+		lipUninstallPackages = originalUninstall
 	})
 }

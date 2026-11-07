@@ -9,8 +9,15 @@ import (
 	"time"
 )
 
-// e2eLeviLamina is a published LeviLamina client release.
-const e2eLeviLamina = "github.com/LiteLDev/LeviLamina#client@26.51.9"
+// e2eLeviLamina is a published LeviLamina release, requested as the
+// launcher does: the bare repository, whose tooth.json "client" label is the
+// variant "" on the client platform. LIP_E2E_PACKAGE overrides it.
+var e2eLeviLamina = func() string {
+	if pkg := os.Getenv("LIP_E2E_PACKAGE"); pkg != "" {
+		return pkg
+	}
+	return "github.com/LiteLDev/LeviLamina@26.51.9"
+}()
 
 // TestE2EInstallLeviLamina installs LeviLamina into a temporary instance
 // directory with the real engine. It needs network access and runs only with
@@ -32,15 +39,15 @@ func TestE2EInstallLeviLamina(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
 
-	if err := InstallPackagesViaDaemon(ctx, dir, []string{e2eLeviLamina}); err != nil {
+	if err := InstallPackages(ctx, dir, []string{e2eLeviLamina}); err != nil {
 		t.Fatalf("install %s: %v", e2eLeviLamina, err)
 	}
-	explicit, err := IsPackageExplicitlyInstalledViaDaemon(ctx, dir, e2eLeviLamina)
+	explicit, err := IsPackageExplicitlyInstalled(ctx, dir, e2eLeviLamina)
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
 	if !explicit {
-		states, _ := ListPackageStatesViaDaemon(ctx, dir)
+		states, _ := ListPackageStates(ctx, dir)
 		t.Fatalf("%s not reported as explicitly installed: %+v", e2eLeviLamina, states)
 	}
 }

@@ -24,9 +24,6 @@ type LeviLaminaVersionDB struct {
 }
 
 var fetchLeviLaminaVersionDB = FetchLeviLaminaVersionDB
-var leviLaminaIsPackageExplicitlyInstalledViaDaemon = lip.IsPackageExplicitlyInstalledViaDaemon
-var leviLaminaUpdatePackagesViaDaemon = lip.UpdatePackagesViaDaemon
-var leviLaminaInstallPackagesViaDaemon = lip.InstallPackagesViaDaemon
 
 func resolveSupportedLeviLaminaVersions(db map[string][]string, mcVersion string) []string {
 	v := strings.TrimSpace(mcVersion)
@@ -96,38 +93,6 @@ func findRequestedLeviLaminaVersion(requested string, supported []string) (strin
 		}
 	}
 	return "", false
-}
-
-func isLipInstallAlreadyInstalledError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(strings.TrimSpace(err.Error()))
-	if msg == "" {
-		return false
-	}
-	return strings.Contains(msg, "already explicitly installed") ||
-		(strings.Contains(msg, "cannot install package") && strings.Contains(msg, "already installed"))
-}
-
-func isLipInstallAlreadyInstalledErrorForPackage(err error, packageRef string) bool {
-	if !isLipInstallAlreadyInstalledError(err) {
-		return false
-	}
-
-	target := strings.ToLower(strings.TrimSpace(packageRef))
-	if target == "" {
-		return true
-	}
-
-	msg := strings.ToLower(strings.TrimSpace(err.Error()))
-	if strings.Contains(msg, target) {
-		return true
-	}
-	if hash := strings.Index(target, "#"); hash > 0 {
-		return strings.Contains(msg, target[:hash])
-	}
-	return false
 }
 
 func FetchLeviLaminaVersionDB() (map[string][]string, error) {
@@ -218,31 +183,34 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 		return "ERR_TARGET_NOT_FOUND"
 	}
 
-	basePkg := "github.com/LiteLDev/LeviLamina#client"
-	pkg := fmt.Sprintf("%s@%s", basePkg, llVersion)
-	explicitInstalled, listErr := leviLaminaIsPackageExplicitlyInstalledViaDaemon(ctx, targetDir, basePkg)
+	// Change an installed LeviLamina in place, whatever variant it was
+	// installed with (a workspace migrated from tooth_lock.json records
+	// "#client"); otherwise request the bare repository.
+	states, listErr := queryLIPPackageStates(ctx, targetDir)
 	if listErr != nil {
-		log.Printf("InstallLeviLamina: lipd list failed, fallback to install-first strategy: %v", listErr)
+		log.Printf("InstallLeviLamina: lip list failed, fallback to install-first strategy: %v", listErr)
 	}
+	state, _ := lipInstalledFor(states, leviLaminaPackageID, "")
+	pkg := withLIPVersion(lipOperationRef(states, leviLaminaPackageID, "", leviLaminaPackageID), llVersion)
 
-	if explicitInstalled {
+	if state.ExplicitInstalled {
 		log.Printf("Updating LeviLamina %s for %s using LIP", llVersion, targetName)
-		if err := leviLaminaUpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
-			log.Printf("InstallLeviLamina: lipd update failed: %v", err)
+		if err := lipUpdatePackages(ctx, targetDir, []string{pkg}); err != nil {
+			log.Printf("InstallLeviLamina: lip update failed: %s", lip.ErrorMessage(err))
 			return "ERR_LIP_INSTALL_FAILED"
 		}
 		return ""
 	}
 
 	log.Printf("Installing LeviLamina %s for %s using LIP", llVersion, targetName)
-	if err := leviLaminaInstallPackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
-		if !isLipInstallAlreadyInstalledErrorForPackage(err, basePkg) {
-			log.Printf("InstallLeviLamina: lipd install failed: %v", err)
+	if err := lipInstallPackages(ctx, targetDir, []string{pkg}); err != nil {
+		if !isLipAlreadyExplicitlyInstalledFor(err, leviLaminaPackageID) {
+			log.Printf("InstallLeviLamina: lip install failed: %s", lip.ErrorMessage(err))
 			return "ERR_LIP_INSTALL_FAILED"
 		}
-		log.Printf("InstallLeviLamina: package already installed, switching to update: %v", err)
-		if updateErr := leviLaminaUpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); updateErr != nil {
-			log.Printf("InstallLeviLamina: lipd update failed: %v", updateErr)
+		log.Printf("InstallLeviLamina: package already installed, switching to update: %s", lip.ErrorMessage(err))
+		if updateErr := lipUpdatePackages(ctx, targetDir, []string{pkg}); updateErr != nil {
+			log.Printf("InstallLeviLamina: lip update failed: %s", lip.ErrorMessage(updateErr))
 			return "ERR_LIP_INSTALL_FAILED"
 		}
 	}
@@ -260,33 +228,6 @@ func UninstallLeviLamina(ctx context.Context, targetName string) string {
 		return "ERR_TARGET_NOT_FOUND"
 	}
 
-	packageRefBase := "github.com/LiteLDev/LeviLamina#client"
-	state, queryErr := lip.GetPackageInstallStateViaDaemon(ctx, targetDir, packageRefBase)
-	if queryErr != nil {
-		log.Printf("UninstallLeviLamina: failed to query package state for %s in %s: %v", packageRefBase, targetName, queryErr)
-	} else if state.Installed && !state.ExplicitInstalled {
-		return "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS"
-	}
-
 	log.Printf("Uninstalling LeviLamina for %s using LIP", targetName)
-	if err := lip.UninstallPackagesViaDaemon(ctx, targetDir, []string{packageRefBase}, false); err != nil {
-		log.Printf("UninstallLeviLamina: lipd uninstall failed: %v", err)
-		return "ERR_LIP_PACKAGE_UNINSTALL_FAILED"
-	}
-
-	postState, postQueryErr := lip.GetPackageInstallStateViaDaemon(ctx, targetDir, packageRefBase)
-	if postQueryErr != nil {
-		log.Printf("UninstallLeviLamina: post-uninstall query failed for %s in %s: %v", packageRefBase, targetName, postQueryErr)
-		return ""
-	}
-
-	if postState.Installed && !postState.ExplicitInstalled {
-		return "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY"
-	}
-	if postState.Installed && postState.ExplicitInstalled {
-		log.Printf("UninstallLeviLamina: package %s remains explicitly installed in %s after uninstall", packageRefBase, targetName)
-		return "ERR_LIP_PACKAGE_UNINSTALL_FAILED"
-	}
-
-	return ""
+	return uninstallLIPPackageByID(ctx, "UninstallLeviLamina", targetName, targetDir, leviLaminaPackageID, leviLaminaPackageID)
 }

@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Replaced the external lip package manager with a built-in lip-compatible package manager, so lip and the .NET runtime no longer need to be installed or updated from Settings; existing `tooth_lock.json` installs keep working
+- Aligned the built-in lip with lip 0.38.0-beta.1: packages are recorded in `.lip/workspace.yaml` and read from `lip.yaml`, existing `tooth_lock.json` installs are migrated automatically on the first package operation, the GitHub proxy is read from lip's `config.yaml` (a `liprc.json` is converted), and packages are installed without the `#client` variant while already installed `#client` packages are updated and uninstalled in place
 
 ## [1.0.7] - 2026-11-04
 

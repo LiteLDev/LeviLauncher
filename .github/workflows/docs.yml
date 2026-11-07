@@ -4,6 +4,9 @@ on:
       - .github/workflows/docs.yml
       - docs/**
   push:
+    branches:
+      - "**"
+      - "!gh-readonly-queue/**"
     paths:
       - .github/workflows/docs.yml
       - docs/**

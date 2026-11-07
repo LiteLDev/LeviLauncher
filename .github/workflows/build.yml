@@ -1,12 +1,15 @@
 name: LeviLauncher build
 
-# CI for branches and pull requests. release.yml reuses this workflow for a v* tag, in which case the
-# version stamped into LeviLauncher.exe and the installers is taken from the tag.
+# CI for branches, pull requests and the merge queue. release.yml reuses this workflow for a v* tag, in
+# which case the version stamped into LeviLauncher.exe and the installers is taken from the tag.
 on:
   push:
     branches:
       - "**"
+      # The merge queue's temporary branches are tested by the merge_group event below.
+      - "!gh-readonly-queue/**"
   pull_request:
+  merge_group:
   workflow_call:
 
 permissions:

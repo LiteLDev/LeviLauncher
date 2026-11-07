@@ -18,7 +18,7 @@ import (
 type JSONError struct {
 	File    string
 	Message string
-	Err     error // what is wrong, for debugging; not part of lip's message
+	Err     error // the cause: a *DecoderError for text that is not UTF-8
 }
 
 func (e *JSONError) Error() string { return e.Message }
@@ -40,9 +40,8 @@ const maxJSONDepth = 64
 // name it is an error, as ParseJson throws there.
 func ParseJSON(data []byte, file string) (any, error) {
 	data = trimUTF8BOM(data)
-	if !utf8.Valid(data) {
-		return nil, &JSONError{File: file, Message: "Invalid " + file + ": not valid UTF-8.",
-			Err: errors.New("invalid UTF-8")}
+	if derr := utf8Error(data); derr != nil {
+		return nil, &JSONError{File: file, Message: "Invalid " + file + ": not valid UTF-8.", Err: derr}
 	}
 	p := jsonParser{data: data}
 	p.skipWS()

@@ -35,19 +35,17 @@ UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，�
 
 ### 命令行
 
-不带参数运行 `LeviLauncher.exe` 打开启动器窗口；带子命令时不显示窗口，执行完即退出：
+不带参数运行 `LeviLauncher.exe` 打开启动器窗口；带命令时在终端中执行并退出，命令格式为 `<名词> <动词>`：
 
 ```text
-LeviLauncher.exe list                   列出已安装的实例
-LeviLauncher.exe launch <实例>          启动实例
-LeviLauncher.exe call                   列出 GUI 使用的全部后端方法
-LeviLauncher.exe call <方法> [参数...]  调用其中一个
-LeviLauncher.exe help                   显示用法
+LeviLauncher.exe version                显示版本信息
+LeviLauncher.exe instance list          列出已安装的实例（--json、-q）
+LeviLauncher.exe help [<命令>...]       查看任意命令的帮助和示例
 ```
 
-GUI 的所有操作都通过 `call` 列出的方法完成，因此命令行可以完成 GUI 能做的一切（下载、安装、导入内容、管理模组、设置等）。字符串参数按原样传入，其他类型按 JSON 解析（`true`、`42`、`["a"]`）。结果输出到 stdout（纯字符串直接输出，其余为 JSON），进度事件以 JSON 行输出到 stderr，下载会等待完成。退出码：成功为 0，调用失败（Go 错误或 `ERR_...` 错误码）为 1，用法错误为 2。
+全局选项：`-i/--instance <名称>`、`-p/--player <ID|玩家代号>`、`--json`（在 stdout 输出一个 JSON 文档）、`-q/--quiet`（只输出标识）、`-v/--verbose`（同时把启动器日志输出到 stderr）、`-y/--yes`、`--no-input`、`-h/--help`、`--version`。结果输出到 stdout；进度、提示和错误（`error:`、`hint:`、`[ERR_CODE]`）输出到 stderr。命令行输出仅提供英文。退出码：0 成功，1 失败，2 用法错误，3 未找到，4 冲突，5 登录/许可，6 网络，7 部分成功，8 需要系统设置或管理员权限，9 超时，10 已取消，130 被中断。环境变量 `LEVILAUNCHER_INSTANCE` 和 `LEVILAUNCHER_PLAYER` 可为当前终端设置默认实例和玩家。窗口自身的参数（`--launch=<实例>`、`--debug` 等）仍然打开窗口。
 
-`LeviLauncher.exe` 是 GUI 程序，终端默认不会等待它结束：需要在提示符返回前拿到输出或退出码时，cmd 中请用 `start /wait LeviLauncher.exe ...`，PowerShell 中可将输出接入管道（`LeviLauncher.exe list | Out-String`）或使用 `Start-Process -Wait -NoNewWindow`。
+`LeviLauncher.exe` 是 GUI 程序，终端默认不会等待它结束：需要在提示符返回前拿到输出或退出码时，cmd 中请用 `start /wait LeviLauncher.exe ...`，PowerShell 中可将输出接入管道（`LeviLauncher.exe instance list | Out-String`）或使用 `Start-Process -Wait -NoNewWindow`。
 
 ## 参与贡献
 

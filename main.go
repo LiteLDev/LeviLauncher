@@ -26,6 +26,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/liteldev/LeviLauncher/internal/app"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/cli"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/launch"
@@ -520,61 +521,53 @@ func ensureSingleInstance(autoLaunchVersion string, waitForPreviousInstance bool
 	return true, nil
 }
 
-// appEventNames lists every event registered in init; the CLI streams them.
-var appEventNames []string
-
-func registerEvent[Data any](name string) {
-	application.RegisterEvent[Data](name)
-	appEventNames = append(appEventNames, name)
-}
-
 func init() {
 	//minecraft
-	registerEvent[struct{}](app.EventGameInputEnsureStart)
-	registerEvent[struct{}](app.EventGameInputEnsureDone)
-	registerEvent[int64](app.EventGameInputDownloadStart)
-	registerEvent[app.GameInputDownloadProgress](app.EventGameInputDownloadProgress)
-	registerEvent[struct{}](app.EventGameInputDownloadDone)
-	registerEvent[string](app.EventGameInputDownloadError)
-	registerEvent[string](mcservice.EventExtractError)
-	registerEvent[string](mcservice.EventExtractDone)
-	registerEvent[types.ExtractProgress](mcservice.EventExtractProgress)
-	registerEvent[types.InstanceBackupRestoreProgress](mcservice.EventInstanceBackupRestoreProgress)
-	registerEvent[types.InstanceBackupCreateProgress](mcservice.EventInstanceBackupCreateProgress)
-	registerEvent[types.InstanceBackupRestoreProgress](mcservice.EventInstanceBackupPreviewProgress)
+	application.RegisterEvent[struct{}](app.EventGameInputEnsureStart)
+	application.RegisterEvent[struct{}](app.EventGameInputEnsureDone)
+	application.RegisterEvent[int64](app.EventGameInputDownloadStart)
+	application.RegisterEvent[app.GameInputDownloadProgress](app.EventGameInputDownloadProgress)
+	application.RegisterEvent[struct{}](app.EventGameInputDownloadDone)
+	application.RegisterEvent[string](app.EventGameInputDownloadError)
+	application.RegisterEvent[string](mcservice.EventExtractError)
+	application.RegisterEvent[string](mcservice.EventExtractDone)
+	application.RegisterEvent[types.ExtractProgress](mcservice.EventExtractProgress)
+	application.RegisterEvent[types.InstanceBackupRestoreProgress](mcservice.EventInstanceBackupRestoreProgress)
+	application.RegisterEvent[types.InstanceBackupCreateProgress](mcservice.EventInstanceBackupCreateProgress)
+	application.RegisterEvent[types.InstanceBackupRestoreProgress](mcservice.EventInstanceBackupPreviewProgress)
 	// launch
-	registerEvent[struct{}](launch.EventMcLaunchStart)
-	registerEvent[struct{}](launch.EventMcLaunchDone)
-	registerEvent[string](launch.EventMcLaunchFailed)
-	registerEvent[struct{}](launch.EventGamingServicesMissing)
+	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
+	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)
+	application.RegisterEvent[string](launch.EventMcLaunchFailed)
+	application.RegisterEvent[struct{}](launch.EventGamingServicesMissing)
 	//msixvc
-	registerEvent[msixvc.DownloadStatus](msixvc.EventDownloadStatus)
-	registerEvent[msixvc.DownloadProgress](msixvc.EventDownloadProgress)
-	registerEvent[msixvc.DownloadDone](msixvc.EventDownloadDone)
-	registerEvent[msixvc.DownloadError](msixvc.EventDownloadError)
-	registerEvent[bool](msixvc.EventAppxInstallLoading)
+	application.RegisterEvent[msixvc.DownloadStatus](msixvc.EventDownloadStatus)
+	application.RegisterEvent[msixvc.DownloadProgress](msixvc.EventDownloadProgress)
+	application.RegisterEvent[msixvc.DownloadDone](msixvc.EventDownloadDone)
+	application.RegisterEvent[msixvc.DownloadError](msixvc.EventDownloadError)
+	application.RegisterEvent[bool](msixvc.EventAppxInstallLoading)
 	// peeditor
-	registerEvent[struct{}](peeditor.EventEnsureStart)
-	registerEvent[bool](peeditor.EventEnsureDone)
+	application.RegisterEvent[struct{}](peeditor.EventEnsureStart)
+	application.RegisterEvent[bool](peeditor.EventEnsureDone)
 	// vcruntime
-	registerEvent[struct{}](vcruntime.EventEnsureStart)
-	registerEvent[vcruntime.EnsureProgress](vcruntime.EventEnsureProgress)
-	registerEvent[bool](vcruntime.EventEnsureDone)
+	application.RegisterEvent[struct{}](vcruntime.EventEnsureStart)
+	application.RegisterEvent[vcruntime.EnsureProgress](vcruntime.EventEnsureProgress)
+	application.RegisterEvent[bool](vcruntime.EventEnsureDone)
 	// loader migration
-	registerEvent[struct{}](leviloader.EventMigrateStart)
-	registerEvent[leviloader.MigrateProgress](leviloader.EventMigrateProgress)
-	registerEvent[int](leviloader.EventMigrateDone)
-	registerEvent[string](leviloader.EventMigrateError)
+	application.RegisterEvent[struct{}](leviloader.EventMigrateStart)
+	application.RegisterEvent[leviloader.MigrateProgress](leviloader.EventMigrateProgress)
+	application.RegisterEvent[int](leviloader.EventMigrateDone)
+	application.RegisterEvent[string](leviloader.EventMigrateError)
 	// app update
-	registerEvent[string](update.EventAppUpdateStatus)
-	registerEvent[update.AppUpdateProgress](update.EventAppUpdateProgress)
-	registerEvent[string](update.EventAppUpdateError)
+	application.RegisterEvent[string](update.EventAppUpdateStatus)
+	application.RegisterEvent[update.AppUpdateProgress](update.EventAppUpdateProgress)
+	application.RegisterEvent[string](update.EventAppUpdateError)
 	// lip daemon task stream
-	registerEvent[lip.LipTaskStartedEvent](lip.EventLipTaskStarted)
-	registerEvent[lip.LipTaskLogEvent](lip.EventLipTaskLog)
-	registerEvent[lip.LipTaskProgressEvent](lip.EventLipTaskProgress)
-	registerEvent[lip.LipTaskFinishedEvent](lip.EventLipTaskFinished)
-	registerEvent[types.FilesDroppedEvent]("files-dropped")
+	application.RegisterEvent[lip.LipTaskStartedEvent](lip.EventLipTaskStarted)
+	application.RegisterEvent[lip.LipTaskLogEvent](lip.EventLipTaskLog)
+	application.RegisterEvent[lip.LipTaskProgressEvent](lip.EventLipTaskProgress)
+	application.RegisterEvent[lip.LipTaskFinishedEvent](lip.EventLipTaskFinished)
+	application.RegisterEvent[types.FilesDroppedEvent]("files-dropped")
 }
 
 func launcherWindowTitle() string {
@@ -591,10 +584,10 @@ func main() {
 		uninstallcleanup.Run(opts)
 		os.Exit(0)
 	}
-	// A subcommand turns the launcher into a command-line tool; without one
-	// it opens the GUI.
-	if isCLIInvocation(os.Args[1:]) {
-		os.Exit(runCLI(os.Args[1:]))
+	// A command turns the launcher into a command-line tool; no arguments
+	// and the window's own switches open the GUI.
+	if cli.Wants(os.Args[1:]) {
+		os.Exit(cli.Run(os.Args[1:]))
 	}
 
 	processStart := time.Now()

@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "筛选动态",
+    "filter_all": "全部",
+    "filter_errors": "问题",
+    "filter_tasks": "任务",
+    "running": "进行中",
+    "today": "今天",
+    "yesterday": "昨天",
+    "copy_entry": "复制此条",
+    "copied": "已复制",
+    "copy_failed": "复制失败",
+    "remove_entry": "移除此条",
+    "clear_confirm": "清除 {{count}} 条已结束的记录？进行中的任务会保留。",
+    "empty_filtered": "没有符合此筛选的记录",
+    "view_in_activity": "在动态中查看",
+    "delete_failed_title": "部分项目未能删除"
+  }
+}

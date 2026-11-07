@@ -1,17 +1,19 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { ProgressBar } from "@heroui/react";
+import { LuCheck, LuLoaderCircle, LuX } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { cn } from "@/utils/cn";
 import { formatBytes } from "@/utils/formatting";
 import type {
   LipProgressBar,
+  LipProgressStep,
   LipTaskProgressSnapshot,
 } from "@/utils/lipTaskProgress";
 
 type BarColor = "accent" | "success" | "danger";
 
-const stageLabel = (bar: LipProgressBar, t: TFunction): string => {
+export const stageLabel = (bar: LipProgressBar, t: TFunction): string => {
   switch (bar.stage) {
     case "task":
       return t("lip.task_progress.stage_task");
@@ -150,15 +152,86 @@ function ProgressRow({
   );
 }
 
+// The steps of a session as a growing list under the live bars. Each line is
+// one text node (time, stage, detail) so it reads like a log line.
+function StepList({
+  steps,
+  activeKeys,
+  status,
+}: {
+  steps: LipProgressStep[];
+  activeKeys: ReadonlySet<string>;
+  status: LipTaskProgressSnapshot["status"];
+}) {
+  const listRef = useRef<HTMLOListElement | null>(null);
+  const followRef = useRef(true);
+
+  // Keep the newest step in view unless the user scrolled up to read.
+  useEffect(() => {
+    const list = listRef.current;
+    if (list && followRef.current) list.scrollTop = list.scrollHeight;
+  }, [steps[steps.length - 1]?.key]);
+
+  return (
+    <ol
+      ref={listRef}
+      onScroll={(event) => {
+        const el = event.currentTarget;
+        followRef.current =
+          el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+      }}
+      className="custom-scrollbar max-h-[min(24vh,10rem)] min-w-0 overflow-y-auto rounded-xl bg-surface-secondary/50 px-3 py-2 dark:bg-surface-secondary/60"
+    >
+      {steps.map((step) => {
+        const active = activeKeys.has(step.key);
+        const time = new Date(step.at).toLocaleTimeString();
+        const text = `${time}  ${step.label}${step.detail ? ` · ${step.detail}` : ""}`;
+        return (
+          <li
+            key={step.key}
+            className={cn(
+              "flex min-w-0 items-center gap-2 py-0.5 text-xs leading-5",
+              active ? "text-foreground" : "text-muted",
+            )}
+          >
+            <span className="flex size-3.5 shrink-0 items-center justify-center" aria-hidden="true">
+              {!active ? (
+                <LuCheck className="text-success" />
+              ) : status === "failed" ? (
+                <LuX className="text-danger" />
+              ) : status === "running" ? (
+                <LuLoaderCircle className="animate-spin text-accent" />
+              ) : (
+                <LuCheck className="text-success" />
+              )}
+            </span>
+            <span className="min-w-0 truncate font-mono" title={text}>
+              {text}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export function LipTaskProgressView({
   snapshot,
   className,
+  showSteps = true,
 }: {
   snapshot: LipTaskProgressSnapshot;
   className?: string;
+  // List the step history under the bars (when the snapshot has one).
+  showSteps?: boolean;
 }) {
   const { t } = useTranslation();
   const { status, primary, secondary, outer, legacy } = snapshot;
+  const steps = snapshot.steps ?? [];
+  const activeKeys = React.useMemo(
+    () => new Set(snapshot.activeStepKeys ?? []),
+    [snapshot.activeStepKeys],
+  );
   const color: BarColor =
     status === "failed" ? "danger" : status === "success" ? "success" : "accent";
 
@@ -238,6 +311,9 @@ export function LipTaskProgressView({
             />
           ))}
         </div>
+      ) : null}
+      {showSteps && steps.length > 0 ? (
+        <StepList steps={steps} activeKeys={activeKeys} status={status} />
       ) : null}
     </div>
   );

@@ -1,4 +1,5 @@
-import { Avatar, Button, Popover, Spinner, Tooltip, toast } from "@heroui/react";
+import { Avatar, Button, Popover, Spinner, Tooltip } from "@heroui/react";
+import { notify } from "@/utils/activity";
 import { cn } from "@/utils/cn";
 
 import React, { useEffect, useState } from "react";
@@ -50,15 +51,25 @@ export const UserAvatar = () => {
       const code = await userService.SignIn();
       if (code === "ERR_CANCELED") return;
       if (code) {
-        toast.danger(t("useravatar.signin_failed"), { description: t(`errors.${code}`) });
+        notify({
+          variant: "danger",
+          title: t("useravatar.signin_failed"),
+          description: t(`errors.${code}`),
+          source: "account",
+        });
         return;
       }
       setOpen(false);
       clearUserState();
       setLoading(true);
       setReloadNonce((v) => v + 1);
-    } catch {
-      toast.danger(t("useravatar.signin_failed"));
+    } catch (error) {
+      notify({
+        variant: "danger",
+        title: t("useravatar.signin_failed"),
+        description: error instanceof Error ? error.message : undefined,
+        source: "account",
+      });
     } finally {
       setSigningIn(false);
     }

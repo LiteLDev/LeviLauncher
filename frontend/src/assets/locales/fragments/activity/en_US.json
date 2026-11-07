@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "Filter activity",
+    "filter_all": "All",
+    "filter_errors": "Problems",
+    "filter_tasks": "Tasks",
+    "running": "Running",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "copy_entry": "Copy entry",
+    "copied": "Copied",
+    "copy_failed": "Copy failed",
+    "remove_entry": "Remove entry",
+    "clear_confirm": "Clear {{count}} finished entries? Running tasks are kept.",
+    "empty_filtered": "Nothing matches this filter",
+    "view_in_activity": "View in Activity",
+    "delete_failed_title": "Some items could not be deleted"
+  }
+}

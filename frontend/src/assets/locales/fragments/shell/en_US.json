@@ -4,7 +4,7 @@
       "content": "Content",
       "discover": "Discover"
     },
-    "search": "Search",
+    "search": "Search commands",
     "search_placeholder": "Search…",
     "activity_unread": "Activity, {{count}} unread"
   }

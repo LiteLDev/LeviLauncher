@@ -4,7 +4,7 @@
       "content": "Контент",
       "discover": "Обзор"
     },
-    "search": "Поиск",
+    "search": "Поиск команд",
     "search_placeholder": "Поиск…",
     "activity_unread": "Активность, непрочитанных: {{count}}"
   }

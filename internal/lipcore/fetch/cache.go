@@ -2,7 +2,6 @@ package fetch
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -12,11 +11,15 @@ import (
 	"strings"
 	"sync"
 	"unicode/utf8"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/lipdirs"
 )
 
 // Cache is lip's download cache. Entries live at
 // <Root>/<EscapeKey(key)>; writes go to <TempRoot>/<random> then are moved
 // into place.
+//
+// Deprecated: removed with the 0.37 engine; use HTTPCache.
 type Cache struct {
 	Root     string
 	TempRoot string
@@ -30,8 +33,10 @@ type Cache struct {
 // the base directory mirrors .NET's Environment.SpecialFolder.
 // LocalApplicationData ($XDG_DATA_HOME or ~/.local/share; macOS:
 // ~/Library/Application Support).
+//
+// Deprecated: removed with the 0.37 engine; use DefaultHTTPCache.
 func DefaultCache() *Cache {
-	base := localAppData()
+	base := lipdirs.LocalAppData()
 	return &Cache{
 		Root:     filepath.Join(base, "lip", "cache"),
 		TempRoot: filepath.Join(base, "lip", "temp"),
@@ -70,6 +75,8 @@ func isUnreserved(c byte) bool {
 }
 
 // BlobKey is the cache key for a git blob: "git-blob:<oid>".
+//
+// Deprecated: removed with the 0.37 engine.
 func BlobKey(oid string) string { return "git-blob:" + oid }
 
 // Path returns the file path for key (whether or not it exists).
@@ -81,8 +88,7 @@ func (c *Cache) Path(key string) string {
 // only regular files count; never creates anything).
 func (c *Cache) Get(key string) (path string, ok bool) {
 	p := c.Path(key)
-	fi, err := os.Stat(p)
-	if err != nil || fi.IsDir() {
+	if !fileExists(p) {
 		return "", false
 	}
 	return p, true
@@ -231,12 +237,7 @@ func copyFile(src, dst string) error {
 
 // newGUID returns a random version-4 GUID in .NET's "D" format.
 func newGUID() string {
-	var b [16]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		panic(err)
-	}
-	b[6] = b[6]&0x0f | 0x40
-	b[8] = b[8]&0x3f | 0x80
+	b := newGUIDBytes()
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
 
@@ -258,6 +259,11 @@ func (c *Cache) Clean() error {
 // clean), the rest is deleted with os.RemoveAll as Clean always did. A
 // missing directory reports nothing.
 func (c *Cache) CleanProgress(ctx context.Context, progress func(done, total int64)) error {
+	return cleanDir(ctx, c.Root, progress)
+}
+
+// cleanDir deletes root as Cache.CleanProgress describes.
+func cleanDir(ctx context.Context, root string, progress func(done, total int64)) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -266,16 +272,16 @@ func (c *Cache) CleanProgress(ctx context.Context, progress func(done, total int
 			progress(done, total)
 		}
 	}
-	fi, err := os.Lstat(c.Root)
+	fi, err := os.Lstat(root)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	entries := []string{c.Root}
+	entries := []string{root}
 	if fi.IsDir() {
-		entries, err = clearReadOnly(c.Root, nil)
+		entries, err = clearReadOnly(root, nil)
 		if err != nil {
 			return err
 		}
@@ -287,7 +293,7 @@ func (c *Cache) CleanProgress(ctx context.Context, progress func(done, total int
 			return err
 		}
 		if err := os.Remove(p); err != nil && !errors.Is(err, fs.ErrNotExist) {
-			if err := os.RemoveAll(c.Root); err != nil {
+			if err := os.RemoveAll(root); err != nil {
 				return err
 			}
 			report(total, total)

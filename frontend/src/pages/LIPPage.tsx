@@ -22,7 +22,7 @@ import React, {
 
 import { PageHeader } from "@/components/PageHeader";
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -55,8 +55,7 @@ import {
   GetVersionMeta,
   ListVersionMetas,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
-import { GetLipStatus } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
-import { ROUTES, routeTo } from "@/constants/routes";
+import { routeTo } from "@/constants/routes";
 
 const PAGE_SIZE = 20;
 const ALL_GAME_VERSION = "__all_game__";
@@ -71,9 +70,6 @@ const HIDDEN_LIP_PACKAGES = new Set([
 
 type LIPSortKey = "hotness" | "updated" | "name";
 type LIPOrderKey = "asc" | "desc";
-type LipRuntimeStatus = {
-  installed?: boolean;
-};
 
 const sortLLVersionValuesDesc = (values: string[]): string[] => {
   const unique = Array.from(
@@ -162,7 +158,6 @@ const shouldHidePackage = (pkg: LIPPackageBasicInfo): boolean => {
 
 const LIPPage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { currentVersionName } = useCurrentVersion();
   const {
     gameToLLVersions,
@@ -190,17 +185,13 @@ const LIPPage: React.FC = () => {
   const [error, setError] = useState("");
   const [filterContextReady, setFilterContextReady] = useState(false);
   const [developerGuideOpen, setDeveloperGuideOpen] = useState(false);
-  const [lipGuardReady, setLipGuardReady] = useState(false);
-  const [lipAvailable, setLipAvailable] = useState(true);
-  const [lipMissingModalOpen, setLipMissingModalOpen] = useState(false);
 
   const pageRootRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gameFilterInitializedRef = useRef(false);
   const llFilterInitializedRef = useRef(false);
   const versionFiltersEnabled = mappingAvailable;
-  const showMappingUnavailableHint =
-    lipGuardReady && lipAvailable && mappingInitialized && !mappingAvailable;
+  const showMappingUnavailableHint = mappingInitialized && !mappingAvailable;
 
   const collectScrollTargets = () => {
     const seen = new Set<unknown>();
@@ -274,39 +265,6 @@ const LIPPage: React.FC = () => {
 
   useEffect(() => {
     void loadPackages();
-  }, []);
-
-  const openLipSettings = useCallback(() => {
-    setLipMissingModalOpen(false);
-    navigate(ROUTES.settings, { state: { tab: "components" } });
-  }, [navigate]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const checkLipRuntime = async () => {
-      try {
-        const status = (await GetLipStatus()) as LipRuntimeStatus;
-        if (cancelled) return;
-
-        const installed = Boolean(status?.installed);
-        setLipAvailable(installed);
-        setLipMissingModalOpen(!installed);
-      } catch (guardError) {
-        console.warn("Failed to check lip runtime status", guardError);
-        if (cancelled) return;
-        setLipAvailable(true);
-      } finally {
-        if (!cancelled) {
-          setLipGuardReady(true);
-        }
-      }
-    };
-
-    void checkLipRuntime();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const loadFilterContext = useCallback(async () => {
@@ -411,9 +369,8 @@ const LIPPage: React.FC = () => {
   ]);
 
   useEffect(() => {
-    if (!lipGuardReady || !lipAvailable) return;
     void loadFilterContext();
-  }, [lipAvailable, lipGuardReady, loadFilterContext]);
+  }, [loadFilterContext]);
 
   useEffect(() => {
     if (!filterContextReady) return;
@@ -1057,20 +1014,6 @@ const LIPPage: React.FC = () => {
         </div>
       </UnifiedModal>
 
-      <UnifiedModal
-        size="standard"
-        isOpen={lipMissingModalOpen}
-        onOpenChange={setLipMissingModalOpen}
-        type="warning"
-        title={t("lip.guard.title")}
-        isDismissable={false}
-        confirmText={t("settings.lip.startup_prompt.open_settings_button")}
-        onConfirm={openLipSettings}
-      >
-        <div className="flex flex-col gap-3 text-sm leading-6 text-foreground dark:text-zinc-300">
-          <p>{t("lip.guard.description")}</p>
-        </div>
-      </UnifiedModal>
     </PageContainer>
   );
 };

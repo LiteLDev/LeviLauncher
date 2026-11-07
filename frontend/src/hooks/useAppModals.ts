@@ -12,13 +12,6 @@ interface UseAppModalsOptions {
   isOnboardingMode: boolean;
 }
 
-const LIP_IGNORE_VERSION_KEY = "ll.ignoreLipVersion";
-
-const normalizeVersion = (value: unknown): string =>
-  String(value || "")
-    .trim()
-    .replace(/^v/i, "");
-
 export const useAppModals = ({
   isUpdatingMode,
   isOnboardingMode,
@@ -33,48 +26,9 @@ export const useAppModals = ({
   const [updateVersion, setUpdateVersion] = useState<string>("");
   const [updateBody, setUpdateBody] = useState<string>("");
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
-  const [lipUpdateOpen, setLipUpdateOpen] = useState<boolean>(false);
-  const [lipCurrentVersion, setLipCurrentVersion] = useState<string>("");
-  const [lipLatestVersion, setLipLatestVersion] = useState<string>("");
   const [startupChecksComplete, setStartupChecksComplete] = useState(false);
   const [sponsorLaunchCount, setSponsorLaunchCount] = useState(0);
   const sponsorCheckedRef = useRef(false);
-
-  const checkLipUpdate = useCallback(() => {
-    try {
-      const ignored = normalizeVersion(
-        localStorage.getItem(LIP_IGNORE_VERSION_KEY) || "",
-      );
-      const getter = (minecraft as any)?.GetLipStatus;
-      if (typeof getter !== "function") {
-        setStartupChecksComplete(true);
-        return;
-      }
-      getter()
-        .then((res: any) => {
-          const installed = Boolean(res?.installed);
-          const upToDate = Boolean(res?.upToDate);
-          const currentVersion = normalizeVersion(res?.currentVersion);
-          const latestVersion = normalizeVersion(res?.latestVersion);
-          if (
-            installed &&
-            !upToDate &&
-            currentVersion &&
-            latestVersion &&
-            latestVersion !== ignored
-          ) {
-            setLipCurrentVersion(currentVersion);
-            setLipLatestVersion(latestVersion);
-            setLipUpdateOpen(true);
-            return;
-          }
-        })
-        .catch(() => {})
-        .finally(() => setStartupChecksComplete(true));
-    } catch {
-      setStartupChecksComplete(true);
-    }
-  }, []);
 
   const checkUpdate = useCallback(() => {
     try {
@@ -89,18 +43,14 @@ export const useAppModals = ({
             setUpdateVersion(ver);
             setUpdateBody(body);
             setUpdateOpen(true);
-            setStartupChecksComplete(true);
-            return;
           }
-          checkLipUpdate();
         })
-        .catch(() => {
-          checkLipUpdate();
-        });
+        .catch(() => {})
+        .finally(() => setStartupChecksComplete(true));
     } catch {
-      checkLipUpdate();
+      setStartupChecksComplete(true);
     }
-  }, [checkLipUpdate]);
+  }, []);
 
   const runPostTermsFlow = useCallback(() => {
     try {
@@ -194,7 +144,6 @@ export const useAppModals = ({
       termsOpen ||
       analyticsPromptOpen ||
       updateOpen ||
-      lipUpdateOpen ||
       sponsorCheckedRef.current
     ) {
       return;
@@ -216,7 +165,6 @@ export const useAppModals = ({
     termsOpen,
     analyticsPromptOpen,
     updateOpen,
-    lipUpdateOpen,
   ]);
 
   const dismissSponsor = useCallback(() => setSponsorLaunchCount(0), []);
@@ -226,7 +174,6 @@ export const useAppModals = ({
       termsOpen ||
       analyticsPromptOpen ||
       updateOpen ||
-      lipUpdateOpen ||
       sponsorLaunchCount > 0;
     setNavLockReason("app-modal", modalLocked);
     return () => {
@@ -234,7 +181,7 @@ export const useAppModals = ({
         setNavLockReason("app-modal", false);
       }
     };
-  }, [termsOpen, analyticsPromptOpen, updateOpen, lipUpdateOpen, sponsorLaunchCount]);
+  }, [termsOpen, analyticsPromptOpen, updateOpen, sponsorLaunchCount]);
 
   useEffect(() => {
     if (!termsOpen) return;
@@ -280,12 +227,8 @@ export const useAppModals = ({
     updateVersion,
     updateBody,
     updateLoading,
-    lipUpdateOpen,
-    lipCurrentVersion,
-    lipLatestVersion,
     setUpdateOpen,
     setUpdateLoading,
-    setLipUpdateOpen,
     sponsorLaunchCount,
     dismissSponsor,
   };

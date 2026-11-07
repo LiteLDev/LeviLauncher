@@ -6,12 +6,12 @@ LeviLauncher unterstützt Mod-bezogene Arbeitsabläufe, die über den Umfang ein
 
 === "Windows"
 
-    - Importieren von `.zip`-Mods
-    - Importieren von `.dll`-Mods
+    - Importieren von Mod-Paketen (`.mcmod`)
+    - `.zip`-Pakete und einzelne `.dll`-Mods werden weiterhin akzeptiert: Wähle im Dateidialog **Alle Dateien (\*.\*)**
     - Aktivieren oder Deaktivieren installierter Mods
     - Löschen nicht mehr benötigter Mods
     - Nutzung von CurseForge-bezogenen Such- und Beschaffungsabläufen
-    - Installieren von Paketen mit [lip](https://github.com/LiteLDev/lip), dem Paketinstaller
+    - Installieren von LIP-Paketen mit dem integrierten, [lip](https://github.com/LiteLDev/lip)-kompatiblen Paketmanager
     - Zusammenarbeit mit Loader-Workflows wie LeviLamina
 
     ::: warning Dies ist ein fortgeschrittener Bereich
@@ -44,6 +44,8 @@ Geeignet für folgende Anforderungen:
 - Du möchtest nicht alle Suchen außerhalb des Launchers durchführen
 
 ## lip und LeviLamina <Badge platform="windows" />
+
+LeviLauncher enthält einen integrierten Paketmanager, der mit [lip](https://github.com/LiteLDev/lip) kompatibel ist. Du musst also weder lip noch die .NET-Runtime separat installieren. Er folgt lip 0.38: Jede Version speichert ihre Pakete in `.lip/workspace.yaml`, und Pakete werden aus ihrer `lip.yaml` gelesen (ältere Pakete mit nur einer `tooth.json` funktionieren weiterhin). Versionen, in denen LeviLamina oder LIP-Pakete mit einem älteren Launcher installiert wurden (`tooth_lock.json`), werden beim ersten Paketvorgang automatisch migriert. Ist **Mirror-Quellen verwenden** aktiviert, laufen Paket-Downloads von GitHub über den **GitHub-Proxy** aus den [Einstellungen](./settings-personalization); andernfalls wird GitHub direkt erreicht (über den Systemproxy, falls einer eingerichtet ist). Ein früher gespeicherter GitHub-Proxy oder ein in lips `config.yaml` (in `%APPDATA%\lip`, z. B. mit `lip config set github_proxy <URL>`) gesetzter `github_proxy` gilt in beiden Fällen. **Cache leeren** entfernt heruntergeladene Paketdateien.
 
 Diese Integrationen eignen sich eher für fortgeschrittene Benutzer, die paket- oder loader-gesteuerte Arbeitsabläufe verwenden möchten.
 

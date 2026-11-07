@@ -112,7 +112,13 @@ type InstanceBackupScopeMode struct {
 }
 
 type InstanceBackupModsLIPPackage struct {
-	Identifier        string   `json:"identifier"`
+	Identifier string `json:"identifier"`
+	// PackageID is the lip package id ("github.com/owner/repo") and Identity
+	// the identity the workspace recorded (<id>[#<variant>]); both are filled
+	// in by the backend when the backup is created and are absent from older
+	// backups.
+	PackageID         string   `json:"packageId,omitempty"`
+	Identity          string   `json:"identity,omitempty"`
 	Version           string   `json:"version"`
 	ExplicitInstalled bool     `json:"explicitInstalled"`
 	Folders           []string `json:"folders"`
@@ -228,6 +234,35 @@ type InstanceBackupRestoreProgress struct {
 	TotalSteps  int    `json:"totalSteps"`
 	ScopeKey    string `json:"scopeKey,omitempty"`
 	ScopeLabel  string `json:"scopeLabel,omitempty"`
+	Ts          int64  `json:"ts"`
+	// Sub-progress inside the current step, measured from counted work only:
+	// bytes extracted while "extracting", files copied while restoring a
+	// scope, explicit lip packages reinstalled for the mods scope. SubTotal is
+	// omitted when the step has no measured sub-progress; an omitted
+	// SubCurrent next to a SubTotal means 0. SubUnit is "bytes", "files" or
+	// "packages". SubLabel names the item being worked on and may be empty.
+	// SubID identifies the bar: one step can run several bars in turn (the
+	// mods scope runs "mods:files", "mods:packages", then "mods:verify"), so
+	// a change of SubID starts a new bar rather than moving the old one back.
+	SubID      string `json:"subId,omitempty"`
+	SubCurrent int64  `json:"subCurrent,omitempty"`
+	SubTotal   int64  `json:"subTotal,omitempty"`
+	SubUnit    string `json:"subUnit,omitempty"`
+	SubLabel   string `json:"subLabel,omitempty"`
+}
+
+// InstanceBackupCreateProgress reports BackupInstance progress. TotalFiles and
+// TotalBytes come from a pre-scan of exactly the files the archive will hold
+// (the backup manifest is not counted); Files and Bytes count file contents
+// actually written. Phase is "scanning", "writing" or "done". A failed backup
+// emits nothing after the failure: callers learn about it from the result.
+type InstanceBackupCreateProgress struct {
+	Phase       string `json:"phase"`
+	Files       int    `json:"files"`
+	TotalFiles  int    `json:"totalFiles"`
+	Bytes       int64  `json:"bytes"`
+	TotalBytes  int64  `json:"totalBytes"`
+	CurrentFile string `json:"currentFile,omitempty"`
 	Ts          int64  `json:"ts"`
 }
 

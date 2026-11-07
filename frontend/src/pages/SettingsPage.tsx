@@ -32,7 +32,7 @@ import { RxUpdate, RxDesktop } from "react-icons/rx";
 import {
   FaGithub,
   FaDiscord,
-  FaDownload, FaList
+  FaList
 } from "react-icons/fa";
 import {
   LuHardDrive,
@@ -52,7 +52,6 @@ import {
   SetDisableDiscordRPC,
   SetEnableBetaUpdates,
   ResetBaseRoot,
-  InstallLip,
   GetLipGithubProxy,
   SetLipGithubProxy,
   IsMirrorEnabled,
@@ -72,6 +71,7 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { CustomColorPicker } from "@/components/CustomColorPicker";
 import { BackgroundAppearanceSettings } from "@/components/BackgroundAppearanceSettings";
 import { useSettings, ThemeMode } from "@/hooks/useSettings";
+import { LipTaskProgress } from "@/utils/LipTaskConsoleContext";
 
 const normalizeHexColor = (
   value: string | undefined,
@@ -213,19 +213,7 @@ export const SettingsPage: React.FC = () => {
     setThemeSettingMode,
     loadingSunTimes,
     refreshSunTimes,
-    lipInstalled,
-    lipVersion,
-    lipLatestVersion,
-    lipUpToDate,
-    installingLip,
-    setInstallingLip,
     cleaningLipCache,
-    lipStatus,
-    lipProgress,
-    lipError,
-    setLipError,
-    lipProgressDisclosure,
-    refreshLipStatus,
     cleanLipCache,
     processModalOpen,
     setProcessModalOpen,
@@ -264,7 +252,7 @@ export const SettingsPage: React.FC = () => {
     { tab: "personalization", section: "layout", keys: ["audit.usability.appearance_layout", "settings.layout.title_navbar", "settings.appearance.disable_animations"] },
     { tab: "personalization", section: "wallpaper", keys: ["audit.usability.appearance_wallpaper", "settings.appearance.background_image", "settings.appearance.background_blur", "settings.appearance.background_brightness", "settings.appearance.background_opacity"] },
     { tab: "personalization", section: "material", keys: ["audit.usability.appearance_material"] },
-    { tab: "components", keys: ["settings.tabs.components", "settings.mirror_source.title", "settings.lip.title", "settings.lip.github_proxy.title"] },
+    { tab: "components", keys: ["settings.tabs.components", "settings.mirror_source.title", "settings.lip.title", "settings.lip.desc", "settings.lip.cache_clean_button", "settings.lip.github_proxy.title"] },
     { tab: "others", keys: ["settings.process.title", "settings.experimental.title", "settings.experimental.instance_backup.title"] },
     { tab: "privacy", keys: ["settings.tabs.privacy", "settings.privacy.analytics.title"] },
     { tab: "updates", keys: ["settings.tabs.updates", "settings.beta_updates.title"] },
@@ -470,16 +458,6 @@ export const SettingsPage: React.FC = () => {
       setSavingMirrorSource(false);
     }
   };
-
-  const lipSummaryText = React.useMemo(() => {
-    if (!lipInstalled) {
-      return t("settings.lip.status.missing");
-    }
-    return t("settings.lip.version_label", {
-      currentVersion: lipVersion || t("settings.lip.unknown_version"),
-      latestVersion: lipLatestVersion || t("settings.lip.unknown_version"),
-    });
-  }, [lipInstalled, lipLatestVersion, lipVersion, t]);
 
   const customThemeIconColor =
     getColorLuminance(activeCustomThemeColor) > 0.6 ? "#111827" : "#ffffff";
@@ -2536,101 +2514,38 @@ export const SettingsPage: React.FC = () => {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col gap-1 min-w-0">
                       <p className="font-medium">{t("settings.lip.title")}</p>
-                      <p
-                        className="text-xs text-muted dark:text-zinc-400 truncate"
-                        title={lipSummaryText}
-                      >
-                        {lipSummaryText}
+                      <p className="text-xs text-muted dark:text-zinc-400">
+                        {t("settings.lip.desc")}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Chip
-                        variant="soft"
-                        color={
-                          lipUpToDate
-                            ? "success"
-                            : lipInstalled
-                              ? "warning"
-                              : "default"
-                        }
-                      >
-                        <Chip.Label>
-                          {lipUpToDate
-                            ? t("settings.lip.latest_label")
-                            : lipInstalled
-                              ? t("settings.lip.outdated_label")
-                              : t("settings.lip.missing_label")}
-                        </Chip.Label>
-                      </Chip>
-                      {lipInstalled && (
-                        <Button
-                          size="sm"
-                          isDisabled={installingLip || cleaningLipCache}
-                          onPress={() => {
-                            void cleanLipCache().then((err) => {
-                              if (err) {
-                                toast(t("common.error"), {
-                                  description: t(`errors.${err}`, {
-                                    defaultValue: err,
-                                  }),
-                                  variant: "danger",
-                                  timeout: 2000,
-                                });
-                                return;
-                              }
-
-                              toast(t("common.success"), {
-                                description: t(
-                                  "settings.lip.cache_clean_success",
-                                ),
-                                variant: "success",
-                                timeout: 2000,
-                              });
-                            });
-                          }}
-                          variant={"outline"}
-                          isPending={cleaningLipCache}
-                          className={"rounded-full"}
-                        >
-                          {({ isPending }) => (
-                            <>
-                              <Spinner
-                                size="sm"
-                                color="current"
-                                className={isPending ? "" : "hidden"}
-                              />
-                              {cleaningLipCache
-                                ? t("settings.lip.cache_cleaning")
-                                : t("settings.lip.cache_clean_button")}
-                            </>
-                          )}
-                        </Button>
-                      )}
                       <Button
                         size="sm"
-                        isDisabled={installingLip || cleaningLipCache}
+                        isDisabled={cleaningLipCache}
                         onPress={() => {
-                          if (lipInstalled && lipUpToDate) {
-                            setLipError("");
-                            void refreshLipStatus();
-                            return;
-                          }
-                          setInstallingLip(true);
-                          setLipError("");
-                          lipProgressDisclosure.open();
-                          InstallLip().then((err) => {
+                          void cleanLipCache().then((err) => {
                             if (err) {
-                              setInstallingLip(false);
-                              setLipError(err);
-                            } else {
-                              refreshLipStatus().finally(() => {
-                                setInstallingLip(false);
+                              toast(t("common.error"), {
+                                description: t(`errors.${err}`, {
+                                  defaultValue: err,
+                                }),
+                                variant: "danger",
+                                timeout: 2000,
                               });
+                              return;
                             }
+
+                            toast(t("common.success"), {
+                              description: t(
+                                "settings.lip.cache_clean_success",
+                              ),
+                              variant: "success",
+                              timeout: 2000,
+                            });
                           });
                         }}
                         variant={"outline"}
-                        isPending={installingLip}
+                        isPending={cleaningLipCache}
                         className={"rounded-full"}
                       >
                         {({ isPending }) => (
@@ -2640,18 +2555,15 @@ export const SettingsPage: React.FC = () => {
                               color="current"
                               className={isPending ? "" : "hidden"}
                             />
-                            {installingLip
-                              ? t("settings.lip.installing")
-                              : lipInstalled
-                                ? lipUpToDate
-                                  ? t("settings.lip.check_button")
-                                  : t("settings.lip.update_button")
-                                : t("settings.lip.install_button")}
+                            {cleaningLipCache
+                              ? t("settings.lip.cache_cleaning")
+                              : t("settings.lip.cache_clean_button")}
                           </>
                         )}
                       </Button>
                     </div>
                   </div>
+                  {cleaningLipCache ? <LipTaskProgress className="-mt-2" /> : null}
 
                   <Separator className="bg-surface-tertiary/50" />
 
@@ -3265,68 +3177,6 @@ export const SettingsPage: React.FC = () => {
           <p>{t("settings.experimental.instance_backup.warning.body_2")}</p>
           <p>{t("settings.experimental.instance_backup.warning.body_3")}</p>
         </ModalDescription>
-      </UnifiedModal>
-
-      {/* LIP Install Progress */}
-      <UnifiedModal
-        size="standard"
-        isOpen={lipProgressDisclosure.isOpen}
-        onOpenChange={lipProgressDisclosure.setOpen}
-        isDismissable={false}
-        type={lipError ? "error" : "info"}
-        title={lipError ? t("common.error") : t("settings.lip.installing")}
-        icon={lipError ? undefined : <FaDownload className="w-6 h-6" />}
-        confirmText={lipError ? t("common.close") : undefined}
-        onConfirm={lipError ? () => lipProgressDisclosure.close() : undefined}
-        footer={
-          lipError ? undefined : (
-            <>
-              <ModalAction
-                onPress={lipProgressDisclosure.close}
-                isDisabled={!installingLip}
-                variant="secondary"
-              >
-                {t("common.hide")}
-              </ModalAction>
-              <ModalAction
-                onPress={lipProgressDisclosure.close}
-                isDisabled={installingLip && !lipError}
-                variant={"primary"}
-              >
-                {t("common.ok")}
-              </ModalAction>
-            </>
-          )
-        }
-      >
-        {lipError ? (
-          <div className="text-danger">
-            {t(
-              `settings.lip.error.${lipError
-                .toLowerCase()
-                .replace(/^err_/, "")}`,
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <div className="h-2 w-full rounded bg-surface-tertiary overflow-hidden">
-              <div
-                className="h-full bg-accent"
-                style={{ width: `${lipProgress.percentage}%` }}
-              />
-            </div>
-            <div className="text-sm text-muted dark:text-zinc-400">
-              {t(`settings.lip.status.${lipStatus}`)}
-              {lipProgress.total > 0 ? (
-                <span className="ml-2">
-                  {`${(lipProgress.current / (1024 * 1024)).toFixed(2)} MB / ${(lipProgress.total / (1024 * 1024)).toFixed(2)} MB`}
-                </span>
-              ) : (
-                ` (${lipProgress.percentage.toFixed(0)}%)`
-              )}
-            </div>
-          </div>
-        )}
       </UnifiedModal>
 
       <UnifiedModal

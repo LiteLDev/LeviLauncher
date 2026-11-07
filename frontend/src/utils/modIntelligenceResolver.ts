@@ -71,10 +71,25 @@ const normalizeName = (value: string): string =>
 const normalizeIdentifier = (value: string): string =>
   String(value || "").trim();
 
-export const normalizeIdentifierLookupKey = (value: string): string =>
-  String(value || "")
+// LIP package states are keyed by package id, lowercased: lip matches an
+// installed package by its id whatever its variant, so "LiteLDev/Foo",
+// "github.com/LiteLDev/Foo#client" and "github.com/liteldev/foo@1.0.0" all
+// share the key "github.com/liteldev/foo".
+export const normalizeIdentifierLookupKey = (value: string): string => {
+  let key = String(value || "")
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/^https?:\/\//, "");
+  const versionIndex = key.indexOf("@");
+  if (versionIndex >= 0) key = key.slice(0, versionIndex);
+  const variantIndex = key.indexOf("#");
+  if (variantIndex >= 0) key = key.slice(0, variantIndex);
+  const parts = key.split("/").filter(Boolean);
+  if (parts.length === 2 && !parts[0].includes(".")) {
+    return `github.com/${parts.join("/")}`;
+  }
+  return parts.join("/");
+};
 
 const normalizeVersionForCompare = (value: string): string =>
   String(value || "")
@@ -608,14 +623,14 @@ export const buildListItems = (args: {
 
   const lipGroupItems: LipGroupItem[] = [];
   for (const group of grouped.values()) {
-    const installState = lipInstallStateByIdentifier.get(group.identifierKey);
+    const installState = lipInstallStateByIdentifier.get(
+      normalizeIdentifierLookupKey(group.identifierKey),
+    );
     const installedByLIP = Boolean(installState?.installed);
     const queryError = String(installState?.error || "").trim();
     const treatedAsLip =
       installedByLIP ||
-      (group.hasSelfVariantMapping &&
-        Boolean(queryError) &&
-        queryError !== "ERR_LIP_NOT_INSTALLED");
+      (group.hasSelfVariantMapping && Boolean(queryError));
     if (!treatedAsLip) continue;
 
     const uniqueFolders = Array.from(new Set(group.folders));

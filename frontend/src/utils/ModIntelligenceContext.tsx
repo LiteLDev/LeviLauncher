@@ -45,6 +45,7 @@ export type InstanceModSnapshot = {
   modLIPStateByFolder: Map<string, ModLIPState>;
   lipGroupItems: LipGroupItem[];
   normalItems: ModListItem[];
+  // Keyed by package id (normalizeIdentifierLookupKey).
   lipInstallStateByIdentifier: Map<string, LIPPackageInstallState>;
   llState: LIPPackageInstallState;
   updatedAt: number;
@@ -95,27 +96,6 @@ const parseErrorCode = (value: unknown): string => {
   return match ? match[0] : trimmed;
 };
 
-const findInstallStateKeyByLookupKey = (
-  map: Map<string, LIPPackageInstallState>,
-  lookupKey: string,
-): string => {
-  const normalizedLookupKey = normalizeIdentifierLookupKey(lookupKey);
-  if (!normalizedLookupKey) return "";
-  for (const key of map.keys()) {
-    if (normalizeIdentifierLookupKey(key) === normalizedLookupKey) {
-      return key;
-    }
-  }
-  return "";
-};
-
-const findInstallStateByLookupKey = (
-  map: Map<string, LIPPackageInstallState>,
-  lookupKey: string,
-): LIPPackageInstallState | null => {
-  const key = findInstallStateKeyByLookupKey(map, lookupKey);
-  return key ? map.get(key) || null : null;
-};
 
 const buildInitialSnapshot = (): InstanceModSnapshot => ({
   status: "idle",
@@ -271,10 +251,10 @@ export const ModIntelligenceProvider: React.FC<{
         const nextMap = new Map<string, LIPPackageInstallState>();
 
         for (const entry of parsedEntries) {
-          if (!entry.identifierKey || nextMap.has(entry.identifierKey)) {
+          if (!entry.lookupKey || nextMap.has(entry.lookupKey)) {
             continue;
           }
-          nextMap.set(entry.identifierKey, entry.state);
+          nextMap.set(entry.lookupKey, entry.state);
           packageStateCacheRef.current.set(
             `${normalizedName}::${entry.lookupKey}`,
             { at: Date.now(), state: entry.state },
@@ -282,11 +262,11 @@ export const ModIntelligenceProvider: React.FC<{
         }
 
         for (const request of identifiers) {
-          const identifierKey = String(
+          const lookupKey = normalizeIdentifierLookupKey(
             request.identifierKey || request.identifier || "",
-          ).trim();
-          if (!identifierKey || nextMap.has(identifierKey)) continue;
-          nextMap.set(identifierKey, {
+          );
+          if (!lookupKey || nextMap.has(lookupKey)) continue;
+          nextMap.set(lookupKey, {
             installed: false,
             explicitInstalled: false,
             installedVersion: "",
@@ -301,10 +281,10 @@ export const ModIntelligenceProvider: React.FC<{
         const nextMap = new Map<string, LIPPackageInstallState>();
 
         for (const request of identifiers) {
-          const identifierKey = String(
+          const lookupKey = normalizeIdentifierLookupKey(
             request.identifierKey || request.identifier || "",
-          ).trim();
-          if (!identifierKey || nextMap.has(identifierKey)) continue;
+          );
+          if (!lookupKey || nextMap.has(lookupKey)) continue;
 
           const state: LIPPackageInstallState = {
             installed: false,
@@ -312,11 +292,11 @@ export const ModIntelligenceProvider: React.FC<{
             installedVersion: "",
             error: errorCode,
           };
-          nextMap.set(identifierKey, state);
-          packageStateCacheRef.current.set(
-            `${normalizedName}::${normalizeIdentifierLookupKey(identifierKey)}`,
-            { at: Date.now(), state },
-          );
+          nextMap.set(lookupKey, state);
+          packageStateCacheRef.current.set(`${normalizedName}::${lookupKey}`, {
+            at: Date.now(),
+            state,
+          });
         }
 
         return nextMap;
@@ -342,7 +322,7 @@ export const ModIntelligenceProvider: React.FC<{
         },
       ]);
       return (
-        result.get(normalizedIdentifier) || {
+        result.get(normalizeIdentifierLookupKey(normalizedIdentifier)) || {
           installed: false,
           explicitInstalled: false,
           installedVersion: "",
@@ -362,7 +342,7 @@ export const ModIntelligenceProvider: React.FC<{
         snapshotsRef.current.get(normalizedName) || baseSnapshot;
 
       if (!lipSourceLoaded) {
-        // LeviLamina state only needs the local lipd, not the remote index.
+        // LeviLamina state only needs the local package state, not the remote index.
         const llState = await queryInstallState(
           normalizedName,
           LEVILAMINA_IDENTIFIER,
@@ -419,26 +399,25 @@ export const ModIntelligenceProvider: React.FC<{
         ...candidateIdentifiers,
       ]);
       const llState =
-        allInstallStates.get(LEVILAMINA_IDENTIFIER) || emptyInstallState();
+        allInstallStates.get(
+          normalizeIdentifierLookupKey(LEVILAMINA_IDENTIFIER),
+        ) || emptyInstallState();
       const lipInstallStateByIdentifier = new Map<
         string,
         LIPPackageInstallState
       >();
       for (const item of candidateIdentifiers) {
-        const state = allInstallStates.get(item.identifierKey);
+        const lookupKey = normalizeIdentifierLookupKey(item.identifierKey);
+        const state = allInstallStates.get(lookupKey);
         if (!state) continue;
-        lipInstallStateByIdentifier.set(item.identifierKey, state);
+        lipInstallStateByIdentifier.set(lookupKey, state);
       }
 
-      const llBlockingError =
-        Boolean(llState.error) &&
-        String(llState.error).trim() !== "ERR_LIP_NOT_INSTALLED";
+      const llBlockingError = Boolean(llState.error);
       const hasBlockingError =
         llBlockingError ||
-        Array.from(lipInstallStateByIdentifier.values()).some(
-          (state) =>
-            Boolean(state.error) &&
-            String(state.error).trim() !== "ERR_LIP_NOT_INSTALLED",
+        Array.from(lipInstallStateByIdentifier.values()).some((state) =>
+          Boolean(state.error),
         );
 
       if (hasBlockingError) {
@@ -446,9 +425,7 @@ export const ModIntelligenceProvider: React.FC<{
           (llBlockingError
             ? llState.error
             : Array.from(lipInstallStateByIdentifier.values()).find(
-                (state) =>
-                  Boolean(state.error) &&
-                  String(state.error).trim() !== "ERR_LIP_NOT_INSTALLED",
+                (state) => Boolean(state.error),
               )?.error) || "ERR_LIP_PACKAGE_QUERY_FAILED";
 
         setSnapshot(normalizedName, {
@@ -692,10 +669,7 @@ export const ModIntelligenceProvider: React.FC<{
 
       const snapshot = snapshotsRef.current.get(normalizedName);
       if (snapshot) {
-        const fromSnapshot = findInstallStateByLookupKey(
-          snapshot.lipInstallStateByIdentifier,
-          lookupKey,
-        );
+        const fromSnapshot = snapshot.lipInstallStateByIdentifier.get(lookupKey);
         if (fromSnapshot) return fromSnapshot;
       }
 
@@ -710,11 +684,7 @@ export const ModIntelligenceProvider: React.FC<{
 
       if (snapshot) {
         const nextInstallMap = new Map(snapshot.lipInstallStateByIdentifier);
-        const existingKey = findInstallStateKeyByLookupKey(
-          nextInstallMap,
-          lookupKey,
-        );
-        nextInstallMap.set(existingKey || rawIdentifier, state);
+        nextInstallMap.set(lookupKey, state);
         setSnapshot(normalizedName, {
           ...snapshot,
           lipInstallStateByIdentifier: nextInstallMap,

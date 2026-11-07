@@ -1,0 +1,44 @@
+{
+  "format_version": 3,
+  "format_uuid": "289f771f-2c9a-4d73-9f3f-8492495a924d",
+  "tooth": "github.com/dmblock/levibox",
+  "version": "2.0.1",
+  "info": {
+    "name": "levibox",
+    "description": "A script for running LeviLamina on Linux.",
+    "tags": [],
+    "avatar_url": ""
+  },
+  "variants": [
+    {
+      "label": "",
+      "platform": "",
+      "dependencies": {},
+      "assets": [
+        {
+          "type": "zip",
+          "urls": [
+            "https://github.com/dmblock/levibox/releases/download/v2.0.1/levibox-linux-x64.zip"
+          ],
+          "placements": [
+            {
+              "type": "file",
+              "src": "levibox",
+              "dest": "levibox"
+            }
+          ]
+        }
+      ],
+      "preserve_files": [],
+      "remove_files": [],
+      "scripts": {
+        "pre_install": [],
+        "install": [],
+        "post_install": [],
+        "pre_uninstall": [],
+        "uninstall": [],
+        "post_uninstall": []
+      }
+    }
+  ]
+}

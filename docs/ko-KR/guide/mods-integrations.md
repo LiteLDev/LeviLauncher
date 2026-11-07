@@ -6,12 +6,12 @@ LeviLauncher는 "기본 런처" 범위를 넘어서는 모드 관련 작업 흐�
 
 === "Windows"
 
-    - `.zip` 모드 가져오기
-    - `.dll` 모드 가져오기
+    - 모드 패키지(`.mcmod`) 가져오기
+    - `.zip` 패키지와 단일 `.dll` 모드도 계속 지원: 파일 선택 창에서 **모든 파일 (\*.\*)** 을 선택
     - 설치된 모드 활성화 또는 비활성화
     - 더 이상 필요 없는 모드 삭제
     - CurseForge 관련 탐색 및 가져오기 프로세스 사용
-    - 패키지 설치 프로그램인 [lip](https://github.com/LiteLDev/lip)으로 패키지 설치
+    - [lip](https://github.com/LiteLDev/lip)와 호환되는 내장 패키지 관리자로 LIP 패키지 설치
     - LeviLamina 등의 로더 작업 흐름과 함께 사용
 
     ::: warning 이는 고급 영역입니다
@@ -44,6 +44,8 @@ LeviLauncher는 "기본 런처" 범위를 넘어서는 모드 관련 작업 흐�
 - 모든 검색을 런처 외부에서 완료하고 싶지 않음
 
 ## lip 및 LeviLamina <Badge platform="windows" />
+
+LeviLauncher에는 [lip](https://github.com/LiteLDev/lip)와 호환되는 패키지 관리자가 내장되어 있으므로 lip이나 .NET 런타임을 따로 설치할 필요가 없습니다. lip 0.38을 따르므로 각 버전은 패키지를 `.lip/workspace.yaml`에 기록하고, 패키지는 `lip.yaml`에서 읽습니다(`tooth.json`만 있는 이전 패키지도 계속 사용할 수 있습니다). 이전 런처로 LeviLamina나 LIP 패키지를 설치한 버전(`tooth_lock.json`)은 첫 패키지 작업 때 자동으로 마이그레이션됩니다. **미러 소스 사용**이 켜져 있으면 GitHub에서 패키지를 다운로드할 때 [설정](./settings-personalization)의 **GitHub 프록시**를 거칩니다. 꺼져 있으면 GitHub에 직접 연결합니다(시스템 프록시가 설정되어 있으면 이를 거칩니다). 이전에 저장한 GitHub 프록시나 lip의 `config.yaml`(`%APPDATA%\lip` 안, 예: `lip config set github_proxy <URL>`)에 설정한 `github_proxy`는 두 경우 모두 적용됩니다. **캐시 지우기**로 다운로드한 패키지 파일을 삭제할 수 있습니다.
 
 이러한 통합은 패키지 기반 또는 로더 기반 작업 흐름을 사용하려는 고급 사용자에게 더 적합합니다.
 

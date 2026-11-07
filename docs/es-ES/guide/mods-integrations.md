@@ -6,12 +6,12 @@ LeviLauncher admite flujos de trabajo relacionados con Mods que van más allá d
 
 === "Windows"
 
-    - Importar Mods `.zip`
-    - Importar Mods `.dll`
+    - Importar paquetes de Mods (`.mcmod`)
+    - Los paquetes `.zip` y los Mods `.dll` sueltos se siguen aceptando: elige **Todos los archivos (\*.\*)** en el selector de archivos
     - Activar o desactivar Mods instalados
     - Eliminar Mods que ya no necesites
     - Utilizar flujos de navegación y obtención relacionados con CurseForge
-    - Instalar paquetes con [lip](https://github.com/LiteLDev/lip), el instalador de paquetes
+    - Instalar paquetes LIP con el gestor de paquetes integrado, compatible con [lip](https://github.com/LiteLDev/lip)
     - Trabajar con flujos de cargadores como LeviLamina
 
     ::: warning Esta es un área avanzada
@@ -44,6 +44,8 @@ Ideal para estas necesidades:
 - Prefieres no realizar todas las búsquedas fuera del lanzador
 
 ## lip y LeviLamina <Badge platform="windows" />
+
+LeviLauncher incluye un gestor de paquetes integrado compatible con [lip](https://github.com/LiteLDev/lip), así que no necesitas instalar lip ni el runtime de .NET por separado. Sigue lip 0.38: cada versión registra sus paquetes en `.lip/workspace.yaml` y los paquetes se leen de su `lip.yaml` (los paquetes antiguos que solo tienen un `tooth.json` siguen funcionando). Las versiones que ya tienen LeviLamina o paquetes LIP instalados con un launcher anterior (`tooth_lock.json`) se migran automáticamente en la primera operación de paquetes. Con **Usar servidores espejo** activado, las descargas de paquetes desde GitHub pasan por el **Proxy de GitHub** configurado en [Ajustes](./settings-personalization); si no, se conectan directamente a GitHub (a través del proxy del sistema, si hay uno configurado). Un proxy de GitHub guardado anteriormente, o un `github_proxy` definido en el `config.yaml` de lip (en `%APPDATA%\lip`, por ejemplo con `lip config set github_proxy <URL>`), se aplica en ambos casos. **Limpiar caché** elimina los archivos de paquetes descargados.
 
 Este tipo de integración es más adecuado para usuarios avanzados que desean utilizar flujos de trabajo basados en paquetes o cargadores.
 

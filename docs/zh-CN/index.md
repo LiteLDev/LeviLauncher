@@ -29,7 +29,7 @@ features:
   - title: 内容管理
     details: 从一个入口管理世界、资源包、行为包、皮肤包、截图与服务器列表。
   - title: 模组就绪
-    details: 导入 .zip 或 .dll 模组、浏览 CurseForge，并通过 lip 或 LeviLamina 完成进阶配置。
+    details: 导入 .mcmod 模组包、浏览 CurseForge，并通过内置包管理器安装 LeviLamina 与 LIP 软件包。
   - title: 世界工具
     details: 备份为 .mcworld、查看世界信息，并对部分 level.dat 字段进行编辑。
   - title: 用户设置

@@ -47,6 +47,17 @@ const ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS =
   "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS";
 const ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY =
   "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY";
+const ERR_UNSUPPORTED_MOD_FILE = "ERR_UNSUPPORTED_MOD_FILE";
+const ERR_OPEN_MOD_PACKAGE = "ERR_OPEN_MOD_PACKAGE";
+
+// .mcmod is the mod package format; .zip (same layout) and .dll stay
+// importable for files picked through "All files".
+const resolveModImportKind = (path: string): "package" | "dll" | "unsupported" => {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".mcmod") || lower.endsWith(".zip")) return "package";
+  if (lower.endsWith(".dll")) return "dll";
+  return "unsupported";
+};
 
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 export type TabKey = "all" | "normal" | "lip";
@@ -111,6 +122,8 @@ export const useModsPage = (
     Array<{ name: string; err: string }>
   >([]);
   const [currentFile, setCurrentFile] = useState("");
+  const [importProgress, setImportProgress] = useState({ done: 0, total: 0 });
+  const importInProgressRef = useRef(false);
   const [activeMod, setActiveMod] = useState<types.ModInfo | null>(null);
   const [editMod, setEditMod] = useState<types.ModInfo | null>(null);
   const [editName, setEditName] = useState("");
@@ -171,15 +184,39 @@ export const useModsPage = (
   const {
     isOpen: dllOpen,
     open: dllOnOpen,
-    setOpen: dllOnOpenChange,
+    setOpen: setDllOpen,
     close: dllOnClose,
   } = useOverlayState();
   const {
     isOpen: dupOpen,
     open: dupOnOpen,
-    setOpen: dupOnOpenChange,
+    setOpen: setDupOpen,
     close: dupOnClose,
   } = useOverlayState();
+  // Escape or a backdrop click closes these prompts through onOpenChange
+  // without calling onCancel. Settle the pending import prompt as a cancel so
+  // doImportFromPaths can move on (and release importInProgressRef). After a
+  // confirm/cancel the promise is already settled, so this is a no-op.
+  const dllOnOpenChange = React.useCallback(
+    (open: boolean) => {
+      setDllOpen(open);
+      if (open) return;
+      const resolve = dllResolveRef.current;
+      dllResolveRef.current = null;
+      resolve?.(false);
+    },
+    [setDllOpen],
+  );
+  const dupOnOpenChange = React.useCallback(
+    (open: boolean) => {
+      setDupOpen(open);
+      if (open) return;
+      const resolve = dupResolveRef.current;
+      dupResolveRef.current = null;
+      resolve?.(false);
+    },
+    [setDupOpen],
+  );
   const {
     isOpen: delCfmOpen,
     open: delCfmOnOpen,
@@ -340,7 +377,9 @@ export const useModsPage = (
 
   const allLipGroupItems = useMemo(() => {
     return baseLipGroupItems.map((group) => {
-      const installState = lipInstallStateByIdentifier.get(group.identifierKey);
+      const installState = lipInstallStateByIdentifier.get(
+        normalizeIdentifierLookupKey(group.identifierKey),
+      );
       if (!installState) return group;
 
       const uniqueModVersions = Array.from(
@@ -495,10 +534,7 @@ export const useModsPage = (
     currentSnapshot?.status === "ready" &&
     lipSyncStatus === "loading";
 
-  const lipInfoWarning =
-    lipSyncStatus === "error" && lipSyncError !== "ERR_LIP_NOT_INSTALLED"
-      ? lipSyncError
-      : "";
+  const lipInfoWarning = lipSyncStatus === "error" ? lipSyncError : "";
 
   const visibleItemMap = useMemo(() => {
     const map = new Map<string, VisibleItem>();
@@ -537,7 +573,9 @@ export const useModsPage = (
   const activeLipInstallState = useMemo(() => {
     if (!activeLipGroup) return null;
     return (
-      lipInstallStateByIdentifier.get(activeLipGroup.identifierKey) || null
+      lipInstallStateByIdentifier.get(
+        normalizeIdentifierLookupKey(activeLipGroup.identifierKey),
+      ) || null
     );
   }, [activeLipGroup, lipInstallStateByIdentifier]);
 
@@ -595,19 +633,11 @@ export const useModsPage = (
     identifierKey: string,
     state: LIPPackageInstallState,
   ) => {
-    const normalizedKey = String(identifierKey || "").trim();
-    if (!normalizedKey) return;
+    const lookupKey = normalizeIdentifierLookupKey(identifierKey);
+    if (!lookupKey) return;
     setLipInstallStateByIdentifier((prev) => {
       const next = new Map(prev);
-      let targetKey = normalizedKey;
-      const lookupKey = normalizeIdentifierLookupKey(normalizedKey);
-      for (const key of next.keys()) {
-        if (normalizeIdentifierLookupKey(key) === lookupKey) {
-          targetKey = key;
-          break;
-        }
-      }
-      next.set(targetKey, state);
+      next.set(lookupKey, state);
       return next;
     });
   };
@@ -643,7 +673,9 @@ export const useModsPage = (
   };
 
   const resolvePromoteInstallVersion = (group: LipGroupItem): string => {
-    const installState = lipInstallStateByIdentifier.get(group.identifierKey);
+    const installState = lipInstallStateByIdentifier.get(
+      normalizeIdentifierLookupKey(group.identifierKey),
+    );
     const installedVersion = String(
       installState?.installedVersion || "",
     ).trim();
@@ -652,7 +684,9 @@ export const useModsPage = (
   };
 
   const isLipGroupPromotable = (group: LipGroupItem): boolean => {
-    const installState = lipInstallStateByIdentifier.get(group.identifierKey);
+    const installState = lipInstallStateByIdentifier.get(
+      normalizeIdentifierLookupKey(group.identifierKey),
+    );
     if (!installState) {
       return Boolean(group.installedVersion) && !group.explicitInstalled;
     }
@@ -826,6 +860,8 @@ export const useModsPage = (
   };
 
   const doImportFromPaths = async (paths: string[]) => {
+    if (importInProgressRef.current) return;
+    importInProgressRef.current = true;
     try {
       const normalizedPaths = normalizeDroppedFiles(paths);
       if (!normalizedPaths.length) return;
@@ -835,105 +871,105 @@ export const useModsPage = (
         return;
       }
       let started = false;
+      const startImporting = () => {
+        if (started) return;
+        setImporting(true);
+        started = true;
+      };
       const succFiles: string[] = [];
       const errPairs: Array<{ name: string; err: string }> = [];
-      for (const p of normalizedPaths) {
-        const lower = p.toLowerCase();
-        if (lower.endsWith(".zip")) {
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          const base = getPathBaseName(p);
-          setCurrentFile(base);
-          let err = await ImportModZipPath(name, p, false);
-          if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
-              dupNameRef.current = base;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await ImportModZipPath(name, p, true);
-                if (!err) {
-                  succFiles.push(base);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base, err });
-            continue;
-          }
-          succFiles.push(base);
-        } else if (lower.endsWith(".dll")) {
-          const base = getPathBaseName(p);
-          const baseNoExt = base.replace(/\.[^/.]+$/, "");
-          setDllName(baseNoExt);
-          setDllType("preload-native");
-          setDllVersion("0.0.0");
-          await new Promise<void>((resolve) => setTimeout(resolve, 0));
-          dllOnOpen();
-          const ok = await new Promise<boolean>((resolve) => {
-            dllResolveRef.current = resolve;
+      const total = normalizedPaths.length;
+      let done = 0;
+      setImportProgress({ done, total });
+
+      const askOverwrite = async (label: string) => {
+        dupNameRef.current = label;
+        await new Promise<void>((r) => setTimeout(r, 0));
+        dupOnOpen();
+        return new Promise<boolean>((resolve) => {
+          dupResolveRef.current = resolve;
+        });
+      };
+
+      const importPackage = async (p: string, base: string) => {
+        startImporting();
+        setCurrentFile(base);
+        let err = await ImportModZipPath(name, p, false);
+        if (err && String(err) === "ERR_DUPLICATE_FOLDER") {
+          if (!(await askOverwrite(base))) return;
+          err = await ImportModZipPath(name, p, true);
+        }
+        if (err) {
+          // ERR_OPEN_ZIP is shared with content imports; name the mod package.
+          errPairs.push({
+            name: base,
+            err: String(err) === "ERR_OPEN_ZIP" ? ERR_OPEN_MOD_PACKAGE : err,
           });
-          if (!ok) {
-            continue;
-          }
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          setCurrentFile(base || p);
-          const vals = dllConfirmRef.current || {
-            name: dllName,
-            type: dllType,
-            version: dllVersion,
-          };
-          dllConfirmRef.current = null;
-          let err = await ImportModDllPath(
+          return;
+        }
+        succFiles.push(base);
+      };
+
+      const importDll = async (p: string, base: string) => {
+        const baseNoExt = base.replace(/\.[^/.]+$/, "");
+        setDllName(baseNoExt);
+        setDllType("preload-native");
+        setDllVersion("0.0.0");
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        dllOnOpen();
+        const ok = await new Promise<boolean>((resolve) => {
+          dllResolveRef.current = resolve;
+        });
+        if (!ok) return;
+        startImporting();
+        setCurrentFile(base);
+        const vals = dllConfirmRef.current || {
+          name: dllName,
+          type: dllType,
+          version: dllVersion,
+        };
+        dllConfirmRef.current = null;
+        const importWith = (overwrite: boolean) =>
+          ImportModDllPath(
             name,
             p,
             vals.name,
             vals.type || "preload-native",
             vals.version || "0.0.0",
-            false,
+            overwrite,
           );
-          if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
-              dupNameRef.current = base || p;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const overwrite = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (overwrite) {
-                err = await ImportModDllPath(
-                  name,
-                  p,
-                  vals.name,
-                  vals.type || "preload-native",
-                  vals.version || "0.0.0",
-                  true,
-                );
-                if (!err) {
-                  succFiles.push(base || p);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base || p, err });
-            continue;
-          }
-          succFiles.push(base || p);
+        let err = await importWith(false);
+        if (err && String(err) === "ERR_DUPLICATE_FOLDER") {
+          if (!(await askOverwrite(base))) return;
+          err = await importWith(true);
         }
+        if (err) {
+          errPairs.push({ name: base, err });
+          return;
+        }
+        succFiles.push(base);
+      };
+
+      for (const p of normalizedPaths) {
+        const base = getPathBaseName(p) || p;
+        const kind = resolveModImportKind(p);
+        try {
+          if (kind === "package") {
+            await importPackage(p, base);
+          } else if (kind === "dll") {
+            await importDll(p, base);
+          } else {
+            errPairs.push({ name: base, err: ERR_UNSUPPORTED_MOD_FILE });
+          }
+        } catch (e) {
+          errPairs.push({ name: base, err: parseErrorCode(e) || "IMPORT_ERROR" });
+        }
+        done += 1;
+        setImportProgress({ done, total });
       }
-      await refreshInstance(name, "mods-import-complete");
+      if (started) {
+        await refreshInstance(name, "mods-import-complete");
+      }
       setResultSuccess(succFiles);
       setResultFailed(errPairs);
       if (succFiles.length > 0 || errPairs.length > 0) {
@@ -942,8 +978,12 @@ export const useModsPage = (
     } catch (e: any) {
       setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
     } finally {
+      importInProgressRef.current = false;
+      dllResolveRef.current = null;
+      dupResolveRef.current = null;
       setImporting(false);
       setCurrentFile("");
+      setImportProgress({ done: 0, total: 0 });
     }
   };
 
@@ -1074,6 +1114,16 @@ export const useModsPage = (
       state.targetVersion,
       onLog,
     );
+  };
+
+  // Whether uninstallModWithFallback runs a lip task for this mod (the other
+  // mods are deleted directly, with nothing for a progress bar to measure).
+  const uninstallRunsLipTask = (mod: types.ModInfo): boolean => {
+    if (isLeviLaminaMod(mod)) return false;
+    const folder = resolveModFolder(mod);
+    if (!folder || !lipManagedFolderSet.has(folder)) return false;
+    const state = modLIPStateByFolder.get(folder);
+    return state?.sourceType === "unique" && !!state.identifier;
   };
 
   const uninstallModWithFallback = async (
@@ -1297,10 +1347,16 @@ export const useModsPage = (
             action: "update",
             target: name,
             methods: ["Install", "Update"],
-            feedbackMode: "never",
+            feedbackMode: "progress",
+            errorConsole: false,
           },
-          async ({ addLog }) => {
-            for (const item of updatableItems) {
+          async ({ addLog, setOuter }) => {
+            for (const [index, item] of updatableItems.entries()) {
+              setOuter(
+                index,
+                updatableItems.length,
+                item.kind === "mod" ? item.mod.name : item.packageName,
+              );
               if (item.kind === "mod") {
                 const identifierKey = item.lipState.identifierKey;
                 if (identifierKey && handledIdentifiers.has(identifierKey))
@@ -1339,6 +1395,7 @@ export const useModsPage = (
               success.push(item.packageName);
               addLog("success", `${item.packageName}: ok`);
             }
+            setOuter(updatableItems.length, updatableItems.length);
 
             if (failed.length > 0) {
               throw new Error(
@@ -1392,10 +1449,16 @@ export const useModsPage = (
             action: "uninstall",
             target: name,
             methods: ["Uninstall"],
-            feedbackMode: "never",
+            feedbackMode: "progress",
+            errorConsole: false,
           },
-          async ({ addLog }) => {
-            for (const item of selectedItems) {
+          async ({ addLog, setOuter }) => {
+            for (const [index, item] of selectedItems.entries()) {
+              setOuter(
+                index,
+                selectedItems.length,
+                item.kind === "mod" ? item.mod.name : item.packageName,
+              );
               if (item.kind === "mod") {
                 addLog(
                   "info",
@@ -1456,6 +1519,7 @@ export const useModsPage = (
               success.push(item.packageName);
               addLog("success", `${item.packageName}: ok`);
             }
+            setOuter(selectedItems.length, selectedItems.length);
 
             if (failed.length > 0) {
               throw new Error(
@@ -1534,7 +1598,7 @@ export const useModsPage = (
           action: "update",
           target: name,
           methods: ["Install", "Update"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog("info", `${t("mods.action_update")}: ${mod.name}`);
@@ -1608,7 +1672,7 @@ export const useModsPage = (
           action: "update",
           target: name,
           methods: ["Install", "Update"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog("info", `${t("mods.action_update")}: ${group.packageName}`);
@@ -1681,7 +1745,7 @@ export const useModsPage = (
           action: "install",
           target: name,
           methods: ["Install"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog(
@@ -1799,7 +1863,9 @@ export const useModsPage = (
           action: "uninstall",
           target: name,
           methods: ["Uninstall"],
-          feedbackMode: "on_error",
+          feedbackMode: uninstallRunsLipTask(activeMod)
+            ? "progress"
+            : "on_error",
         },
         async ({ addLog }) => {
           addLog("info", `${t("mods.action_uninstall")}: ${activeMod.name}`);
@@ -1876,7 +1942,7 @@ export const useModsPage = (
           action: "uninstall",
           target: name,
           methods: ["Uninstall"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog(
@@ -2039,6 +2105,7 @@ export const useModsPage = (
     resultFailed,
     setResultFailed,
     currentFile,
+    importProgress,
     activeMod,
     setActiveMod,
     editMod,

@@ -1,0 +1,45 @@
+{
+    "format_version": 2,
+    "tooth": "github.com/LiteLDev/LeviLamina",
+    "version": "1.0.0",
+    "info": {
+        "name": "LeviLamina",
+        "description": "A lightweight, modular and versatile mod loader for Minecraft Bedrock Edition.",
+        "author": "levimc",
+        "tags": []
+    },
+    "asset_url": "https://github.com/LiteLDev/LeviLamina/releases/download/v1.0.0/levilamina-release-windows-x64.zip",
+    "dependencies": {
+        "github.com/LiteLDev/bds": "1.21.50",
+        "github.com/LiteLDev/CrashLogger": "1.2.x",
+        "github.com/LiteLDev/levilamina-loc": "1.5.x",
+        "github.com/LiteLDev/PeEditor": "3.8.x",
+        "github.com/LiteLDev/PreLoader": "1.12.x",
+        "github.com/LiteLDev/bedrock-runtime-data": "1.21.5010-server"
+    },
+    "files": {
+        "place": [
+            {
+                "src": "LeviLamina/*",
+                "dest": "plugins/LeviLamina/"
+            }
+        ],
+        "remove": [
+            "bedrock_server_mod.exe"
+        ]
+    },
+    "platforms": [
+        {
+            "goos": "windows",
+            "goarch": "amd64",
+            "commands": {
+                "post_install": [
+                    ".\\PeEditor.exe -mb"
+                ],
+                "post_uninstall": [
+                    "IF EXIST bedrock_server.exe (DEL bedrock_server.exe.bak) ELSE (REN bedrock_server.exe.bak bedrock_server.exe)"
+                ]
+            }
+        }
+    ]
+}

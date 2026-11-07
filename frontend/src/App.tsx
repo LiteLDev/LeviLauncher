@@ -81,11 +81,6 @@ const UpdateModal = lazy(() =>
     default: module.UpdateModal,
   })),
 );
-const LipUpdateModal = lazy(() =>
-  import("@/components/LipUpdateModal").then((module) => ({
-    default: module.LipUpdateModal,
-  })),
-);
 const SponsorModal = lazy(() =>
   import("@/components/SponsorModal").then((module) => ({
     default: module.SponsorModal,
@@ -200,12 +195,8 @@ function App() {
     updateVersion,
     updateBody,
     updateLoading,
-    lipUpdateOpen,
-    lipCurrentVersion,
-    lipLatestVersion,
     setUpdateOpen,
     setUpdateLoading,
-    setLipUpdateOpen,
     sponsorLaunchCount,
     dismissSponsor,
   } = useAppModals({
@@ -513,42 +504,6 @@ function App() {
                                 } finally {
                                   setUpdateLoading(false);
                                 }
-                              }}
-                            />
-                          </Suspense>
-                        ) : null}
-
-                        {lipUpdateOpen &&
-                        !isOnboardingMode &&
-                        !isUpdatingMode ? (
-                          <Suspense
-                            fallback={
-                              <ModalLoadingFallback
-                                label={t("common.loading")}
-                              />
-                            }
-                          >
-                            <LipUpdateModal
-                              isOpen
-                              currentVersion={lipCurrentVersion}
-                              latestVersion={lipLatestVersion}
-                              onDismiss={() => {
-                                setLipUpdateOpen(false);
-                              }}
-                              onIgnore={() => {
-                                try {
-                                  localStorage.setItem(
-                                    "ll.ignoreLipVersion",
-                                    lipLatestVersion || "",
-                                  );
-                                } catch {}
-                                setLipUpdateOpen(false);
-                              }}
-                              onOpenSettings={() => {
-                                setLipUpdateOpen(false);
-                                navigate(ROUTES.settings, {
-                                  state: { tab: "components" },
-                                });
                               }}
                             />
                           </Suspense>

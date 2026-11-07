@@ -6,12 +6,12 @@ LeviLauncher 支援超出「基礎啟動器」範圍的模組相關工作流程�
 
 === "Windows"
 
-    - 匯入 `.zip` 模組
-    - 匯入 `.dll` 模組
+    - 匯入模組包（`.mcmod`）
+    - 仍相容 `.zip` 包及單獨的 `.dll` 模組：在檔案選擇框中選擇 **所有檔案 (\*.\*)** 即可
     - 啟用或停用已安裝的模組
     - 刪除不再需要的模組
     - 使用 CurseForge 相關瀏覽與獲取流程
-    - 使用套件安裝器 [lip](https://github.com/LiteLDev/lip) 安裝套件
+    - 使用相容 [lip](https://github.com/LiteLDev/lip) 的內置套件管理器安裝 LIP 套件
     - 配合 LeviLamina 等加載器的工作流程
 
     ::: warning 這是進階區域
@@ -44,6 +44,8 @@ LeviLauncher 支援超出「基礎啟動器」範圍的模組相關工作流程�
 - 不希望所有搜尋都在啟動器外完成
 
 ## lip 與 LeviLamina <Badge platform="windows" />
+
+LeviLauncher 內置了相容 [lip](https://github.com/LiteLDev/lip) 的套件管理器，毋須另外安裝 lip 或 .NET 執行階段。它遵循 lip 0.38：每個版本的套件記錄在 `.lip/workspace.yaml` 中，套件從其 `lip.yaml` 讀取（只有 `tooth.json` 的舊套件仍可使用）。用舊版啟動器安裝過 LeviLamina 或 LIP 套件的版本（`tooth_lock.json`）會在第一次套件操作時自動遷移。開啟 **使用鏡像來源** 時，從 GitHub 下載套件會經過[設定](./settings-personalization)中的 **GitHub 代理**；否則直接連線 GitHub（如已設定系統代理，則經過系統代理）。之前儲存過的 GitHub 代理，或 lip 的 `config.yaml`（位於 `%APPDATA%\lip`，例如透過 `lip config set github_proxy <URL>` 設定）中的 `github_proxy`，在兩種情況下都會生效。**清理快取** 可刪除已下載的套件檔案。
 
 這類集成更適合希望使用包驅動或加載器驅動工作流程的進階用戶。
 

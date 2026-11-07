@@ -6,12 +6,12 @@ LeviLauncher prend en charge des workflows liés aux Mods qui vont au-delà des 
 
 === "Windows"
 
-    - Importer des Mods `.zip`
-    - Importer des Mods `.dll`
+    - Importer des paquets de Mods (`.mcmod`)
+    - Les paquets `.zip` et les Mods `.dll` isolés restent acceptés : choisissez **Tous les fichiers (\*.\*)** dans le sélecteur de fichiers
     - Activer ou désactiver les Mods installés
     - Supprimer les Mods dont vous n'avez plus besoin
     - Utiliser des flux de navigation et d'obtention liés à CurseForge
-    - Installer des paquets avec [lip](https://github.com/LiteLDev/lip), l'installateur de paquets
+    - Installer des paquets LIP avec le gestionnaire de paquets intégré, compatible avec [lip](https://github.com/LiteLDev/lip)
     - Fonctionner avec des workflows de chargeurs comme LeviLamina
 
     ::: warning Zone avancée
@@ -44,6 +44,8 @@ C'est utile pour :
 - Éviter de faire toutes vos recherches en dehors du lanceur
 
 ## lip et LeviLamina <Badge platform="windows" />
+
+LeviLauncher intègre un gestionnaire de paquets compatible avec [lip](https://github.com/LiteLDev/lip) : vous n'avez donc pas besoin d'installer lip ni le runtime .NET séparément. Il suit lip 0.38 : chaque version enregistre ses paquets dans `.lip/workspace.yaml`, et les paquets sont lus depuis leur `lip.yaml` (les anciens paquets qui n'ont qu'un `tooth.json` fonctionnent toujours). Les versions sur lesquelles LeviLamina ou des paquets LIP ont été installés avec un ancien launcher (`tooth_lock.json`) sont migrées automatiquement lors de la première opération sur les paquets. Lorsque **Utiliser des miroirs** est activé, les téléchargements de paquets depuis GitHub passent par le **Proxy GitHub** défini dans les [Paramètres](./settings-personalization) ; sinon, ils se connectent directement à GitHub (via le proxy système, s'il y en a un). Un proxy GitHub enregistré auparavant, ou un `github_proxy` défini dans le `config.yaml` de lip (dans `%APPDATA%\lip`, par exemple avec `lip config set github_proxy <URL>`), s'applique dans les deux cas. **Nettoyer le cache** supprime les fichiers de paquets téléchargés.
 
 Ce type d'intégration convient mieux aux utilisateurs avancés souhaitant utiliser des workflows basés sur les paquets ou les chargeurs.
 

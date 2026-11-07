@@ -6,12 +6,12 @@ LeviLauncher supports mod-related workflows that go beyond a basic launcher.
 
 === "Windows"
 
-    - import `.zip` mods
-    - import `.dll` mods
+    - import mod packages (`.mcmod`)
+    - `.zip` packages and bare `.dll` mods are still accepted: choose **All files (\*.\*)** in the file picker
     - enable or disable installed mods
     - remove mods you no longer need
     - browse or fetch content through CurseForge-related flows
-    - install packages with [lip](https://github.com/LiteLDev/lip), the package installer
+    - install LIP packages with the built-in package manager, compatible with [lip](https://github.com/LiteLDev/lip)
     - work with LeviLamina-related mod setups
 
     ::: warning Advanced area
@@ -44,6 +44,8 @@ Use it when you want:
 - less manual searching outside the launcher
 
 ## lip and LeviLamina <Badge platform="windows" />
+
+LeviLauncher includes a built-in package manager compatible with [lip](https://github.com/LiteLDev/lip), so you do not need to install lip or the .NET runtime separately. It follows lip 0.38: each version records its packages in `.lip/workspace.yaml`, and packages are read from their `lip.yaml` (older packages that only have a `tooth.json` still work). Versions that already have LeviLamina or LIP packages installed with an older launcher (`tooth_lock.json`) are migrated automatically on the first package operation. When **Use mirror sources** is on, package downloads from GitHub go through the **GitHub proxy** set in [Settings](./settings-personalization); otherwise they connect to GitHub directly, through your system proxy if one is set. A GitHub proxy you saved earlier, or a `github_proxy` set in lip's `config.yaml` (in `%APPDATA%\lip`, for example with `lip config set github_proxy <URL>`), applies either way. **Clean Cache** removes downloaded package files.
 
 These integrations are aimed at more advanced users who want package-driven or loader-driven mod setups.
 

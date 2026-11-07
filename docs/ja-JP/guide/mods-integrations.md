@@ -6,12 +6,12 @@ LeviLauncher は、「基本ランチャー」の範囲を超えた Mod 関連�
 
 === "Windows"
 
-    - `.zip` Mod のインポート
-    - `.dll` Mod のインポート
+    - Mod パッケージ（`.mcmod`）のインポート
+    - `.zip` パッケージや単体の `.dll` Mod も引き続き使用可能：ファイル選択ダイアログで **すべてのファイル (\*.\*)** を選択
     - インストール済み Mod の有効化または無効化
     - 不要になった Mod の削除
     - CurseForge 関連の閲覧および取得フローの使用
-    - パッケージインストーラーの [lip](https://github.com/LiteLDev/lip) でパッケージをインストール
+    - [lip](https://github.com/LiteLDev/lip) 互換の内蔵パッケージマネージャーで LIP パッケージをインストール
     - LeviLamina などのローダーワークフローとの連携
 
     ::: warning これは高度な領域です
@@ -44,6 +44,8 @@ LeviLauncher は、「基本ランチャー」の範囲を超えた Mod 関連�
 - 検索のすべてをランチャー外で行いたくない場合
 
 ## lip と LeviLamina <Badge platform="windows" />
+
+LeviLauncher には [lip](https://github.com/LiteLDev/lip) 互換のパッケージマネージャーが内蔵されているため、lip や .NET ランタイムを別途インストールする必要はありません。lip 0.38 に準拠しており、各バージョンはパッケージを `.lip/workspace.yaml` に記録し、パッケージは `lip.yaml` から読み込まれます（`tooth.json` しかない古いパッケージも引き続き使えます）。以前のランチャーで LeviLamina や LIP パッケージをインストールしたバージョン（`tooth_lock.json`）は、最初のパッケージ操作時に自動的に移行されます。**ミラーソースを使用** がオンのときは、GitHub からのパッケージのダウンロードに[設定](./settings-personalization)の **GitHub プロキシ** が使われます。オフのときは GitHub に直接接続します（システムプロキシが設定されていればそれを経由します）。以前に保存した GitHub プロキシや、lip の `config.yaml`（`%APPDATA%\lip` 内。例: `lip config set github_proxy <URL>`）で設定した `github_proxy` はどちらの場合にも適用されます。**キャッシュを削除** でダウンロード済みのパッケージファイルを削除できます。
 
 これらの統合は、パッケージ駆動またはローダー駆動のワークフローを使用したい上級ユーザーに最適です。
 

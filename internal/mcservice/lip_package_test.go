@@ -10,19 +10,19 @@ import (
 
 func TestGetLIPPackageInstallStatesBatchQuery(t *testing.T) {
 	restoreLipQueryDeps(t)
-	lipIsInstalled = func() bool { return true }
 	lipResolveTargetDir = func(targetName string) (string, string) {
 		if targetName != "Demo" {
 			t.Fatalf("unexpected target name: %s", targetName)
 		}
 		return `C:\demo`, ""
 	}
-	lipListPackageStatesViaDaemon = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
+	lipListPackageStates = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
 		if workDir != `C:\demo` {
 			t.Fatalf("unexpected work dir: %s", workDir)
 		}
 		return map[string]lip.PackageInstallState{
-			"github.com/liteldev/foo#client": {
+			"github.com/liteldev/foo": {
+				Identity:          "github.com/LiteLDev/Foo#client",
 				Installed:         true,
 				ExplicitInstalled: true,
 				InstalledVersion:  "1.2.3",
@@ -56,28 +56,12 @@ func TestGetLIPPackageInstallStatesBatchQuery(t *testing.T) {
 	}
 }
 
-func TestGetLIPPackageInstallStatesLipNotInstalled(t *testing.T) {
-	restoreLipQueryDeps(t)
-	lipIsInstalled = func() bool { return false }
-
-	entries := GetLIPPackageInstallStates(context.Background(), "Demo", []string{
-		"LiteLDev/Foo",
-	})
-	if len(entries) != 1 {
-		t.Fatalf("expected 1 entry, got %d", len(entries))
-	}
-	if entries[0].State.Error != "ERR_LIP_NOT_INSTALLED" {
-		t.Fatalf("unexpected error code: %q", entries[0].State.Error)
-	}
-}
-
 func TestGetLIPPackageInstallStatesTimeoutOrCancellation(t *testing.T) {
 	restoreLipQueryDeps(t)
-	lipIsInstalled = func() bool { return true }
 	lipResolveTargetDir = func(targetName string) (string, string) {
 		return `C:\demo`, ""
 	}
-	lipListPackageStatesViaDaemon = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
+	lipListPackageStates = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
 		<-ctx.Done()
 		return nil, ctx.Err()
 	}
@@ -96,11 +80,10 @@ func TestGetLIPPackageInstallStatesTimeoutOrCancellation(t *testing.T) {
 
 func TestGetLIPPackageInstallStatesRPCFailure(t *testing.T) {
 	restoreLipQueryDeps(t)
-	lipIsInstalled = func() bool { return true }
 	lipResolveTargetDir = func(targetName string) (string, string) {
 		return `C:\demo`, ""
 	}
-	lipListPackageStatesViaDaemon = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
+	lipListPackageStates = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
 		return nil, errors.New("rpc exploded")
 	}
 
@@ -115,12 +98,16 @@ func TestGetLIPPackageInstallStatesRPCFailure(t *testing.T) {
 
 func restoreLipQueryDeps(t *testing.T) {
 	t.Helper()
-	originalInstalled := lipIsInstalled
-	originalList := lipListPackageStatesViaDaemon
+	originalList := lipListPackageStates
 	originalResolve := lipResolveTargetDir
+	originalInstall := lipInstallPackages
+	originalUpdate := lipUpdatePackages
+	originalUninstall := lipUninstallPackages
 	t.Cleanup(func() {
-		lipIsInstalled = originalInstalled
-		lipListPackageStatesViaDaemon = originalList
+		lipListPackageStates = originalList
 		lipResolveTargetDir = originalResolve
+		lipInstallPackages = originalInstall
+		lipUpdatePackages = originalUpdate
+		lipUninstallPackages = originalUninstall
 	})
 }

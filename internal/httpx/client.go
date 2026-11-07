@@ -24,6 +24,16 @@ func DefaultClient() *http.Client {
 	return sharedClient
 }
 
+// NewBlockingProxyTransport returns a transport with its own connection
+// pool that applies the default headers and follows the system proxy like
+// the shared one, but waits for PAC/WPAD resolution instead of falling back
+// to the manual proxy or a direct connection when the lookup is slow or
+// already in flight. Use it for background work that must reach the
+// network the way .NET's HttpClient.DefaultProxy would.
+func NewBlockingProxyTransport() http.RoundTripper {
+	return &defaultHeaderTransport{base: newBlockingBaseTransport()}
+}
+
 func NewClient(timeout time.Duration) *http.Client {
 	client := &http.Client{
 		Transport: sharedTransport,

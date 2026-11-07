@@ -29,7 +29,7 @@ features:
   - title: Gestión de contenido
     details: Administra mundos, paquetes de recursos, paquetes de comportamiento, paquetes de skins, capturas de pantalla y listas de servidores desde un único lugar.
   - title: Capacidades para Mods
-    details: Importa Mods .zip o .dll, explora CurseForge y usa lip o flujos de trabajo de LeviLamina para configuraciones avanzadas.
+    details: Importa paquetes de Mods .mcmod, explora CurseForge y instala LeviLamina y paquetes LIP con el gestor de paquetes integrado para configuraciones avanzadas.
   - title: Herramientas para mundos
     details: Exporta copias de seguridad, consulta los datos del mundo y edita ciertos campos de level.dat sin salir del lanzador.
   - title: Configuración de usuario

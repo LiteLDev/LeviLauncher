@@ -11,6 +11,10 @@ export const resolveImportError = (err: string, t: TFunction): string => {
       return t("mods.err_access_versions_dir");
     case "ERR_CREATE_TARGET_DIR":
       return t("mods.err_create_target_dir");
+    case "ERR_UNSUPPORTED_MOD_FILE":
+      return t("mods.err_unsupported_file");
+    case "ERR_OPEN_MOD_PACKAGE":
+      return t("mods.err_open_package");
     case "ERR_OPEN_ZIP":
       return t("mods.err_open_zip");
     case "ERR_MANIFEST_NOT_FOUND":

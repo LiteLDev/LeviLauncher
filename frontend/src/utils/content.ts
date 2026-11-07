@@ -102,12 +102,6 @@ type UnknownRecord = Record<string, unknown>;
 const LIP_MODS_BASE_URL = "https://levimc.org/mods/";
 const LIP_INDEX_URL = `${LIP_MODS_BASE_URL}index.json`;
 const LIP_DETAIL_FETCH_CONCURRENCY = 8;
-const LL_DEPENDENCY_KEYS = new Set([
-  "liteldev/levilamina",
-  "liteldev/levilamina#client",
-  "github.com/liteldev/levilamina",
-  "github.com/liteldev/levilamina#client",
-]);
 const LEVI_LAMINA_IDENTIFIER = "liteldev/levilamina";
 
 const normalizeLIPIdentifier = (value: string): string => {
@@ -140,13 +134,6 @@ const isLeviLaminaIdentifier = (value: string): boolean => {
   return getIdentifierOwnerRepo(withoutVariant) === LEVI_LAMINA_IDENTIFIER;
 };
 
-const isLeviLaminaDependencyKey = (value: string): boolean => {
-  const normalized = normalizeLIPIdentifier(value);
-  if (!normalized) return false;
-
-  if (LL_DEPENDENCY_KEYS.has(normalized)) return true;
-  return isLeviLaminaIdentifier(normalized);
-};
 
 export interface LIPPackageBasicInfo {
   identifier: string;
@@ -528,7 +515,9 @@ const parsePackageVersionsRecord = (
 
           dependencyMap[normalizedKey] = normalizedRange;
 
-          if (isLeviLaminaDependencyKey(normalizedKey)) {
+          // LeviLamina with any variant ("#client" in tooth.json, none in
+          // lip.yaml).
+          if (isLeviLaminaIdentifier(normalizedKey)) {
             llRangeSet.add(normalizedRange);
             packageRangeSet.add(normalizedRange);
             continue;

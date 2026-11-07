@@ -21,10 +21,7 @@ import {
 import { cn } from "@/utils/cn";
 
 import { Dialogs } from "@wailsio/runtime";
-import {
-  UnifiedModal,
-  getUnifiedModalConfirmButtonProps,
-} from "@/components/UnifiedModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -43,6 +40,7 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
 import { useInstanceSettings } from "@/hooks/useInstanceSettings";
+import { LipTaskProgress } from "@/utils/LipTaskConsoleContext";
 import { OpenModsExplorer } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 
 type RestoreConflictDiffField = {
@@ -205,8 +203,6 @@ const getScopeDisplayLabel = (
 export default function InstanceSettingsPage() {
   const { t } = useTranslation();
   const vs = useInstanceSettings();
-  const warningConfirmButtonProps =
-    getUnifiedModalConfirmButtonProps("warning");
   const currentLLVersionText =
     vs.currentLLVersion ||
     (t("versions.edit.loader.ll_not_installed") as unknown as string);
@@ -1163,7 +1159,13 @@ export default function InstanceSettingsPage() {
         type="primary"
         title={t("versions.edit.backup.progress_title")}
       >
-        <ModalProgress label={t("versions.edit.backup.progress_title")} description={t("versions.edit.backup.progress_body")} />
+        <ModalProgress
+          label={t("versions.edit.backup.progress_title")}
+          description={vs.backupProgressText}
+          value={vs.backupProgressPercent}
+          detail={vs.backupProgressDetail || undefined}
+          currentItem={vs.backupProgress?.currentFile || undefined}
+        />
       </UnifiedModal>
 
       <UnifiedModal
@@ -1313,7 +1315,12 @@ export default function InstanceSettingsPage() {
             <div className="space-y-3">
               {vs.restoreConflictLoading ? (
                 <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/60 dark:bg-surface/5 px-4 py-3 text-sm text-foreground dark:text-zinc-300">
-                  {t("versions.edit.backup.restore.conflict_loading")}
+                  <ModalProgress
+                    label={t("versions.edit.backup.restore.conflict_loading")}
+                    description={t("versions.edit.backup.restore.conflict_loading")}
+                    value={vs.restorePreviewSubProgress?.percent}
+                    detail={vs.restorePreviewSubProgress?.detail}
+                  />
                 </div>
               ) : null}
               {!vs.restoreConflictLoading && vs.restoreConflicts.length > 0 ? (
@@ -1759,12 +1766,23 @@ export default function InstanceSettingsPage() {
         type="primary"
         title={t("versions.edit.backup.restore.progress_title")}
       >
-        <ModalProgress
-          label={t("versions.edit.backup.restore.progress_title")}
-          description={vs.restoreProgressText || t("versions.edit.backup.restore.progress_body")}
-          detail={vs.restoreProgressStepText}
-          value={vs.restoreProgress ? vs.restoreProgressPercent : undefined}
-        />
+        <div className="space-y-4">
+          <ModalProgress
+            label={t("versions.edit.backup.restore.progress_title")}
+            description={vs.restoreProgressText || t("versions.edit.backup.restore.progress_body")}
+            detail={vs.restoreProgressStepText}
+            value={vs.restoreProgress ? vs.restoreProgressPercent : undefined}
+          />
+          {vs.restoreSubProgress ? (
+            <ModalProgress
+              key={vs.restoreSubProgress.id}
+              label={vs.restoreProgressText || t("versions.edit.backup.restore.progress_title")}
+              value={vs.restoreSubProgress.percent}
+              detail={vs.restoreSubProgress.detail}
+              currentItem={vs.restoreSubProgress.label || undefined}
+            />
+          ) : null}
+        </div>
       </UnifiedModal>
 
       <UnifiedModal
@@ -1964,29 +1982,6 @@ export default function InstanceSettingsPage() {
       >
         <ModalDescription>
           {t("versions.edit.unregister_success.body")}
-        </ModalDescription>
-      </UnifiedModal>
-
-      <UnifiedModal
-        isOpen={vs.lipMissingOpen}
-        onOpenChange={(open) => {
-          if (!open) vs.setLipMissingOpen(false);
-        }}
-        type="warning"
-        title={t("lip.guard.title")}
-        isDismissable={false}
-        footer={
-          <ModalAction
-            {...warningConfirmButtonProps}
-            onPress={vs.openLipComponentsSettings}
-            variant={"secondary"}
-          >
-            {t("settings.lip.startup_prompt.open_settings_button")}
-          </ModalAction>
-        }
-      >
-        <ModalDescription>
-          {t("lip.guard.description")}
         </ModalDescription>
       </UnifiedModal>
 
@@ -2213,6 +2208,7 @@ export default function InstanceSettingsPage() {
             instance: vs.targetName || "-",
           })}
         </ModalDescription>
+        {vs.installingLL ? <LipTaskProgress className="pt-4" /> : null}
       </UnifiedModal>
 
       <UnifiedModal

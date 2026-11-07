@@ -1,6 +1,8 @@
 // Package semver implements SemVer 2.0 versions and version ranges with the
-// semantics lip 0.37.0 gets from WalkerCodeRanger Semver 3.0.0
-// (SemVersion / SemVersionRange, "standard" range syntax, strict parsing).
+// semantics lip gets from WalkerCodeRanger Semver 3.0.0 (SemVersion /
+// SemVersionRange, "standard" range syntax, strict parsing). strict.go holds
+// the lip 0.38 surface (ParseStrict, VersionRange, ExactVersionConstraint,
+// ParseVersionTag).
 //
 // Deviation from the C# library: version numbers are uint64 instead of
 // BigInteger, so numbers that do not fit (and range bounds that would need
@@ -52,6 +54,9 @@ func ParseAny(s string) (Version, error) {
 // way lip's GitRemotePackageRegistry does: Go semver.Canonical (so "v1.2"
 // becomes "v1.2.0" and "+build" is dropped), strip the leading "v", then
 // Parse strictly. ok is false for tags that are not valid semver.
+//
+// Deprecated: lip 0.37.0 semantics. lip 0.38 only accepts "v" followed by a
+// strict SemVer version and keeps build metadata; use ParseVersionTag.
 func ParseTag(tag string) (v Version, ok bool) {
 	canonical := xsemver.Canonical(tag)
 	if canonical == "" {
@@ -164,6 +169,9 @@ func ParseNpmRange(s string) (Range, error) {
 // its String() is v.String() without metadata. Deviation: the C# library
 // throws for a version with metadata; Exact drops the metadata instead
 // (precedence, and therefore matching, ignores it anyway).
+//
+// Deprecated: lip 0.38 looks up one version with ExactVersionConstraint
+// (String "=1.2.3+b"); use ExactVersion.
 func Exact(v Version) Range {
 	v = v.withoutMetadata()
 	v.Prerelease = slices.Clone(v.Prerelease) // don't alias the caller's slice

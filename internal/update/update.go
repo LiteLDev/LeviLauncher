@@ -473,7 +473,16 @@ func startSelfUpdateElevated(exePath string, curVer string) error {
 	return nil
 }
 
+// isDevVersion reports whether version is the unstamped local developer
+// build, which must never be offered an update.
+func isDevVersion(version string) bool {
+	return strings.TrimPrefix(strings.TrimSpace(version), "v") == devVersion
+}
+
 func CheckUpdate(version string) types.CheckUpdate {
+	if isDevVersion(version) {
+		return types.CheckUpdate{IsUpdate: false, Version: version}
+	}
 	releases, err := fetchReleases(context.Background())
 	if err != nil || len(releases) == 0 {
 		if err != nil {

@@ -57,3 +57,19 @@ func TestInjectedVersion(t *testing.T) {
 		t.Fatalf("IsBeta() = %v, want %v", got, wantBeta)
 	}
 }
+
+func TestIsDevVersion(t *testing.T) {
+	for v, want := range map[string]bool{
+		devVersion:              true,
+		"v" + devVersion:        true,
+		" " + devVersion + "\n": true,
+		"0.0.0":                 false,
+		"0.0.0-ci":              false,
+		"1.2.3":                 false,
+		"1.2.3-beta.1":          false,
+	} {
+		if got := isDevVersion(v); got != want {
+			t.Errorf("isDevVersion(%q) = %v, want %v", v, got, want)
+		}
+	}
+}

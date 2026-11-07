@@ -9,6 +9,7 @@ import (
 
 	json "github.com/goccy/go-json"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 var (
@@ -105,7 +106,7 @@ func reloadLocked() (AppConfig, error) {
 		log.Printf("config.Reload: marshal default config failed: %v", err)
 		return AppConfig{}, err
 	}
-	if err := os.WriteFile(p, db, 0o644); err != nil {
+	if err := fsx.WriteFileAtomic(p, db, 0o644); err != nil {
 		log.Printf("config.Reload: write default config failed at %s: %v", p, err)
 		return c, fmt.Errorf("ERR_CONFIG_WRITE_FAILED: %w", err)
 	}
@@ -128,7 +129,7 @@ func saveLocked(c AppConfig) error {
 	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(p, b, 0o644); err != nil {
+	if err := fsx.WriteFileAtomic(p, b, 0o644); err != nil {
 		return err
 	}
 	cachedConfig = c

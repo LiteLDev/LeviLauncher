@@ -11,12 +11,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/contentmgr"
 	"github.com/liteldev/LeviLauncher/internal/curseforge"
 	"github.com/liteldev/LeviLauncher/internal/curseforge/client"
 	cursetypes "github.com/liteldev/LeviLauncher/internal/curseforge/client/types"
 	"github.com/liteldev/LeviLauncher/internal/downloader"
 	"github.com/liteldev/LeviLauncher/internal/explorer"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/gameinput"
 	"github.com/liteldev/LeviLauncher/internal/lang"
 	"github.com/liteldev/LeviLauncher/internal/launch"
@@ -25,8 +27,10 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/storage"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
+	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -81,10 +85,13 @@ type GameInputDownloadProgress struct {
 }
 
 func (a *Minecraft) StartFileDownload(url string, filename string) string {
-	tempDir := filepath.Join(os.TempDir(), "LeviLauncher", "Downloads")
-	_ = os.MkdirAll(tempDir, 0755)
-	dest := filepath.Join(tempDir, filename)
-	return fileDownloader.Start(a.ctx, url, dest, "")
+	name := filepath.Base(strings.TrimSpace(filename))
+	if name == "." || name == string(filepath.Separator) || name == "" {
+		return "ERR_INVALID_NAME"
+	}
+	dir := apppath.DownloadsDir()
+	_ = os.MkdirAll(dir, 0o755)
+	return fileDownloader.Start(a.ctx, url, filepath.Join(dir, name), "")
 }
 
 func (a *Minecraft) CancelFileDownload() {
@@ -315,6 +322,8 @@ func (a *Minecraft) StartupEssential() {
 func (a *Minecraft) StartupDeferred() {
 	launch.EnsureGamingServicesInstalled(a.ctx)
 	mcservice.ReconcileRegisteredFlags()
+	storage.CleanImports()
+	mcservice.RepairMigratedShortcuts()
 }
 
 // LocalImageMiddleware serves images registered through GetImageURL over the
@@ -423,21 +432,31 @@ func (a *Minecraft) WriteWorldLevelDatFieldsAt(worldDir string, args map[string]
 }
 
 func (a *Minecraft) WriteTempFile(name string, data []byte) string {
-	tempDir := filepath.Join(os.TempDir(), "LeviLauncher", "TempImports")
-	_ = os.MkdirAll(tempDir, 0755)
-	outPath := filepath.Join(tempDir, name)
-	if err := os.WriteFile(outPath, data, 0644); err != nil {
+	base := filepath.Base(strings.TrimSpace(name))
+	if base == "." || base == string(filepath.Separator) || base == "" {
+		return ""
+	}
+	outPath := filepath.Join(apppath.ImportsDir(), base)
+	if err := fsx.WriteFileAtomic(outPath, data, 0o644); err != nil {
 		return ""
 	}
 	return outPath
 }
 
+// RemoveTempFile removes a file that WriteTempFile or StartFileDownload
+// created; any other path is left alone.
 func (a *Minecraft) RemoveTempFile(path string) string {
-	if path == "" {
+	p := strings.TrimSpace(path)
+	if p == "" {
 		return ""
 	}
-	_ = os.Remove(path)
-	return ""
+	for _, dir := range []string{apppath.ImportsDir(), apppath.DownloadsDir()} {
+		if utils.NormalizeWindowsPath(filepath.Dir(p)) == utils.NormalizeWindowsPath(dir) {
+			_ = os.Remove(p)
+			return ""
+		}
+	}
+	return "ERR_PATH_ESCAPE"
 }
 
 func (a *Minecraft) CreateFolder(parent string, name string) string {

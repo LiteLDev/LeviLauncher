@@ -57,7 +57,7 @@ func OpenMods(name string) error {
 	if n == "" {
 		return errors.New("version name is empty")
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil {
 		return fmt.Errorf("resolve versions directory: %w", err)
 	}

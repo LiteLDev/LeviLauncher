@@ -373,6 +373,29 @@ img {
   user-select: text;
 }
 
+/* Fluid scale: rem-based UI stays legible at 640x480 and grows on 4K/8K
+   screens instead of leaving most of the window empty. */
+html {
+  font-size: 16px;
+}
+@media (max-width: 760px), (max-height: 540px) {
+  html {
+    font-size: 14px;
+  }
+}
+@media (min-width: 2560px) {
+  html {
+    /* 16px at 2560 CSS px, 24px at 3840, 48px at 7680 (8K at 100% scaling). */
+    font-size: clamp(16px, 0.625vw, 48px);
+  }
+}
+
+:root {
+  --page-gutter: clamp(0.75rem, 2vw, 2.5rem);
+  --page-gap: clamp(0.75rem, 1.2vw, 1.5rem);
+  --page-max-width: 120rem;
+}
+
 /* Make root fill viewport and disable window-level scroll; internal panes should manage their own scrolling */
 html,
 body,

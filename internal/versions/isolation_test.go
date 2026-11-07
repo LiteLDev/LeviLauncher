@@ -2,7 +2,6 @@ package versions
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -37,7 +36,7 @@ func TestReadMetaDisablesUnsupportedUWPIsolationWithoutRewriting(t *testing.T) {
 	if err != nil || meta.EnableIsolation {
 		t.Fatalf("unsupported isolation remains active: %+v %v", meta, err)
 	}
-	raw, err := os.ReadFile(filepath.Join(dir, metaFileName))
+	raw, err := os.ReadFile(metaPath(dir))
 	if err != nil || !strings.Contains(string(raw), `"enableIsolation": true`) {
 		t.Fatalf("reading metadata must not modify it: %s %v", raw, err)
 	}

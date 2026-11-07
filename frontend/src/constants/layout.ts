@@ -1,3 +1,19 @@
+const AUTO_GRID_COLUMNS: Record<number, string> = {
+  8: "grid-cols-[repeat(auto-fill,minmax(min(100%,8rem),1fr))]",
+  10: "grid-cols-[repeat(auto-fill,minmax(min(100%,10rem),1fr))]",
+  12: "grid-cols-[repeat(auto-fill,minmax(min(100%,12rem),1fr))]",
+  14: "grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))]",
+  16: "grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))]",
+  18: "grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))]",
+  20: "grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]",
+  22: "grid-cols-[repeat(auto-fill,minmax(min(100%,22rem),1fr))]",
+  24: "grid-cols-[repeat(auto-fill,minmax(min(100%,24rem),1fr))]",
+  28: "grid-cols-[repeat(auto-fill,minmax(min(100%,28rem),1fr))]",
+  32: "grid-cols-[repeat(auto-fill,minmax(min(100%,32rem),1fr))]",
+  40: "grid-cols-[repeat(auto-fill,minmax(min(100%,40rem),1fr))]",
+};
+const AUTO_GRID_SIZES = Object.keys(AUTO_GRID_COLUMNS).map(Number);
+
 export const LAYOUT = {
   PAGE: {
     CONTAINER:
@@ -26,9 +42,17 @@ export const LAYOUT = {
     FOOTER: "flex shrink-0 justify-center px-4 py-2 border-t border-border dark:border-white/5 bg-surface/50 launcher-material-panel",
   },
   GRID: {
-    /** Auto-fill grid: as many columns of at least `minRem` as fit. */
-    AUTO: (minRem: number) =>
-      `grid gap-[var(--page-gap)] grid-cols-[repeat(auto-fill,minmax(min(100%,${minRem}rem),1fr))]`,
+    /**
+     * Auto-fill grid: as many columns of at least `minRem` as fit. Tailwind
+     * only generates classes it can see literally, so sizes come from this
+     * list; other values round to the nearest listed size.
+     */
+    AUTO: (minRem: number) => {
+      const size = AUTO_GRID_SIZES.reduce((best, candidate) =>
+        Math.abs(candidate - minRem) < Math.abs(best - minRem) ? candidate : best,
+      );
+      return `grid gap-[var(--page-gap)] ${AUTO_GRID_COLUMNS[size]}`;
+    },
   },
   NAVBAR_BG: "launcher-chrome bg-surface/85 backdrop-blur-sm",
 };

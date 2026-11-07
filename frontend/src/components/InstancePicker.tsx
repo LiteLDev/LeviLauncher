@@ -115,6 +115,8 @@ export const InstancePicker: React.FC<InstancePickerProps> = ({
       <Select.Trigger
         className={cn(
           COMPONENT_STYLES.select.trigger,
+          // The game version is only shown in the list, not in the trigger.
+          "[&_[data-instance-version]]:hidden",
           size === "sm" && "min-h-8 h-8 text-sm",
         )}
       >
@@ -128,7 +130,10 @@ export const InstancePicker: React.FC<InstancePickerProps> = ({
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm">{item.name}</span>
                 {item.gameVersion && (
-                  <span className="truncate text-xs text-muted">
+                  <span
+                    data-instance-version
+                    className="truncate text-xs text-muted"
+                  >
                     {item.gameVersion}
                   </span>
                 )}

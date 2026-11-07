@@ -67,8 +67,12 @@ jobs:
         with:
           go-version-file: go.mod
 
-      # main.go embeds the frontend build, which the Go tests only need to exist.
+      # main.go embeds the frontend build, which the Go tests only need to exist. The default temp dir is
+      # under the 8.3 path C:\Users\RUNNER~1, which the path tests do not expect.
       - name: Go tests
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
         run: |
           mkdir -p frontend/dist && touch frontend/dist/index.html
           go test ./...

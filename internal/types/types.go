@@ -112,7 +112,13 @@ type InstanceBackupScopeMode struct {
 }
 
 type InstanceBackupModsLIPPackage struct {
-	Identifier        string   `json:"identifier"`
+	Identifier string `json:"identifier"`
+	// PackageID is the lip package id ("github.com/owner/repo") and Identity
+	// the identity the workspace recorded (<id>[#<variant>]); both are filled
+	// in by the backend when the backup is created and are absent from older
+	// backups.
+	PackageID         string   `json:"packageId,omitempty"`
+	Identity          string   `json:"identity,omitempty"`
 	Version           string   `json:"version"`
 	ExplicitInstalled bool     `json:"explicitInstalled"`
 	Folders           []string `json:"folders"`

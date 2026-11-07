@@ -155,7 +155,7 @@ func TestInstallEmitsTaskEventsInOrder(t *testing.T) {
 	}
 
 	dir := filepath.Join(t.TempDir(), "MyInstance")
-	if err := InstallPackagesViaDaemon(context.Background(), dir, []string{" github.com/LiteLDev/LeviLamina#client@1.0.0 ", ""}); err != nil {
+	if err := InstallPackages(context.Background(), dir, []string{" github.com/LiteLDev/LeviLamina#client@1.0.0 ", ""}); err != nil {
 		t.Fatalf("install failed: %v", err)
 	}
 
@@ -225,13 +225,13 @@ func TestOperationMethodsAndArguments(t *testing.T) {
 	state := useFakeEngine(t)
 	dir := t.TempDir()
 
-	if err := UpdatePackagesViaDaemon(context.Background(), dir, []string{"a@1.0.0"}); err != nil {
+	if err := UpdatePackages(context.Background(), dir, []string{"a@1.0.0"}); err != nil {
 		t.Fatalf("update failed: %v", err)
 	}
-	if err := UninstallPackagesViaDaemon(context.Background(), dir, []string{"a"}, true); err != nil {
+	if err := UninstallPackages(context.Background(), dir, []string{"a"}, true); err != nil {
 		t.Fatalf("uninstall failed: %v", err)
 	}
-	if err := UninstallPackagesViaDaemon(context.Background(), dir, []string{"b"}, false); err != nil {
+	if err := UninstallPackages(context.Background(), dir, []string{"b"}, false); err != nil {
 		t.Fatalf("uninstall failed: %v", err)
 	}
 
@@ -264,7 +264,7 @@ func TestInstallErrorIsReturnedAndReported(t *testing.T) {
 	state := useFakeEngine(t)
 	state.err = errors.New("Package 'github.com/LiteLDev/LeviLamina#client' is already explicitly installed")
 
-	err := InstallPackagesViaDaemon(context.Background(), t.TempDir(), []string{"github.com/LiteLDev/LeviLamina#client@1.0.0"})
+	err := InstallPackages(context.Background(), t.TempDir(), []string{"github.com/LiteLDev/LeviLamina#client@1.0.0"})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -292,7 +292,7 @@ func TestEnginePanicBecomesError(t *testing.T) {
 	newEngine = func(string, report.Reporter) packageEngine { panic("engine: not implemented") }
 	t.Cleanup(func() { newEngine = old })
 
-	err := InstallPackagesViaDaemon(context.Background(), t.TempDir(), []string{"x"})
+	err := InstallPackages(context.Background(), t.TempDir(), []string{"x"})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -305,10 +305,10 @@ func TestEnginePanicBecomesError(t *testing.T) {
 func TestEmptyWorkDirRejected(t *testing.T) {
 	rec := recordEvents(t)
 	state := useFakeEngine(t)
-	if err := InstallPackagesViaDaemon(context.Background(), "  ", []string{"x"}); err == nil {
+	if err := InstallPackages(context.Background(), "  ", []string{"x"}); err == nil {
 		t.Fatal("expected error for empty work dir")
 	}
-	if _, err := ListPackageStatesViaDaemon(context.Background(), ""); err == nil {
+	if _, err := ListPackageStates(context.Background(), ""); err == nil {
 		t.Fatal("expected error for empty work dir")
 	}
 	if len(state.calls) != 0 || len(rec.snapshot()) != 0 {
@@ -320,57 +320,131 @@ func TestListPackageStates(t *testing.T) {
 	rec := recordEvents(t)
 	state := useFakeEngine(t)
 	state.explicit = []string{"github.com/LiteLDev/LeviLamina#client@1.2.3"}
-	state.implicit = []string{"github.com/LiteLDev/CrashLogger#client@1.3.3", "github.com/LiteLDev/PeEditor@3.9.2"}
+	state.implicit = []string{"github.com/LiteLDev/CrashLogger@1.3.3", "github.com/LiteLDev/PeEditor@3.9.2"}
 	dir := t.TempDir()
 
-	states, err := ListPackageStatesViaDaemon(context.Background(), dir)
+	states, err := ListPackageStates(context.Background(), dir)
 	if err != nil {
 		t.Fatalf("list failed: %v", err)
 	}
 	if len(rec.snapshot()) != 0 {
 		t.Fatalf("list must not emit task events: %+v", rec.snapshot())
 	}
-	ll := states["github.com/liteldev/levilamina#client"]
-	if !ll.Installed || !ll.ExplicitInstalled || ll.InstalledVersion != "1.2.3" {
-		t.Fatalf("unexpected LeviLamina state: %+v", ll)
+	// A workspace migrated from tooth_lock.json records "#client"; the state
+	// is keyed by the package id and keeps the recorded identity.
+	ll := states["github.com/liteldev/levilamina"]
+	want := PackageInstallState{
+		Identity:          "github.com/LiteLDev/LeviLamina#client",
+		ID:                "github.com/LiteLDev/LeviLamina",
+		Variant:           "client",
+		Installed:         true,
+		ExplicitInstalled: true,
+		InstalledVersion:  "1.2.3",
 	}
-	dep := states["github.com/liteldev/crashlogger#client"]
-	if !dep.Installed || dep.ExplicitInstalled || dep.InstalledVersion != "1.3.3" {
+	if ll != want {
+		t.Fatalf("LeviLamina state = %+v, want %+v", ll, want)
+	}
+	dep := states["github.com/liteldev/crashlogger"]
+	if !dep.Installed || dep.ExplicitInstalled || dep.InstalledVersion != "1.3.3" || dep.Identity != "github.com/LiteLDev/CrashLogger" {
 		t.Fatalf("unexpected dependency state: %+v", dep)
 	}
-	if pe, ok := states["github.com/liteldev/peeditor"]; !ok || pe.InstalledVersion != "3.9.2" {
-		t.Fatalf("expected variant-less dependency, got %+v", states)
+	if len(states) != 3 {
+		t.Fatalf("unexpected states: %+v", states)
 	}
 
-	got, err := GetPackageInstallStateViaDaemon(context.Background(), dir, "github.com/LiteLDev/LeviLamina#client@9.9.9")
-	if err != nil || got != ll {
-		t.Fatalf("GetPackageInstallState = %+v, %v", got, err)
+	// Lookups match the package id whatever variant or version is asked for.
+	for _, ref := range []string{"github.com/LiteLDev/LeviLamina", "github.com/liteldev/levilamina#client@9.9.9", "github.com/LiteLDev/LeviLamina@1.0.0"} {
+		got, err := GetPackageInstallState(context.Background(), dir, ref)
+		if err != nil || got != ll {
+			t.Fatalf("GetPackageInstallState(%q) = %+v, %v", ref, got, err)
+		}
 	}
-	explicit, err := IsPackageExplicitlyInstalledViaDaemon(context.Background(), dir, "github.com/LiteLDev/CrashLogger#client")
+	explicit, err := IsPackageExplicitlyInstalled(context.Background(), dir, "github.com/LiteLDev/CrashLogger")
 	if err != nil || explicit {
 		t.Fatalf("CrashLogger explicit = %v, %v", explicit, err)
 	}
-	missing, err := GetPackageInstallStateViaDaemon(context.Background(), dir, "github.com/x/y")
+	missing, err := GetPackageInstallState(context.Background(), dir, "github.com/x/y")
 	if err != nil || missing.Installed {
 		t.Fatalf("missing = %+v, %v", missing, err)
 	}
 
 	state.err = errors.New("boom")
-	if _, err := ListPackageStatesViaDaemon(context.Background(), dir); err == nil {
+	if _, err := ListPackageStates(context.Background(), dir); err == nil {
 		t.Fatal("expected list error")
 	}
 }
 
-func TestBuildPackageInstallStateIndexPrefersExplicitVersion(t *testing.T) {
+func TestBuildPackageInstallStateIndexKeysByPackageID(t *testing.T) {
 	states := buildPackageInstallStateIndex(
-		[]string{"a/b#c@2.0.0"},
-		[]string{"A/B#c@1.0.0", ""},
+		[]string{"example.com/a/b#x@2.0.0"},
+		[]string{"Example.com/A/B@1.0.0", "example.com/c/d#y@1.0.0", "example.com/c/d@1.1.0", ""},
 	)
-	if len(states) != 1 {
+	if len(states) != 2 {
 		t.Fatalf("unexpected states: %+v", states)
 	}
-	if s := states["a/b#c"]; !s.ExplicitInstalled || s.InstalledVersion != "2.0.0" {
+	// The explicit variant is preferred over a dependency variant.
+	if s := states["example.com/a/b"]; !s.ExplicitInstalled || s.InstalledVersion != "2.0.0" || s.Identity != "example.com/a/b#x" {
 		t.Fatalf("unexpected state: %+v", s)
+	}
+	// Otherwise the first installed variant wins.
+	if s := states["example.com/c/d"]; s.ExplicitInstalled || s.InstalledVersion != "1.0.0" || s.Variant != "y" {
+		t.Fatalf("unexpected state: %+v", s)
+	}
+}
+
+func TestBuildPackageInstallStateIndexPrefersLaterExplicitVariant(t *testing.T) {
+	states := buildPackageInstallStateIndex(
+		[]string{"example.com/a/b@2.0.0"},
+		[]string{"example.com/a/b#x@1.0.0"},
+	)
+	if s := states["example.com/a/b"]; !s.ExplicitInstalled || s.Identity != "example.com/a/b" {
+		t.Fatalf("unexpected state: %+v", s)
+	}
+}
+
+func TestParsePackageSpec(t *testing.T) {
+	tests := []struct {
+		in   string
+		want PackageSpec
+		ok   bool
+	}{
+		{in: "github.com/LiteLDev/LeviLamina", want: PackageSpec{ID: "github.com/LiteLDev/LeviLamina"}, ok: true},
+		{in: " github.com/LiteLDev/LeviLamina#client@1.2.3 ", want: PackageSpec{ID: "github.com/LiteLDev/LeviLamina", Variant: "client", Version: "1.2.3"}, ok: true},
+		{in: "github.com/a/b@1.0.0-rc.1+build", want: PackageSpec{ID: "github.com/a/b", Version: "1.0.0-rc.1+build"}, ok: true},
+		{in: "github.com/a/b#x/y@branch:main", want: PackageSpec{ID: "github.com/a/b", Variant: "x/y", Version: "branch:main"}, ok: true},
+		// Lenient split of engine output lip would not take as an argument.
+		{in: "a/b#C@v1", want: PackageSpec{ID: "a/b", Variant: "C", Version: "v1"}, ok: true},
+		{in: "  ", ok: false},
+		{in: "#x@1.0.0", ok: false},
+	}
+	for _, tt := range tests {
+		got, ok := ParsePackageSpec(tt.in)
+		if ok != tt.ok || got != tt.want {
+			t.Fatalf("ParsePackageSpec(%q) = %+v, %v; want %+v, %v", tt.in, got, ok, tt.want, tt.ok)
+		}
+	}
+	if id := (PackageSpec{ID: "a", Variant: "b"}).Identity(); id != "a#b" {
+		t.Fatalf("Identity = %q", id)
+	}
+	if id := (PackageSpec{ID: "a"}).Identity(); id != "a" {
+		t.Fatalf("Identity = %q", id)
+	}
+}
+
+func TestIsAlreadyExplicitlyInstalled(t *testing.T) {
+	tests := []struct {
+		err  error
+		want bool
+	}{
+		{nil, false},
+		{errors.New("boom"), false},
+		{errors.New("Cannot install 'github.com/a/b@1.0.0': package 'github.com/a/b' is already explicitly installed (version 1.0.0). To change its version, run 'lip update github.com/a/b@1.0.0' instead."), true},
+		{fmt.Errorf("wrapped: %w", errors.New("Cannot install package 'x' because it is already explicitly installed.")), true},
+	}
+	for _, tt := range tests {
+		if got := IsAlreadyExplicitlyInstalled(tt.err); got != tt.want {
+			t.Fatalf("IsAlreadyExplicitlyInstalled(%v) = %v, want %v", tt.err, got, tt.want)
+		}
 	}
 }
 
@@ -399,7 +473,7 @@ func TestOperationsSerializedPerWorkDir(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_ = InstallPackagesViaDaemon(context.Background(), dir, []string{"x"})
+			_ = InstallPackages(context.Background(), dir, []string{"x"})
 		}()
 	}
 	wg.Wait()
@@ -420,12 +494,12 @@ func TestLockWaitHonorsContext(t *testing.T) {
 	}
 	dir := t.TempDir()
 	done := make(chan error, 1)
-	go func() { done <- InstallPackagesViaDaemon(context.Background(), dir, []string{"x"}) }()
+	go func() { done <- InstallPackages(context.Background(), dir, []string{"x"}) }()
 	<-entered
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
-	if err := UpdatePackagesViaDaemon(ctx, dir, []string{"x"}); !errors.Is(err, context.DeadlineExceeded) {
+	if err := UpdatePackages(ctx, dir, []string{"x"}); !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected deadline error, got %v", err)
 	}
 	close(release)
@@ -434,7 +508,7 @@ func TestLockWaitHonorsContext(t *testing.T) {
 	}
 }
 
-// List only reads tooth_lock.json; as with lipd (one process per call) it
+// List only reads the workspace file; as with lip (one process per call) it
 // must not wait for an install running on the same instance.
 func TestListDoesNotWaitForRunningInstall(t *testing.T) {
 	recordEvents(t)
@@ -454,17 +528,17 @@ func TestListDoesNotWaitForRunningInstall(t *testing.T) {
 	}
 	dir := t.TempDir()
 	done := make(chan error, 1)
-	go func() { done <- InstallPackagesViaDaemon(context.Background(), dir, []string{"x"}) }()
+	go func() { done <- InstallPackages(context.Background(), dir, []string{"x"}) }()
 	<-entered
 
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
-	states, err := ListPackageStatesViaDaemon(ctx, dir)
+	states, err := ListPackageStates(ctx, dir)
 	close(release)
 	if err != nil {
 		t.Fatalf("List during install: %v", err)
 	}
-	if !states["github.com/liteldev/levilamina#client"].Installed {
+	if !states["github.com/liteldev/levilamina"].Installed {
 		t.Fatalf("unexpected states: %+v", states)
 	}
 	if err := <-done; err != nil {
@@ -644,7 +718,7 @@ func TestCacheCleanWaitsForRunningTasks(t *testing.T) {
 	}
 
 	installDone := make(chan error, 1)
-	go func() { installDone <- InstallPackagesViaDaemon(context.Background(), t.TempDir(), []string{"x"}) }()
+	go func() { installDone <- InstallPackages(context.Background(), t.TempDir(), []string{"x"}) }()
 	<-entered
 	cleanDone := make(chan error, 1)
 	go func() { cleanDone <- CacheClean(context.Background()) }()
@@ -681,7 +755,7 @@ func blockInstallThenClean(t *testing.T, state *fakeEngineState, cleanCtx contex
 		return nil
 	}
 	installDone := make(chan error, 1)
-	go func() { installDone <- InstallPackagesViaDaemon(context.Background(), t.TempDir(), []string{"x"}) }()
+	go func() { installDone <- InstallPackages(context.Background(), t.TempDir(), []string{"x"}) }()
 	<-entered
 	cleanDone = make(chan error, 1)
 	go func() { cleanDone <- CacheClean(cleanCtx) }()
@@ -721,7 +795,7 @@ func TestListDoesNotWaitForPendingCacheClean(t *testing.T) {
 	defer cancel()
 	done := make(chan error, 1)
 	go func() {
-		_, err := ListPackageStatesViaDaemon(ctx, t.TempDir())
+		_, err := ListPackageStates(ctx, t.TempDir())
 		done <- err
 	}()
 	select {
@@ -744,7 +818,7 @@ func TestCacheWaitHonorsContext(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 	done := make(chan error, 1)
-	go func() { done <- UpdatePackagesViaDaemon(ctx, t.TempDir(), []string{"x"}) }()
+	go func() { done <- UpdatePackages(ctx, t.TempDir(), []string{"x"}) }()
 	select {
 	case err := <-done:
 		if !errors.Is(err, context.DeadlineExceeded) {
@@ -792,7 +866,7 @@ func TestCacheCleanHonorsContext(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if err := UpdatePackagesViaDaemon(ctx, t.TempDir(), []string{"x"}); err != nil {
+	if err := UpdatePackages(ctx, t.TempDir(), []string{"x"}); err != nil {
 		t.Fatalf("Update after abandoned clean: %v", err)
 	}
 }
@@ -813,10 +887,10 @@ func TestOperationsCloseEngine(t *testing.T) {
 	state := useFakeEngine(t)
 	dir := t.TempDir()
 	ctx := context.Background()
-	if err := InstallPackagesViaDaemon(ctx, dir, []string{"example.com/a"}); err != nil {
+	if err := InstallPackages(ctx, dir, []string{"example.com/a"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := ListPackageStatesViaDaemon(ctx, dir); err != nil {
+	if _, err := ListPackageStates(ctx, dir); err != nil {
 		t.Fatal(err)
 	}
 	state.mu.Lock()

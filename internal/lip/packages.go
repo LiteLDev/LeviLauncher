@@ -15,6 +15,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/httpclient"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/ref"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
 )
 
@@ -54,10 +55,10 @@ var engineHTTPClient = &http.Client{
 	CheckRedirect: httpclient.CheckRedirect,
 }
 
-// dirLocks serializes writing operations per workspace so tooth_lock.json
-// has one writer at a time. List does not take it: lip ran one process per
-// call, so a List during an install read the last saved tooth_lock.json
-// (lockfile.State.Save replaces the file atomically).
+// dirLocks serializes writing operations per workspace so the workspace
+// (.lip/workspace.yaml) has one writer at a time. List does not take it: lip
+// runs one process per call, so a List during an install reads the last
+// saved workspace file, which lip replaces atomically.
 var dirLocks sync.Map // lock key -> chan struct{} (capacity 1)
 
 // cacheLock lets package operations share the download cache while
@@ -264,7 +265,7 @@ func runPackageTask(ctx context.Context, method string, workDir string, packages
 func finishTask(meta lipTaskMeta, r *taskReporter, err error) {
 	r.close()
 	if err != nil {
-		emitTaskFinished(meta, false, err.Error())
+		emitTaskFinished(meta, false, formatEngineError(err))
 	} else {
 		emitTaskFinished(meta, true, "")
 	}
@@ -297,7 +298,8 @@ func CacheClean(ctx context.Context) error {
 	return err
 }
 
-// InstallPackages installs packages ("id" or "id@version") into workDir.
+// InstallPackages installs packages ("<id>[#<variant>][@<version>]") into
+// workDir.
 func InstallPackages(ctx context.Context, workDir string, packages []string) error {
 	pkgs := normalizePackages(packages)
 	return runPackageTask(ctx, "Install", workDir, pkgs, true, true, func(ctx context.Context, e packageEngine) error {
@@ -313,7 +315,7 @@ func UpdatePackages(ctx context.Context, workDir string, packages []string) erro
 	})
 }
 
-// UninstallPackages uninstalls package ids from workDir. With
+// UninstallPackages uninstalls packages (identities or sources) from workDir. With
 // noDependencies, dependencies that become unused are kept.
 func UninstallPackages(ctx context.Context, workDir string, packages []string, noDependencies bool) error {
 	pkgs := normalizePackages(packages)
@@ -322,74 +324,99 @@ func UninstallPackages(ctx context.Context, workDir string, packages []string, n
 	})
 }
 
-// PackageInstallState describes one installed package of a workspace.
+// PackageInstallState describes the installed package of a workspace with
+// one package id.
 type PackageInstallState struct {
+	// Identity is the identity the workspace records (<id>[#<variant>]),
+	// e.g. "github.com/LiteLDev/LeviLamina#client" for a workspace migrated
+	// from tooth_lock.json. Update and uninstall the package by it.
+	Identity string
+	// ID is the package id as recorded, Variant the variant ("" for none).
+	ID                string
+	Variant           string
 	Installed         bool
 	ExplicitInstalled bool
 	InstalledVersion  string
 }
 
-type packageSpec struct {
-	Path    string
+// PackageSpec is a package argument "<id>[#<variant>][@<version>]" or an
+// entry of List ("<identity>@<version>").
+type PackageSpec struct {
+	ID      string
 	Variant string
+	// Version is the part after "@" (a version, or another ref of lip 0.38
+	// such as "branch:main"); "" when there is none.
 	Version string
 }
 
-func (s packageSpec) id() string {
-	if s.Variant == "" {
-		return s.Path
-	}
-	return s.Path + "#" + s.Variant
+// Identity is the identity of s: its id, followed by "#" and the variant
+// when there is one.
+func (s PackageSpec) Identity() string {
+	return ref.Identity(s.ID, s.Variant)
 }
 
-// parsePackageSpec parses "path#variant@version" (variant and version
-// optional).
-func parsePackageSpec(raw string) (packageSpec, bool) {
+// ParsePackageSpec parses "<id>[#<variant>][@<version>]" as lip 0.38 parses
+// a remote repository source: everything after the first "@" is the ref,
+// and a "#" before it starts the variant.
+func ParsePackageSpec(raw string) (PackageSpec, bool) {
 	spec := strings.TrimSpace(raw)
 	if spec == "" {
-		return packageSpec{}, false
+		return PackageSpec{}, false
 	}
-
-	version := ""
-	if at := strings.LastIndex(spec, "@"); at > 0 {
-		version = strings.TrimSpace(spec[at+1:])
-		spec = strings.TrimSpace(spec[:at])
+	if r, _, ok := ref.TryParse(spec, false); ok && r.Kind == ref.KindSpec {
+		out := PackageSpec{ID: r.Target, Variant: r.Variant}
+		if r.GitRef != nil {
+			out.Version = r.GitRef.String()
+		}
+		return out, true
 	}
-
-	path := spec
-	variant := ""
-	if hash := strings.LastIndex(spec, "#"); hash > 0 {
-		path = strings.TrimSpace(spec[:hash])
-		variant = strings.TrimSpace(spec[hash+1:])
+	// List entries come from the engine; split them leniently so a version
+	// or variant lip would not accept as an argument still yields a state.
+	head, version := spec, ""
+	if at := strings.IndexByte(spec, '@'); at >= 0 {
+		head, version = spec[:at], strings.TrimSpace(spec[at+1:])
 	}
-	if path == "" {
-		return packageSpec{}, false
+	id, variant := head, ""
+	if hash := strings.IndexByte(head, '#'); hash >= 0 {
+		id, variant = head[:hash], strings.TrimSpace(head[hash+1:])
 	}
-	return packageSpec{Path: path, Variant: variant, Version: version}, true
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return PackageSpec{}, false
+	}
+	return PackageSpec{ID: id, Variant: variant, Version: version}, true
 }
 
-// buildPackageInstallStateIndex indexes List output by lowercased
-// "path#variant".
+// PackageKey is the key of a package id in ListPackageStates: the id folded
+// ASCII case-insensitively, as lip compares package ids.
+func PackageKey(id string) string {
+	return ref.Fold(strings.TrimSpace(id))
+}
+
+// buildPackageInstallStateIndex indexes List output by package id
+// (PackageKey). When several variants of one id are installed, the
+// explicitly installed one is kept, otherwise the first.
 func buildPackageInstallStateIndex(explicit, implicit []string) map[string]PackageInstallState {
 	states := make(map[string]PackageInstallState)
 	merge := func(specs []string, isExplicit bool) {
 		for _, raw := range specs {
-			spec, ok := parsePackageSpec(raw)
+			spec, ok := ParsePackageSpec(raw)
 			if !ok {
 				continue
 			}
-			key := strings.ToLower(spec.id())
-			state := states[key]
-			state.Installed = true
-			if isExplicit {
-				state.ExplicitInstalled = true
-				if spec.Version != "" {
-					state.InstalledVersion = spec.Version
-				}
-			} else if state.InstalledVersion == "" {
-				state.InstalledVersion = spec.Version
+			key := PackageKey(spec.ID)
+			if _, exists := states[key]; exists {
+				// Explicit entries are merged first, so the first one wins.
+				continue
 			}
-			states[key] = state
+			states[key] = PackageInstallState{
+				Identity:          spec.Identity(),
+				ID:                spec.ID,
+				Variant:           spec.Variant,
+				Installed:         true,
+				ExplicitInstalled: isExplicit,
+				InstalledVersion:  spec.Version,
+			}
 		}
 	}
 	merge(explicit, true)
@@ -398,7 +425,7 @@ func buildPackageInstallStateIndex(explicit, implicit []string) map[string]Packa
 }
 
 // ListPackageStates returns the installed packages of workDir keyed by
-// lowercased "path#variant".
+// package id (PackageKey).
 func ListPackageStates(ctx context.Context, workDir string) (map[string]PackageInstallState, error) {
 	var explicit, implicit []string
 	err := runPackageTask(ctx, "List", workDir, nil, false, false, func(ctx context.Context, e packageEngine) error {
@@ -412,31 +439,23 @@ func ListPackageStates(ctx context.Context, workDir string) (map[string]PackageI
 	return buildPackageInstallStateIndex(explicit, implicit), nil
 }
 
-func trimPackageVersion(spec string) string {
-	trimmed := strings.TrimSpace(spec)
-	idx := strings.LastIndex(trimmed, "@")
-	if idx <= 0 {
-		return trimmed
-	}
-	return strings.TrimSpace(trimmed[:idx])
-}
-
-// GetPackageInstallState returns the state of packageRef ("path#variant",
-// optionally with "@version") in workDir; zero when not installed.
+// GetPackageInstallState returns the state of the package with the id of
+// packageRef ("<id>[#<variant>][@<version>]"; variant and version are
+// ignored) in workDir; zero when no variant of it is installed.
 func GetPackageInstallState(ctx context.Context, workDir string, packageRef string) (PackageInstallState, error) {
-	target := strings.ToLower(trimPackageVersion(packageRef))
-	if target == "" {
+	spec, ok := ParsePackageSpec(packageRef)
+	if !ok {
 		return PackageInstallState{}, nil
 	}
 	states, err := ListPackageStates(ctx, workDir)
 	if err != nil {
 		return PackageInstallState{}, err
 	}
-	return states[target], nil
+	return states[PackageKey(spec.ID)], nil
 }
 
-// IsPackageExplicitlyInstalled reports whether packageRef is installed
-// explicitly (not only as a dependency) in workDir.
+// IsPackageExplicitlyInstalled reports whether a package with the id of
+// packageRef is installed explicitly (not only as a dependency) in workDir.
 func IsPackageExplicitlyInstalled(ctx context.Context, workDir string, packageRef string) (bool, error) {
 	state, err := GetPackageInstallState(ctx, workDir, packageRef)
 	if err != nil {
@@ -445,28 +464,37 @@ func IsPackageExplicitlyInstalled(ctx context.Context, workDir string, packageRe
 	return state.ExplicitInstalled, nil
 }
 
-// Names kept from the lipd daemon era; callers in mcservice use them.
-
-func InstallPackagesViaDaemon(ctx context.Context, workDir string, packages []string) error {
-	return InstallPackages(ctx, workDir, packages)
+// isAlreadyExplicitlyInstalled reports whether err is lip's refusal to
+// install a package that is already explicitly installed.
+func isAlreadyExplicitlyInstalled(err error) bool {
+	// TODO(wave3): errors.Is(err, engine.ErrAlreadyExplicitlyInstalled)
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(formatEngineError(err))
+	return strings.Contains(msg, "already explicitly installed") ||
+		(strings.Contains(msg, "cannot install package") && strings.Contains(msg, "already installed"))
 }
 
-func UpdatePackagesViaDaemon(ctx context.Context, workDir string, packages []string) error {
-	return UpdatePackages(ctx, workDir, packages)
+// IsAlreadyExplicitlyInstalled reports whether err is lip's refusal to
+// install a package that is already explicitly installed (lip 0.38 asks to
+// run update instead).
+func IsAlreadyExplicitlyInstalled(err error) bool {
+	return isAlreadyExplicitlyInstalled(err)
 }
 
-func UninstallPackagesViaDaemon(ctx context.Context, workDir string, packages []string, noDependencies bool) error {
-	return UninstallPackages(ctx, workDir, packages, noDependencies)
+// formatEngineError is the full message of an engine error, as lip prints
+// it.
+func formatEngineError(err error) string {
+	// TODO(wave3): engine.FormatError(err)
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
-func ListPackageStatesViaDaemon(ctx context.Context, workDir string) (map[string]PackageInstallState, error) {
-	return ListPackageStates(ctx, workDir)
-}
-
-func GetPackageInstallStateViaDaemon(ctx context.Context, workDir string, packageRef string) (PackageInstallState, error) {
-	return GetPackageInstallState(ctx, workDir, packageRef)
-}
-
-func IsPackageExplicitlyInstalledViaDaemon(ctx context.Context, workDir string, packageRef string) (bool, error) {
-	return IsPackageExplicitlyInstalled(ctx, workDir, packageRef)
+// ErrorMessage is the full message of an error of a package operation, as
+// lip prints it.
+func ErrorMessage(err error) string {
+	return formatEngineError(err)
 }

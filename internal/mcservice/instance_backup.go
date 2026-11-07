@@ -18,6 +18,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/content"
+	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
@@ -50,7 +51,7 @@ var (
 var instanceBackupFetchLeviLaminaVersionDB = FetchLeviLaminaVersionDB
 
 // Restore reinstalls lip packages and checks their state through these, so
-// tests can observe the per-package progress without a lip daemon.
+// tests can observe the per-package progress without running lip.
 var (
 	instanceBackupInstallLIPPackage         = InstallLIPPackage
 	instanceBackupGetLIPPackageInstallState = GetLIPPackageInstallState
@@ -537,6 +538,7 @@ func BackupInstance(name string, request types.InstanceBackupRequest) types.Inst
 	rawModFolders := []string(nil)
 	if containsString(selectedScopes, instanceBackupScopeMods) {
 		lipPackages, _ = normalizeInstanceBackupModsLIPPackages(request.ModsLIPPackages, ctx.modsPath)
+		recordInstanceBackupLIPIdentities(ctx.versionDir, lipPackages)
 		rawModFolders = collectInstanceBackupRawModFolders(ctx.modsPath, lipPackages)
 	}
 
@@ -1121,7 +1123,14 @@ func normalizeInstanceBackupModsLIPPackages(
 		if len(folders) == 0 {
 			continue
 		}
+		// One entry per lip package: "Owner/Repo" and "Owner/Repo#client"
+		// name the same installed package.
+		packageID := ""
 		lookupKey := strings.ToLower(identifier)
+		if req, ok := buildLIPPackageRequest(identifier); ok {
+			packageID = req.packageID
+			lookupKey = lip.PackageKey(req.packageID)
+		}
 		if _, ok := seen[lookupKey]; ok {
 			continue
 		}
@@ -1131,6 +1140,7 @@ func normalizeInstanceBackupModsLIPPackages(
 		}
 		normalized = append(normalized, types.InstanceBackupModsLIPPackage{
 			Identifier:        identifier,
+			PackageID:         packageID,
 			Version:           version,
 			ExplicitInstalled: item.ExplicitInstalled,
 			Folders:           folders,
@@ -1140,6 +1150,54 @@ func normalizeInstanceBackupModsLIPPackages(
 		return strings.ToLower(normalized[i].Identifier) < strings.ToLower(normalized[j].Identifier)
 	})
 	return normalized, validFolders
+}
+
+// recordInstanceBackupLIPIdentities records, for each package installed in
+// versionDir, the identity its workspace records (best effort: a failed
+// query leaves Identity empty).
+func recordInstanceBackupLIPIdentities(versionDir string, packages []types.InstanceBackupModsLIPPackage) {
+	if len(packages) == 0 || strings.TrimSpace(versionDir) == "" {
+		return
+	}
+	states, err := queryLIPPackageStates(context.Background(), versionDir)
+	if err != nil {
+		log.Printf("BackupInstance: failed to query lip packages in %s: %v", versionDir, err)
+		return
+	}
+	for i := range packages {
+		if packages[i].PackageID == "" {
+			continue
+		}
+		if state, ok := lipPackageStateFor(states, packages[i].PackageID); ok {
+			packages[i].Identity = state.Identity
+		}
+	}
+}
+
+// instanceBackupLIPRestoreIdentifier is the identifier a recorded package is
+// reinstalled with: its recorded identity (whose variant "client", from
+// tooth_lock.json, requests the bare repository), otherwise the frontend
+// identifier of older backups ("Owner/Repo" or "Owner/Repo#client").
+func instanceBackupLIPRestoreIdentifier(item types.InstanceBackupModsLIPPackage) string {
+	identity := strings.TrimSpace(item.Identity)
+	if identity == "" {
+		return item.Identifier
+	}
+	identityReq, ok := buildLIPPackageRequest(identity)
+	if !ok {
+		return item.Identifier
+	}
+	// Use the identity only when it names the recorded package.
+	packageID := strings.TrimSpace(item.PackageID)
+	if packageID == "" {
+		if req, ok := buildLIPPackageRequest(item.Identifier); ok {
+			packageID = req.packageID
+		}
+	}
+	if packageID != "" && lip.PackageKey(packageID) != lip.PackageKey(identityReq.packageID) {
+		return item.Identifier
+	}
+	return identity
 }
 
 func normalizeInstanceBackupFolderList(folders []string, modsPath string) []string {
@@ -1215,6 +1273,8 @@ func cloneInstanceBackupModsLIPPackages(items []types.InstanceBackupModsLIPPacka
 	for _, item := range items {
 		cloned = append(cloned, types.InstanceBackupModsLIPPackage{
 			Identifier:        item.Identifier,
+			PackageID:         item.PackageID,
+			Identity:          item.Identity,
 			Version:           item.Version,
 			ExplicitInstalled: item.ExplicitInstalled,
 			Folders:           append([]string{}, item.Folders...),
@@ -3037,7 +3097,7 @@ func restoreInstanceBackupMods(
 	failedInstalls := make([]string, 0)
 	for _, item := range explicitPackages {
 		packageProgress.announce(item.Identifier)
-		errCode := instanceBackupInstallLIPPackage(ctx, targetName, item.Identifier, item.Version)
+		errCode := instanceBackupInstallLIPPackage(ctx, targetName, instanceBackupLIPRestoreIdentifier(item), item.Version)
 		packageProgress.add(1, item.Identifier)
 		if errCode != "" {
 			failedInstalls = append(failedInstalls, fmt.Sprintf("%s@%s (%s)", item.Identifier, item.Version, errCode))
@@ -3057,7 +3117,7 @@ func restoreInstanceBackupMods(
 	verifyProgress.announce("")
 	missingPackages := make([]string, 0)
 	for _, item := range lipPackages {
-		state := instanceBackupGetLIPPackageInstallState(ctx, targetName, item.Identifier)
+		state := instanceBackupGetLIPPackageInstallState(ctx, targetName, instanceBackupLIPRestoreIdentifier(item))
 		verifyProgress.add(1, item.Identifier)
 		if !state.Installed {
 			missingPackages = append(missingPackages, fmt.Sprintf("%s@%s", item.Identifier, item.Version))

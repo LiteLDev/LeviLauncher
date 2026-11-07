@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -17,31 +18,34 @@ func setProxyConfig(t *testing.T, override string, mirror bool) {
 		githubProxyOverride = oldOverride
 		mirrorEnabled = oldMirror
 	})
-	setLipRC(t, "")
+	setLipConfig(t, "", "")
 }
 
-// setLipRC points liprc.json at a temp file holding content (none when
-// empty).
-func setLipRC(t *testing.T, content string) {
+// setLipConfig points lip's configuration directory at a temp directory
+// holding config.yaml and liprc.json with the given contents (none when
+// empty). The real %APPDATA%\lip is never touched.
+func setLipConfig(t *testing.T, configYAML, liprc string) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "liprc.json")
-	if content != "" {
-		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	dir := t.TempDir()
+	if configYAML != "" {
+		if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(configYAML), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
-	old := lipRCPath
-	lipRCPath = func() string { return path }
-	t.Cleanup(func() { lipRCPath = old })
+	if liprc != "" {
+		if err := os.WriteFile(filepath.Join(dir, "liprc.json"), []byte(liprc), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old := lipConfigDir
+	lipConfigDir = func() string { return dir }
+	t.Cleanup(func() { lipConfigDir = old })
+	return dir
 }
 
-const lipRCWithProxy = `{
-  "format_version": 3,
-  "format_uuid": "289f771f-2c9a-4d73-9f3f-8492495a924d",
-  "github_proxy": "https://myproxy.example"
-}`
+const lipConfigWithProxy = "format: 4\ngithub_proxy: https://myproxy.example\n"
 
-func TestProxyFromLipRC(t *testing.T) {
+func TestProxyFromLipConfig(t *testing.T) {
 	tests := []struct {
 		name          string
 		override      string
@@ -49,14 +53,14 @@ func TestProxyFromLipRC(t *testing.T) {
 		wantEffective string
 		wantDisplayed string
 	}{
-		{name: "liprc applies without mirror", wantEffective: "https://myproxy.example", wantDisplayed: "https://myproxy.example"},
-		{name: "liprc beats mirror default", mirror: true, wantEffective: "https://myproxy.example", wantDisplayed: "https://myproxy.example"},
-		{name: "override beats liprc", override: "https://override.example", wantEffective: "https://override.example", wantDisplayed: "https://override.example"},
+		{name: "config applies without mirror", wantEffective: "https://myproxy.example", wantDisplayed: "https://myproxy.example"},
+		{name: "config beats mirror default", mirror: true, wantEffective: "https://myproxy.example", wantDisplayed: "https://myproxy.example"},
+		{name: "override beats config", override: "https://override.example", wantEffective: "https://override.example", wantDisplayed: "https://override.example"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			setProxyConfig(t, tt.override, tt.mirror)
-			setLipRC(t, lipRCWithProxy)
+			setLipConfig(t, lipConfigWithProxy, "")
 			if got := EffectiveGithubProxy(); got != tt.wantEffective {
 				t.Fatalf("EffectiveGithubProxy() = %q, want %q", got, tt.wantEffective)
 			}
@@ -67,29 +71,75 @@ func TestProxyFromLipRC(t *testing.T) {
 	}
 }
 
-func TestLipRCGithubProxyFollowsLipParsing(t *testing.T) {
+func TestLipConfigGithubProxyFollowsLipParsing(t *testing.T) {
 	tests := []struct {
-		name    string
-		content string
-		want    string
+		name   string
+		config string
+		want   string
 	}{
-		{name: "valid", content: lipRCWithProxy, want: "https://myproxy.example"},
-		{name: "bom", content: string([]byte{0xef, 0xbb, 0xbf}) + lipRCWithProxy, want: "https://myproxy.example"},
-		{name: "null proxy", content: `{"format_version":3,"format_uuid":"289f771f-2c9a-4d73-9f3f-8492495a924d","github_proxy":null}`},
-		{name: "missing format", content: `{"github_proxy":"https://myproxy.example"}`},
-		{name: "wrong version", content: `{"format_version":2,"format_uuid":"289f771f-2c9a-4d73-9f3f-8492495a924d","github_proxy":"https://myproxy.example"}`},
-		{name: "wrong case key", content: `{"format_version":3,"format_uuid":"289f771f-2c9a-4d73-9f3f-8492495a924d","GitHub_Proxy":"https://myproxy.example"}`},
-		{name: "not a string", content: `{"format_version":3,"format_uuid":"289f771f-2c9a-4d73-9f3f-8492495a924d","github_proxy":1}`},
-		{name: "malformed", content: `{`},
+		{name: "valid", config: lipConfigWithProxy, want: "https://myproxy.example"},
+		{name: "trimmed", config: "format: 4\ngithub_proxy: '  https://myproxy.example  '\n", want: "https://myproxy.example"},
+		{name: "no proxy", config: "format: 4\n"},
+		{name: "empty proxy", config: "format: 4\ngithub_proxy: ''\n"},
+		{name: "missing format", config: "github_proxy: https://myproxy.example\n"},
+		{name: "wrong format", config: "format: 3\ngithub_proxy: https://myproxy.example\n"},
+		{name: "not a string", config: "format: 4\ngithub_proxy: [1]\n"},
+		{name: "not a mapping", config: "- 1\n"},
 		{name: "missing file"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setLipRC(t, tt.content)
-			if got := lipRCGithubProxy(); got != tt.want {
-				t.Fatalf("lipRCGithubProxy() = %q, want %q", got, tt.want)
+			setLipConfig(t, tt.config, "")
+			if got := lipConfigGithubProxy(); got != tt.want {
+				t.Fatalf("lipConfigGithubProxy() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+const lipRCWithProxy = `{
+  "format_version": 3,
+  "format_uuid": "289f771f-2c9a-4d73-9f3f-8492495a924d",
+  "github_proxy": "https://legacy.example"
+}`
+
+// A lip v0.x liprc.json is migrated to config.yaml on first read, as lip
+// 0.38 does.
+func TestLipConfigMigratesLipRC(t *testing.T) {
+	dir := setLipConfig(t, "", lipRCWithProxy)
+	if got := lipConfigGithubProxy(); got != "https://legacy.example" {
+		t.Fatalf("lipConfigGithubProxy() = %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "liprc.json")); !os.IsNotExist(err) {
+		t.Fatalf("liprc.json should be removed after migration: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, "config.yaml"))
+	if err != nil || !strings.Contains(string(data), "https://legacy.example") {
+		t.Fatalf("config.yaml = %q, %v", data, err)
+	}
+	if got := lipConfigGithubProxy(); got != "https://legacy.example" {
+		t.Fatalf("after migration lipConfigGithubProxy() = %q", got)
+	}
+}
+
+// config.yaml wins over a leftover liprc.json, which is then kept.
+func TestLipConfigIgnoresLipRCBesideConfig(t *testing.T) {
+	dir := setLipConfig(t, "format: 4\n", lipRCWithProxy)
+	if got := lipConfigGithubProxy(); got != "" {
+		t.Fatalf("lipConfigGithubProxy() = %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "liprc.json")); err != nil {
+		t.Fatalf("liprc.json should be kept: %v", err)
+	}
+}
+
+func TestLipConfigKeepsInvalidLipRC(t *testing.T) {
+	dir := setLipConfig(t, "", `{"format_version":2,"github_proxy":"https://legacy.example"}`)
+	if got := lipConfigGithubProxy(); got != "" {
+		t.Fatalf("lipConfigGithubProxy() = %q", got)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "config.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("config.yaml should not be written: %v", err)
 	}
 }
 
@@ -174,4 +224,3 @@ func TestErrorCode(t *testing.T) {
 		}
 	}
 }
-

@@ -45,7 +45,7 @@ LeviLauncher 支持超出“基础启动器”范围的模组相关工作流。
 
 ## lip 与 LeviLamina <Badge platform="windows" />
 
-LeviLauncher 内置了兼容 [lip](https://github.com/LiteLDev/lip) 的包管理器，无需另外安装 lip 或 .NET 运行时。它使用与 lip 相同的 `tooth_lock.json` 格式，已安装 LeviLamina 或 LIP 软件包的版本可以继续正常使用。开启 **使用镜像源** 时，从 GitHub 下载软件包会经过[设置](./settings-personalization)中的 **GitHub 代理**；否则直接连接 GitHub（如已设置系统代理，则经过系统代理）。之前保存过的 GitHub 代理，或 lip 的 `liprc.json` 中设置的 `github_proxy`，在两种情况下都会生效。**清理缓存** 可删除已下载的软件包文件。
+LeviLauncher 内置了兼容 [lip](https://github.com/LiteLDev/lip) 的包管理器，无需另外安装 lip 或 .NET 运行时。它遵循 lip 0.38：每个版本的软件包记录在 `.lip/workspace.yaml` 中，软件包从其 `lip.yaml` 读取（只有 `tooth.json` 的旧软件包仍可使用）。用旧版启动器安装过 LeviLamina 或 LIP 软件包的版本（`tooth_lock.json`）会在第一次软件包操作时自动迁移。开启 **使用镜像源** 时，从 GitHub 下载软件包会经过[设置](./settings-personalization)中的 **GitHub 代理**；否则直接连接 GitHub（如已设置系统代理，则经过系统代理）。之前保存过的 GitHub 代理，或 lip 的 `config.yaml`（位于 `%APPDATA%\lip`，例如通过 `lip config set github_proxy <URL>` 设置）中的 `github_proxy`，在两种情况下都会生效。**清理缓存** 可删除已下载的软件包文件。
 
 这类集成更适合希望使用包驱动或加载器驱动工作流的高级用户。
 

@@ -905,6 +905,42 @@ func userDesktopDir() string {
 	return ""
 }
 
+// shortcutRepairDirs lists the desktops where launchers before the current
+// layout created shortcuts: the first of these that existed, which is
+// normally the user's desktop, but a OneDrive or public desktop on some
+// machines.
+func shortcutRepairDirs() []string {
+	var out []string
+	seen := map[string]bool{}
+	add := func(p string) {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			return
+		}
+		p = filepath.Clean(p)
+		key := strings.ToLower(p)
+		if seen[key] || !utils.DirExists(p) {
+			return
+		}
+		seen[key] = true
+		out = append(out, p)
+	}
+	add(userDesktopDir())
+	if home := strings.TrimSpace(os.Getenv("USERPROFILE")); home != "" {
+		add(filepath.Join(home, "Desktop"))
+		add(filepath.Join(home, "OneDrive", "Desktop"))
+	}
+	for _, k := range []string{"OneDrive", "OneDriveConsumer", "OneDriveCommercial"} {
+		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
+			add(filepath.Join(v, "Desktop"))
+		}
+	}
+	if pub := strings.TrimSpace(os.Getenv("PUBLIC")); pub != "" {
+		add(filepath.Join(pub, "Desktop"))
+	}
+	return out
+}
+
 // RepairMigratedShortcuts points the desktop shortcuts LeviLauncher created
 // at the icons of the instances the storage migration moved. It runs once
 // after a migration.
@@ -913,9 +949,12 @@ func RepairMigratedShortcuts() {
 	if rec == nil || rec.ShortcutsRepaired {
 		return
 	}
-	desktop := userDesktopDir()
-	links, _ := filepath.Glob(filepath.Join(desktop, "Minecraft - *.lnk"))
-	if desktop == "" || len(links) == 0 {
+	var links []string
+	for _, desktop := range shortcutRepairDirs() {
+		found, _ := filepath.Glob(filepath.Join(desktop, "Minecraft - *.lnk"))
+		links = append(links, found...)
+	}
+	if len(links) == 0 {
 		_ = storage.MarkShortcutsRepaired()
 		return
 	}
@@ -925,7 +964,7 @@ func RepairMigratedShortcuts() {
 		quoted[i] = "'" + esc(l) + "'"
 	}
 	readScript := "$s = New-Object -ComObject WScript.Shell; foreach ($p in @(" + strings.Join(quoted, ",") + ")) { " +
-		"$l = $s.CreateShortcut($p); [Console]::Out.WriteLine($p + '|' + $l.IconLocation) }"
+		"$l = $s.CreateShortcut($p); [Console]::Out.WriteLine($p + '|' + $l.IconLocation + '|' + $l.Arguments) }"
 	out, err := runHiddenPowerShell(readScript)
 	if err != nil {
 		log.Printf("RepairMigratedShortcuts: read shortcuts: %v", err)
@@ -933,10 +972,11 @@ func RepairMigratedShortcuts() {
 	}
 	var set strings.Builder
 	for _, line := range strings.Split(strings.ReplaceAll(string(out), "\r", ""), "\n") {
-		link, icon, ok := strings.Cut(line, "|")
+		link, rest, ok := strings.Cut(line, "|")
 		if !ok {
 			continue
 		}
+		icon, args, _ := strings.Cut(rest, "|")
 		// IconLocation is "<path>,<index>".
 		iconPath := strings.TrimSpace(icon)
 		if i := strings.LastIndex(iconPath, ","); i > 0 {
@@ -950,7 +990,21 @@ func RepairMigratedShortcuts() {
 		if newIcon == "" {
 			newIcon = versionExecutable(instanceDir)
 		}
-		set.WriteString("$l = $s.CreateShortcut('" + esc(link) + "'); $l.IconLocation = '" + esc(newIcon) + "'; $l.Save(); ")
+		// An instance the migration kept under a "-legacy" name is launched by
+		// that name; the shortcut names the folder it was moved away from.
+		setArgs := ""
+		if a := strings.TrimSpace(args); strings.HasPrefix(a, "--launch=") {
+			old := strings.Trim(strings.TrimPrefix(a, "--launch="), `"`)
+			if name := filepath.Base(instanceDir); !strings.EqualFold(old, name) {
+				launch := "--launch=" + name
+				if strings.ContainsAny(name, " \t") {
+					launch = `--launch="` + strings.ReplaceAll(name, `"`, `\"`) + `"`
+				}
+				setArgs = "$l.Arguments = '" + esc(launch) + "'; "
+			}
+		}
+		// A shortcut the user may not change (the public desktop) is skipped.
+		set.WriteString("try { $l = $s.CreateShortcut('" + esc(link) + "'); $l.IconLocation = '" + esc(newIcon) + "'; " + setArgs + "$l.Save() } catch {}; ")
 	}
 	if set.Len() > 0 {
 		if _, err := runHiddenPowerShell("$s = New-Object -ComObject WScript.Shell; " + set.String()); err != nil {

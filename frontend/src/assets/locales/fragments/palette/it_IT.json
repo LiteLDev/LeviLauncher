@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "Tavolozza comandi",
+    "placeholder": "Cerca pagine, impostazioni e azioni…",
+    "results": "Comandi",
+    "empty": "Nessun comando corrisponde a «{{query}}»",
+    "nav_locked": "La navigazione non è disponibile ora; sono elencate solo le azioni.",
+    "hint_move": "sposta",
+    "hint_run": "esegui",
+    "hint_close": "chiudi",
+    "open_activity": "Apri attività",
+    "theme_light": "Passa al tema chiaro",
+    "theme_dark": "Passa al tema scuro",
+    "show_shortcuts": "Scorciatoie da tastiera",
+    "instance_settings": "Impostazioni istanza: {{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "Passa all'istanza {{name}}",
+    "current": "attuale",
+    "group": {
+      "recent": "Recenti",
+      "actions": "Azioni",
+      "navigate": "Vai a",
+      "settings": "Impostazioni",
+      "instances": "Istanze"
+    },
+    "shortcuts_title": "Scorciatoie da tastiera",
+    "shortcut_open": "Apri tavolozza comandi",
+    "shortcut_settings": "Apri impostazioni"
+  }
+}

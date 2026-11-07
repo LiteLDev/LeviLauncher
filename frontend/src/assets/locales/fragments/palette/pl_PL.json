@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "Paleta poleceń",
+    "placeholder": "Szukaj stron, ustawień i akcji…",
+    "results": "Polecenia",
+    "empty": "Brak poleceń pasujących do „{{query}}”",
+    "nav_locked": "Nawigacja jest teraz niedostępna, więc wyświetlane są tylko akcje.",
+    "hint_move": "przesuń",
+    "hint_run": "uruchom",
+    "hint_close": "zamknij",
+    "open_activity": "Otwórz aktywność",
+    "theme_light": "Przełącz na jasny motyw",
+    "theme_dark": "Przełącz na ciemny motyw",
+    "show_shortcuts": "Skróty klawiszowe",
+    "instance_settings": "Ustawienia instancji: {{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "Przełącz instancję na {{name}}",
+    "current": "bieżąca",
+    "group": {
+      "recent": "Ostatnie",
+      "actions": "Akcje",
+      "navigate": "Przejdź do",
+      "settings": "Ustawienia",
+      "instances": "Instancje"
+    },
+    "shortcuts_title": "Skróty klawiszowe",
+    "shortcut_open": "Otwórz paletę poleceń",
+    "shortcut_settings": "Otwórz ustawienia"
+  }
+}

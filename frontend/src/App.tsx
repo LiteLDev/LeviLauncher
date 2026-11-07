@@ -5,6 +5,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import React, { useEffect, useState, Suspense, lazy } from "react";
 
 import { ActivityCenter } from "@/components/ActivityCenter";
+import { CommandPalette } from "@/components/CommandPalette";
+import { ShortcutsHelp } from "@/components/ShortcutsHelp";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
@@ -17,7 +19,11 @@ import { CurseForgeProvider } from "@/utils/CurseForgeContext";
 import { LeviLaminaProvider } from "@/utils/LeviLaminaContext";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { useTheme } from "next-themes";
-import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
+import {
+  KeybindingProvider,
+  isOverlayOpen,
+  useKeybinding,
+} from "@/utils/KeybindingContext";
 import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
 import { useThemeManager } from "@/utils/useThemeManager";
 import { DownloadsProvider } from "@/utils/DownloadsContext";
@@ -36,6 +42,7 @@ import { useAppNavigation } from "@/hooks/useAppNavigation";
 import { useAppModals } from "@/hooks/useAppModals";
 import { ROUTES } from "@/constants/routes";
 import { markStartupVisualReady } from "@/utils/startupState";
+import { openCommandPalette, openShortcutsHelp } from "@/utils/commands";
 
 // Lazy load pages
 const LauncherPage = lazy(() =>
@@ -145,8 +152,46 @@ const GlobalShortcuts = ({
       t("nav.back"),
     );
 
+    const shortcuts: [string, string, () => void, string][] = [
+      ["command-palette", "ctrl+k", openCommandPalette, t("palette.shortcut_open")],
+      ["command-palette-alt", "ctrl+p", openCommandPalette, t("palette.shortcut_open")],
+      ["shortcuts-help", "shift+?", openShortcutsHelp, t("palette.show_shortcuts")],
+      [
+        "go-back-alt",
+        "alt+arrowleft",
+        () => {
+          // Never step out of the app's own history.
+          if (window.history.state?.idx > 0) tryNavigate(-1);
+        },
+        t("nav.back"),
+      ],
+      ["go-forward", "alt+arrowright", () => tryNavigate(1), t("nav.forward")],
+      [
+        "open-settings",
+        "ctrl+,",
+        () => tryNavigate(ROUTES.settings),
+        t("palette.shortcut_settings"),
+      ],
+    ];
+    for (const [id, combo, run, description] of shortcuts) {
+      register(
+        id,
+        combo,
+        (e) => {
+          // Ctrl+P would open the browser print dialog even when ignored.
+          if (combo === "ctrl+p") e.preventDefault();
+          // Page shortcuts stay quiet while an overlay owns the keyboard.
+          if (isOverlayOpen()) return;
+          e.preventDefault();
+          run();
+        },
+        description,
+      );
+    }
+
     return () => {
       unregister("go-back");
+      for (const [id] of shortcuts) unregister(id);
     };
   }, [register, unregister, tryNavigate, t]);
 
@@ -278,6 +323,11 @@ function App() {
                         className="wails-no-drag z-[120] top-20"
                       />
                       <ActivityCenter />
+                      <CommandPalette
+                        tryNavigate={tryNavigate}
+                        navLocked={effectiveNavLocked}
+                      />
+                      <ShortcutsHelp />
 
                       <div
                         data-wallpaper-active={hasWallpaper ? "true" : undefined}

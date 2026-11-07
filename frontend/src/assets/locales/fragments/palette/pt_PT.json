@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "Paleta de comandos",
+    "placeholder": "Pesquisar páginas, definições e ações…",
+    "results": "Comandos",
+    "empty": "Nenhum comando corresponde a «{{query}}»",
+    "nav_locked": "A navegação não está disponível agora; apenas ações são listadas.",
+    "hint_move": "mover",
+    "hint_run": "executar",
+    "hint_close": "fechar",
+    "open_activity": "Abrir atividade",
+    "theme_light": "Mudar para tema claro",
+    "theme_dark": "Mudar para tema escuro",
+    "show_shortcuts": "Atalhos de teclado",
+    "instance_settings": "Definições da instância: {{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "Mudar para a instância {{name}}",
+    "current": "atual",
+    "group": {
+      "recent": "Recentes",
+      "actions": "Ações",
+      "navigate": "Ir para",
+      "settings": "Definições",
+      "instances": "Instâncias"
+    },
+    "shortcuts_title": "Atalhos de teclado",
+    "shortcut_open": "Abrir paleta de comandos",
+    "shortcut_settings": "Abrir definições"
+  }
+}

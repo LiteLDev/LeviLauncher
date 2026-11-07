@@ -15,6 +15,7 @@ struct VersionConfig {
   std::string channel;
 };
 VersionConfig parse_version_config(std::istream &input);
+std::filesystem::path version_config_path(const std::filesystem::path &directory);
 VersionConfig read_version_config(const std::filesystem::path &directory);
 bool supports_uwp_isolation(std::string_view game_version);
 std::filesystem::path legacy_data_directory(const std::filesystem::path &game,

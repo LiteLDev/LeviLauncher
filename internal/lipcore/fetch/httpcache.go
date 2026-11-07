@@ -166,8 +166,15 @@ func (c *HTTPCache) Clean() error {
 	return c.CleanProgress(context.Background(), nil)
 }
 
-// CleanProgress is Clean reporting entries deleted out of the entries
-// counted by a walk before deleting (see Cache.CleanProgress).
+// CleanProgress is Clean reporting progress: it first walks Root (clearing
+// read-only attributes) to count its entries, files and directories
+// including Root itself, then deletes them one by one, children before
+// their directory, calling progress (if not nil) with the entries deleted
+// out of that count: once with 0 before deleting and after every entry.
+// ctx is checked between entries; a canceled clean leaves the remaining
+// entries in place. If an entry cannot be deleted on its own (e.g. a file
+// appeared during the clean), the rest is deleted with os.RemoveAll. A
+// missing directory reports nothing.
 func (c *HTTPCache) CleanProgress(ctx context.Context, progress func(done, total int64)) error {
 	err := cleanDir(ctx, c.Root, progress)
 	if err == nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
@@ -198,6 +205,22 @@ func (c *HTTPCache) CreateTemp() (*os.File, error) {
 // candidate failures. With one failure it is returned; with several, an
 // *UnavailableError joining them.
 func (c *HTTPCache) DownloadZip(ctx context.Context, urls []string, proxy string, client *http.Client, validate func(path string) error) (string, error) {
+	return c.DownloadZipNamed(ctx, urls, proxy, client, ignoreSubject(validate))
+}
+
+// ValidateFunc validates a file of the cache: the cached download of a URL
+// or a download just made. subject names the file as lip does in the
+// messages of ZipValidator, as the subject of a sentence: "The cached
+// download of <URL> (<path>)" or "The file downloaded from <download URL>".
+type ValidateFunc func(path, subject string) error
+
+func ignoreSubject(validate func(path string) error) ValidateFunc {
+	return func(path, _ string) error { return validate(path) }
+}
+
+// DownloadZipNamed is DownloadZip with a validation that is told what the
+// file is (ValidateFunc).
+func (c *HTTPCache) DownloadZipNamed(ctx context.Context, urls []string, proxy string, client *http.Client, validate ValidateFunc) (string, error) {
 	if len(urls) == 0 {
 		return "", unavailable("The asset lists no URLs to download it from, so the package is"+
 			" broken. Report this to the package author.", nil)
@@ -210,7 +233,7 @@ func (c *HTTPCache) DownloadZip(ctx context.Context, urls []string, proxy string
 			err = unavailable(fmt.Sprintf(
 				"The asset URL %s is not an https URL: lip downloads assets only over https.", u), nil)
 		} else {
-			path, err = c.DownloadZipURL(ctx, u, proxy, client, validate)
+			path, err = c.DownloadZipURLNamed(ctx, u, proxy, client, validate)
 		}
 		if err == nil {
 			return path, nil
@@ -238,12 +261,18 @@ func (c *HTTPCache) DownloadZip(ctx context.Context, urls []string, proxy string
 // error page falls through to the next candidate). validate must return an
 // *UnavailableError, or any non file-system error, for an invalid archive.
 func (c *HTTPCache) DownloadZipURL(ctx context.Context, rawURL, proxy string, client *http.Client, validate func(path string) error) (string, error) {
+	return c.DownloadZipURLNamed(ctx, rawURL, proxy, client, ignoreSubject(validate))
+}
+
+// DownloadZipURLNamed is DownloadZipURL with a validation that is told what
+// the file is (ValidateFunc).
+func (c *HTTPCache) DownloadZipURLNamed(ctx context.Context, rawURL, proxy string, client *http.Client, validate ValidateFunc) (string, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	rawURL, _, _ = strings.Cut(rawURL, "#")
 	if p, ok := c.TryGet(HTTPKey(rawURL)); ok {
-		err := validate(p)
+		err := validate(p, fmt.Sprintf("The cached download of %s (%s)", rawURL, p))
 		if err == nil {
 			return p, nil
 		}
@@ -262,7 +291,7 @@ func (c *HTTPCache) DownloadZipURL(ctx context.Context, rawURL, proxy string, cl
 }
 
 // download is ArchiveProvider.Download.
-func (c *HTTPCache) download(ctx context.Context, rawURL, proxy string, client *http.Client, validate func(path string) error) (string, error) {
+func (c *HTTPCache) download(ctx context.Context, rawURL, proxy string, client *http.Client, validate ValidateFunc) (string, error) {
 	candidates := []string{rawURL}
 	if proxied, ok := RewriteGithub(proxy, rawURL); ok {
 		candidates = []string{proxied, rawURL}
@@ -313,12 +342,12 @@ func (c *HTTPCache) download(ctx context.Context, rawURL, proxy string, client *
 // downloadCandidate downloads one candidate URL to dest and validates it.
 // Leftovers of a failed candidate are deleted first, so they cannot be
 // mistaken for this one's content.
-func (c *HTTPCache) downloadCandidate(ctx context.Context, u, dest string, client *http.Client, validate func(path string) error) error {
+func (c *HTTPCache) downloadCandidate(ctx context.Context, u, dest string, client *http.Client, validate ValidateFunc) error {
 	if err := os.Remove(dest); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 	if err := DownloadFile(ctx, client, u, dest, c.Reporter); err != nil {
 		return err
 	}
-	return validate(dest)
+	return validate(dest, "The file downloaded from "+u)
 }

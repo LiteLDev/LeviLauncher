@@ -13,7 +13,6 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
-	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/httpclient"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/ref"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
@@ -35,13 +34,7 @@ var _ packageEngine = (*engine.Engine)(nil)
 // newEngine builds the engine for an absolute workspace directory (empty
 // for directory-independent calls such as CacheClean); replaced in tests.
 var newEngine = func(workDir string, r report.Reporter) packageEngine {
-	return &engine.Engine{
-		Dir:        workDir,
-		Registry:   engine.NewGitRegistry(EffectiveGithubProxy(), r, engine.WithHTTPClient(engineHTTPClient)),
-		Reporter:   r,
-		Hooks:      engine.DefaultHooks(engine.CurrentRID()),
-		CleanCache: fetch.DefaultHTTPCache(nil).Clean,
-	}
+	return engine.New(workDir, engine.Options{GithubProxy: EffectiveGithubProxy(), HTTPClient: engineHTTPClient}, r)
 }
 
 // engineHTTPClient carries the engine's git requests and downloads. Its

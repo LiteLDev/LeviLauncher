@@ -3,602 +3,893 @@ package engine
 import (
 	"context"
 	"errors"
-	"reflect"
+	"os"
+	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/liteldev/LeviLauncher/internal/lipcore/engine/workspace"
-	"github.com/liteldev/LeviLauncher/internal/lipcore/lockfile"
-	"github.com/liteldev/LeviLauncher/internal/lipcore/manifest"
-	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/doc"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/pkgfile"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/pkgmodel"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/ref"
 )
 
-var ctx = context.Background()
+// Ports of McmodServiceTests.cs and PackageInstallTests.cs (lip
+// v0.38.0-beta.1): install, uninstall, update and list through the whole
+// pipeline of the harness.
 
-// seed registers a common package graph:
-//
-//	a 1.0.0 -> b >=1.0.0 ; a 2.0.0 -> c * ; a 3.0.0-beta (no deps)
-//	b 1.0.0, 1.1.0 ; c 1.0.0 ; d 1.0.0 ; e#client 1.0.0 -> b 1.0.0
-func seed(h *harness) {
-	h.reg.add("example.com/a", "1.0.0", "", "example.com/b", ">=1.0.0")
-	h.reg.add("example.com/a", "2.0.0", "", "example.com/c", "*")
-	h.reg.add("example.com/a", "3.0.0-beta", "")
-	h.reg.add("example.com/b", "1.0.0", "")
-	h.reg.add("example.com/b", "1.1.0", "")
-	h.reg.add("example.com/c", "1.0.0", "")
-	h.reg.add("example.com/d", "1.0.0", "")
-	h.reg.add("example.com/e", "1.0.0", "client", "example.com/b#", "1.0.0")
+const (
+	libID = "example.com/lib"
+	appID = "example.com/app"
+)
+
+func libPackageFile(version string, hook bool) string {
+	entry := selfAsset("lib.dll", "lib/lib.dll")
+	if hook {
+		entry += `, "hooks": { "post_install": [ "lib-installed" ] }`
+	}
+	return lipYAML(libID, version, entry)
 }
 
-func TestInstall(t *testing.T) {
-	tests := []struct {
-		name      string
-		pre       []string // installed first (explicitly)
-		install   []string
-		wantErr   string
-		wantLock  string
-		wantCalls string
-		wantSaves int
-		wantMsgs  []string
-	}{
-		{
-			name:      "fresh without deps",
-			install:   []string{"example.com/d@1.0.0"},
-			wantLock:  "example.com/d@1.0.0!",
-			wantCalls: "install:d/1.0.0.txt",
-			wantSaves: 2, // add + explicitness reconcile, like lip
-			wantMsgs: []string{
-				"info: Listing files is the registry's job",
-				"info: Resolving dependencies for: example.com/d@[1.0.0]",
-				"info: Installing package example.com/d version 1.0.0",
-				"info: Marking package 'example.com/d' version 1.0.0 as explicitly installed.",
-			},
-		},
-		{
-			name:      "with deps picks newest dependency",
-			install:   []string{"example.com/a@1.0.0"},
-			wantLock:  "example.com/b@1.1.0 example.com/a@1.0.0!",
-			wantCalls: "install:b/1.1.0.txt install:a/1.0.0.txt",
-			wantSaves: 3,
-			wantMsgs: []string{
-				"info: Installing package example.com/b version 1.1.0",
-				"info: Installing package example.com/a version 1.0.0",
-			},
-		},
-		{
-			name:      "flexible id takes latest including prereleases",
-			install:   []string{"example.com/a"},
-			wantLock:  "example.com/a@3.0.0-beta!",
-			wantCalls: "install:a/3.0.0-beta.txt",
-			wantSaves: 2,
-			wantMsgs:  []string{"info: Getting available versions for package 'example.com/a'..."},
-		},
-		{
-			name:      "variant dependency with empty label normalizes id",
-			install:   []string{"example.com/e#client@1.0.0"},
-			wantLock:  "example.com/b@1.0.0 example.com/e#client@1.0.0!",
-			wantCalls: "install:b/1.0.0.txt install:e/1.0.0.txt",
-			wantSaves: 3,
-		},
-		{
-			name:     "already explicit",
-			pre:      []string{"example.com/a@1.0.0"},
-			install:  []string{"example.com/a@2.0.0"},
-			wantErr:  "Cannot install package 'example.com/a' because it is already explicitly installed.",
-			wantLock: "example.com/b@1.1.0 example.com/a@1.0.0!",
-		},
-		{
-			name:      "dependency promoted to explicit",
-			pre:       []string{"example.com/a@1.0.0"},
-			install:   []string{"example.com/b@1.1.0"},
-			wantLock:  "example.com/b@1.1.0! example.com/a@1.0.0!",
-			wantCalls: "",
-			wantSaves: 1,
-			wantMsgs:  []string{"info: Marking package 'example.com/b' version 1.1.0 as explicitly installed."},
-		},
-		{
-			name:     "duplicate ids",
-			install:  []string{"example.com/a@1.0.0", "example.com/a"},
-			wantErr:  "Multiple packages with ID 'example.com/a' were specified. Please ensure that each package ID is unique.",
-			wantLock: "",
-		},
-		{
-			name:     "unparsable",
-			install:  []string{"bad@pkg@x"},
-			wantErr:  "Failed to parse package 'bad@pkg@x'. (Invalid package spec: bad@pkg@x) (Invalid package id: bad@pkg@x) (local archive packages are not supported) (remote archive URL packages are not supported)",
-			wantLock: "",
-		},
-		{
-			name:     "missing version tag",
-			install:  []string{"example.com/a@9.9.9"},
-			wantErr:  "Package example.com/a@9.9.9 not found",
-			wantLock: "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := newHarness(t)
-			seed(h)
-			if len(tt.pre) > 0 {
-				if err := h.e.Install(ctx, tt.pre, false, false, false); err != nil {
-					t.Fatal(err)
-				}
-			}
-			h.calls, h.lock.saves, h.rep.msgs = nil, nil, nil
+func (h *harness) addLib(version string, hook bool) string {
+	return h.addTag(libID, version, "lip.yaml", libPackageFile(version, hook), "lib.dll", "lib "+version)
+}
 
-			err := h.e.Install(ctx, tt.install, false, false, false)
-			if tt.wantErr != "" {
-				if err == nil || err.Error() != tt.wantErr {
-					t.Fatalf("err = %v, want %q", err, tt.wantErr)
-				}
-			} else if err != nil {
-				t.Fatal(err)
-			}
-			if got := summary(h.state(t)); got != tt.wantLock {
-				t.Errorf("lock = %q, want %q", got, tt.wantLock)
-			}
-			if tt.wantErr != "" {
-				return
-			}
-			if got := h.callSummary(); got != tt.wantCalls {
-				t.Errorf("calls = %q, want %q", got, tt.wantCalls)
-			}
-			if len(h.lock.saves) != tt.wantSaves {
-				t.Errorf("saves = %d, want %d", len(h.lock.saves), tt.wantSaves)
-			}
-			for _, m := range tt.wantMsgs {
-				if strings.HasPrefix(m, "info: Listing files") {
-					continue
-				}
-				if !h.rep.has(m) {
-					t.Errorf("missing message %q in %q", m, h.rep.msgs)
-				}
-			}
-		})
+func (h *harness) addApp(version, libRange string) {
+	h.addTag(appID, version, "lip.yaml", lipYAML(appID, version,
+		`"deps": { "`+libID+`": "`+libRange+`" }, `+selfAsset("app.dll", "app/app.dll")), "app.dll", "app "+version)
+}
+
+// addLibAndApp: lib 1.0.0 and 1.1.0; app 1.0.0 (lib >=1.0.0) and 2.0.0 (lib
+// >=1.1.0).
+func (h *harness) addLibAndApp(withApp2, hook bool) {
+	h.addLib("1.0.0", hook)
+	h.addLib("1.1.0", hook)
+	h.addApp("1.0.0", ">=1.0.0")
+	if withApp2 {
+		h.addApp("2.0.0", ">=1.1.0")
 	}
 }
 
-func TestInstallLockSavedAfterEachStep(t *testing.T) {
+// addVariantsPackage: version 1.0.0 of a package whose variants "a" and "b"
+// place a.dll and b.dll.
+func (h *harness) addVariantsPackage(id string) {
+	entry := func(f string) string {
+		return `[ { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "` +
+			f + `", "dest": "` + f + `" } ] } ] } ]`
+	}
+	h.addTag(id, "1.0.0", "lip.yaml", `{ "format": 4, "id": "`+id+`", "version": "1.0.0", "variants": { "a": `+
+		entry("a.dll")+`, "b": `+entry("b.dll")+` } }`, "a.dll", "a", "b.dll", "b")
+}
+
+// addLocalDirectory: a local directory holding a package example.com/local
+// placing x.txt at out/x.txt.
+func (h *harness) addLocalDirectory(rel, version, content string) {
+	h.addFile(rel+"/lip.yaml", lipYAML("example.com/local", version, selfAsset("x.txt", "out/x.txt")))
+	h.addFile(rel+"/x.txt", content)
+}
+
+// addMod: version 1.0.0 of a mod whose asset of type "mcmod" is
+// https://example.com/<name>.mcmod; entry holds extra members, each followed
+// by a comma.
+func (h *harness) addMod(id, name, entry string) {
+	url := "https://example.com/" + name + ".mcmod"
+	h.addDownload(url, mcmod(name))
+	h.addTag(id, "1.0.0", "lip.yaml", lipYAML(id, "1.0.0", entry+` "assets": [ { "type": "mcmod", "urls": [ "`+url+`" ] } ]`))
+}
+
+func findPackage(t *testing.T, lf *pkgmodel.LockFile, id string) *pkgmodel.LockedPackage {
+	t.Helper()
+	for i := range lf.Packages {
+		if stringMember(lf.Packages[i].Manifest, "id") == id {
+			return &lf.Packages[i]
+		}
+	}
+	t.Fatalf("no package %s", id)
+	return nil
+}
+
+func single(t *testing.T, lf *pkgmodel.LockFile) *pkgmodel.LockedPackage {
+	t.Helper()
+	if len(lf.Packages) != 1 {
+		t.Fatalf("got %d packages, want 1", len(lf.Packages))
+	}
+	return &lf.Packages[0]
+}
+
+func TestInstallRemoteRepositoryRecordsWorkspaceFile(t *testing.T) {
 	h := newHarness(t)
-	seed(h)
-	if err := h.e.Install(ctx, []string{"example.com/a@1.0.0"}, false, false, false); err != nil {
+	commit := h.addTag(libID, "1.0.0", "lip.yaml", libPackageFile("1.0.0", false), "lib.dll", "lib 1.0.0")
+	h.must(h.install(libID))
+
+	if got := h.read("lib/lib.dll"); got != "lib 1.0.0" {
+		t.Fatalf("lib.dll = %q", got)
+	}
+	lf := h.lock()
+	if lf.Format != 4 || lf.Platform != "server" || lf.Runtime != testRuntime {
+		t.Fatalf("lock = %d %s %s", lf.Format, lf.Platform, lf.Runtime)
+	}
+	p := single(t, lf)
+	if stringMember(p.Manifest, "id") != libID || p.Variant != "" || stringMember(p.Manifest, "version") != "1.0.0" ||
+		!p.Explicit || p.Ref != libID || p.Commit != commit {
+		t.Fatalf("package = %+v", p)
+	}
+	equal(t, p.Files, []string{"lib/lib.dll"})
+	want, _ := doc.ParseYAML([]byte(libPackageFile("1.0.0", false)), "lip.yaml")
+	if !doc.Equal(want, p.Manifest) {
+		t.Fatalf("manifest = %s", doc.MarshalJSONCompact(p.Manifest))
+	}
+}
+
+func TestInstallWritesTheMembersOfTheSchema(t *testing.T) {
+	h := newHarness(t)
+	h.addLib("1.0.0", false)
+	h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "x")
+	h.must(h.install(libID, "x.zip"))
+
+	data, err := os.ReadFile(h.path(pkgmodel.WorkspaceFile))
+	if err != nil {
 		t.Fatal(err)
 	}
-	var got []string
-	for i := range h.lock.saves {
-		got = append(got, summary(&h.lock.saves[i]))
+	root, err := doc.ParseYAML(data, "workspace.yaml")
+	if err != nil {
+		t.Fatal(err)
 	}
-	want := []string{
-		"example.com/b@1.1.0",
-		"example.com/b@1.1.0 example.com/a@1.0.0!",
-		"example.com/b@1.1.0 example.com/a@1.0.0!",
+	pkgs, _ := root.(*doc.Object).Get("packages")
+	list := pkgs.([]any)
+	equal(t, list[0].(*doc.Object).Keys(), []string{"manifest", "variant", "explicit", "ref", "commit", "files"})
+	equal(t, list[1].(*doc.Object).Keys(), []string{"manifest", "variant", "explicit", "ref", "files"})
+}
+
+func TestInstallLocalZipRecordsFileURISourceAndNoCommit(t *testing.T) {
+	h := newHarness(t)
+	h.addDownload("https://example.com/extra.zip", zipOf("y.txt", "y"))
+	packageFile := lipYAML("example.com/pkg", "1.0.0", `"assets": [
+	  { "type": "self", "place": [ { "src": "x.txt", "dest": "mods/pkg/x.txt" } ] },
+	  { "type": "zip", "urls": [ "https://example.com/extra.zip" ], "place": [ { "src": "y.txt", "dest": "extra/y.txt" } ] } ]`)
+	path := h.addZip("pkg.zip", "lip.yaml", packageFile, "x.txt", "x")
+	h.must(h.install("pkg.zip"))
+
+	if h.read("mods/pkg/x.txt") != "x" || h.read("extra/y.txt") != "y" {
+		t.Fatal("files not placed")
 	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("saves = %q, want %q", got, want)
+	p := single(t, h.lock())
+	r, err := ref.FromFile(path, "")
+	if err != nil {
+		t.Fatal(err)
 	}
-	s := h.state(t)
-	a := s.Packages[1]
-	if a.Variant != "" || a.Manifest.Tooth != "example.com/a" || len(a.Manifest.Variants) != 1 {
-		t.Errorf("stored package = %+v", a)
+	if !strings.HasPrefix(r.String(), "file:") || p.Ref != r.String() || p.Commit != "" {
+		t.Fatalf("ref = %q, commit = %q", p.Ref, p.Commit)
 	}
-	if rel := relFiles(h.e.Dir, a.Files); !reflect.DeepEqual(rel, []string{"a/1.0.0.txt"}) {
-		t.Errorf("files = %q", rel)
+	equal(t, p.Files, []string{"mods/pkg/x.txt", "extra/y.txt"})
+}
+
+func TestInstallNewestVersionOpensOnlyTheNewestTag(t *testing.T) {
+	h := newHarness(t)
+	for i := 0; i < 20; i++ {
+		h.addLib("1."+strconv.Itoa(i)+".0", false)
+	}
+	h.must(h.install(libID))
+	if h.read("lib/lib.dll") != "lib 1.19.0" {
+		t.Fatal(h.read("lib/lib.dll"))
+	}
+	listed := map[string]bool{}
+	for _, c := range h.git.treesListed() {
+		listed[c] = true
+	}
+	if len(listed) != 1 {
+		t.Fatalf("listed %d trees", len(listed))
 	}
 }
 
-func TestInstallManifestFixup(t *testing.T) {
-	tests := []struct {
-		name     string
-		tooth    string
-		version  string
-		wantWarn bool
-	}{
-		{"mismatch warns", "example.com/other", "0.9.0", true},
-		{"case only is silent", "Example.com/D", "1.0.0", false},
+func TestInstallWithDependencyInstallsDependencyPackage(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(appID + "@1.0.0"))
+	equal(t, h.summary(), []string{libID + "@1.1.0 dep", appID + "@1.0.0 explicit"})
+	lf := h.lock()
+	equal(t, []string{lf.Packages[0].Ref, lf.Packages[1].Ref}, []string{libID, appID + "@1.0.0"})
+	if !h.exists("lib/lib.dll") || !h.exists("app/app.dll") {
+		t.Fatal("files missing")
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := newHarness(t)
-			seed(h)
-			m := h.reg.pkgs["example.com/d"]["1.0.0"].m
-			m.Tooth, m.Version = tt.tooth, tt.version
-			if err := h.e.Install(ctx, []string{"example.com/d@1.0.0"}, false, false, false); err != nil {
-				t.Fatal(err)
-			}
-			warn := "warning: Manifest of package example.com/d version 1.0.0 declares '" + tt.tooth + "' version " + tt.version + "; using the requested package path and version."
-			if h.rep.has(warn) != tt.wantWarn {
-				t.Errorf("warning present = %v, want %v (%q)", !tt.wantWarn, tt.wantWarn, h.rep.msgs)
-			}
-			p := h.state(t).Packages[0]
-			if p.Manifest.Tooth != "example.com/d" || p.Manifest.Version != "1.0.0" {
-				t.Errorf("stored manifest tooth/version = %s %s", p.Manifest.Tooth, p.Manifest.Version)
-			}
-			if m.Tooth != tt.tooth {
-				t.Errorf("registry manifest was mutated")
-			}
-		})
+}
+
+func TestInstallFormatThreeDependencyInstallsBoth(t *testing.T) {
+	h := newHarness(t)
+	h.addTag(libID, "1.0.0", "tooth.json", tooth(libID, "1.0.0", "lib/lib.dll", "", ""), "file.dll", "lib 1.0.0")
+	h.addApp("1.0.0", ">=1.0.0")
+	h.must(h.install(appID))
+
+	lf := h.lock()
+	if stringMember(lf.Packages[0].Manifest, "id") != libID || lf.Packages[0].Explicit || !lf.Packages[1].Explicit {
+		t.Fatal(h.summary())
+	}
+	if h.read("lib/lib.dll") != "lib 1.0.0" {
+		t.Fatal("lib not placed")
+	}
+	want, _ := doc.ParseJSON([]byte(`{ "format": 4, "id": "`+libID+`", "version": "1.0.0", "variants": { "": [ {
+	  "platform": "server", "runtime": "win-x64",
+	  "assets": [ { "type": "self", "place": [ { "src": "file.dll", "dest": "lib/lib.dll" } ] } ] } ] } }`), "x")
+	if !doc.Equal(want, lf.Packages[0].Manifest) {
+		t.Fatalf("manifest = %s", doc.MarshalJSONCompact(lf.Packages[0].Manifest))
+	}
+}
+
+func TestInstallFormatThreeWithOtherVersionThanItsTagRecordsTheTagVersion(t *testing.T) {
+	h := newHarness(t)
+	h.addTag(libID, "1.2.0", "tooth.json", tooth(libID, "0.9.0", "lib/lib.dll", "", ""), "file.dll", "lib")
+	h.must(h.install(libID))
+	p := single(t, h.lock())
+	if stringMember(p.Manifest, "version") != "1.2.0" {
+		t.Fatal(stringMember(p.Manifest, "version"))
+	}
+	equal(t, h.summary(), []string{libID + "@1.2.0 explicit"})
+	if !h.rec.hasWarning("using the tag version 1.2.0") {
+		t.Fatalf("warnings = %v", h.rec.warnings)
+	}
+}
+
+func TestInstallAlreadyExplicitFails(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(libID))
+	err := h.install(libID)
+	if !errors.Is(err, ErrAlreadyExplicitlyInstalled) || !strings.Contains(err.Error(), "already explicitly installed") {
+		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestInstallTwoArgumentsOfOneIdentityFailsWithoutChanges(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	err := h.install(libID, libID+"@1.0.0")
+	if err == nil || !strings.Contains(err.Error(), "both name the package") {
+		t.Fatalf("err = %v", err)
+	}
+	if h.exists("lib/lib.dll") || h.hasLock() {
+		t.Fatal("changed")
+	}
+}
+
+func TestInstallDependencyPackageMarksItExplicit(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(appID))
+	h.must(h.install(libID + "@1.1.0"))
+	lib := findPackage(t, h.lock(), libID)
+	if !lib.Explicit || stringMember(lib.Manifest, "version") != "1.1.0" || lib.Ref != libID+"@1.1.0" {
+		t.Fatalf("lib = %+v", lib)
+	}
+	if !h.rec.hasInfo("Marking package '" + libID + "' version 1.1.0 as explicitly installed.") {
+		t.Fatalf("infos = %v", h.rec.infos)
+	}
+}
+
+func TestInstallInstalledDependencyTooOldReplacesIt(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(libID + "@1.0.0"))
+	h.must(h.install(appID + "@1.0.0"))
+	h.must(h.uninstall(libID))
+	equal(t, h.summary(), []string{libID + "@1.0.0 dep", appID + "@1.0.0 explicit"})
+
+	h.must(h.update(appID + "@2.0.0"))
+	equal(t, h.summary(), []string{libID + "@1.1.0 dep", appID + "@2.0.0 explicit"})
+	if h.read("lib/lib.dll") != "lib 1.1.0" {
+		t.Fatal(h.read("lib/lib.dll"))
+	}
+	if !h.rec.hasInfo("The installed dependency packages do not fit the request") {
+		t.Fatalf("infos = %v", h.rec.infos)
+	}
+}
+
+func TestInstallNoDependenciesInstallsOnlyTheRequest(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.e.Install(context.Background(), []string{appID}, false, false, true))
+	equal(t, h.summary(), []string{appID + "@2.0.0 explicit"})
+	if h.exists("lib/lib.dll") || !h.exists("app/app.dll") {
+		t.Fatal("files")
+	}
+	if !h.rec.hasWarning("--no-dependencies is enabled") {
+		t.Fatal(h.rec.warnings)
+	}
+}
+
+func TestInstallNoDependenciesOfInstalledDependencyOnlyMarksIt(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, true)
+	h.must(h.install(appID))
+	before := *findPackage(t, h.lock(), libID)
+	h.must(h.e.Install(context.Background(), []string{libID}, false, false, true))
+	after := findPackage(t, h.lock(), libID)
+	if !after.Explicit || after.Commit != before.Commit {
+		t.Fatalf("after = %+v", after)
+	}
+	equal(t, after.Files, before.Files)
+	if h.ran("lib-installed") != 1 {
+		t.Fatalf("hook ran %d times", h.ran("lib-installed"))
+	}
+}
+
+func TestInstallNoDependenciesOtherVersionReplacesInstalledPackageOnly(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(appID+"@1.0.0", libID+"@1.0.0"))
+	h.must(h.e.Install(context.Background(), []string{libID + "@1.1.0"}, false, false, true))
+	equal(t, h.summary(), []string{appID + "@1.0.0 explicit", libID + "@1.1.0 explicit"})
+	if h.read("lib/lib.dll") != "lib 1.1.0" {
+		t.Fatal(h.read("lib/lib.dll"))
+	}
+}
+
+func TestInstallNoDependenciesDryRunOfInstalledDependencyReportsMarkingIt(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(appID))
+	h.must(h.e.Install(context.Background(), []string{libID}, true, false, true))
+	if !h.rec.hasInfo("Dry run: would mark package '" + libID + "'") {
+		t.Fatal(h.rec.infos)
+	}
+	if findPackage(t, h.lock(), libID).Explicit {
+		t.Fatal("marked")
 	}
 }
 
 func TestInstallDryRunChangesNothing(t *testing.T) {
 	h := newHarness(t)
-	seed(h)
-	if err := h.e.Install(ctx, []string{"example.com/a@1.0.0"}, true, false, false); err != nil {
-		t.Fatal(err)
+	h.addLibAndApp(true, true)
+	before := h.snapshot()
+	h.must(h.e.Install(context.Background(), []string{appID}, true, false, false))
+	equalMaps(t, h.snapshot(), before)
+	if _, err := os.Stat(h.path(".lip")); err == nil {
+		t.Fatal(".lip created")
 	}
-	if len(h.lock.saves) != 0 || len(h.calls) != 0 {
-		t.Fatalf("dry run saved %d times, %d ops", len(h.lock.saves), len(h.calls))
+	if len(h.commands) != 0 {
+		t.Fatal(h.commands)
 	}
-	for _, m := range []string{
-		"info: Dry run: would install package example.com/b version 1.1.0",
-		"info: Dry run: would install package example.com/a version 1.0.0",
-		"info: Dry run: would mark package 'example.com/a' version 1.0.0 as explicitly installed.",
+	if !h.rec.hasInfo("Dry run: would install package '" + appID + "' version 2.0.0 from " + appID + "@2.0.0") {
+		t.Fatal(h.rec.infos)
+	}
+}
+
+func TestInstallIgnoreScriptsRunsNoHook(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, true)
+	h.must(h.e.Install(context.Background(), []string{libID}, false, true, false))
+	if !h.exists("lib/lib.dll") || len(h.commands) != 0 {
+		t.Fatal(h.commands)
+	}
+}
+
+func TestInstallVariantsTogetherRecordsVariantIdentities(t *testing.T) {
+	h := newHarness(t)
+	h.addVariantsPackage(libID)
+	h.must(h.install(libID+"#a", libID+"#b"))
+	lf := h.lock()
+	for i, v := range []string{"a", "b"} {
+		p := &lf.Packages[i]
+		if pkgIdentity(p) != libID+"#"+v || p.Variant != v || p.Ref != libID+"#"+v {
+			t.Fatalf("package %d = %+v", i, p)
+		}
+	}
+	if h.read("a.dll") != "a" || h.read("b.dll") != "b" {
+		t.Fatal("files")
+	}
+}
+
+func pkgIdentity(p *pkgmodel.LockedPackage) string {
+	return ref.Identity(stringMember(p.Manifest, "id"), p.Variant)
+}
+
+func TestInstallBranchRefRecordsCommitAndUpdateFollowsHead(t *testing.T) {
+	h := newHarness(t)
+	first := h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.2.0", false), "lib.dll", "head 1")
+	h.must(h.install(libID + "@branch:main"))
+	installed := *single(t, h.lock())
+	second := h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.2.0", false), "lib.dll", "head 2")
+	h.restart()
+	h.must(h.update())
+
+	if stringMember(installed.Manifest, "version") != "1.2.0" || installed.Ref != libID+"@branch:main" ||
+		installed.Commit != first {
+		t.Fatalf("installed = %+v", installed)
+	}
+	if h.read("lib/lib.dll") != "head 2" {
+		t.Fatal(h.read("lib/lib.dll"))
+	}
+	updated := single(t, h.lock())
+	if updated.Commit != second || updated.Ref != libID+"@branch:main" {
+		t.Fatalf("updated = %+v", updated)
+	}
+}
+
+func TestInstallTagAndRevRefsUsePackageFileVersionAndExactCommit(t *testing.T) {
+	h := newHarness(t)
+	h.git.addTagName(libID, "nightly", "lip.yaml", libPackageFile("3.0.0-nightly", false), "lib.dll", "nightly")
+	rev := h.git.addBranch(appID, "dev", "lip.yaml", lipYAML(appID, "0.1.0", ""))
+	h.git.addBranch(appID, "dev", "lip.yaml", lipYAML(appID, "0.2.0", ""))
+	h.must(h.install(libID+"@tag:nightly", appID+"@rev:"+rev))
+	lf := h.lock()
+	app, lib := findPackage(t, lf, appID), findPackage(t, lf, libID)
+	if stringMember(app.Manifest, "version") != "0.1.0" || app.Ref != appID+"@rev:"+rev {
+		t.Fatalf("app = %+v", app)
+	}
+	if stringMember(lib.Manifest, "version") != "3.0.0-nightly" || lib.Ref != libID+"@tag:nightly" {
+		t.Fatalf("lib = %+v", lib)
+	}
+}
+
+func TestInstallRecordedPlatformOfOtherKindFailsWithoutChanges(t *testing.T) {
+	for _, tc := range []struct{ engine, recorded, says string }{
+		{"server", "client", "lip manages server workspaces only"},
+		{"client", "server", "LeviLauncher manages client workspaces only"},
 	} {
-		if !h.rep.has(m) {
-			t.Errorf("missing %q in %q", m, h.rep.msgs)
-		}
-	}
-}
-
-func TestInstallNoDependencies(t *testing.T) {
-	h := newHarness(t)
-	seed(h)
-	if err := h.e.Install(ctx, []string{"example.com/a@1.0.0"}, false, false, true); err != nil {
-		t.Fatal(err)
-	}
-	if got := summary(h.state(t)); got != "example.com/a@1.0.0!" {
-		t.Errorf("lock = %q", got)
-	}
-	if !h.rep.has("warning: --no-dependencies is enabled. This operation may result in a broken workspace.") {
-		t.Errorf("missing warning: %q", h.rep.msgs)
-	}
-	// Installing it again hits the per-package check.
-	err := h.e.Install(ctx, []string{"example.com/a@2.0.0"}, false, false, true)
-	want := "Cannot install package example.com/a version 2.0.0 because it is already installed with version 1.0.0"
-	if err == nil || err.Error() != want {
-		t.Fatalf("err = %v, want %q", err, want)
-	}
-}
-
-func TestInstallFailureKeepsPreviousSteps(t *testing.T) {
-	h := newHarness(t)
-	seed(h)
-	h.e.Hooks.NewPackageOps = newFailingOps(&h.calls, 1)
-	err := h.e.Install(ctx, []string{"example.com/a@1.0.0"}, false, false, false)
-	if err == nil || err.Error() != "boom" {
-		t.Fatalf("err = %v", err)
-	}
-	if got := summary(h.state(t)); got != "example.com/b@1.1.0" {
-		t.Errorf("lock = %q, want dependency kept", got)
-	}
-}
-
-// failingOps fails the n-th (0-based) InstallPackage call.
-type failingOps struct {
-	fakeOps
-	n, failAt int
-}
-
-func (o *failingOps) InstallPackage(ctx context.Context, v *manifest.Variant, open workspace.SourceOpener) ([]string, error) {
-	defer func() { o.n++ }()
-	if o.n == o.failAt {
-		return nil, errors.New("boom")
-	}
-	return o.fakeOps.InstallPackage(ctx, v, open)
-}
-
-func newFailingOps(calls *[]opCall, failAt int) func(string, bool, report.Reporter) PackageOps {
-	return func(dir string, _ bool, _ report.Reporter) PackageOps {
-		return &failingOps{fakeOps: fakeOps{dir: dir, calls: calls}, failAt: failAt}
-	}
-}
-
-func TestUpdate(t *testing.T) {
-	tests := []struct {
-		name      string
-		update    []string
-		wantErr   string
-		wantLock  string
-		wantCalls string
-	}{
-		{
-			name:      "to version with different deps uninstalls in reverse topo order",
-			update:    []string{"example.com/a@2.0.0"},
-			wantLock:  "example.com/c@1.0.0 example.com/a@2.0.0!",
-			wantCalls: "uninstall:a/1.0.0.txt uninstall:b/1.1.0.txt install:c/1.0.0.txt install:a/2.0.0.txt",
-		},
-		{
-			name:      "flexible",
-			update:    []string{"example.com/a"},
-			wantLock:  "example.com/a@3.0.0-beta!",
-			wantCalls: "uninstall:a/1.0.0.txt uninstall:b/1.1.0.txt install:a/3.0.0-beta.txt",
-		},
-		{
-			name:     "not installed",
-			update:   []string{"example.com/d@1.0.0"},
-			wantErr:  "Cannot update package 'example.com/d' because it is not currently installed.",
-			wantLock: "example.com/b@1.1.0 example.com/a@1.0.0!",
-		},
-		{
-			name:      "same version is a no-op",
-			update:    []string{"example.com/a@1.0.0"},
-			wantLock:  "example.com/b@1.1.0 example.com/a@1.0.0!",
-			wantCalls: "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tc.engine, func(t *testing.T) {
 			h := newHarness(t)
-			seed(h)
-			if err := h.e.Install(ctx, []string{"example.com/a@1.0.0"}, false, false, false); err != nil {
-				t.Fatal(err)
+			h.platform = tc.engine
+			h.restart()
+			h.addLibAndApp(true, false)
+			h.addFile(".lip/workspace.yaml", `{ "format": 4, "platform": "`+tc.recorded+`", "runtime": "win-x64", "packages": [] }`)
+			before := h.snapshot()
+			err := h.install(libID)
+			if err == nil || !strings.Contains(err.Error(), tc.says) {
+				t.Fatalf("err = %v", err)
 			}
-			h.calls = nil
-			err := h.e.Update(ctx, tt.update, false, false)
-			if tt.wantErr != "" {
-				if err == nil || err.Error() != tt.wantErr {
-					t.Fatalf("err = %v, want %q", err, tt.wantErr)
-				}
-			} else if err != nil {
-				t.Fatal(err)
-			}
-			if got := summary(h.state(t)); got != tt.wantLock {
-				t.Errorf("lock = %q, want %q", got, tt.wantLock)
-			}
-			if got := h.callSummary(); tt.wantErr == "" && got != tt.wantCalls {
-				t.Errorf("calls = %q, want %q", got, tt.wantCalls)
-			}
+			equalMaps(t, h.snapshot(), before)
 		})
 	}
 }
 
-func TestUpdateDependencyBecomesExplicit(t *testing.T) {
+func TestInstallRuntimeOptionRecordsRuntime(t *testing.T) {
 	h := newHarness(t)
-	seed(h)
-	h.reg.add("example.com/b", "1.0.0", "")
-	if err := h.e.Install(ctx, []string{"example.com/a@1.0.0"}, false, false, false); err != nil {
-		t.Fatal(err)
-	}
-	h.calls = nil
-	if err := h.e.Update(ctx, []string{"example.com/b@1.0.0"}, false, false); err != nil {
-		t.Fatal(err)
-	}
-	if got, want := summary(h.state(t)), "example.com/a@1.0.0! example.com/b@1.0.0!"; got != want {
-		t.Errorf("lock = %q, want %q", got, want)
-	}
-	if got, want := h.callSummary(), "uninstall:b/1.1.0.txt install:b/1.0.0.txt"; got != want {
-		t.Errorf("calls = %q, want %q", got, want)
+	h.addTag(libID, "1.0.0", "lip.yaml", `{ "format": 4, "id": "`+libID+`", "version": "1.0.0", "variants": { "": [
+	  { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "win.dll", "dest": "lib.dll" } ] } ] },
+	  { "platform": "server", "runtime": "linux-x64", "assets": [ { "type": "self", "place": [ { "src": "linux.so", "dest": "lib.so" } ] } ] } ] } }`,
+		"win.dll", "win", "linux.so", "linux")
+	h.withRuntime("linux-x64")
+	h.must(h.install(libID))
+	if h.read("lib.so") != "linux" || h.exists("lib.dll") || h.lock().Runtime != "linux-x64" {
+		t.Fatal("runtime")
 	}
 }
 
-func TestUninstall(t *testing.T) {
-	tests := []struct {
-		name      string
-		uninstall []string
-		noDeps    bool
-		dryRun    bool
-		wantErr   string
-		wantLock  string
-		wantCalls string
-	}{
-		{
-			name:      "removes orphaned deps in reverse topo order",
-			uninstall: []string{"example.com/a"},
-			wantLock:  "example.com/d@1.0.0!",
-			wantCalls: "uninstall:a/1.0.0.txt uninstall:b/1.1.0.txt",
-		},
-		{
-			name:      "not explicit",
-			uninstall: []string{"example.com/b"},
-			wantErr:   "Package 'example.com/b' is not explicitly installed and cannot be uninstalled without --no-dependencies.",
-			wantLock:  "example.com/b@1.1.0 example.com/a@1.0.0! example.com/d@1.0.0!",
-		},
-		{
-			name:      "no dependencies removes only the package",
-			uninstall: []string{"example.com/a"},
-			noDeps:    true,
-			wantLock:  "example.com/b@1.1.0 example.com/d@1.0.0!",
-			wantCalls: "uninstall:a/1.0.0.txt",
-		},
-		{
-			name:      "no dependencies, not installed",
-			uninstall: []string{"example.com/c"},
-			noDeps:    true,
-			wantErr:   "Cannot uninstall package example.com/c because it is not installed",
-			wantLock:  "example.com/b@1.1.0 example.com/a@1.0.0! example.com/d@1.0.0!",
-		},
-		{
-			name:      "dry run",
-			uninstall: []string{"example.com/a"},
-			dryRun:    true,
-			wantLock:  "example.com/b@1.1.0 example.com/a@1.0.0! example.com/d@1.0.0!",
-			wantCalls: "",
-		},
+func TestInstallClientPlatformByDefault(t *testing.T) {
+	h := newHarness(t)
+	h.platform = ""
+	h.restart()
+	h.addTag(libID, "1.0.0", "lip.yaml", lipYAMLFor(libID, "1.0.0", "client", selfAsset("lib.dll", "lib/lib.dll")),
+		"lib.dll", "lib")
+	h.must(h.install(libID))
+	if lf := h.lock(); lf.Platform != "client" {
+		t.Fatal(lf.Platform)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+}
+
+func TestUninstallExplicitPackageRemovesItsUnneededDependencies(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(appID))
+	h.must(h.uninstall(appID))
+	if len(h.lock().Packages) != 0 || h.exists("lib/lib.dll") || h.exists("app/app.dll") {
+		t.Fatal("not removed")
+	}
+}
+
+func TestUninstallDependencyOfAnotherPackageKeepsItAsDependency(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(libID+"@1.1.0", appID))
+	h.must(h.uninstall(libID))
+	if findPackage(t, h.lock(), libID).Explicit || !h.exists("lib/lib.dll") {
+		t.Fatal("lib")
+	}
+	if !h.rec.hasInfo("Package '" + libID + "' is still required by other packages; keeping it as a dependency.") {
+		t.Fatal(h.rec.infos)
+	}
+}
+
+func TestUninstallDependencyPackageFailsUnlessNoDependencies(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(appID))
+	if err := h.uninstall(libID); err == nil || !strings.Contains(err.Error(), "was installed as a dependency") {
+		t.Fatalf("err = %v", err)
+	}
+	h.must(h.e.Uninstall(context.Background(), []string{libID}, false, false, true))
+	equal(t, h.summary(), []string{appID + "@2.0.0 explicit"})
+	if h.exists("lib/lib.dll") || !h.exists("app/app.dll") {
+		t.Fatal("files")
+	}
+}
+
+func TestUninstallNoDependenciesOfExplicitPackageKeepsItsDependencies(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(appID))
+	h.must(h.e.Uninstall(context.Background(), []string{appID}, false, false, true))
+	equal(t, h.summary(), []string{libID + "@1.1.0 dep"})
+	if !h.exists("lib/lib.dll") || h.exists("app/app.dll") {
+		t.Fatal("files")
+	}
+}
+
+func TestUninstallNotInstalledFails(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(libID))
+	if err := h.uninstall(appID); err == nil || !strings.Contains(err.Error(), "is not installed in this workspace") {
+		t.Fatalf("err = %v", err)
+	}
+	single(t, h.lock())
+}
+
+func TestUninstallMatching(t *testing.T) {
+	t.Run("identity in other case", func(t *testing.T) {
+		h := newHarness(t)
+		h.addLibAndApp(true, false)
+		h.must(h.install(libID))
+		h.must(h.uninstall("Example.COM/Lib"))
+		if len(h.lock().Packages) != 0 {
+			t.Fatal("kept")
+		}
+	})
+	t.Run("source without variant matches every variant", func(t *testing.T) {
+		h := newHarness(t)
+		h.addVariantsPackage(libID)
+		h.must(h.install(libID+"#a", libID+"#b"))
+		h.must(h.uninstall(libID))
+		if len(h.lock().Packages) != 0 || h.exists("a.dll") || h.exists("b.dll") {
+			t.Fatal("kept")
+		}
+	})
+	t.Run("identity with variant removes only that variant", func(t *testing.T) {
+		h := newHarness(t)
+		h.addVariantsPackage(libID)
+		h.must(h.install(libID+"#a", libID+"#b"))
+		h.must(h.uninstall(libID + "#a"))
+		if h.exists("a.dll") || h.read("b.dll") != "b" {
+			t.Fatal("files")
+		}
+		equal(t, h.summary(), []string{libID + "#b@1.0.0 explicit"})
+	})
+	t.Run("source with ref matches only that ref", func(t *testing.T) {
+		h := newHarness(t)
+		h.addLibAndApp(true, false)
+		h.must(h.install(libID + "@1.0.0"))
+		if err := h.uninstall(libID + "@1.1.0"); err == nil {
+			t.Fatal("other ref matched")
+		}
+		h.must(h.uninstall("example.com/LIB@1.0.0"))
+		if len(h.lock().Packages) != 0 || h.exists("lib/lib.dll") {
+			t.Fatal("kept")
+		}
+	})
+	t.Run("source without ref matches every ref", func(t *testing.T) {
+		h := newHarness(t)
+		h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.5.0", false), "lib.dll", "x")
+		h.must(h.install(libID + "@branch:main"))
+		h.must(h.uninstall(libID))
+		if len(h.lock().Packages) != 0 {
+			t.Fatal("kept")
+		}
+	})
+	for _, arg := range []string{"./src", "src"} {
+		t.Run("local path "+arg, func(t *testing.T) {
 			h := newHarness(t)
-			seed(h)
-			if err := h.e.Install(ctx, []string{"example.com/a@1.0.0", "example.com/d@1.0.0"}, false, false, false); err != nil {
-				t.Fatal(err)
-			}
-			h.calls, h.lock.saves = nil, nil
-			err := h.e.Uninstall(ctx, tt.uninstall, tt.dryRun, false, tt.noDeps)
-			if tt.wantErr != "" {
-				if err == nil || err.Error() != tt.wantErr {
-					t.Fatalf("err = %v, want %q", err, tt.wantErr)
-				}
-			} else if err != nil {
-				t.Fatal(err)
-			}
-			if got := summary(h.state(t)); got != tt.wantLock {
-				t.Errorf("lock = %q, want %q", got, tt.wantLock)
-			}
-			if got := h.callSummary(); tt.wantErr == "" && got != tt.wantCalls {
-				t.Errorf("calls = %q, want %q", got, tt.wantCalls)
-			}
-			if tt.dryRun {
-				if len(h.lock.saves) != 0 {
-					t.Errorf("dry run saved")
-				}
-				if !h.rep.has("info: Dry run: would uninstall package example.com/a version 1.0.0") {
-					t.Errorf("missing dry-run message: %q", h.rep.msgs)
-				}
+			h.addLocalDirectory("src", "1.0.0", "x")
+			h.must(h.install("./src"))
+			h.must(h.uninstall(arg))
+			if len(h.lock().Packages) != 0 || h.exists("out/x.txt") {
+				t.Fatal("kept")
 			}
 		})
 	}
-}
-
-func TestUninstallPassesStoredFiles(t *testing.T) {
-	h := newHarness(t)
-	seed(h)
-	if err := h.e.Install(ctx, []string{"example.com/d@1.0.0"}, false, false, false); err != nil {
-		t.Fatal(err)
-	}
-	want := h.state(t).Packages[0].Files
-	h.calls = nil
-	if err := h.e.Uninstall(ctx, []string{"example.com/d"}, false, false, false); err != nil {
-		t.Fatal(err)
-	}
-	if len(h.calls) != 1 || !reflect.DeepEqual(h.calls[0].files, want) {
-		t.Fatalf("calls = %+v, want files %q", h.calls, want)
-	}
-	if got := summary(h.state(t)); got != "" {
-		t.Errorf("lock = %q", got)
-	}
-}
-
-func TestList(t *testing.T) {
-	h := newHarness(t)
-	pkg := func(path, version string, locked bool, deps ...string) lockfile.Package {
-		var d manifest.Dependencies
-		for _, x := range deps {
-			d = append(d, manifest.Dependency{ID: x, Range: "*"})
+	t.Run("deleted local path fails", func(t *testing.T) {
+		h := newHarness(t)
+		path := h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "x")
+		h.must(h.install("x.zip"))
+		os.Remove(path)
+		before := h.snapshot()
+		if err := h.uninstall("./x.zip"); err == nil {
+			t.Fatal("uninstalled")
 		}
-		return lockfile.Package{
-			Locked: locked,
-			Manifest: manifest.Manifest{Tooth: path, Version: version,
-				Variants: []manifest.Variant{{Dependencies: d}}},
+		equalMaps(t, h.snapshot(), before)
+	})
+	t.Run("file URI argument fails", func(t *testing.T) {
+		h := newHarness(t)
+		h.addLocalDirectory("src", "1.0.0", "x")
+		h.must(h.install("./src"))
+		source := single(t, h.lock()).Ref
+		before := h.snapshot()
+		if err := h.uninstall(source); err == nil {
+			t.Fatal("uninstalled")
 		}
-	}
-	s := lockfile.New()
-	s.Packages = []lockfile.Package{
-		pkg("x/top", "1.0.0", true, "x/mid", "x/lib"),
-		pkg("x/other", "2.0.0", true),
-		pkg("x/mid", "1.0.0", true, "x/lib"),
-		pkg("x/lib", "1.0.0", false),
-		pkg("x/dep2", "1.0.0", false, "x/lib"),
-		pkg("x/dep1", "1.0.0", false),
-	}
-	s.Packages[4].Manifest.Variants[0].Dependencies = append(s.Packages[4].Manifest.Variants[0].Dependencies, manifest.Dependency{ID: "x/dep1", Range: "*"})
-	if err := h.lock.save(h.e.Dir, s); err != nil {
-		t.Fatal(err)
-	}
-	explicit, implicit, err := h.e.List(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := []string{"x/mid@1.0.0", "x/top@1.0.0", "x/other@2.0.0"}; !reflect.DeepEqual(explicit, want) {
-		t.Errorf("explicit = %q, want %q", explicit, want)
-	}
-	if want := []string{"x/lib@1.0.0", "x/dep1@1.0.0", "x/dep2@1.0.0"}; !reflect.DeepEqual(implicit, want) {
-		t.Errorf("implicit = %q, want %q", implicit, want)
+		equalMaps(t, h.snapshot(), before)
+	})
+}
+
+func TestUpdateNoArgumentsUpdatesExplicitPackagesToNewest(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(false, false)
+	h.must(h.install(appID))
+	h.addApp("2.0.0", ">=1.1.0")
+	h.restart()
+	h.must(h.update())
+	equal(t, h.summary(), []string{libID + "@1.1.0 dep", appID + "@2.0.0 explicit"})
+	if h.read("app/app.dll") != "app 2.0.0" {
+		t.Fatal(h.read("app/app.dll"))
 	}
 }
 
-func TestListCycle(t *testing.T) {
+func TestUpdateNothingDiffersReplacesNothing(t *testing.T) {
 	h := newHarness(t)
-	s := lockfile.New()
-	for _, p := range [][2]string{{"x/a", "x/b"}, {"x/b", "x/a"}} {
-		s.Packages = append(s.Packages, lockfile.Package{Locked: true, Manifest: manifest.Manifest{
-			Tooth: p[0], Version: "1.0.0",
-			Variants: []manifest.Variant{{Dependencies: manifest.Dependencies{{ID: p[1], Range: "*"}}}},
-		}})
+	h.addLibAndApp(true, true)
+	h.must(h.install(libID))
+	h.restart()
+	h.must(h.update())
+	h.must(h.update(libID))
+	if h.ran("lib-installed") != 1 {
+		t.Fatal(h.ran("lib-installed"))
 	}
-	_ = h.lock.save(h.e.Dir, s)
-	_, _, err := h.e.List(ctx)
-	if err == nil || err.Error() != "Circular dependency detected involving package 'x/a'" {
+	equal(t, h.summary(), []string{libID + "@1.1.0 explicit"})
+}
+
+func TestUpdateTagMovedToOtherCommitReplacesPackage(t *testing.T) {
+	h := newHarness(t)
+	h.addLib("1.0.0", false)
+	h.must(h.install(libID))
+	moved := h.addTag(libID, "1.0.0", "lip.yaml", libPackageFile("1.0.0", false), "lib.dll", "lib moved")
+	h.restart()
+	h.must(h.update())
+	if h.read("lib/lib.dll") != "lib moved" || single(t, h.lock()).Commit != moved {
+		t.Fatal("not replaced")
+	}
+}
+
+func TestUpdateBranchAtTheSameCommitReplacesNothing(t *testing.T) {
+	h := newHarness(t)
+	commit := h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.0.0", true), "lib.dll", "head")
+	h.must(h.install(libID + "@branch:main"))
+	h.restart()
+	h.must(h.update())
+	if h.ran("lib-installed") != 1 || single(t, h.lock()).Commit != commit {
+		t.Fatal("replaced")
+	}
+}
+
+func TestInstallNoDependenciesOfSameVersionAtOtherCommitReplacesIt(t *testing.T) {
+	h := newHarness(t)
+	h.addLib("1.0.0", true)
+	h.must(h.install(libID))
+	moved := h.addTag(libID, "1.0.0", "lip.yaml", libPackageFile("1.0.0", true), "lib.dll", "lib moved")
+	h.restart()
+	h.must(h.e.Install(context.Background(), []string{libID}, false, false, true))
+	if h.read("lib/lib.dll") != "lib moved" || single(t, h.lock()).Commit != moved || h.ran("lib-installed") != 2 {
+		t.Fatal("not replaced")
+	}
+}
+
+func TestInstallInstalledPackageWhoseTagMovedIsKeptWithItsRecordedPackageFile(t *testing.T) {
+	h := newHarness(t)
+	h.addMod("example.com/a", "A", "")
+	h.must(h.install("example.com/a"))
+	h.addDownload("https://example.com/moved.mcmod", mcmod("B"))
+	h.addTag("example.com/a", "1.0.0", "lip.yaml", lipYAML("example.com/a", "1.0.0",
+		`"assets": [ { "type": "mcmod", "urls": [ "https://example.com/moved.mcmod" ] } ]`))
+	h.addMod("example.com/b", "B", "")
+	h.restart()
+	h.must(h.install("example.com/b"))
+	if !h.exists("mods/A/A.dll") || !h.exists("mods/B/B.dll") {
+		t.Fatal(h.snapshot())
+	}
+	if !strings.Contains(string(doc.MarshalJSONCompact(h.lock().Packages[0].Manifest)), "https://example.com/A.mcmod") {
+		t.Fatal("manifest changed")
+	}
+}
+
+func TestUpdateVersionRefWhoseTagMovedKeepsTheRecordedCommit(t *testing.T) {
+	h := newHarness(t)
+	h.addLib("1.0.0", false)
+	h.must(h.install(libID + "@1.0.0"))
+	h.addTag(libID, "1.0.0", "lip.yaml", libPackageFile("1.0.0", false), "lib.dll", "moved")
+	h.addLib("1.1.0", false)
+	h.restart()
+	h.must(h.update())
+	p := single(t, h.lock())
+	if stringMember(p.Manifest, "version") != "1.0.0" || p.Ref != libID+"@1.0.0" || h.read("lib/lib.dll") != "lib 1.0.0" {
+		t.Fatalf("p = %+v", p)
+	}
+}
+
+func TestUpdateSourceWithoutRefMovesBackToVersionTags(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.5.0", false), "lib.dll", "head")
+	h.must(h.install(libID + "@branch:main"))
+	h.must(h.update(libID))
+	p := single(t, h.lock())
+	if stringMember(p.Manifest, "version") != "1.1.0" || p.Ref != libID || !p.Explicit || h.read("lib/lib.dll") != "lib 1.1.0" {
+		t.Fatalf("p = %+v", p)
+	}
+}
+
+func TestUpdateAssetChangedReplacesNothing(t *testing.T) {
+	h := newHarness(t)
+	h.addDownload("https://example.com/data.zip", zipOf("d.txt", "1"))
+	h.addTag(libID, "1.0.0", "lip.yaml", lipYAML(libID, "1.0.0",
+		`"assets": [ { "type": "zip", "urls": [ "https://example.com/data.zip" ], "place": [ { "src": "d.txt", "dest": "d.txt" } ] } ]`))
+	h.must(h.install(libID))
+	h.addDownload("https://example.com/data.zip", zipOf("d.txt", "2"))
+	os.RemoveAll(h.cacheDir)
+	h.restart()
+	h.must(h.update())
+	if h.read("d.txt") != "1" {
+		t.Fatal("replaced")
+	}
+}
+
+func TestUpdateLocalZipOfSameVersionReplacesNothing(t *testing.T) {
+	h := newHarness(t)
+	h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "v1")
+	h.must(h.install("x.zip"))
+	h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "v2")
+	h.must(h.update())
+	if h.read("x.txt") != "v1" {
+		t.Fatal("replaced")
+	}
+}
+
+func TestUpdateLocalDirectoryOfSameVersionReplacesNothing(t *testing.T) {
+	h := newHarness(t)
+	h.addLocalDirectory("src", "1.0.0", "v1")
+	h.must(h.install("./src"))
+	h.addLocalDirectory("src", "1.0.0", "v2")
+	h.must(h.update())
+	if h.read("out/x.txt") != "v1" {
+		t.Fatal("replaced")
+	}
+	h.addLocalDirectory("src", "1.0.1", "v3")
+	h.must(h.update())
+	if h.read("out/x.txt") != "v3" || stringMember(single(t, h.lock()).Manifest, "version") != "1.0.1" {
+		t.Fatal("not replaced")
+	}
+}
+
+func TestUpdateLocalPathGoneKeepsPackageAndWarns(t *testing.T) {
+	h := newHarness(t)
+	path := h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "v1")
+	h.must(h.install(path))
+	os.Remove(path)
+	h.must(h.update())
+	if h.read("x.txt") != "v1" || !h.rec.hasWarning("does not exist any more") {
+		t.Fatal(h.rec.warnings)
+	}
+	single(t, h.lock())
+}
+
+func TestUpdateDependencyBecomesExplicitlyInstalled(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(appID))
+	h.must(h.update(libID))
+	if !findPackage(t, h.lock(), libID).Explicit {
+		t.Fatal("not explicit")
+	}
+}
+
+func TestUpdateTwoArgumentsOfOneIdentityUpdatesItByTheFirst(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.must(h.install(libID + "@1.0.0"))
+	h.must(h.update(libID, libID+"@1.0.0"))
+	p := single(t, h.lock())
+	if stringMember(p.Manifest, "version") != "1.1.0" || p.Ref != libID {
+		t.Fatalf("p = %+v", p)
+	}
+}
+
+func TestUpdateNotInstalledFails(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	if err := h.update(appID); err == nil || !strings.Contains(err.Error(), "is not installed in this workspace") {
 		t.Fatalf("err = %v", err)
 	}
-}
-
-func TestBrokenLockAborts(t *testing.T) {
-	h := newHarness(t)
-	seed(h)
-	h.e.Hooks.LoadState = func(string) (*lockfile.State, error) { return lockfile.New(), errors.New("bad json") }
-	want := "Failed to load workspace state from 'tooth_lock.json': bad json"
-	ops := map[string]func() error{
-		"install":   func() error { return h.e.Install(ctx, []string{"example.com/d@1.0.0"}, false, false, false) },
-		"nodeps":    func() error { return h.e.Install(ctx, []string{"example.com/d@1.0.0"}, false, false, true) },
-		"update":    func() error { return h.e.Update(ctx, []string{"example.com/d@1.0.0"}, false, false) },
-		"uninstall": func() error { return h.e.Uninstall(ctx, []string{"example.com/d"}, false, false, false) },
-		"list": func() error {
-			_, _, err := h.e.List(ctx)
-			return err
-		},
-	}
-	for name, op := range ops {
-		if err := op(); err == nil || err.Error() != want {
-			t.Errorf("%s: err = %v, want %q", name, err, want)
-		}
-	}
-	if len(h.lock.saves) != 0 || len(h.calls) != 0 {
-		t.Errorf("saved %d times, %d ops after a broken lock", len(h.lock.saves), len(h.calls))
+	if h.hasLock() {
+		t.Fatal("workspace file written")
 	}
 }
 
-func TestCompositeVersionsUnion(t *testing.T) {
+func TestInstallModWithDependencyWritesItsManifestAsItIs(t *testing.T) {
 	h := newHarness(t)
-	seed(h)
-	// Installed version not in the remote registry is still a candidate.
-	s := lockfile.New()
-	s.Packages = []lockfile.Package{{Locked: true, Manifest: manifest.Manifest{Tooth: "example.com/b", Version: "0.5.0", Variants: []manifest.Variant{{}}}}}
-	_ = h.lock.save(h.e.Dir, s)
-	arts := []artifact{{spec: manifest.PackageSpec{ID: manifest.PackageID{Path: "example.com/b"}, Version: "9.0.0"}}}
-	reg := &compositeRegistry{e: h.e, regs: []pkgRegistry{artifactsRegistry{e: h.e, arts: arts}, h.e.baseRegistry()}}
-	vs, err := reg.versions(ctx, manifest.PackageID{Path: "example.com/b"})
+	h.addMod("example.com/base", "Base", "")
+	h.addMod("example.com/top", "Top", `"deps": { "example.com/base": "^1.0.0" },`)
+	h.must(h.install("example.com/top"))
+	if !strings.Contains(h.read("mods/Top/manifest.json"), `"name": "Top"`) || !h.exists("mods/Base/manifest.json") {
+		t.Fatal(h.snapshot())
+	}
+}
+
+func TestInstallTwoModsOfOneModNameFails(t *testing.T) {
+	h := newHarness(t)
+	h.addMod("example.com/a", "Same", "")
+	h.addDownload("https://example.com/other.mcmod", mcmod("same"))
+	h.addTag("example.com/b", "1.0.0", "lip.yaml", lipYAML("example.com/b", "1.0.0",
+		`"assets": [ { "type": "mcmod", "urls": [ "https://example.com/other.mcmod" ] } ]`))
+	err := h.install("example.com/a", "example.com/b")
+	if err == nil {
+		t.Fatal("installed")
+	}
+	if h.hasLock() {
+		t.Fatal("changed")
+	}
+}
+
+func TestListReturnsPackagesInInstallationOrder(t *testing.T) {
+	h := newHarness(t)
+	h.addLibAndApp(true, false)
+	h.addVariantsPackage("example.com/var")
+	h.must(h.install(appID, "example.com/var#a"))
+	equal(t, h.summary(), []string{libID + "@1.1.0 dep", appID + "@2.0.0 explicit", "example.com/var#a@1.0.0 explicit"})
+	explicit, implicit, err := h.e.List(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	var got []string
-	for _, v := range vs {
-		got = append(got, v.String())
-	}
-	if want := []string{"0.5.0", "1.0.0", "1.1.0", "9.0.0"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("versions = %q, want %q", got, want)
-	}
-
-	// Remote failure is swallowed when another registry answers.
-	vs, err = h.e.baseRegistry().versions(ctx, manifest.PackageID{Path: "example.com/missing"})
-	if err != nil || len(vs) != 0 {
-		t.Errorf("versions = %v, %v", vs, err)
-	}
-
-	// Manifest errors are aggregated.
-	_, err = h.e.baseRegistry().manifest(ctx, manifest.PackageSpec{ID: manifest.PackageID{Path: "example.com/zzz"}, Version: "1.0.0"})
-	want := "Failed to retrieve package manifest for package example.com/zzz@1.0.0 from any registry. (Cannot get manifest of package 'example.com/zzz@1.0.0' because it is not installed.) (Package example.com/zzz@1.0.0 not found)"
-	if err == nil || err.Error() != want {
-		t.Errorf("err = %v\nwant %s", err, want)
+	equal(t, explicit, []string{appID + "@2.0.0", "example.com/var#a@1.0.0"})
+	equal(t, implicit, []string{libID + "@1.1.0"})
+	ps := h.packages()
+	if ps[2].ID != "example.com/var" || ps[2].Variant != "a" || ps[2].Ref != "example.com/var#a" {
+		t.Fatalf("package = %+v", ps[2])
 	}
 }
 
-func TestSolverAdapterMemoizesDependencies(t *testing.T) {
+func TestListNewWorkspaceIsEmpty(t *testing.T) {
 	h := newHarness(t)
-	seed(h)
-	calls := 0
-	h.e.Hooks.ResolveVariant = func(m *manifest.Manifest, label string) (*manifest.Variant, error) {
-		calls++
-		return fakeResolveVariant(m, label)
+	explicit, implicit, err := h.e.List(context.Background())
+	if err != nil || len(explicit) != 0 || len(implicit) != 0 || explicit == nil || implicit == nil {
+		t.Fatalf("%v %v %v", explicit, implicit, err)
 	}
-	a := &solverAdapter{e: h.e, reg: h.e.baseRegistry()}
-	v, _ := parseFakeVersion("1.0.0")
-	for i := 0; i < 3; i++ {
-		reqs, err := a.Dependencies(ctx, "example.com/a", v)
-		if err != nil || len(reqs) != 1 || reqs[0].ID != "example.com/b" {
-			t.Fatalf("reqs = %v, %v", reqs, err)
+	if _, err := os.Stat(h.path(".lip")); err == nil {
+		t.Fatal(".lip created")
+	}
+}
+
+func TestInstallInstalledPackageWithoutEntryForTheRuntimeFailsWithoutChanges(t *testing.T) {
+	h := newHarness(t)
+	h.addLib("1.0.0", false)
+	h.must(h.install(libID))
+	h.addTag("example.com/any", "1.0.0", "lip.yaml", `{ "format": 4, "id": "example.com/any", "version": "1.0.0",
+	  "variants": { "": [ { "platform": "server", "runtime": "linux-x64" } ] } }`)
+	before := h.snapshot()
+	h.withRuntime("linux-x64")
+	err := h.install("example.com/any")
+	if err == nil || !strings.Contains(err.Error(), "'"+libID+"'") ||
+		!strings.Contains(err.Error(), "The workspace was installed for the runtime win-x64") {
+		t.Fatalf("err = %v", err)
+	}
+	equalMaps(t, h.snapshot(), before)
+}
+
+func TestOperationsInvalidWorkspaceFileFailWithoutChanges(t *testing.T) {
+	for _, content := range []string{
+		`{ "format": "bf45b1", "platform": "server", "packages": [] }`,
+		`{ "format_version": 3, "packages": [] }`,
+		"format: 4\nplatform: server\nruntime: win-x64\npackages: [ { } ]\n",
+	} {
+		h := newHarness(t)
+		h.addLibAndApp(true, false)
+		h.addFile(".lip/workspace.yaml", content)
+		before := h.snapshot()
+		if h.install(libID) == nil || h.uninstall(libID) == nil || h.update() == nil {
+			t.Fatal("an operation succeeded")
 		}
-	}
-	if calls != 1 {
-		t.Errorf("ResolveVariant called %d times, want 1", calls)
+		if _, _, err := h.e.List(context.Background()); err == nil {
+			t.Fatal("list succeeded")
+		}
+		var lfe *pkgfile.LockFormatError
+		if err := h.install(libID); !errors.As(err, &lfe) {
+			t.Fatalf("err = %T %v", err, err)
+		}
+		equalMaps(t, h.snapshot(), before)
 	}
 }

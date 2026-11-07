@@ -539,3 +539,15 @@ func TestHTTPCacheForget(t *testing.T) {
 		t.Error("Forget left the entry")
 	}
 }
+
+func TestTransferReporterThrottle(t *testing.T) {
+	var got []transfer
+	r := &transferReporter{fn: func(t transfer) { got = append(got, t) }, t: transfer{Total: 10000}}
+	for i := int64(0); i <= 10000; i++ {
+		r.update(i)
+	}
+	r.finish(nil)
+	if len(got) != 1002 || got[0].Current != 0 || got[1000].Current != 10000 || !got[1001].Done || got[1001].Current != 10000 {
+		t.Fatalf("%d updates: first %+v last %+v", len(got), got[0], got[len(got)-1])
+	}
+}

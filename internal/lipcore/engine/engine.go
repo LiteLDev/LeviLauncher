@@ -1,978 +1,127 @@
-// Package engine implements lip 0.37.0's package operations
-// (src/Lip.Core/Services/InstallService.cs, PublicApi/LipClient.cs,
-// PackageRegistries/*) on top of the other lipcore packages:
-//
-//	Install(packages, dryRun, ignoreScripts, noDependencies)
-//	Update(packages, dryRun, ignoreScripts)
-//	Uninstall(packages, dryRun, ignoreScripts, noDependencies)
-//	List() -> explicit, implicit "path#variant@version"
-//	CacheClean()
-//
-// Sibling packages are reached through Hooks so the orchestration logic can
-// be tested with fakes.
 package engine
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
+	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strings"
 
-	"github.com/liteldev/LeviLauncher/internal/lipcore/engine/workspace"
-	"github.com/liteldev/LeviLauncher/internal/lipcore/glob"
-	"github.com/liteldev/LeviLauncher/internal/lipcore/lockfile"
-	"github.com/liteldev/LeviLauncher/internal/lipcore/manifest"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/archive"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/compat"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/gitproto"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/graph"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/httpclient"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/install"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/lipdirs"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/pkgfile"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/pkgmodel"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/ref"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/semver"
-	"github.com/liteldev/LeviLauncher/internal/lipcore/solver"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/txn"
 )
 
-// ErrNotImplemented is returned by skeleton stubs.
-var ErrNotImplemented = errors.New("engine: not implemented")
-
-// Registry supplies package versions, manifests and asset contents
-// (lip IPackageRegistry + SourceService).
-type Registry interface {
-	// Versions returns available versions of id (version text, oldest first).
-	Versions(ctx context.Context, id manifest.PackageID) ([]string, error)
-	// Manifest returns the manifest of spec as found in the package (already
-	// migrated and parsed). Like lip's registries it is NOT fixed up: the
-	// engine overwrites tooth/version with the requested spec (warning on a
-	// real mismatch) when it installs the package, exactly like lip's
-	// PackageInstaller.
-	Manifest(ctx context.Context, spec manifest.PackageSpec) (*manifest.Manifest, error)
-	// OpenAsset opens one asset of spec ("self" = the git tree of the tag).
-	OpenAsset(ctx context.Context, spec manifest.PackageSpec, asset manifest.Asset) (workspace.Source, error)
+// Options configure an Engine.
+type Options struct {
+	// GithubProxy is the github_proxy setting (protocol/userspace.md §2);
+	// "" means none. The caller resolves the configuration and any override.
+	GithubProxy string
+	// HTTPClient carries git requests and downloads; nil is the default
+	// client with httpclient.CheckRedirect.
+	HTTPClient *http.Client
+	// Platform is the platform of the workspace; "" is "client", the
+	// platform of LeviLauncher's workspaces.
+	Platform string
+	// Runtime overrides the runtime of the environment (lip's --rid); ""
+	// is the runtime the workspace file records, else CurrentRID().
+	Runtime string
 }
 
-// PackageOps performs per-package file operations (workspace.Workspace).
-type PackageOps interface {
-	InstallPackage(ctx context.Context, variant *manifest.Variant, open workspace.SourceOpener) ([]string, error)
-	UninstallPackage(ctx context.Context, variant *manifest.Variant, files []string) error
+// InstalledPackage is a package of the workspace file.
+type InstalledPackage struct {
+	// Identity is the package id, then '#' and the variant when not "".
+	Identity string
+	ID       string
+	Variant  string
+	Version  string
+	// Explicit is whether a request named it (as opposed to a dependency).
+	Explicit bool
+	// Ref is the source it was installed from: the source of the request or
+	// the key of the dependency it was resolved for.
+	Ref string
 }
 
-// Hooks connects the engine to sibling packages. DefaultHooks wires the real
-// implementations; tests substitute fakes.
-type Hooks struct {
-	ParseVersion   func(s string) (solver.Version, error)
-	ParseRange     func(s string) (solver.Constraint, error)
-	ExactRange     func(v solver.Version) solver.Constraint
-	ResolveVariant func(m *manifest.Manifest, label string) (*manifest.Variant, error)
-	LoadState      func(dir string) (*lockfile.State, error)
-	SaveState      func(dir string, s *lockfile.State) error
-	Solve          func(ctx context.Context, reg solver.Registry, roots []solver.Requirement, logf solver.Logf) ([]solver.Selected, error)
-	NewPackageOps  func(dir string, ignoreScripts bool, r report.Reporter) PackageOps
-	// ParseID parses a package id (manifest.ParsePackageID when nil).
-	ParseID func(s string) (manifest.PackageID, error)
-	// ParseSpec parses "id@version" without validating the version
-	// (manifest.ParsePackageSpec when nil); the engine parses the version
-	// strictly with ParseVersion.
-	ParseSpec func(s string) (manifest.PackageSpec, error)
-}
-
-// DefaultHooks returns hooks backed by packages semver, manifest (with
-// glob platform matching for rid), lockfile, solver and workspace.
-func DefaultHooks(rid string) Hooks {
-	return Hooks{
-		ParseVersion: func(s string) (solver.Version, error) {
-			v, err := semver.Parse(s)
-			if err != nil {
-				return nil, err
-			}
-			return semverVersion{v}, nil
-		},
-		ParseRange: func(s string) (solver.Constraint, error) {
-			r, err := semver.ParseRange(s)
-			if err != nil {
-				return nil, err
-			}
-			return semverRange{r}, nil
-		},
-		ExactRange: func(v solver.Version) solver.Constraint {
-			if sv, ok := v.(semverVersion); ok {
-				return semverRange{semver.Exact(sv.v)}
-			}
-			return exactConstraint{v}
-		},
-		ResolveVariant: func(m *manifest.Manifest, label string) (*manifest.Variant, error) {
-			return m.ResolveVariant(label, rid, glob.Match)
-		},
-		LoadState: lockfile.Load,
-		SaveState: func(dir string, s *lockfile.State) error { return s.Save(dir) },
-		Solve:     solver.Solve,
-		NewPackageOps: func(dir string, ignoreScripts bool, r report.Reporter) PackageOps {
-			return &workspace.Workspace{
-				Dir:           dir,
-				Reporter:      r,
-				Glob:          compileGlob,
-				IgnoreScripts: ignoreScripts,
-			}
-		},
-		ParseID:   manifest.ParsePackageID,
-		ParseSpec: manifest.ParsePackageSpec,
-	}
-}
-
-func compileGlob(pattern string) (workspace.Matcher, error) {
-	g, err := glob.Compile(pattern)
-	if err != nil {
-		return nil, err
-	}
-	return g, nil
-}
-
-// semverVersion adapts semver.Version to solver.Version.
-type semverVersion struct{ v semver.Version }
-
-func (a semverVersion) Compare(o solver.Version) int {
-	if b, ok := o.(semverVersion); ok {
-		return a.v.Compare(b.v)
-	}
-	if b, err := semver.Parse(o.String()); err == nil {
-		return a.v.Compare(b)
-	}
-	return 0
-}
-
-func (a semverVersion) String() string { return a.v.String() }
-
-// semverRange adapts semver.Range to solver.Constraint.
-type semverRange struct{ r semver.Range }
-
-func (r semverRange) Contains(v solver.Version) bool {
-	if sv, ok := v.(semverVersion); ok {
-		return r.r.Contains(sv.v)
-	}
-	sv, err := semver.Parse(v.String())
-	return err == nil && r.r.Contains(sv)
-}
-
-func (r semverRange) String() string { return r.r.String() }
-
-// exactConstraint is a fallback exact range for foreign Version types.
-type exactConstraint struct{ v solver.Version }
-
-func (c exactConstraint) Contains(v solver.Version) bool { return c.v.Compare(v) == 0 }
-func (c exactConstraint) String() string                 { return c.v.String() }
-
-// Engine operates on one workspace (instance directory).
+// Engine is McmodService (src/Lip.Core/Mcmod/McmodService.cs,
+// v0.38.0-beta.1) for one workspace: install, update, uninstall and list
+// (protocol/workspace.md §3-§7, protocol/cli.md §5).
 type Engine struct {
-	// Dir is the absolute workspace directory.
-	Dir      string
-	Registry Registry
-	Reporter report.Reporter
-	Hooks    Hooks
-	// CacheClean is called by CacheClean (fetch.Cache.Clean in production).
-	CleanCache func() error
-	// CleanCacheProgress, when set, is called by CacheClean instead of
-	// CleanCache, reporting entries deleted out of the entries to delete
-	// (fetch.Cache.CleanProgress in production).
-	CleanCacheProgress func(ctx context.Context, progress func(done, total int64)) error
+	// Dir is the absolute workspace root.
+	Dir string
+
+	opts     Options
+	platform string
+	rep      report.Reporter
+	client   *http.Client
+	cache    *fetch.HTTPCache
+	git      gitRemote
+	inst     *install.Installer
+	// newID returns the id of a new progress bar.
+	newID func() string
 }
 
-// New returns an engine for dir wired with DefaultHooks(CurrentRID()) and
-// NewGitRegistry(githubProxy, r); CacheClean cleans the shared lip cache.
-func New(dir, githubProxy string, r report.Reporter) (*Engine, error) {
+// New returns an engine for the workspace dir.
+func New(dir string, opts Options, r report.Reporter) *Engine {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
-		return nil, err
+		abs = dir
 	}
-	reg := NewGitRegistry(githubProxy, r)
+	rep := report.OrNop(r)
+	client := httpclient.WithLipRedirects(opts.HTTPClient)
+	platform := opts.Platform
+	if platform == "" {
+		platform = pkgmodel.PlatformClient
+	}
 	e := &Engine{
 		Dir:      abs,
-		Registry: reg,
-		Reporter: r,
-		Hooks:    DefaultHooks(CurrentRID()),
+		opts:     opts,
+		platform: platform,
+		rep:      rep,
+		client:   client,
+		cache:    fetch.DefaultHTTPCache(rep),
+		inst:     &install.Installer{Reporter: rep},
+		newID:    newGUID,
 	}
-	if reg.Cache != nil {
-		e.CleanCache = reg.Cache.Clean
-		e.CleanCacheProgress = reg.Cache.CleanProgress
+	e.git = &remoteGit{
+		client: &gitproto.RemoteClient{HTTP: client, GithubProxy: opts.GithubProxy, TempDir: lipdirs.CacheDir()},
+		rep:    rep,
+		ids:    func() string { return e.newID() },
 	}
-	return e, nil
+	return e
 }
 
-func (e *Engine) rep() report.Reporter { return report.OrNop(e.Reporter) }
+// HTTPClient is the client of the engine's git requests and downloads.
+func (e *Engine) HTTPClient() *http.Client { return e.client }
 
-// engineBar sends the updates of one engine-level bar (resolve, task).
-// Every value comes from counted work. Methods are no-ops on a nil bar (no
-// bar is shown) and after done, so a deferred done backs up an explicit one.
-type engineBar struct {
-	rep    report.Reporter
-	p      report.Progress
-	closed bool
-}
+// Close releases the engine. It must not be used afterwards.
+func (e *Engine) Close() error { return nil }
 
-// newBar opens a bar with a random GUID id (like download bars) and reports
-// its first update (Current 0).
-func (e *Engine) newBar(stage report.Stage, unit report.Unit, message string, total int64) *engineBar {
-	b := &engineBar{
-		rep: e.rep(),
-		p:   report.Progress{ID: newGUID(), Stage: stage, Message: message, Total: total, Unit: unit},
-	}
-	report.Report(b.rep, b.p)
-	return b
-}
-
-// update reports cur as the amount done, working on item when not empty.
-func (b *engineBar) update(cur int64, item string) {
-	if b == nil || b.closed {
-		return
-	}
-	b.p.Current = cur
-	if item != "" {
-		b.p.Item = item
-	}
-	report.Report(b.rep, b.p)
-}
-
-// step reports cur package steps done, now working on pkg.
-func (b *engineBar) step(cur int64, pkg, message string) {
-	if b == nil || b.closed {
-		return
-	}
-	b.p.Package = pkg
-	b.p.Message = message
-	b.update(cur, pkg)
-}
-
-// done reports the last update of the bar with the amount done so far.
-func (b *engineBar) done() {
-	if b == nil || b.closed {
-		return
-	}
-	b.closed = true
-	b.p.Done = true
-	report.Report(b.rep, b.p)
-}
-
-// doneAt is done with cur as the amount done (when it is more than the
-// amount last reported), so a bar ended early still counts finished work.
-func (b *engineBar) doneAt(cur int64) {
-	if b == nil || b.closed {
-		return
-	}
-	if cur > b.p.Current {
-		b.p.Current = cur
-	}
-	b.done()
-}
-
-// openTaskBar opens the StageTask bar over n package steps, or returns nil
-// (no bar) for a dry run, which applies nothing, or an empty plan.
-func (e *Engine) openTaskBar(n int, dryRun bool) *engineBar {
-	if dryRun || n == 0 {
-		return nil
-	}
-	return e.newBar(report.StageTask, report.UnitPackages, "Applying package changes", int64(n))
-}
-
-// manifestCounter wraps the registry the solver reads, counting the
-// distinct manifests read into the solve bar (whose total is unknown: the
-// dependency graph is discovered while solving).
-type manifestCounter struct {
-	pkgRegistry
-	bar  *engineBar
-	seen map[manifest.PackageSpec]bool
-}
-
-func (c *manifestCounter) manifest(ctx context.Context, spec manifest.PackageSpec) (*manifest.Manifest, error) {
-	m, err := c.pkgRegistry.manifest(ctx, spec)
-	if err == nil && !c.seen[spec] {
-		c.seen[spec] = true
-		c.bar.update(int64(len(c.seen)), spec.String())
-	}
-	return m, err
-}
-
-// artifact is lip's PackageArtifact: a resolved spec plus its package
-// source (the git tree of the tag).
-type artifact struct {
-	spec   manifest.PackageSpec
-	source workspace.Source
-}
-
-var selfAsset = manifest.Asset{Type: manifest.AssetSelf}
-
-// Install implements InstallService.InstallPackages / LipClient.Install.
-// Each package string is a PackageSpec ("id@version") or a PackageId
-// (latest version, prereleases included). Errors use lip's messages (e.g.
-// "Cannot install package '<id>' because it is already explicitly
-// installed.") because callers match on them.
-func (e *Engine) Install(ctx context.Context, packages []string, dryRun, ignoreScripts, noDependencies bool) error {
-	specs, flexible, err := e.parsePackageArgs(packages)
-	if err != nil {
-		return err
-	}
-	arts, err := e.resolveArtifacts(ctx, specs, flexible)
-	if err != nil {
-		return err
-	}
-	ops := e.Hooks.NewPackageOps(e.Dir, ignoreScripts, e.rep())
-
-	if noDependencies {
-		e.rep().Warning("--no-dependencies is enabled. This operation may result in a broken workspace.")
-		bar := e.openTaskBar(len(arts), dryRun)
-		done := 0
-		defer func() { bar.doneAt(int64(done)) }()
-		for i, a := range arts {
-			bar.step(int64(i), a.spec.String(), "Installing "+a.spec.String())
-			if err := e.installPackage(ctx, ops, a, dryRun, true); err != nil {
-				return err
-			}
-			done = i + 1
-		}
-		return nil
-	}
-
-	explicit, err := e.installedPackages(scopeExplicit)
-	if err != nil {
-		return err
-	}
-	for _, a := range arts {
-		if containsID(explicit, a.spec.ID) {
-			return fmt.Errorf("Cannot install package '%s' because it is already explicitly installed.", a.spec.ID)
-		}
-	}
-
-	reg := &compositeRegistry{e: e, regs: []pkgRegistry{artifactsRegistry{e: e, arts: arts}, e.baseRegistry()}}
-
-	newExplicit := append(append([]manifest.PackageSpec{}, explicit...), artifactSpecs(arts)...)
-	newInstalled, err := e.solve(ctx, reg, newExplicit)
-	if err != nil {
-		return err
-	}
-	installed, err := e.installedPackages(scopeAll)
-	if err != nil {
-		return err
-	}
-	if err := e.applySolution(ctx, ops, arts, installed, newInstalled, newExplicit, dryRun); err != nil {
-		return err
-	}
-	return e.reconcileExplicitness(newInstalled, newExplicit, explicit, dryRun)
-}
-
-// Update implements InstallService.UpdatePackages.
-func (e *Engine) Update(ctx context.Context, packages []string, dryRun, ignoreScripts bool) error {
-	specs, flexible, err := e.parsePackageArgs(packages)
-	if err != nil {
-		return err
-	}
-	arts, err := e.resolveArtifacts(ctx, specs, flexible)
-	if err != nil {
-		return err
-	}
-	ops := e.Hooks.NewPackageOps(e.Dir, ignoreScripts, e.rep())
-
-	installed, err := e.installedPackages(scopeAll)
-	if err != nil {
-		return err
-	}
-	for _, a := range arts {
-		if !containsID(installed, a.spec.ID) {
-			return fmt.Errorf("Cannot update package '%s' because it is not currently installed.", a.spec.ID)
-		}
-	}
-
-	reg := &compositeRegistry{e: e, regs: []pkgRegistry{artifactsRegistry{e: e, arts: arts}, e.baseRegistry()}}
-
-	explicit, err := e.installedPackages(scopeExplicit)
-	if err != nil {
-		return err
-	}
-	var newExplicit []manifest.PackageSpec
-	for _, ep := range explicit {
-		if !containsID(artifactSpecs(arts), ep.ID) {
-			newExplicit = append(newExplicit, ep)
-		}
-	}
-	newExplicit = append(newExplicit, artifactSpecs(arts)...)
-
-	newInstalled, err := e.solve(ctx, reg, newExplicit)
-	if err != nil {
-		return err
-	}
-	if err := e.applySolution(ctx, ops, arts, installed, newInstalled, newExplicit, dryRun); err != nil {
-		return err
-	}
-	return e.reconcileExplicitness(newInstalled, newExplicit, explicit, dryRun)
-}
-
-// Uninstall implements InstallService.UninstallPackages; packages are ids.
-func (e *Engine) Uninstall(ctx context.Context, packages []string, dryRun, ignoreScripts, noDependencies bool) error {
-	ops := e.Hooks.NewPackageOps(e.Dir, ignoreScripts, e.rep())
-
-	if noDependencies {
-		e.rep().Warning("--no-dependencies is enabled. This operation may result in a broken workspace.")
-		bar := e.openTaskBar(len(packages), dryRun)
-		done := 0
-		defer func() { bar.doneAt(int64(done)) }()
-		for i, p := range packages {
-			id, err := e.parseID(p)
-			if err != nil {
-				return err
-			}
-			bar.step(int64(i), id.String(), "Uninstalling "+id.String())
-			if err := e.uninstallPackage(ctx, ops, id, dryRun); err != nil {
-				return err
-			}
-			done = i + 1
-		}
-		return nil
-	}
-
-	explicit, err := e.installedPackages(scopeExplicit)
-	if err != nil {
-		return err
-	}
-	ids := make([]manifest.PackageID, 0, len(packages))
-	for _, p := range packages {
-		id, err := e.parseID(p)
-		if err != nil {
-			return err
-		}
-		if !containsID(explicit, id) {
-			return fmt.Errorf("Package '%s' is not explicitly installed and cannot be uninstalled without --no-dependencies.", id)
-		}
-		ids = append(ids, id)
-	}
-
-	var newExplicit []manifest.PackageSpec
-	for _, p := range explicit {
-		if !idIn(ids, p.ID) {
-			newExplicit = append(newExplicit, p)
-		}
-	}
-	newInstalled, err := e.solve(ctx, e.baseRegistry(), newExplicit)
-	if err != nil {
-		return err
-	}
-	installed, err := e.installedPackages(scopeAll)
-	if err != nil {
-		return err
-	}
-	removals := removedPackages(installed, newInstalled)
-	if err := e.uninstallAll(ctx, ops, removals, dryRun); err != nil {
-		return err
-	}
-	return e.reconcileExplicitness(newInstalled, newExplicit, explicit, dryRun)
-}
-
-// uninstallAll uninstalls packages in order under a StageTask bar.
-func (e *Engine) uninstallAll(ctx context.Context, ops PackageOps, packages []manifest.PackageSpec, dryRun bool) error {
-	bar := e.openTaskBar(len(packages), dryRun)
-	done := 0
-	defer func() { bar.doneAt(int64(done)) }()
-	for i, p := range packages {
-		bar.step(int64(i), p.String(), "Uninstalling "+p.String())
-		if err := e.uninstallPackage(ctx, ops, p.ID, dryRun); err != nil {
-			return err
-		}
-		done = i + 1
-	}
-	return nil
-}
-
-// removedPackages returns the installed packages missing from newInstalled
-// in reverse (topological) order, the order they are uninstalled in.
-func removedPackages(installed, newInstalled []manifest.PackageSpec) []manifest.PackageSpec {
-	var out []manifest.PackageSpec
-	for i := len(installed) - 1; i >= 0; i-- {
-		if !containsSpec(newInstalled, installed[i]) {
-			out = append(out, installed[i])
-		}
-	}
-	return out
-}
-
-// List returns installed packages as "path#variant@version" (variant part
-// omitted when empty), explicit and implicit, in lip's order (topological
-// over stored dependencies starting from stored package order).
-func (e *Engine) List(ctx context.Context) (explicit, implicit []string, err error) {
-	ex, err := e.installedPackages(scopeExplicit)
-	if err != nil {
-		return nil, nil, err
-	}
-	im, err := e.installedPackages(scopeImplicit)
-	if err != nil {
-		return nil, nil, err
-	}
-	explicit = make([]string, 0, len(ex))
-	for _, p := range ex {
-		explicit = append(explicit, p.String())
-	}
-	implicit = make([]string, 0, len(im))
-	for _, p := range im {
-		implicit = append(implicit, p.String())
-	}
-	return explicit, implicit, nil
-}
-
-// CacheClean clears the download cache. With CleanCacheProgress it reports
-// one cache_clean bar: entries deleted out of the entries counted by a walk
-// done before deleting, ended with Done whether the clean succeeded or not.
-func (e *Engine) CacheClean(ctx context.Context) error {
-	if e.CleanCacheProgress == nil {
-		if e.CleanCache == nil {
-			return nil
-		}
-		return e.CleanCache()
-	}
-	var bar *report.Progress
-	err := e.CleanCacheProgress(ctx, func(done, total int64) {
-		if bar == nil {
-			bar = &report.Progress{ID: "cache_clean", Stage: report.StageCacheClean,
-				Message: "Cleaning the download cache", Unit: report.UnitFiles}
-		}
-		bar.Current, bar.Total = done, total
-		report.Report(e.rep(), *bar)
-	})
-	if bar != nil {
-		bar.Done = true
-		report.Report(e.rep(), *bar)
-	}
-	return err
-}
-
-// applySolution uninstalls installed packages missing from the solution in
-// reverse topological order, then installs new packages in topological
-// order (InstallService.InstallPackages / UpdatePackages).
-//
-// Like lip, a dry run does not remove anything from the lock, so a dry-run
-// version change fails at the install step with "Cannot install package ...
-// because it is already installed with version ...". This is kept for parity.
-//
-// The StageTask bar counts both steps: removals, then installs.
-func (e *Engine) applySolution(ctx context.Context, ops PackageOps, arts []artifact, installed, newInstalled, newExplicit []manifest.PackageSpec, dryRun bool) error {
-	removals := removedPackages(installed, newInstalled)
-	var installs []manifest.PackageSpec
-	for _, np := range newInstalled {
-		if !containsSpec(installed, np) {
-			installs = append(installs, np)
-		}
-	}
-	bar := e.openTaskBar(len(removals)+len(installs), dryRun)
-	done := int64(0)
-	defer func() { bar.doneAt(done) }()
-
-	for _, p := range removals {
-		bar.step(done, p.String(), "Uninstalling "+p.String())
-		if err := e.uninstallPackage(ctx, ops, p.ID, dryRun); err != nil {
-			return err
-		}
-		done++
-	}
-	for _, np := range installs {
-		bar.step(done, np.String(), "Installing "+np.String())
-		a, ok := findArtifact(arts, np)
-		if !ok {
-			src, err := e.Registry.OpenAsset(ctx, np, selfAsset)
-			if err != nil {
-				return err
-			}
-			a = artifact{spec: np, source: src}
-		}
-		if err := e.installPackage(ctx, ops, a, dryRun, containsSpec(newExplicit, np)); err != nil {
-			return err
-		}
-		done++
-	}
-	return nil
-}
-
-// reconcileExplicitness ports InstallService.ReconcilePackageExplicitness.
-func (e *Engine) reconcileExplicitness(installed, explicit, previousExplicit []manifest.PackageSpec, dryRun bool) error {
-	for _, p := range installed {
-		isExplicit := containsSpec(explicit, p)
-		wasExplicit := containsSpec(previousExplicit, p)
-		switch {
-		case isExplicit && !wasExplicit:
-			if dryRun {
-				e.rep().Info(fmt.Sprintf("Dry run: would mark package '%s' version %s as explicitly installed.", p.ID, p.Version))
-				continue
-			}
-			e.rep().Info(fmt.Sprintf("Marking package '%s' version %s as explicitly installed.", p.ID, p.Version))
-			if err := e.updateExplicitness(p, true); err != nil {
-				return err
-			}
-		case !isExplicit && wasExplicit:
-			if dryRun {
-				e.rep().Info(fmt.Sprintf("Dry run: would mark package '%s' version %s as not explicitly installed.", p.ID, p.Version))
-				continue
-			}
-			e.rep().Info(fmt.Sprintf("Marking package '%s' version %s as not explicitly installed.", p.ID, p.Version))
-			if err := e.updateExplicitness(p, false); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// installPackage ports PackageInstaller.InstallPackage.
-func (e *Engine) installPackage(ctx context.Context, ops PackageOps, a artifact, dryRun, explicitInstall bool) error {
-	installed, err := e.installedPackages(scopeAll)
-	if err != nil {
-		return err
-	}
-	for _, p := range installed {
-		if p.ID == a.spec.ID {
-			return fmt.Errorf("Cannot install package %s version %s because it is already installed with version %s", a.spec.ID, a.spec.Version, p.Version)
-		}
-	}
-	if dryRun {
-		e.rep().Info(fmt.Sprintf("Dry run: would install package %s version %s", a.spec.ID, a.spec.Version))
-		return nil
-	}
-	e.rep().Info(fmt.Sprintf("Installing package %s version %s", a.spec.ID, a.spec.Version))
-
-	raw, err := e.Registry.Manifest(ctx, a.spec)
-	if err != nil {
-		return err
-	}
-	m := e.fixupManifest(raw, a.spec)
-
-	variant, err := e.Hooks.ResolveVariant(m, a.spec.ID.Variant)
-	if err != nil {
-		return err
-	}
-
-	var closers []io.Closer
-	defer func() {
-		for _, c := range closers {
-			_ = c.Close()
-		}
-	}()
-	open := func(ctx context.Context, asset manifest.Asset) (workspace.Source, error) {
-		if asset.Type == manifest.AssetSelf {
-			if a.source == nil {
-				return nil, fmt.Errorf("package %s has no package source", a.spec)
-			}
-			return a.source, nil
-		}
-		src, err := e.Registry.OpenAsset(ctx, a.spec, asset)
-		if err != nil {
-			return nil, err
-		}
-		if c, ok := src.(io.Closer); ok {
-			closers = append(closers, c)
-		}
-		return src, nil
-	}
-	files, err := ops.InstallPackage(workspace.WithPackage(ctx, a.spec.String()), variant, open)
-	if err != nil {
-		return err
-	}
-	return e.addInstalledPackage(a.spec, m, files, explicitInstall)
-}
-
-// fixupManifest returns a copy of m whose tooth/version are the requested
-// ones, warning like lip when they really differ (not just in case or build
-// metadata).
-func (e *Engine) fixupManifest(m *manifest.Manifest, spec manifest.PackageSpec) *manifest.Manifest {
-	out := *m
-	if m.Tooth == spec.ID.Path && m.Version == spec.Version {
-		return &out
-	}
-	if !equalFoldASCII(m.Tooth, spec.ID.Path) || !e.samePrecedence(m.Version, spec.Version) {
-		e.rep().Warning(fmt.Sprintf("Manifest of package %s version %s declares '%s' version %s; using the requested package path and version.",
-			spec.ID, spec.Version, m.Tooth, m.Version))
-	}
-	out.Tooth = spec.ID.Path
-	out.Version = spec.Version
-	return &out
-}
-
-func (e *Engine) samePrecedence(a, b string) bool {
-	va, err := e.Hooks.ParseVersion(a)
-	if err != nil {
-		return false
-	}
-	vb, err := e.Hooks.ParseVersion(b)
-	if err != nil {
-		return false
-	}
-	return va.Compare(vb) == 0
-}
-
-// equalFoldASCII is StringComparison.OrdinalIgnoreCase for the ASCII-only
-// package paths (module.CheckPath forbids non-ASCII).
-func equalFoldASCII(a, b string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := 0; i < len(a); i++ {
-		ca, cb := a[i], b[i]
-		if 'A' <= ca && ca <= 'Z' {
-			ca += 'a' - 'A'
-		}
-		if 'A' <= cb && cb <= 'Z' {
-			cb += 'a' - 'A'
-		}
-		if ca != cb {
-			return false
-		}
-	}
-	return true
-}
-
-// uninstallPackage ports PackageInstaller.UninstallPackage.
-func (e *Engine) uninstallPackage(ctx context.Context, ops PackageOps, id manifest.PackageID, dryRun bool) error {
-	installed, err := e.installedPackages(scopeAll)
-	if err != nil {
-		return err
-	}
-	var existing manifest.PackageSpec
-	found := false
-	for _, p := range installed {
-		if p.ID == id {
-			existing, found = p, true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("Cannot uninstall package %s because it is not installed", id)
-	}
-	if dryRun {
-		e.rep().Info(fmt.Sprintf("Dry run: would uninstall package %s version %s", existing.ID, existing.Version))
-		return nil
-	}
-	e.rep().Info(fmt.Sprintf("Uninstalling package %s version %s", existing.ID, existing.Version))
-
-	m, err := e.installedPackageManifest(existing)
-	if err != nil {
-		return err
-	}
-	variant, err := e.Hooks.ResolveVariant(m, existing.ID.Variant)
-	if err != nil {
-		return err
-	}
-	files, err := e.installedPackageFiles(existing)
-	if err != nil {
-		return err
-	}
-	if err := ops.UninstallPackage(workspace.WithPackage(ctx, existing.String()), variant, files); err != nil {
-		return err
-	}
-	return e.removeInstalledPackage(existing)
-}
-
-// parsePackageArgs ports LipClient.Install/Update argument parsing:
-// PackageSpec first, then PackageId (latest version). Local archives and
-// remote archive URLs are not supported.
-func (e *Engine) parsePackageArgs(packages []string) (specs []manifest.PackageSpec, flexible []manifest.PackageID, err error) {
-	for _, p := range packages {
-		spec, specErr := e.parseSpec(p)
-		if specErr == nil {
-			specs = append(specs, spec)
-			continue
-		}
-		id, idErr := e.parseID(p)
-		if idErr == nil {
-			flexible = append(flexible, id)
-			continue
-		}
-		return nil, nil, &aggregateError{
-			msg: fmt.Sprintf("Failed to parse package '%s'.", p),
-			errs: []error{
-				specErr,
-				idErr,
-				errors.New("local archive packages are not supported"),
-				errors.New("remote archive URL packages are not supported"),
-			},
-		}
-	}
-	return specs, flexible, nil
-}
-
-func (e *Engine) parseID(s string) (manifest.PackageID, error) {
-	if e.Hooks.ParseID != nil {
-		return e.Hooks.ParseID(s)
-	}
-	return manifest.ParsePackageID(s)
-}
-
-// parseSpec parses "id@version" with a strictly parsed, normalized version.
-func (e *Engine) parseSpec(s string) (manifest.PackageSpec, error) {
-	parse := e.Hooks.ParseSpec
-	if parse == nil {
-		parse = manifest.ParsePackageSpec
-	}
-	spec, err := parse(s)
-	if err != nil {
-		return manifest.PackageSpec{}, err
-	}
-	v, err := e.Hooks.ParseVersion(spec.Version)
-	if err != nil {
-		return manifest.PackageSpec{}, err
-	}
-	spec.Version = v.String()
-	return spec, nil
-}
-
-// resolveArtifacts ports InstallService.ResolvePackageArtifacts. It reports
-// a StageResolve bar over the requested packages resolved.
-func (e *Engine) resolveArtifacts(ctx context.Context, specs []manifest.PackageSpec, flexible []manifest.PackageID) ([]artifact, error) {
-	var bar *engineBar
-	if n := len(specs) + len(flexible); n > 0 {
-		bar = e.newBar(report.StageResolve, report.UnitPackages, "Resolving packages", int64(n))
-		defer bar.done()
-	}
-	var arts []artifact
-	for _, spec := range specs {
-		bar.update(int64(len(arts)), spec.String())
-		src, err := e.Registry.OpenAsset(ctx, spec, selfAsset)
-		if err != nil {
-			return nil, err
-		}
-		arts = append(arts, artifact{spec: spec, source: src})
-	}
-	for _, id := range flexible {
-		bar.update(int64(len(arts)), id.String())
-		e.rep().Info(fmt.Sprintf("Getting available versions for package '%s'...", id))
-		spec, err := e.latestVersion(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		src, err := e.Registry.OpenAsset(ctx, spec, selfAsset)
-		if err != nil {
-			return nil, err
-		}
-		arts = append(arts, artifact{spec: spec, source: src})
-	}
-	bar.update(int64(len(arts)), "")
-	for i, a := range arts {
-		for _, b := range arts[i+1:] {
-			if a.spec.ID == b.spec.ID {
-				return nil, fmt.Errorf("Multiple packages with ID '%s' were specified. Please ensure that each package ID is unique.", a.spec.ID)
-			}
-		}
-	}
-	return arts, nil
-}
-
-// latestVersion ports InstallService.GetLatestVersion (prereleases
-// included) over the workspace + git registries.
-func (e *Engine) latestVersion(ctx context.Context, id manifest.PackageID) (manifest.PackageSpec, error) {
-	versions, err := e.baseRegistry().versions(ctx, id)
-	if err != nil {
-		return manifest.PackageSpec{}, err
-	}
-	if len(versions) == 0 {
-		return manifest.PackageSpec{}, fmt.Errorf("Failed to find the latest version for package '%s'.", id)
-	}
-	return manifest.PackageSpec{ID: id, Version: versions[len(versions)-1].String()}, nil
-}
-
-// solve runs the dependency solver with exact requirements on roots. It
-// reports an indeterminate StageResolve bar counting the distinct manifests
-// read.
-func (e *Engine) solve(ctx context.Context, reg pkgRegistry, roots []manifest.PackageSpec) ([]manifest.PackageSpec, error) {
-	bar := e.newBar(report.StageResolve, report.UnitPackages, "Resolving dependencies", 0)
-	defer bar.done()
-	reg = &manifestCounter{pkgRegistry: reg, bar: bar, seen: map[manifest.PackageSpec]bool{}}
-
-	reqs := make([]solver.Requirement, 0, len(roots))
-	for _, r := range roots {
-		v, err := e.Hooks.ParseVersion(r.Version)
-		if err != nil {
-			return nil, err
-		}
-		reqs = append(reqs, solver.Requirement{ID: r.ID.String(), Constraint: e.Hooks.ExactRange(v)})
-	}
-	logf := func(format string, args ...any) { e.rep().Info(fmt.Sprintf(format, args...)) }
-	selected, err := e.Hooks.Solve(ctx, &solverAdapter{e: e, reg: reg}, reqs, logf)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]manifest.PackageSpec, 0, len(selected))
-	for _, s := range selected {
-		id, err := e.parseID(s.ID)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, manifest.PackageSpec{ID: id, Version: s.Version.String()})
-	}
-	return out, nil
-}
-
-func artifactSpecs(arts []artifact) []manifest.PackageSpec {
-	out := make([]manifest.PackageSpec, len(arts))
-	for i, a := range arts {
-		out[i] = a.spec
-	}
-	return out
-}
-
-func findArtifact(arts []artifact, spec manifest.PackageSpec) (artifact, bool) {
-	for _, a := range arts {
-		if a.spec == spec {
-			return a, true
-		}
-	}
-	return artifact{}, false
-}
-
-func containsSpec(list []manifest.PackageSpec, s manifest.PackageSpec) bool {
-	for _, p := range list {
-		if p == s {
-			return true
-		}
-	}
-	return false
-}
-
-func containsID(list []manifest.PackageSpec, id manifest.PackageID) bool {
-	for _, p := range list {
-		if p.ID == id {
-			return true
-		}
-	}
-	return false
-}
-
-func idIn(ids []manifest.PackageID, id manifest.PackageID) bool {
-	for _, x := range ids {
-		if x == id {
-			return true
-		}
-	}
-	return false
-}
-
-// Size forwards workspace.Sizer to the wrapped archive source. The embedded
-// fetch.AssetSource is an interface, so its dynamic type's Size method is not
-// promoted; without this the placement bar could never count bytes for
-// archive assets.
-func (s archiveSource) Size(key string) (int64, bool) {
-	if sz, ok := s.AssetSource.(workspace.Sizer); ok {
-		return sz.Size(key)
-	}
-	return 0, false
-}
-
-var _ workspace.Sizer = archiveSource{}
-
-// Close releases the registry's resources (retained git packs) when it has
-// any. The engine must not be used afterwards.
-func (e *Engine) Close() error {
-	if c, ok := e.Registry.(io.Closer); ok {
-		return c.Close()
-	}
-	return nil
-}
-
-// CurrentRID returns the .NET runtime identifier for this process
-// (RuntimeInformation.RuntimeIdentifier), e.g. "win-x64", "win-arm64",
-// "linux-x64", "osx-arm64".
+// CurrentRID returns the .NET runtime identifier of this process
+// (RuntimeInformation.RuntimeIdentifier), e.g. "win-x64", "linux-arm64".
 func CurrentRID() string {
-	os := runtime.GOOS
-	switch os {
+	goos := runtime.GOOS
+	switch goos {
 	case "windows":
-		os = "win"
+		goos = "win"
 	case "darwin":
-		os = "osx"
+		goos = "osx"
 	}
 	arch := runtime.GOARCH
 	switch arch {
@@ -981,5 +130,1284 @@ func CurrentRID() string {
 	case "386":
 		arch = "x86"
 	}
-	return os + "-" + arch
+	return goos + "-" + arch
+}
+
+// newGUID returns a random version 4 GUID in .NET "D" format.
+func newGUID() string {
+	var b [16]byte
+	_, _ = rand.Read(b[:])
+	b[6] = (b[6] & 0x0f) | 0x40
+	b[8] = (b[8] & 0x3f) | 0x80
+	h := hex.EncodeToString(b[:])
+	return h[0:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:32]
+}
+
+func (e *Engine) info(msg string)    { e.rep.Info(msg) }
+func (e *Engine) warning(msg string) { e.rep.Warning(msg) }
+
+// operation is OperationOptions.
+type operation struct {
+	dryRun, ignoreScripts, noDependencies bool
+}
+
+// request is a package argument and the request it makes (PackageRequest,
+// whose range is always "any version" for a package argument).
+type request struct {
+	arg    string
+	source ref.Ref
+}
+
+// workspace is McmodService.Workspace: what an operation works on.
+type workspace struct {
+	root     string
+	lock     *pkgmodel.LockFile
+	env      environment
+	provider archiveProvider
+	resolver *resolver
+}
+
+// newProvider returns the archive provider of one operation.
+func (e *Engine) newProvider() archiveProvider {
+	return newProvider(e.git, e.cache, e.opts.GithubProxy, e.client)
+}
+
+// Install is McmodService.Install (protocol/cli.md §5.1).
+func (e *Engine) Install(ctx context.Context, packages []string, dryRun, ignoreScripts, noDependencies bool) error {
+	op := operation{dryRun: dryRun, ignoreScripts: ignoreScripts, noDependencies: noDependencies}
+	release, err := e.beginOperation(op)
+	if err != nil {
+		return err
+	}
+	defer release()
+	ws, err := e.openWorkspace(ctx)
+	if err != nil {
+		return err
+	}
+	requests, err := e.parseRequests(packages)
+	if err != nil {
+		return err
+	}
+
+	if noDependencies {
+		return e.installWithoutDependencies(ctx, ws, requests, op)
+	}
+
+	candidates, err := e.requestedCandidates(ctx, ws, requests, false)
+	if err != nil {
+		return err
+	}
+	for i, c := range candidates {
+		identity := c.Identity()
+		for j := range ws.lock.Packages {
+			p := &ws.lock.Packages[j]
+			if p.Explicit && ref.NamesEqual(install.LockedIdentity(p), identity) {
+				return &Error{Msg: fmt.Sprintf("Cannot install '%s': package '%s' is already explicitly"+
+					" installed (version %s). To change its version, run 'lip update %s' instead.",
+					requests[i].arg, identity, install.LockedVersion(p), requests[i].arg),
+					kind: ErrAlreadyExplicitlyInstalled}
+			}
+		}
+	}
+
+	unpinned := make([]string, len(candidates))
+	for i, c := range candidates {
+		unpinned[i] = c.Identity()
+	}
+	p, err := e.makePlan(ctx, ws, requests, unpinned, explicitIdentities(ws.lock))
+	if err != nil {
+		return err
+	}
+	return e.execute(ctx, ws, op, e.changes(ws, op, p))
+}
+
+// Uninstall is McmodService.Uninstall (protocol/cli.md §5.2).
+func (e *Engine) Uninstall(ctx context.Context, packages []string, dryRun, ignoreScripts, noDependencies bool) error {
+	op := operation{dryRun: dryRun, ignoreScripts: ignoreScripts, noDependencies: noDependencies}
+	release, err := e.beginOperation(op)
+	if err != nil {
+		return err
+	}
+	defer release()
+	ws, err := e.openWorkspace(ctx)
+	if err != nil {
+		return err
+	}
+
+	var targets []int
+	for _, arg := range packages {
+		matched, err := e.matchInstalled(ws, arg)
+		if err != nil {
+			return err
+		}
+		if len(matched) == 0 {
+			return &Error{Msg: fmt.Sprintf("Package '%s' is not installed in this workspace, so it cannot be"+
+				" uninstalled. Run 'lip list' to see the installed packages and their identities.", arg)}
+		}
+		if !noDependencies {
+			for _, i := range matched {
+				if p := &ws.lock.Packages[i]; !p.Explicit {
+					return &Error{Msg: fmt.Sprintf("Package '%s' was installed as a dependency of other"+
+						" packages, not requested by you, so lip uninstalls it by itself once no package"+
+						" needs it. To uninstall it anyway, pass --no-dependencies (the packages that need"+
+						" it may then stop working).", install.LockedIdentity(p))}
+				}
+			}
+		}
+		for _, i := range matched {
+			if !slices.Contains(targets, i) {
+				targets = append(targets, i)
+			}
+		}
+	}
+
+	if noDependencies {
+		e.warning("--no-dependencies is enabled. This operation may result in a broken workspace.")
+		var changes []change
+		for i := len(ws.lock.Packages) - 1; i >= 0; i-- {
+			if slices.Contains(targets, i) {
+				changes = append(changes, change{kind: uninstallChange, origin: i})
+			}
+		}
+		return e.execute(ctx, ws, op, changeSet{changes: changes})
+	}
+
+	removed := map[string]bool{}
+	for _, i := range targets {
+		removed[ref.Fold(install.LockedIdentity(&ws.lock.Packages[i]))] = true
+	}
+	var explicit []string
+	for _, id := range explicitIdentities(ws.lock) {
+		if !removed[ref.Fold(id)] {
+			explicit = append(explicit, id)
+		}
+	}
+	p, err := e.makePlan(ctx, ws, nil, nil, explicit)
+	if err != nil {
+		return err
+	}
+	for _, kept := range p.members {
+		if removed[ref.Fold(kept.Identity())] {
+			e.info(fmt.Sprintf("Package '%s' is still required by other packages; keeping it as a dependency.",
+				kept.Identity()))
+		}
+	}
+	return e.execute(ctx, ws, op, e.changes(ws, op, p))
+}
+
+// Update is McmodService.Update (protocol/cli.md §5.3).
+func (e *Engine) Update(ctx context.Context, packages []string, dryRun, ignoreScripts bool) error {
+	op := operation{dryRun: dryRun, ignoreScripts: ignoreScripts}
+	release, err := e.beginOperation(op)
+	if err != nil {
+		return err
+	}
+	defer release()
+	ws, err := e.openWorkspace(ctx)
+	if err != nil {
+		return err
+	}
+
+	var requests []request
+	if len(packages) == 0 {
+		// Every explicitly installed package, requested again by its source: a
+		// remote repository at its newest version, a branch at its head, a tag
+		// where it points now, a rev as it is, a URL downloaded again and a
+		// local path with its current content.
+		for i := range ws.lock.Packages {
+			p := &ws.lock.Packages[i]
+			if !p.Explicit {
+				continue
+			}
+			source, err := parseRecordedSource(p)
+			if err != nil {
+				return err
+			}
+			if source.Kind == ref.KindFile {
+				path, err := source.LocalPath()
+				if err != nil {
+					return err
+				}
+				if _, err := os.Stat(path); err != nil {
+					e.warning(fmt.Sprintf("Keeping package '%s' as it is: %s, which it was installed from,"+
+						" does not exist any more.", install.LockedIdentity(p), path))
+					continue
+				}
+			}
+			requests = append(requests, request{arg: install.LockedIdentity(p), source: source})
+		}
+	} else {
+		if requests, err = e.parseRequests(packages); err != nil {
+			return err
+		}
+	}
+
+	// A URL is downloaded again (protocol/workspace.md §5 "Updating").
+	for _, r := range requests {
+		if r.source.Kind == ref.KindURL {
+			if err := ws.provider.Forget(r.source.Target); err != nil {
+				return err
+			}
+		}
+	}
+
+	candidates, err := e.requestedCandidates(ctx, ws, requests, true)
+	if err != nil {
+		return err
+	}
+	var identities []string
+	var requested []request
+	for i, c := range candidates {
+		identity := c.Identity()
+		installed := false
+		for j := range ws.lock.Packages {
+			if ref.NamesEqual(install.LockedIdentity(&ws.lock.Packages[j]), identity) {
+				installed = true
+				break
+			}
+		}
+		if !installed {
+			return &Error{Msg: fmt.Sprintf("Cannot update '%s': package '%s' is not installed in this"+
+				" workspace. To install it, run 'lip install %s'.", requests[i].arg, identity, requests[i].arg)}
+		}
+		if containsIdentity(identities, identity) {
+			continue
+		}
+		identities = append(identities, identity)
+		requested = append(requested, requests[i])
+	}
+
+	p, err := e.makePlan(ctx, ws, requested, identities, explicitIdentities(ws.lock))
+	if err != nil {
+		return err
+	}
+	return e.execute(ctx, ws, op, e.changes(ws, op, p))
+}
+
+// List returns the packages of the workspace file as "<identity>@<version>",
+// in installation order, explicitly installed packages and dependency
+// packages apart (protocol/cli.md §5.4; LipClient.List).
+func (e *Engine) List(ctx context.Context) (explicit, implicit []string, err error) {
+	packages, err := e.Packages(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	explicit, implicit = []string{}, []string{}
+	for _, p := range packages {
+		s := p.Identity + "@" + p.Version
+		if p.Explicit {
+			if !slices.Contains(explicit, s) {
+				explicit = append(explicit, s)
+			}
+		} else if !slices.Contains(implicit, s) {
+			implicit = append(implicit, s)
+		}
+	}
+	return explicit, implicit, nil
+}
+
+// Packages is McmodService.List: the packages of the workspace file. The
+// workspace file derived from a tooth_lock.json is only read, for the
+// environment a workspace operation would give it, without the commits it
+// would record.
+func (e *Engine) Packages(ctx context.Context) ([]InstalledPackage, error) {
+	lf, exists, err := pkgfile.LoadWorkspace(e.Dir)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		// DetermineEnvironment(null, null): list takes no runtime override.
+		env := environment{Platform: e.platform, Runtime: CurrentRID()}
+		if lf, err = e.readToothLock(ctx, e.Dir, env, nil, false); err != nil {
+			return nil, err
+		}
+	}
+	out := []InstalledPackage{}
+	if lf == nil {
+		return out, nil
+	}
+	for i := range lf.Packages {
+		p := &lf.Packages[i]
+		out = append(out, InstalledPackage{
+			Identity: install.LockedIdentity(p),
+			ID:       stringMember(p.Manifest, "id"),
+			Variant:  p.Variant,
+			Version:  install.LockedVersion(p),
+			Explicit: p.Explicit,
+			Ref:      p.Ref,
+		})
+	}
+	return out, nil
+}
+
+// CacheClean deletes lip's cache (protocol/cli.md §5.9), reporting one
+// cache_clean bar: entries deleted out of the entries counted by a walk
+// done before deleting, ended with Done whether the clean succeeded or not.
+func (e *Engine) CacheClean(ctx context.Context) error {
+	var bar *report.Progress
+	err := e.cache.CleanProgress(ctx, func(done, total int64) {
+		if bar == nil {
+			bar = &report.Progress{ID: "cache_clean", Stage: report.StageCacheClean,
+				Message: "Cleaning the download cache", Unit: report.UnitFiles}
+		}
+		bar.Current, bar.Total = done, total
+		report.Report(e.rep, *bar)
+	})
+	if bar != nil {
+		bar.Done = true
+		report.Report(e.rep, *bar)
+	}
+	return err
+}
+
+// #region Planning
+
+// openWorkspace is OpenWorkspace.
+func (e *Engine) openWorkspace(ctx context.Context) (*workspace, error) {
+	root := e.Dir
+	recorded, exists, err := pkgfile.LoadWorkspace(root)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		recorded = nil
+	}
+	env, err := e.determineEnvironment(recorded)
+	if err != nil {
+		return nil, err
+	}
+	p := e.newProvider()
+	if recorded == nil {
+		if recorded, err = e.readToothLock(ctx, root, env, p, true); err != nil {
+			return nil, err
+		}
+	}
+	// A workspace without a workspace file gets the environment of its first
+	// operation.
+	lf := recorded
+	if lf == nil {
+		lf = &pkgmodel.LockFile{Format: pkgmodel.Format, Platform: env.Platform, Runtime: env.Runtime}
+	}
+	res := newResolver(ctx, p, env, e.warning)
+	for i := range lf.Packages {
+		pkg := &lf.Packages[i]
+		if pkg.Commit == "" {
+			continue
+		}
+		if source, _, ok := ref.TryParse(pkg.Ref, true); ok {
+			res.PinCommit(source, pkg.Commit)
+		}
+	}
+	return &workspace{root: root, lock: lf, env: env, provider: p, resolver: res}, nil
+}
+
+// readToothLock is ReadToothLock: the workspace file
+// protocol/compatibility.md §3 derives from the tooth_lock.json of a
+// workspace without a workspace file, for its environment; nil when it has
+// none that Section 3 reads. With resolveCommits, the commit of each package
+// is that of the tag "v<version>" of its remote repository, and it fails
+// when that cannot be obtained.
+func (e *Engine) readToothLock(ctx context.Context, root string, env environment, p archiveProvider,
+	resolveCommits bool) (*pkgmodel.LockFile, error) {
+	tl, ok := compat.ReadToothLock(root)
+	if !ok {
+		return nil, nil
+	}
+	var commitOf compat.CommitOf
+	if resolveCommits {
+		e.info("Migrating " + compat.ToothLockFileName + " of lip v0.x to the workspace file.")
+		commitOf = func(repo, tag string) (string, error) {
+			g, _, ok := ref.TryParseGitRef(strings.TrimPrefix(tag, "v"))
+			if !ok {
+				return "", nil
+			}
+			commit, err := p.ResolveGitRef(ctx, repo, g)
+			if err != nil {
+				if isUnavailable(err) {
+					return "", nil
+				}
+				return "", err
+			}
+			return commit, nil
+		}
+	}
+	return compat.DeriveWorkspace(tl, root, env.Platform, env.Runtime, commitOf)
+}
+
+// beginOperation is BeginOperation: takes the workspace lock, then finishes
+// or undoes what an interrupted operation left in the journal. A dry run
+// writes nothing, so it takes no lock and only reports the journal.
+func (e *Engine) beginOperation(op operation) (release func(), err error) {
+	root := e.Dir
+	if op.dryRun {
+		if err := e.recoverInterrupted(root, op); err != nil {
+			return nil, err
+		}
+		return func() {}, nil
+	}
+	if err := txn.EnsureLipDir(root); err != nil {
+		return nil, err
+	}
+	mutex, err := txn.Lock(root)
+	if err != nil {
+		return nil, err
+	}
+	if err := e.recoverInterrupted(root, op); err != nil {
+		mutex.Close()
+		return nil, err
+	}
+	return func() { mutex.Close() }, nil
+}
+
+func (e *Engine) recoverInterrupted(root string, op operation) error {
+	if !txn.HasJournal(root) {
+		return nil
+	}
+	journal := filepath.Join(root, txn.LipDirectory, txn.JournalFile)
+	if op.dryRun {
+		e.warning("An interrupted lip operation left changes in this workspace, which the next install," +
+			" uninstall or update finishes or undoes. The dry run plans with the workspace as it is now.")
+		return nil
+	}
+
+	result, err := txn.RecoverWith(root, pkgfile.RecoverHooks(root))
+	if err != nil {
+		return err
+	}
+	if result == nil {
+		return nil
+	}
+	started := ""
+	if result.Started != "" {
+		started = fmt.Sprintf(" (it started at %s)", result.Started)
+	}
+	var errs strings.Builder
+	for _, err := range result.Errors {
+		errs.WriteString("\n  - " + err.Error())
+	}
+	if result.Committed {
+		e.info(fmt.Sprintf("Finished an interrupted lip operation that had completed%s: deleted the"+
+			" backups it left.", started))
+		if len(result.Errors) > 0 {
+			e.warning("Some of them could not be deleted:" + errs.String())
+		}
+		return nil
+	}
+
+	if len(result.Errors) > 0 {
+		// The errors behind the list, so that the report and the hints see them.
+		var cause error = result.Errors[0]
+		if len(result.Errors) > 1 {
+			cause = &fetch.AggregateError{Message: "The changes that could not be undone.", Errs: result.Errors}
+		}
+		return &Error{Msg: fmt.Sprintf("A lip operation on this workspace was interrupted%s, and lip"+
+			" cannot undo all of its changes yet:%s\nFix the problem (e.g. stop the server and other"+
+			" programs using these files), then run lip again; it retries the rest. Do not delete"+
+			" '%s': it records what is left to undo.", started, errs.String(), journal), Err: cause}
+	}
+
+	e.warning(fmt.Sprintf("A lip operation on this workspace was interrupted%s; undid its %d changes."+
+		" The workspace and its workspace file are as they were before it.", started, result.Changes))
+	return nil
+}
+
+// determineEnvironment is DetermineEnvironment (protocol/cli.md §4): the
+// platform of the engine, which a workspace file must record when it has
+// one; the runtime is the override, then the workspace file's, then the RID
+// the engine runs on.
+func (e *Engine) determineEnvironment(lf *pkgmodel.LockFile) (environment, error) {
+	if lf != nil && lf.Platform != e.platform {
+		var msg string
+		if e.platform == pkgmodel.PlatformServer {
+			msg = fmt.Sprintf("The workspace file %s records the platform \"%s\" in its \"platform\" field,"+
+				" but lip manages server workspaces only (\"%s\"). Client workspaces are managed by"+
+				" launchers such as LeviLauncher.", pkgmodel.WorkspaceFile, lf.Platform, e.platform)
+		} else {
+			msg = fmt.Sprintf("The workspace file %s records the platform \"%s\" in its \"platform\" field,"+
+				" but LeviLauncher manages %s workspaces only (\"%s\"). Server workspaces are managed"+
+				" by lip.", pkgmodel.WorkspaceFile, lf.Platform, e.platform, e.platform)
+		}
+		return environment{}, &Error{Msg: msg}
+	}
+	runtime := e.opts.Runtime
+	if runtime == "" && lf != nil {
+		runtime = lf.Runtime
+	}
+	if runtime == "" {
+		runtime = CurrentRID()
+	}
+	return environment{Platform: e.platform, Runtime: runtime}, nil
+}
+
+// parseRequests parses package arguments; local paths are relative to the
+// workspace root.
+func (e *Engine) parseRequests(packages []string) ([]request, error) {
+	out := make([]request, 0, len(packages))
+	for _, p := range packages {
+		source, err := ref.ParsePackageArgument(p, e.Dir)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, request{arg: p, source: source})
+	}
+	return out, nil
+}
+
+// requestedCandidates is RequestedCandidates: the first candidate of every
+// request. Fails when a request has no candidate, or, unless
+// allowSameIdentity, when two requests name the same package
+// (protocol/cli.md §5.1).
+func (e *Engine) requestedCandidates(ctx context.Context, ws *workspace, requests []request,
+	allowSameIdentity bool) ([]*candidate, error) {
+	var bar *engineBar
+	if len(requests) > 0 {
+		bar = e.newBar(report.StageResolve, report.UnitPackages, "Resolving packages", int64(len(requests)))
+		defer bar.done()
+	}
+	var out []*candidate
+	for _, r := range requests {
+		bar.update(int64(len(out)), r.arg)
+		c, err := e.firstCandidate(ctx, ws, r)
+		if err != nil {
+			return nil, err
+		}
+		identity := c.Identity()
+		earlier := -1
+		for i, o := range out {
+			if ref.NamesEqual(o.Identity(), identity) {
+				earlier = i
+				break
+			}
+		}
+		if !allowSameIdentity && earlier >= 0 {
+			return nil, &Error{Msg: fmt.Sprintf("The arguments '%s' and '%s' both name the package '%s'."+
+				" Request each package once.", requests[earlier].arg, r.arg, identity)}
+		}
+		out = append(out, c)
+	}
+	bar.update(int64(len(out)), "")
+	return out, nil
+}
+
+func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (*candidate, error) {
+	e.info("Resolving " + r.arg + "...")
+	var diagnostics []graph.Diagnostic
+	seq := ws.resolver.resolve(r.source, nil, false, func(d graph.Diagnostic) {
+		diagnostics = append(diagnostics, d)
+	})
+	c, err := seq.nextCandidate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if c != nil {
+		return c, nil
+	}
+
+	const shown = 10
+	summary := fmt.Sprintf("No package found for '%s' that can be installed in this workspace (%s, %s).",
+		r.arg, ws.env.Platform, ws.env.Runtime)
+	message := summary
+	if len(diagnostics) > 0 {
+		message += " Every place lip looked failed:"
+		for _, d := range diagnostics[:min(shown, len(diagnostics))] {
+			message += "\n  - " + d.Message
+		}
+	}
+	if len(diagnostics) > shown {
+		message += fmt.Sprintf("\n  ... and %d more", len(diagnostics)-shown)
+	}
+	// The errors behind the diagnostics are kept as causes, so that the
+	// failure report shows them and their hints apply.
+	var causes []error
+	for _, d := range diagnostics {
+		if d.Cause != nil {
+			causes = append(causes, d.Cause)
+		}
+	}
+	if len(causes) == 0 {
+		// When the package was found, the reasons above say what is wrong;
+		// spelling advice fits only when nothing (or a repository without
+		// versions, maybe the wrong one) was found.
+		notFound := true
+		for _, d := range diagnostics {
+			if !strings.Contains(d.Message, "has no version tags") {
+				notFound = false
+				break
+			}
+		}
+		if notFound {
+			message += "\nCheck the spelling of the package and the version you asked for."
+		}
+		return nil, &Error{Msg: message}
+	}
+	return nil, &Error{Msg: message, Err: &fetch.AggregateError{Message: summary, Errs: causes}}
+}
+
+// plan is McmodService.Plan: the new package set in installation order, and
+// the folded identities of its explicitly installed members.
+type plan struct {
+	members  []*candidate
+	explicit map[string]bool
+}
+
+// makePlan is MakePlan.
+func (e *Engine) makePlan(ctx context.Context, ws *workspace, requests []request, unpinned, explicitIdentities []string) (*plan, error) {
+	unpinnedSet := foldSet(unpinned)
+	explicitSet := foldSet(explicitIdentities)
+
+	var pinnedAll []graph.Candidate
+	for i := range ws.lock.Packages {
+		p := &ws.lock.Packages[i]
+		if unpinnedSet[ref.Fold(install.LockedIdentity(p))] {
+			continue
+		}
+		c, err := e.pinnedCandidate(ctx, ws, p)
+		if err != nil {
+			return nil, err
+		}
+		pinnedAll = append(pinnedAll, c)
+	}
+	greqs := make([]graph.Request, len(requests))
+	for i, r := range requests {
+		greqs[i] = graph.Request{Source: ws.resolver.graphRef(r.source)}
+	}
+
+	solution, err := e.solve(ctx, ws, greqs, pinnedAll)
+	if withInstalled, ok := err.(*graph.ResolutionError); ok {
+		var pinnedExplicit []graph.Candidate
+		for _, c := range pinnedAll {
+			if explicitSet[ref.Fold(c.Identity())] {
+				pinnedExplicit = append(pinnedExplicit, c)
+			}
+		}
+		if len(pinnedExplicit) == len(pinnedAll) {
+			return nil, err
+		}
+		lines := strings.Split(withInstalled.Message, "\n")
+		reason := strings.TrimRight(withInstalled.Message, ".")
+		if len(lines) > 1 {
+			reason = strings.Trim(lines[1], " -:.")
+		}
+		e.info(fmt.Sprintf("The installed dependency packages do not fit the request (%s); choosing their"+
+			" versions again.", reason))
+		solution, err = e.solve(ctx, ws, greqs, pinnedExplicit)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Keep what the requests and the explicitly installed packages need.
+	needed := map[int]bool{}
+	var pending []int
+	for _, i := range solution.RequestSatisfiers {
+		if i >= 0 {
+			pending = append(pending, i)
+		}
+	}
+	for i, c := range solution.Order {
+		if explicitSet[ref.Fold(c.Identity())] {
+			pending = append(pending, i)
+		}
+	}
+	for len(pending) > 0 {
+		index := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+		if !needed[index] {
+			needed[index] = true
+			pending = append(pending, solution.Dependencies[index]...)
+		}
+	}
+
+	finalExplicit := map[string]bool{}
+	for k := range explicitSet {
+		finalExplicit[k] = true
+	}
+	for _, i := range solution.RequestSatisfiers {
+		if i >= 0 {
+			finalExplicit[ref.Fold(solution.Order[i].Identity())] = true
+		}
+	}
+	p := &plan{explicit: finalExplicit}
+	for i, c := range solution.Order {
+		if needed[i] {
+			p.members = append(p.members, c.(*candidate))
+		}
+	}
+	return p, nil
+}
+
+// solve runs the graph solver under an indeterminate resolve bar counting
+// the package files read.
+func (e *Engine) solve(ctx context.Context, ws *workspace, requests []graph.Request, pinned []graph.Candidate) (*graph.Solution, error) {
+	bar := e.newBar(report.StageResolve, report.UnitPackages, "Resolving dependencies", 0)
+	defer bar.done()
+	read := int64(0)
+	ws.resolver.onRead = func(key string) {
+		read++
+		bar.update(read, key)
+	}
+	defer func() { ws.resolver.onRead = nil }()
+	return graph.Solve(ctx, graph.Problem{Requests: requests, Pinned: pinned, Resolver: ws.resolver})
+}
+
+// #endregion
+
+// #region Applying
+
+type changeKind int
+
+const (
+	uninstallChange changeKind = iota
+	installChange
+	markExplicitChange
+)
+
+// change is a Change: uninstalling or marking an installed package (origin,
+// its index in the workspace file), or installing a candidate.
+type change struct {
+	kind      changeKind
+	origin    int
+	candidate *candidate
+	explicit  bool
+}
+
+// changeSet is ChangeSet: what an operation changes, in order, and how the
+// workspace file entries left at the end are ordered and marked (finish;
+// nil keeps them as they are).
+type changeSet struct {
+	changes []change
+	finish  func(remaining []pkgmodel.LockedPackage) []pkgmodel.LockedPackage
+}
+
+// changes is Changes: from the installed packages to the planned package
+// set, uninstalling what leaves or changes (in reverse installation order),
+// then installing what enters (in installation order).
+func (e *Engine) changes(ws *workspace, op operation, p *plan) changeSet {
+	members := map[string]*candidate{}
+	for _, c := range p.members {
+		members[ref.Fold(c.Identity())] = c
+	}
+
+	// The identities of the packages that stay exactly as installed.
+	kept := map[string]bool{}
+	for i := range ws.lock.Packages {
+		pkg := &ws.lock.Packages[i]
+		key := ref.Fold(install.LockedIdentity(pkg))
+		if m, ok := members[key]; ok && isSamePackage(pkg, m) {
+			kept[key] = true
+		}
+	}
+
+	var changes []change
+	for i := len(ws.lock.Packages) - 1; i >= 0; i-- {
+		if !kept[ref.Fold(install.LockedIdentity(&ws.lock.Packages[i]))] {
+			changes = append(changes, change{kind: uninstallChange, origin: i})
+		}
+	}
+	for _, c := range p.members {
+		key := ref.Fold(c.Identity())
+		if !kept[key] {
+			changes = append(changes, change{kind: installChange, candidate: c, explicit: p.explicit[key]})
+		}
+	}
+
+	finish := func(remaining []pkgmodel.LockedPackage) []pkgmodel.LockedPackage {
+		// The workspace file lists the members of the new set in installation
+		// order.
+		var final []pkgmodel.LockedPackage
+		for _, c := range p.members {
+			var pkg pkgmodel.LockedPackage
+			for _, r := range remaining {
+				if ref.NamesEqual(install.LockedIdentity(&r), c.Identity()) {
+					pkg = r
+					break
+				}
+			}
+			key := ref.Fold(install.LockedIdentity(&pkg))
+			isExplicit := p.explicit[key]
+			if isExplicit != pkg.Explicit && kept[key] {
+				verb := "Marking"
+				if op.dryRun {
+					verb = "Dry run: would mark"
+				}
+				state := "not explicitly installed."
+				if isExplicit {
+					state = "explicitly installed."
+				}
+				e.info(fmt.Sprintf("%s package '%s' version %s as %s", verb, install.LockedIdentity(&pkg),
+					install.LockedVersion(&pkg), state))
+			}
+			entry := pkg
+			entry.Explicit = isExplicit
+			// A kept package requested by another source, e.g.
+			// "<repo>@<version>" for a package installed from "<repo>",
+			// records the source it is requested by now.
+			if m, ok := members[key]; ok && isExplicit && kept[key] && m.source.String() != pkg.Ref {
+				entry.Ref = m.source.String()
+			}
+			final = append(final, entry)
+		}
+		return final
+	}
+	return changeSet{changes: changes, finish: finish}
+}
+
+// installWithoutDependencies is InstallWithoutDependencies (protocol/cli.md
+// §5.1 with --no-dependencies).
+func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, requests []request, op operation) error {
+	e.warning("--no-dependencies is enabled. This operation may result in a broken workspace.")
+	candidates, err := e.requestedCandidates(ctx, ws, requests, false)
+	if err != nil {
+		return err
+	}
+	var changes []change
+	for _, c := range candidates {
+		existing := -1
+		for i := range ws.lock.Packages {
+			if ref.NamesEqual(install.LockedIdentity(&ws.lock.Packages[i]), c.Identity()) {
+				existing = i
+				break
+			}
+		}
+		if existing >= 0 && isSamePackage(&ws.lock.Packages[existing], c) {
+			changes = append(changes, change{kind: markExplicitChange, origin: existing})
+			continue
+		}
+		if existing >= 0 {
+			changes = append(changes, change{kind: uninstallChange, origin: existing})
+		}
+		changes = append(changes, change{kind: installChange, candidate: c, explicit: true})
+	}
+	return e.execute(ctx, ws, op, changeSet{changes: changes})
+}
+
+// remainingPackage is an entry of the workspace file as the planned changes
+// leave it: origin is its index in the workspace file, or -1 for a package
+// the operation installs.
+type remainingPackage struct {
+	pkg    pkgmodel.LockedPackage
+	origin int
+}
+
+// plannedChange is a planned uninstall or install and its message.
+type plannedChange struct {
+	message string
+	pkg     string // "<identity>@<version>", for progress
+	plan    *install.Plan
+}
+
+// execute is Execute: plans every change against a view of the workspace as
+// the earlier changes leave it, so that every check and every fetch happens
+// before anything changes; then applies the plans in one transaction and
+// writes the workspace file last. A failure while applying (or
+// cancellation) undoes every change and leaves the workspace file as it was
+// (protocol/workspace.md §6). In a dry run, reports the plans instead.
+func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs changeSet) error {
+	var layout *install.LayoutPlan
+	for _, c := range cs.changes {
+		if c.kind != markExplicitChange {
+			var err error
+			if layout, err = install.PlanLayout(ws.root); err != nil {
+				return err
+			}
+			if op.dryRun {
+				for _, m := range layout.DryRunMessages() {
+					e.info(m)
+				}
+			}
+			break
+		}
+	}
+
+	view := install.NewView(layout)
+	remaining := make([]remainingPackage, len(ws.lock.Packages))
+	for i, p := range ws.lock.Packages {
+		remaining[i] = remainingPackage{pkg: p, origin: i}
+	}
+	installed := func() []pkgmodel.LockedPackage {
+		out := make([]pkgmodel.LockedPackage, len(remaining))
+		for i, r := range remaining {
+			out[i] = r.pkg
+		}
+		return out
+	}
+	options := func() install.Options {
+		return install.Options{Root: ws.root, Installed: installed(), DryRun: op.dryRun,
+			IgnoreScripts: op.ignoreScripts}
+	}
+
+	var plans []plannedChange
+	for _, c := range cs.changes {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		switch c.kind {
+		case uninstallChange:
+			pkg := ws.lock.Packages[c.origin]
+			what := fmt.Sprintf(" package '%s' version %s", install.LockedIdentity(&pkg), install.LockedVersion(&pkg))
+			if op.dryRun {
+				e.info("Dry run: would uninstall" + what)
+			}
+			entry, err := lockedEntry(&pkg, ws.env)
+			if err != nil {
+				return err
+			}
+			pl, err := e.inst.PlanUninstall(ctx, view, options(), &pkg, entry)
+			if err != nil {
+				return err
+			}
+			plans = append(plans, plannedChange{message: "Uninstalling" + what,
+				pkg: install.LockedIdentity(&pkg) + "@" + install.LockedVersion(&pkg), plan: pl})
+			for i, r := range remaining {
+				if r.origin == c.origin {
+					remaining = append(remaining[:i:i], remaining[i+1:]...)
+					break
+				}
+			}
+		case installChange:
+			cand := c.candidate
+			what := fmt.Sprintf(" package '%s' version %s from %s", cand.Identity(), cand.version, cand.archive.Key)
+			if op.dryRun {
+				e.info("Dry run: would install" + what)
+			}
+			pl, err := e.inst.PlanInstall(ctx, view, options(), cand.installPackage())
+			if err != nil {
+				return err
+			}
+			plans = append(plans, plannedChange{message: "Installing" + what,
+				pkg: cand.Identity() + "@" + cand.version.String(), plan: pl})
+			remaining = append(remaining, remainingPackage{pkg: locked(cand, c.explicit, pl.OwnedFiles), origin: -1})
+		case markExplicitChange:
+			pkg := ws.lock.Packages[c.origin]
+			if !pkg.Explicit {
+				verb := "Marking"
+				if op.dryRun {
+					verb = "Dry run: would mark"
+				}
+				e.info(fmt.Sprintf("%s package '%s' version %s as explicitly installed.", verb,
+					install.LockedIdentity(&pkg), install.LockedVersion(&pkg)))
+			}
+			for i := range remaining {
+				if remaining[i].origin == c.origin {
+					remaining[i].pkg.Explicit = true
+					break
+				}
+			}
+		}
+	}
+
+	finalPackages := installed()
+	if cs.finish != nil {
+		finalPackages = cs.finish(finalPackages)
+	}
+	final := lockWith(ws, finalPackages)
+	if op.dryRun {
+		return nil
+	}
+
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if len(plans) == 0 {
+		return pkgfile.SaveWorkspace(ws.root, final)
+	}
+
+	var reserved []string
+	for _, p := range plans {
+		reserved = append(reserved, p.plan.WrittenPaths()...)
+	}
+	commitStaged, discardStaged := pkgfile.WorkspaceStore{}.StagedHooks(ws.root)
+	tx, err := txn.Begin(ws.root, txn.Options{Reserved: reserved, Context: ctx,
+		CommitStaged: commitStaged, DiscardStaged: discardStaged})
+	if err != nil {
+		return err
+	}
+	defer tx.Close()
+
+	bar := e.newBar(report.StageTask, report.UnitPackages, "Applying package changes", int64(len(plans)))
+	applied := int64(0)
+	defer func() { bar.doneAt(applied) }()
+	err = func() error {
+		if layout != nil {
+			if err := install.ApplyLayout(tx, layout); err != nil {
+				return err
+			}
+		}
+		for _, p := range plans {
+			e.info(p.message)
+			bar.step(applied, p.pkg, p.message)
+			if err := e.inst.Apply(ctx, tx, p.plan); err != nil {
+				return err
+			}
+			applied++
+			bar.update(applied, "")
+		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		// The commit point: the journal records the commit, then the
+		// workspace file moves into place.
+		if err := pkgfile.StageWorkspace(ws.root, final); err != nil {
+			return err
+		}
+		if err := tx.MarkCommitted(); err != nil {
+			return err
+		}
+		return pkgfile.CommitStaged(ws.root)
+	}()
+	if err != nil {
+		if isContextError(err) {
+			e.warning("Cancelled; undoing its changes to the workspace.")
+		} else {
+			e.warning("The operation failed; undoing its changes to the workspace.")
+		}
+		errs := tx.Rollback(func() error {
+			// A staged workspace file is never read, and the next save
+			// replaces it.
+			_ = pkgfile.DiscardStaged(ws.root)
+			return nil
+		})
+		for _, u := range errs {
+			e.warning(u.Error())
+		}
+		if len(errs) > 0 {
+			e.warning("Some changes could not be undone. Stop the server and other programs using the" +
+				" workspace; the next install, uninstall or update of this workspace tries again.")
+		}
+		return err
+	}
+
+	for _, w := range tx.Complete() {
+		e.warning(w.Error())
+	}
+	return nil
+}
+
+// locked is the workspace file entry of an installed candidate.
+func locked(c *candidate, explicit bool, files []string) pkgmodel.LockedPackage {
+	return pkgmodel.LockedPackage{
+		Manifest: c.manifest,
+		Variant:  c.variant,
+		Explicit: explicit,
+		Ref:      c.source.String(),
+		Commit:   commitOf(c),
+		Files:    append([]string{}, files...),
+	}
+}
+
+// lockWith is LockWith: the workspace file with the given packages and the
+// environment.
+func lockWith(ws *workspace, packages []pkgmodel.LockedPackage) *pkgmodel.LockFile {
+	if packages == nil {
+		packages = []pkgmodel.LockedPackage{}
+	}
+	return &pkgmodel.LockFile{
+		Format:   ws.lock.Format,
+		Platform: ws.env.Platform,
+		Runtime:  ws.env.Runtime,
+		Packages: packages,
+	}
+}
+
+// #endregion
+
+// #region Installed packages
+
+// pinnedCandidate is PinnedCandidate: rebuilds an installed package from the
+// workspace file (protocol/workspace.md §5, "Reinstalling"), with the
+// package file it records, and the archive of the commit it records for a
+// remote repository, otherwise the archive its source names now, opened when
+// first needed.
+func (e *Engine) pinnedCandidate(ctx context.Context, ws *workspace, p *pkgmodel.LockedPackage) (*candidate, error) {
+	c, err := func() (*candidate, error) {
+		version, err := semver.ParseStrict(install.LockedVersion(p))
+		if err != nil {
+			return nil, err
+		}
+		entry, err := lockedEntry(p, ws.env)
+		if err != nil {
+			return nil, err
+		}
+		source, err := parseRecordedSource(p)
+		if err != nil {
+			return nil, err
+		}
+		spec := source.Kind == ref.KindSpec
+		if spec && p.Commit == "" {
+			return nil, &pkgfile.LockFormatError{Message: fmt.Sprintf("The entry of '%s' has no \"commit\""+
+				" field, which every package from a remote repository (%s) must have.",
+				install.LockedIdentity(p), source)}
+		}
+		commit := ""
+		if spec {
+			commit = p.Commit
+		}
+		provider := ws.provider
+		src := archive.Defer(func() (archive.Source, error) {
+			var h *archiveHandle
+			var err error
+			if spec {
+				h, err = provider.OpenCommit(ctx, source.Target, commit)
+			} else {
+				plain, perr := source.WithVariant("")
+				if perr != nil {
+					return nil, perr
+				}
+				h, err = provider.Open(ctx, plain)
+			}
+			if err != nil {
+				return nil, err
+			}
+			return h.Source, nil
+		})
+		a := &archiveHandle{Key: p.Ref + " (installed)", Source: src, Commit: commit}
+		return ws.resolver.newCandidate(stringMember(p.Manifest, "id"), p.Variant, version, entry, p.Manifest, a, source), nil
+	}()
+	if err == nil {
+		return c, nil
+	}
+	var ie *install.Error
+	var lfe *pkgfile.LockFormatError
+	extra := " If the file was edited by hand, undo the edit."
+	switch {
+	case errors.As(err, &ie) && err == error(ie) && ws.env.Runtime != ws.lock.Runtime:
+		extra = fmt.Sprintf(" The workspace was installed for the runtime %s; run lip without --rid, or"+
+			" with that runtime.", ws.lock.Runtime)
+	case errors.As(err, &lfe) && err == error(lfe):
+		extra = ""
+	}
+	return nil, &Error{Msg: fmt.Sprintf("Cannot use the installed package '%s' as the workspace file %s"+
+		" records it, in the environment (%s, %s).%s", install.LockedIdentity(p), pkgmodel.WorkspaceFile,
+		ws.env.Platform, ws.env.Runtime, extra), Err: err}
+}
+
+// lockedEntry is McmodInstaller.LockedEntry: the entry of the variant of an
+// installed package in its recorded package file for the environment.
+func lockedEntry(p *pkgmodel.LockedPackage, env environment) (*pkgmodel.Entry, error) {
+	identity, version := install.LockedIdentity(p), install.LockedVersion(p)
+	doc, err := pkgfile.Parse(p.Manifest)
+	if err != nil {
+		return nil, &install.Error{Msg: fmt.Sprintf("The package file that the workspace file (%s) records"+
+			" for %s %s is invalid. If you edited the workspace file by hand, undo the change.",
+			pkgmodel.WorkspaceFile, identity, version), Err: err}
+	}
+	variant := "the default variant"
+	if p.Variant != "" {
+		variant = fmt.Sprintf("the variant \"%s\"", p.Variant)
+	}
+	entry := doc.SelectEntry(p.Variant, env.Platform, env.Runtime)
+	if entry == nil {
+		return nil, &install.Error{Msg: fmt.Sprintf("The package file that the workspace file (%s) records"+
+			" for %s %s has no entry of %s for the platform %s and the runtime %s. If you passed --rid,"+
+			" pass the runtime the workspace was installed for instead.",
+			pkgmodel.WorkspaceFile, identity, version, variant, env.Platform, env.Runtime)}
+	}
+	return entry, nil
+}
+
+// parseRecordedSource is ParseRecordedSource: the source an entry of the
+// workspace file records.
+func parseRecordedSource(p *pkgmodel.LockedPackage) (ref.Ref, error) {
+	source, err := ref.Parse(p.Ref, true)
+	if err != nil {
+		return ref.Ref{}, &pkgfile.LockFormatError{Message: fmt.Sprintf("The workspace file %s records \"%s\""+
+			" in the \"ref\" field of package '%s', which is not a valid package source. If the file was"+
+			" edited by hand, undo the edit.", pkgmodel.WorkspaceFile, p.Ref, install.LockedIdentity(p)), Err: err}
+	}
+	return source, nil
+}
+
+// matchInstalled is MatchInstalled (protocol/cli.md §5.2): the indexes of
+// the installed packages an uninstall argument names: by identity (ignoring
+// ASCII case), or else by source, with the locations compared ignoring ASCII
+// case; an argument without a variant matches every variant, and one without
+// a ref every ref.
+func (e *Engine) matchInstalled(ws *workspace, arg string) ([]int, error) {
+	var byIdentity []int
+	for i := range ws.lock.Packages {
+		if ref.NamesEqual(install.LockedIdentity(&ws.lock.Packages[i]), arg) {
+			byIdentity = append(byIdentity, i)
+		}
+	}
+	if len(byIdentity) > 0 {
+		return byIdentity, nil
+	}
+
+	wanted, err := ref.ParsePackageArgument(arg, ws.root)
+	if err != nil {
+		return nil, err
+	}
+	var out []int
+	for i := range ws.lock.Packages {
+		source, _, ok := ref.TryParse(ws.lock.Packages[i].Ref, true)
+		if !ok || source.Kind != wanted.Kind || !ref.NamesEqual(source.Target, wanted.Target) {
+			continue
+		}
+		if wanted.Variant != "" && source.Variant != wanted.Variant {
+			continue
+		}
+		if wanted.GitRef != nil && (source.GitRef == nil || *source.GitRef != *wanted.GitRef) {
+			continue
+		}
+		out = append(out, i)
+	}
+	return out, nil
+}
+
+// #endregion
+
+func explicitIdentities(lf *pkgmodel.LockFile) []string {
+	var out []string
+	for i := range lf.Packages {
+		if lf.Packages[i].Explicit {
+			out = append(out, install.LockedIdentity(&lf.Packages[i]))
+		}
+	}
+	return out
+}
+
+// isSamePackage reports whether a candidate is the installed package
+// (protocol/workspace.md §5): same identity, version and commit.
+func isSamePackage(p *pkgmodel.LockedPackage, c *candidate) bool {
+	return ref.NamesEqual(install.LockedIdentity(p), c.Identity()) &&
+		install.LockedVersion(p) == c.version.String() &&
+		strings.EqualFold(p.Commit, commitOf(c))
+}
+
+// commitOf is the commit of a candidate from a remote repository (lowercase
+// hex), or "".
+func commitOf(c *candidate) string {
+	if c.source.Kind != ref.KindSpec {
+		return ""
+	}
+	return strings.ToLower(c.archive.Commit)
+}
+
+func stringMember(manifest any, name string) string {
+	type getter interface{ Get(string) (any, bool) }
+	if o, ok := manifest.(getter); ok {
+		if v, ok := o.Get(name); ok {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
+func foldSet(names []string) map[string]bool {
+	m := map[string]bool{}
+	for _, n := range names {
+		m[ref.Fold(n)] = true
+	}
+	return m
+}
+
+func containsIdentity(list []string, identity string) bool {
+	for _, v := range list {
+		if ref.NamesEqual(v, identity) {
+			return true
+		}
+	}
+	return false
 }

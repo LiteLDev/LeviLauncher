@@ -4,8 +4,6 @@
 // mounted and deferred sources (MountSource.cs, DeferredSource.cs), the
 // package file of an archive (ArchiveReader.cs) and lip pack (Packer.cs), as
 // in lip v0.38.0-beta.1.
-//
-// deflate64.go is a copy of internal/lipcore/fetch/deflate64.go.
 package archive
 
 import (

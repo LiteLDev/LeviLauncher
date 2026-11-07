@@ -122,9 +122,6 @@ func (r VersionRange) String() string { return r.Text }
 // exactly the versions with the same SemVer precedence as Version (build
 // metadata is ignored). Used to look up one version of a repository.
 // Construct it with ExactVersion; the zero value is the constraint "=0.0.0".
-//
-// The older Exact function returns a Range (SemVersionRange.Equals) whose
-// String drops the "=" and the metadata; new code uses ExactVersion.
 type ExactVersionConstraint struct {
 	Version Version
 }

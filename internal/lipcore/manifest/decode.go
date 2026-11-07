@@ -39,8 +39,6 @@ func Parse(data []byte) (*Manifest, error) {
 }
 
 // JSONObject is a decoded JSON object with case-sensitive property lookup.
-// It is exported for package lockfile, which decodes lip's other records
-// with the same rules.
 type JSONObject map[string]json.RawMessage
 
 func isNull(raw json.RawMessage) bool { return string(bytes.TrimSpace(raw)) == "null" }

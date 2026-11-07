@@ -6,17 +6,12 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/axrona/go-discordrpc v1.1.0-1
 	github.com/beevik/etree v1.8.0
-	github.com/bodgit/sevenzip v1.6.5
 	github.com/go-ole/go-ole v1.3.0
 	github.com/goccy/go-json v0.10.5
 	github.com/joho/godotenv v1.5.1
-	github.com/klauspost/compress v1.19.0
 	github.com/mouuff/go-rocket-update v1.5.6
-	github.com/nwaples/rardecode/v2 v2.4.6
 	github.com/russellhaering/goxmldsig v1.6.1
 	github.com/saltosystems/winrt-go v0.0.0-20260513072510-45f10383b2b8
-	github.com/therootcompany/xz v1.0.1
-	github.com/ulikunitz/xz v0.5.15
 	github.com/wailsapp/wails/v3 v3.0.0-beta.19
 	golang.org/x/crypto v0.53.0
 	golang.org/x/mod v0.37.0
@@ -26,19 +21,10 @@ require (
 
 require (
 	github.com/adrg/xdg v0.5.3 // indirect
-	github.com/andybalholm/brotli v1.2.2 // indirect
-	github.com/bodgit/plumbing v1.3.0 // indirect
-	github.com/bodgit/windows v1.0.1 // indirect
 	github.com/coder/websocket v1.8.14 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/pierrec/lz4/v4 v4.1.27 // indirect
-	github.com/spf13/afero v1.15.0 // indirect
-	github.com/stangelandcl/ppmd v0.1.1 // indirect
-	go4.org v0.0.0-20260112195520-a5071408f32f // indirect
-	golang.org/x/text v0.40.0 // indirect
 )

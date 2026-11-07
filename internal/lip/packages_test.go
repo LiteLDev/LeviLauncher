@@ -14,7 +14,6 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
-	"github.com/liteldev/LeviLauncher/internal/lipcore/gitproto"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
 )
 
@@ -556,19 +555,11 @@ func TestNewEngineUsesSystemProxyClient(t *testing.T) {
 	if !ok {
 		t.Fatal("newEngine did not return *engine.Engine")
 	}
-	reg, ok := e.Registry.(*engine.GitRegistry)
-	if !ok {
-		t.Fatalf("Registry = %T", e.Registry)
-	}
-	git, ok := reg.Git.(*gitproto.Client)
-	if !ok {
-		t.Fatalf("Git = %T", reg.Git)
-	}
 	if engineHTTPClient.Transport == nil || engineHTTPClient.Transport == httpx.DefaultClient().Transport {
 		t.Fatal("engine client must use httpx's blocking proxy transport, not the shared UI transport")
 	}
 	want := engineHTTPClient.Transport
-	for name, c := range map[string]*http.Client{"git": git.HTTP, "downloader": reg.Downloader.HTTP} {
+	for name, c := range map[string]*http.Client{"engine": e.HTTPClient()} {
 		if c == nil || c.Transport != want {
 			t.Errorf("%s client does not use the engine transport", name)
 			continue

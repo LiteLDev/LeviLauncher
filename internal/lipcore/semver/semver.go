@@ -10,15 +10,9 @@ package semver
 
 import (
 	"cmp"
-	"errors"
 	"slices"
 	"strings"
-
-	xsemver "golang.org/x/mod/semver"
 )
-
-// ErrNotImplemented is returned by skeleton stubs.
-var ErrNotImplemented = errors.New("semver: not implemented")
 
 // maxVersionLength is SemVersion.MaxVersionLength.
 const maxVersionLength = 1024
@@ -46,25 +40,6 @@ func Parse(s string) (Version, error) {
 func ParseAny(s string) (Version, error) {
 	v, _, err := parseVersion(s, styleAny, &noWildcards, maxVersionLength)
 	return v, err
-}
-
-// ParseTag converts a git tag name (without "refs/tags/") to a version the
-// way lip's GitRemotePackageRegistry does: Go semver.Canonical (so "v1.2"
-// becomes "v1.2.0" and "+build" is dropped), strip the leading "v", then
-// Parse strictly. ok is false for tags that are not valid semver.
-//
-// Deprecated: lip 0.37.0 semantics. lip 0.38 only accepts "v" followed by a
-// strict SemVer version and keeps build metadata; use ParseVersionTag.
-func ParseTag(tag string) (v Version, ok bool) {
-	canonical := xsemver.Canonical(tag)
-	if canonical == "" {
-		return Version{}, false
-	}
-	v, err := Parse(canonical[1:])
-	if err != nil {
-		return Version{}, false
-	}
-	return v, true
 }
 
 // MustParse is Parse that panics on error.
@@ -161,20 +136,6 @@ func ParseNpmRange(s string) (Range, error) {
 		return Range{}, err
 	}
 	return newRange(ranges), nil
-}
-
-// Exact returns the range matching exactly v (SemVersionRange.Equals(v));
-// its String() is v.String() without metadata. Deviation: the C# library
-// throws for a version with metadata; Exact drops the metadata instead
-// (precedence, and therefore matching, ignores it anyway).
-//
-// Deprecated: lip 0.38 looks up one version with ExactVersionConstraint
-// (String "=1.2.3+b"); use ExactVersion.
-func Exact(v Version) Range {
-	v = v.withoutMetadata()
-	v.Prerelease = slices.Clone(v.Prerelease) // don't alias the caller's slice
-	return newRange([]unbrokenRange{newUnbroken(
-		bound{v: &v, inclusive: true}, bound{v: &v, inclusive: true}, false)})
 }
 
 // Contains reports whether v satisfies r.

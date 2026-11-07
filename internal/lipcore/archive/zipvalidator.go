@@ -143,7 +143,7 @@ func invalidReason(path string, externalAttrs uint32) string {
 
 // netName converts archive entry name bytes the way .NET's UTF-8 decoder
 // (Encoding.UTF8.GetString) does: each maximal subpart of an ill-formed
-// sequence becomes one U+FFFD. (Copied from internal/lipcore/fetch.)
+// sequence becomes one U+FFFD.
 func netName(name string) string {
 	if utf8.ValidString(name) {
 		return name

@@ -1,0 +1,48 @@
+{
+  "mods": {
+    "notify": {
+      "action_done": "{{action}} completato",
+      "action_failed": "{{action}} non riuscito",
+      "import_failed": "Importazione mod non riuscita",
+      "import_busy_title": "Importazione già in corso",
+      "import_busy_body": "Attendi la fine dell'importazione corrente, poi trascina di nuovo i file."
+    },
+    "no_instance": {
+      "title": "Scegli un'istanza",
+      "body": "Le mod sono installate per istanza. Scegline una qui e questa pagina caricherà le sue mod.",
+      "none_title": "Nessuna istanza",
+      "none_body": "Scarica prima una versione del gioco; le sue mod appariranno qui.",
+      "download": "Scarica una versione del gioco"
+    },
+    "import_log": {
+      "waiting": "In attesa della tua scelta",
+      "importing": "Importazione…",
+      "imported": "Importata",
+      "overwritten": "Sovrascritta",
+      "skipped": "Saltata",
+      "failed": "Non riuscita",
+      "reason_exists": "Esiste già una mod con la stessa cartella",
+      "reason_cancelled": "Annullata"
+    },
+    "import_summary": "{{imported}} importate · {{skipped}} saltate · {{failed}} non riuscite",
+    "import_dialog": {
+      "open_activity": "Apri attività",
+      "log_label": "Registro importazione",
+      "nothing_imported": "Nulla importato"
+    },
+    "import_prompt": {
+      "skip": "Salta",
+      "import": "Importa",
+      "overwrite": "Sovrascrivi",
+      "apply_all": "Fai lo stesso per i duplicati rimanenti"
+    },
+    "batch_result": {
+      "demoted": "Mantenuta come dipendenza"
+    },
+    "batch_more_actions": "Altre azioni per le mod selezionate",
+    "uninstall": {
+      "dependency_note": "Se altre mod installate dipendono ancora da questo pacchetto, viene mantenuto come dipendenza invece di essere rimosso.",
+      "demoted_title": "Mantenuto come dipendenza"
+    }
+  }
+}

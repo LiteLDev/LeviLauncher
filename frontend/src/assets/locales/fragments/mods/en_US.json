@@ -1,0 +1,48 @@
+{
+  "mods": {
+    "notify": {
+      "action_done": "{{action}} complete",
+      "action_failed": "{{action}} failed",
+      "import_failed": "Mod import failed",
+      "import_busy_title": "Import already running",
+      "import_busy_body": "Wait for the current import to finish, then drop the files again."
+    },
+    "no_instance": {
+      "title": "Choose an instance",
+      "body": "Mods are installed per instance. Pick one here and this page loads its mods in place.",
+      "none_title": "No instances yet",
+      "none_body": "Download a game version first; its mods will show up here.",
+      "download": "Download a game version"
+    },
+    "import_log": {
+      "waiting": "Waiting for you",
+      "importing": "Importing…",
+      "imported": "Imported",
+      "overwritten": "Overwritten",
+      "skipped": "Skipped",
+      "failed": "Failed",
+      "reason_exists": "A mod with the same folder already exists",
+      "reason_cancelled": "Cancelled"
+    },
+    "import_summary": "{{imported}} imported · {{skipped}} skipped · {{failed}} failed",
+    "import_dialog": {
+      "open_activity": "Open activity",
+      "log_label": "Import log",
+      "nothing_imported": "Nothing imported"
+    },
+    "import_prompt": {
+      "skip": "Skip",
+      "import": "Import",
+      "overwrite": "Overwrite",
+      "apply_all": "Do the same for remaining duplicates"
+    },
+    "batch_result": {
+      "demoted": "Kept as dependency"
+    },
+    "batch_more_actions": "More actions for selected mods",
+    "uninstall": {
+      "dependency_note": "If other installed mods still depend on this package, it is kept as a dependency instead of being removed.",
+      "demoted_title": "Kept as a dependency"
+    }
+  }
+}

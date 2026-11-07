@@ -7,6 +7,8 @@ const path = require('node:path');
 const { runInNewContext } = require('node:vm');
 const ts = require('typescript');
 const translations = require('../src/assets/locales/zh_CN.json');
+const instanceStrings = require('../src/assets/locales/fragments/instances/zh_CN.json').instances;
+const llInstallTitle = instanceStrings.ll.dialog_title.replace('{{action}}', translations.lip.files.install);
 const routes = {};
 runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '../src/constants/routes.ts'), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
@@ -57,10 +59,9 @@ async function run(label, check) {
     await run('levilamina-install-inline', async page => {
       await open(page, 'lip-progress', ROUTES.instanceSettings, { name: 'UI test instance', tab: 'loader', returnTo: ROUTES.instances });
       await page.getByRole('button', { name: translations.lip.files.install, exact: true }).click();
-      const select = page.getByRole('dialog', { name: translations.versions.edit.loader.ll_select_version, exact: true });
-      await select.getByRole('button', { name: translations.lip.files.install, exact: true }).click();
-      const confirm = page.getByRole('dialog', { name: translations.lip.package.confirm_install_title, exact: true });
-      await confirm.getByRole('button', { name: translations.common.confirm, exact: true }).click();
+      // Picking the version and confirming happen in one dialog.
+      const confirm = page.getByRole('dialog', { name: llInstallTitle, exact: true });
+      await confirm.getByRole('button', { name: translations.lip.files.install, exact: true }).click();
 
       // Solving: indeterminate primary bar counting manifests, a download of
       // unknown length.
@@ -87,10 +88,8 @@ async function run(label, check) {
       await open(page, 'lip-progress', ROUTES.instanceSettings, { name: 'UI test instance', tab: 'loader', returnTo: ROUTES.instances });
       // Install first (no pauses checked) so that the remove button exists.
       await page.getByRole('button', { name: translations.lip.files.install, exact: true }).click();
-      await page.getByRole('dialog', { name: translations.versions.edit.loader.ll_select_version, exact: true })
+      await page.getByRole('dialog', { name: llInstallTitle, exact: true })
         .getByRole('button', { name: translations.lip.files.install, exact: true }).click();
-      await page.getByRole('dialog', { name: translations.lip.package.confirm_install_title, exact: true })
-        .getByRole('button', { name: translations.common.confirm, exact: true }).click();
       await paused(page, 1);
       await page.evaluate(() => window.__audit.lipContinue());
       await paused(page, 2);

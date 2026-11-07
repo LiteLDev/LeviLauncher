@@ -1,0 +1,39 @@
+{
+  "instances": {
+    "list": {
+      "current": "Aktuell",
+      "settings": "Einstellungen",
+      "mods": "Mods",
+      "now_current": "{{name}} ist jetzt die aktuelle Instanz",
+      "select_hint": "Klicke auf eine Karte, um sie zur aktuellen Instanz zu machen."
+    },
+    "settings": {
+      "sections": "Bereiche der Instanzeinstellungen"
+    },
+    "ll": {
+      "dialog_title": "LeviLamina: {{action}}",
+      "installed_version": "Installiert",
+      "target_version": "Zu installierende Version",
+      "instance": "Instanz"
+    },
+    "run": {
+      "activity_hint": "Diese Schritte bleiben auch unter Aktivität erhalten.",
+      "backup_failed_title": "Sicherung fehlgeschlagen"
+    },
+    "notify": {
+      "ll_install_failed": "LeviLamina-Installation fehlgeschlagen",
+      "ll_remove_failed": "LeviLamina konnte nicht entfernt werden",
+      "ll_removed": "LeviLamina entfernt",
+      "backup_open_failed": "Sicherung konnte nicht vorbereitet werden",
+      "restore_open_failed": "Sicherungsdatei konnte nicht geöffnet werden"
+    },
+    "steps": {
+      "backup_scan": "Zu sichernde Dateien messen",
+      "backup_write": "Sicherungsarchiv schreiben",
+      "restore_prepare": "Wiederherstellung vorbereiten",
+      "restore_extract": "Sicherungsinhalt entpacken",
+      "restore_scope": "{{scope}} wiederherstellen",
+      "restore_finalize": "Wiederherstellung abschließen"
+    }
+  }
+}

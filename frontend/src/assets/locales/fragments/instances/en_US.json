@@ -1,0 +1,39 @@
+{
+  "instances": {
+    "list": {
+      "current": "Current",
+      "settings": "Settings",
+      "mods": "Mods",
+      "now_current": "{{name}} is now the current instance",
+      "select_hint": "Click a card to make it the current instance."
+    },
+    "settings": {
+      "sections": "Instance settings sections"
+    },
+    "ll": {
+      "dialog_title": "{{action}} LeviLamina",
+      "installed_version": "Installed",
+      "target_version": "Version to install",
+      "instance": "Instance"
+    },
+    "run": {
+      "activity_hint": "These steps are also kept in Activity.",
+      "backup_failed_title": "Backup failed"
+    },
+    "notify": {
+      "ll_install_failed": "LeviLamina install failed",
+      "ll_remove_failed": "Could not remove LeviLamina",
+      "ll_removed": "LeviLamina removed",
+      "backup_open_failed": "Could not prepare the backup",
+      "restore_open_failed": "Could not open the backup file"
+    },
+    "steps": {
+      "backup_scan": "Measure files to back up",
+      "backup_write": "Write backup archive",
+      "restore_prepare": "Prepare restore",
+      "restore_extract": "Extract backup contents",
+      "restore_scope": "Restore {{scope}}",
+      "restore_finalize": "Finalize restore"
+    }
+  }
+}

@@ -176,6 +176,42 @@ state.call = async (name, ...args) => {
     }
     if(name==='ValidateVersionFolderName') return '';
   }
+ if(scenario.startsWith('download-flow')) {
+   // Many GDK versions plus a download that reports progress and then finishes (or fails).
+   if(name==='FetchHistoricalVersions') return {
+     releaseVersions:Array.from({length:40},(_,i)=>({version:`Release 1.21.${140-i}.0`,urls:['https://mirror-a.example.com/game.msixvc','https://mirror-b.example.com/game.msixvc'],timestamp:1760000000-i*86400,md5:'fixture'})),
+     previewVersions:Array.from({length:20},(_,i)=>({version:`Preview 1.22.${40-i}.20`,urls:['https://mirror-a.example.com/preview.msixvc'],timestamp:1760000000-i*86400-3600,md5:''})),
+   };
+   if(name==='TestMirrorLatencies') return args[0].map((url,i)=>({url,latencyMs:40+i*30,ok:true}));
+   if(name==='GetAllVersionsStatus') return args[0].map(item=>({version:item.short,type:item.type,packageType:item.packageType,isDownloaded:item.short==='1.21.139.0',isInstalled:false}));
+   if(name==='StartMsixvcDownload') {
+     const dest='C:\\Fixture\\installers\\'+(new URL(args[0]).searchParams.get('filename')||'game.msixvc');
+     const send=(event,data)=>window._wails.dispatchWailsEvent({name:event,data});
+     const fail=scenario==='download-flow-error'&&!state.recovered;
+     (async()=>{
+       send('msixvc_download_status',{Status:'started',Dest:dest});
+       for(let i=1;i<=6;i++){
+         await new Promise(resolve=>setTimeout(resolve,400));
+         if(fail&&i===3){send('msixvc_download_error',{Error:'Fixture: connection reset by mirror',Dest:dest});return;}
+         send('msixvc_download_progress',{Downloaded:i*1048576*100,Total:6*1048576*100,Dest:dest});
+       }
+       send('msixvc_download_status',{Status:'verifying',Dest:dest});
+       await new Promise(resolve=>setTimeout(resolve,300));
+       send('msixvc_download_done',{Dest:dest});
+     })();
+     return dest;
+   }
+   if(name==='ResolveDownloadedMsixvc') return '';
+   if(name==='ValidateVersionFolderName'||name==='SaveVersionMeta') return '';
+   if(name==='InstallExtractMsixvc') {
+     for(let i=1;i<=4;i++){
+       await new Promise(resolve=>setTimeout(resolve,200));
+       window._wails.dispatchWailsEvent({name:'extract.progress',data:{files:i*100,bytes:i*256*1048576,global_total:1024*1048576,global_current:i*256*1048576}});
+     }
+     return '';
+   }
+   if(name==='LaunchVersionByName') return '';
+ }
  if(scenario==='no-instances' && /^(IsGameInputInstalled|IsGamingServicesInstalled|IsVcRuntimeInstalled)$/.test(name)) return true;
  if(scenario==='gdk-launch') {
    if(name==='IsGameInputInstalled'||name==='IsGamingServicesInstalled'||name==='IsVcRuntimeInstalled') return true;

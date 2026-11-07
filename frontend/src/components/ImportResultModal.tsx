@@ -1,4 +1,4 @@
-import { ModalNotice, ModalPanel } from "@/components/ModalPrimitives";
+import { ModalCopyButton, ModalNotice, ModalPanel } from "@/components/ModalPrimitives";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
@@ -43,6 +43,11 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
   const resolvedSuccessLabel = successLabel || t("mods.summary_success");
   const resolvedFailedLabel = failedLabel || t("mods.summary_failed");
 
+  const successText = success.join("\n");
+  const failedText = failed
+    .map((it) => `${it.name}: ${resolveImportError(it.err, t)}`)
+    .join("\n");
+
   let type: ModalType = "success";
   let title = resolvedDoneTitle;
 
@@ -68,28 +73,34 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
         onOpenChange(false);
       }}
     >
-      <div className={isPartial ? "grid grid-cols-1 gap-4 sm:grid-cols-2" : "flex flex-col gap-4"}>
+      <div className={isPartial ? "grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-4" : "flex flex-col gap-4"}>
         {success.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="text-sm text-foreground font-semibold flex items-center gap-2">
-              <FiCheckCircle aria-hidden="true" className="size-4 text-brand-600 dark:text-brand-400" />
-              {resolvedSuccessLabel} ({success.length})
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="text-sm text-foreground font-semibold flex items-center gap-2">
+                <FiCheckCircle aria-hidden="true" className="size-4 shrink-0 text-brand-600 dark:text-brand-400" />
+                {resolvedSuccessLabel} ({success.length})
+              </div>
+              <ModalCopyButton text={successText} />
             </div>
-            <ModalPanel className="max-h-60 overflow-y-auto custom-scrollbar">
+            <ModalPanel className="select-text max-h-[clamp(6rem,calc(100dvh-14rem),24rem)] overflow-y-auto overscroll-contain custom-scrollbar">
               <div className="text-sm font-mono text-foreground whitespace-pre-wrap [overflow-wrap:anywhere]">
-                {success.join("\n")}
+                {successText}
               </div>
             </ModalPanel>
           </div>
         )}
 
         {failed.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <FiAlertTriangle aria-hidden="true" className="size-4 text-rose-600 dark:text-rose-300" />
-              {resolvedFailedLabel} ({failed.length})
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="flex min-w-0 items-center justify-between gap-2">
+              <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <FiAlertTriangle aria-hidden="true" className="size-4 shrink-0 text-rose-600 dark:text-rose-300" />
+                {resolvedFailedLabel} ({failed.length})
+              </div>
+              <ModalCopyButton text={failedText} />
             </div>
-            <ModalNotice tone="danger" className="max-h-60 overflow-y-auto">
+            <ModalNotice tone="danger" className="select-text max-h-[clamp(6rem,calc(100dvh-14rem),24rem)] overflow-y-auto overscroll-contain custom-scrollbar">
               <div className="whitespace-pre-wrap [overflow-wrap:anywhere] flex flex-col gap-3">
                 {failed.map((it, idx) => (
                   <div key={idx} className="flex min-w-0 flex-col gap-1">

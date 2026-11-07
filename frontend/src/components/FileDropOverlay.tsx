@@ -40,7 +40,7 @@ export const FileDropOverlay: React.FC<FileDropOverlayProps> = ({
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className={cn(
                 LAYOUT.GLASS_CARD.BASE,
-                "p-8 flex flex-col items-center gap-4 text-center max-w-sm mx-4 border border-white/20 dark:border-white/10",
+                "p-[clamp(1.25rem,5vh,2rem)] flex flex-col items-center gap-4 text-center w-full max-w-[min(24rem,100%)] border border-white/20 dark:border-white/10",
               )}
             >
               <div className="p-4 rounded-full bg-brand-500/10 text-brand-500 ring-1 ring-brand-500/20">

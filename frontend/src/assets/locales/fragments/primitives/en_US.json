@@ -1,0 +1,9 @@
+{
+  "primitives": {
+    "log_title": "Log",
+    "log_empty": "No output yet",
+    "copy": "Copy",
+    "copied": "Copied",
+    "page_of": "Page {{page}} / {{total}}"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "lip_install": {
+    "title": "{{name}} 설치",
+    "target_label": "대상 인스턴스",
+    "version_label": "패키지 버전",
+    "ll_version_label": "LeviLamina 버전",
+    "ll_will_install": "이 인스턴스에 LeviLamina가 설치되어 있지 않습니다. LeviLamina {{version}}을(를) 먼저 설치한 다음 이 패키지를 설치합니다.",
+    "ll_will_replace": "설치된 LeviLamina {{installedVersion}}은(는) 이 패키지를 지원하지 않습니다. LeviLamina {{version}}을(를) 먼저 설치한 다음 이 패키지를 설치합니다.",
+    "ll_no_compatible": "이 패키지와 게임 버전 {{gameVersion}}을(를) 모두 지원하는 LeviLamina가 없습니다. 다른 버전이나 인스턴스를 선택하세요.",
+    "confirm_with_ll": "LeviLamina와 함께 {{action}}",
+    "step_ll": "LeviLamina {{version}} 설치",
+    "step_package": "{{name}} {{version}} {{action}}",
+    "steps_label": "설치 단계",
+    "status_pending": "대기 중",
+    "status_running": "진행 중",
+    "status_success": "완료",
+    "status_error": "실패",
+    "status_skipped": "건너뜀",
+    "success_summary": "{{name}} {{version}}이(가) {{instance}}에 설치되었습니다.",
+    "failed_title": "{{name}}을(를) 설치할 수 없습니다",
+    "activity_title": "{{instance}}에 {{name}} 설치",
+    "quick_install_aria": "{{name}} 설치",
+    "ll_check_failed": "이 인스턴스의 LeviLamina를 확인할 수 없습니다: {{error}}",
+    "ll_replace_warning": "LeviLamina {{installedVersion}}에 의존하는 이 인스턴스의 다른 모드가 작동하지 않을 수 있습니다.",
+    "ll_downgrade_note": "다운그레이드입니다."
+  }
+}

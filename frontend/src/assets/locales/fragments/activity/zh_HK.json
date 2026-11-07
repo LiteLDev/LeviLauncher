@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "篩選動態",
+    "filter_all": "全部",
+    "filter_errors": "問題",
+    "filter_tasks": "任務",
+    "running": "進行中",
+    "today": "今天",
+    "yesterday": "昨天",
+    "copy_entry": "複製此條",
+    "copied": "已複製",
+    "copy_failed": "複製失敗",
+    "remove_entry": "移除此條",
+    "clear_confirm": "清除 {{count}} 條已結束的記錄？進行中的任務會保留。",
+    "empty_filtered": "沒有符合此篩選的記錄",
+    "view_in_activity": "在動態中查看",
+    "delete_failed_title": "部分項目未能刪除"
+  }
+}

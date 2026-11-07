@@ -1,4 +1,4 @@
-import { toast } from "@heroui/react";
+import { notify } from "@/utils/activity";
 import type { TFunction } from "i18next";
 
 /** Keep failed objects selected and leave their confirmation open for retry. */
@@ -25,13 +25,22 @@ export async function deleteContentItems(
     success: paths.length - failed.length,
     failed: failed.length,
   });
-  toast(summary, {
-    variant: failed.length ? (failed.length === paths.length ? "danger" : "warning") : "success",
-    timeout: failed.length ? 6000 : 2000,
-  });
+  const reasons = failed.map(({ path, reason }) => `${path.split(/[\\/]/).pop()}: ${reason}`).join("\n");
+  // The notice keeps every failure reason readable in the Activity center.
+  // Failures are recorded silently: the confirmation shows them from the
+  // thrown error.
+  notify(failed.length
+    ? {
+      variant: failed.length === paths.length ? "danger" : "warning",
+      title: t("activity.delete_failed_title"),
+      description: `${summary}\n${reasons}`,
+      source: "content",
+      silent: true,
+    }
+    : { variant: "success", title: summary, source: "content" });
   if (isCurrentScope()) await refresh();
   if (failed.length) {
-    throw new Error(`${summary}\n${t("contentpage.delete_retry_failed")}\n${failed.map(({ path, reason }) => `${path.split(/[\\/]/).pop()}: ${reason}`).join("\n")}`);
+    throw new Error(`${summary}\n${t("contentpage.delete_retry_failed")}\n${reasons}`);
   }
   return true;
 }

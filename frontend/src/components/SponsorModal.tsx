@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { toast } from "@heroui/react";
 import { Browser } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 import { FaHeart, FaPatreon } from "react-icons/fa";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { ModalAction, ModalDescription } from "@/components/ModalPrimitives";
 import { SPONSORSHIP_URLS } from "@/constants/sponsorship";
+import { notify } from "@/utils/activity";
 
 export function SponsorModal({
   launchCount,
@@ -22,8 +22,13 @@ export function SponsorModal({
     try {
       await Browser.OpenURL(url);
       onDismiss();
-    } catch {
-      toast.danger(t("sponsor_prompt.open_error"));
+    } catch (error) {
+      notify({
+        variant: "danger",
+        title: t("sponsor_prompt.open_error"),
+        description: error instanceof Error && error.message ? `${error.message}\n${url}` : url,
+        source: "sponsor",
+      });
     } finally {
       setOpening(false);
     }

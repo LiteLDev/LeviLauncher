@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "Filtruj aktywność",
+    "filter_all": "Wszystko",
+    "filter_errors": "Problemy",
+    "filter_tasks": "Zadania",
+    "running": "W toku",
+    "today": "Dzisiaj",
+    "yesterday": "Wczoraj",
+    "copy_entry": "Kopiuj wpis",
+    "copied": "Skopiowano",
+    "copy_failed": "Nie udało się skopiować",
+    "remove_entry": "Usuń wpis",
+    "clear_confirm": "Wyczyścić zakończone wpisy ({{count}})? Trwające zadania zostaną zachowane.",
+    "empty_filtered": "Nic nie pasuje do tego filtra",
+    "view_in_activity": "Pokaż w Aktywności",
+    "delete_failed_title": "Nie udało się usunąć niektórych elementów"
+  }
+}

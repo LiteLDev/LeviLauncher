@@ -225,6 +225,8 @@ export function finishActivityTask(
   id: string,
   status: Exclude<ActivityTaskStatus, "running">,
   summary?: string,
+  /** Keep the result in history without counting it as unread. */
+  options?: { quiet?: boolean },
 ): void {
   const now = Date.now();
   update(id, (entry) => ({
@@ -239,7 +241,7 @@ export function finishActivityTask(
           : "default",
     description: summary ?? entry.description,
     progress: status === "success" ? 100 : entry.progress,
-    read: centerOpen || status === "success",
+    read: centerOpen || status === "success" || options?.quiet === true,
   }));
 }
 

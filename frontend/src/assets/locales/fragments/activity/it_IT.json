@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "Filtra attività",
+    "filter_all": "Tutto",
+    "filter_errors": "Problemi",
+    "filter_tasks": "Attività",
+    "running": "In corso",
+    "today": "Oggi",
+    "yesterday": "Ieri",
+    "copy_entry": "Copia voce",
+    "copied": "Copiato",
+    "copy_failed": "Copia non riuscita",
+    "remove_entry": "Rimuovi voce",
+    "clear_confirm": "Cancellare {{count}} voci concluse? Le attività in corso restano.",
+    "empty_filtered": "Nessun elemento corrisponde al filtro",
+    "view_in_activity": "Mostra in Attività",
+    "delete_failed_title": "Alcuni elementi non sono stati eliminati"
+  }
+}

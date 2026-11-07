@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "Aktivität filtern",
+    "filter_all": "Alle",
+    "filter_errors": "Probleme",
+    "filter_tasks": "Aufgaben",
+    "running": "Läuft",
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "copy_entry": "Eintrag kopieren",
+    "copied": "Kopiert",
+    "copy_failed": "Kopieren fehlgeschlagen",
+    "remove_entry": "Eintrag entfernen",
+    "clear_confirm": "{{count}} abgeschlossene Einträge löschen? Laufende Aufgaben bleiben erhalten.",
+    "empty_filtered": "Nichts entspricht diesem Filter",
+    "view_in_activity": "In Aktivität anzeigen",
+    "delete_failed_title": "Einige Elemente konnten nicht gelöscht werden"
+  }
+}

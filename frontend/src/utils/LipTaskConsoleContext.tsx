@@ -1,6 +1,9 @@
 import { ModalAction, ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
-import { LipTaskProgressView } from "@/components/LipTaskProgressView";
-import { Button, Chip, toast } from "@heroui/react";
+import {
+  LipTaskProgressView,
+  stageLabel,
+} from "@/components/LipTaskProgressView";
+import { Button, Chip } from "@heroui/react";
 
 import React, {
   createContext,
@@ -17,17 +20,29 @@ import { useTranslation } from "react-i18next";
 import { LuChevronDown, LuChevronRight, LuTerminal } from "react-icons/lu";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import {
+  appendTaskLog,
+  finishActivityTask,
+  notify,
+  openActivityCenter,
+  setTaskProgress,
+  startActivityTask,
+} from "@/utils/activity";
+import {
   EMPTY_LIP_PROGRESS_BARS,
+  activeLipStepKeys,
   applyLipProgressEvent,
   beginLipTaskBars,
   clampPercentage,
   isLegacyLipProgress,
+  lipStepKey,
+  overallLipPercentage,
   selectLipPrimaryBar,
   selectLipSecondaryBars,
   type LipLegacyProgress,
   type LipOuterProgress,
   type LipProgressBarsState,
   type LipProgressEventData,
+  type LipProgressStep,
   type LipTaskProgressSnapshot,
 } from "@/utils/lipTaskProgress";
 
@@ -52,10 +67,12 @@ type LipTaskLogItem = {
 // How a session is shown while it runs:
 // - "progress" (default): a compact progress dialog, closed on success;
 // - "inline": nothing while running (the caller renders <LipTaskProgress/>);
-// - "always": the full console, closed shortly after success;
+// - "always": the full console, left open on success for the user to close;
 // - "on_error": nothing while running;
 // - "never": nothing, not even on failure.
 // Except for "never", a failure opens the console unless errorConsole is false.
+// Whatever the mode, every session is recorded as a task in the Activity
+// center with its full log, so closing the console never loses its output.
 export type LipTaskFeedbackMode =
   | "progress"
   | "inline"
@@ -141,6 +158,14 @@ type SessionMeta = {
   retiredTaskIDs: Set<string>;
   feedbackMode: LipTaskFeedbackMode;
   errorConsole: boolean;
+  // Activity center task mirroring this session's log and progress.
+  activityId: string;
+  // Step keys already listed, and the last whole percentage reported.
+  stepKeys: Set<string>;
+  // Task bars that have listed a package; their final, nameless update is
+  // not listed again.
+  itemizedTaskBars: Set<string>;
+  lastPercent: number;
 };
 
 type PendingFailure = {
@@ -148,7 +173,7 @@ type PendingFailure = {
 };
 
 const MAX_LOG_COUNT = 800;
-const SUCCESS_AUTO_CLOSE_MS = 700;
+const MAX_STEP_COUNT = 400;
 const DEFAULT_FEEDBACK_MODE: LipTaskFeedbackMode = "progress";
 
 const LipTaskConsoleContext = createContext<LipTaskConsoleContextValue>({
@@ -204,6 +229,11 @@ const parseErrorText = (error: unknown): string => {
   return normalizeString(error);
 };
 
+const actionTitleKey = (action: LipTaskAction): string =>
+  action === "generic"
+    ? "lip.task_console.title_generic"
+    : `lip.task_console.title_${action}`;
+
 export const LipTaskConsoleProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
@@ -225,25 +255,20 @@ export const LipTaskConsoleProvider: React.FC<{
     EMPTY_LIP_PROGRESS_BARS,
   );
   const [outer, setOuter] = useState<LipOuterProgress | null>(null);
+  const [steps, setSteps] = useState<LipProgressStep[]>([]);
 
   const sessionRef = useRef<SessionMeta | null>(null);
   const sessionSeqRef = useRef<number>(0);
-  const closeTimerRef = useRef<number | null>(null);
   const logSeqRef = useRef<number>(0);
   const logContainerRef = useRef<HTMLDivElement | null>(null);
   const runningRef = useRef<boolean>(false);
   const pendingFailureRef = useRef<PendingFailure | null>(null);
 
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimerRef.current !== null) {
-      window.clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  }, []);
-
   const appendLog = useCallback((level: LipTaskLogLevel, message: string) => {
     const normalizedMessage = normalizeString(message);
     if (!normalizedMessage) return;
+    const activityId = sessionRef.current?.activityId;
+    if (activityId) appendTaskLog(activityId, normalizedMessage, level);
     const logItem: LipTaskLogItem = {
       id: `${Date.now()}-${++logSeqRef.current}`,
       timestamp: Date.now(),
@@ -304,6 +329,7 @@ export const LipTaskConsoleProvider: React.FC<{
     setLegacyProgress(null);
     setBars(EMPTY_LIP_PROGRESS_BARS);
     setOuter(null);
+    setSteps([]);
   }, []);
 
   const resetSessionState = useCallback(() => {
@@ -322,14 +348,12 @@ export const LipTaskConsoleProvider: React.FC<{
 
   const closeConsole = useCallback(() => {
     if (running) return;
-    clearCloseTimer();
     setOpen(false);
     resetSessionState();
-  }, [clearCloseTimer, resetSessionState, running]);
+  }, [resetSessionState, running]);
 
   const setFailedState = useCallback(
     (message: string) => {
-      clearCloseTimer();
       runningRef.current = false;
       setRunning(false);
       setStatus("failed");
@@ -338,19 +362,16 @@ export const LipTaskConsoleProvider: React.FC<{
       }
       setOpen(true);
     },
-    [clearCloseTimer],
+    [],
   );
 
+  // The console holds the log: on success it stays open with the result
+  // until the user closes it.
   const completeSuccess = useCallback(() => {
-    clearCloseTimer();
     runningRef.current = false;
     setRunning(false);
     setStatus("success");
-    closeTimerRef.current = window.setTimeout(() => {
-      setOpen(false);
-      resetSessionState();
-    }, SUCCESS_AUTO_CLOSE_MS);
-  }, [clearCloseTimer, resetSessionState]);
+  }, []);
 
   const matchSessionBase = useCallback(
     (
@@ -413,7 +434,6 @@ export const LipTaskConsoleProvider: React.FC<{
       options: RunWithLipTaskOptions,
       runner: (tools: RunWithLipTaskTools) => Promise<T>,
     ): Promise<T> => {
-      clearCloseTimer();
       const startedAt = Date.now();
       const targetName = normalizeString(options.target);
       const methodNormSet = new Set(
@@ -426,6 +446,12 @@ export const LipTaskConsoleProvider: React.FC<{
       const errorConsole =
         feedbackMode !== "never" && options.errorConsole !== false;
       const sessionId = ++sessionSeqRef.current;
+      const action = options.action || "generic";
+      const titleBase = t(actionTitleKey(action));
+      const activityId = startActivityTask({
+        title: targetName ? `${titleBase} - ${targetName}` : titleBase,
+        source: "lip",
+      });
       // Another runWithLipTask call can start while this one runs (e.g. the
       // non-blocking cache clean); only the latest session owns the state.
       const isCurrentSession = () => sessionRef.current?.id === sessionId;
@@ -438,6 +464,10 @@ export const LipTaskConsoleProvider: React.FC<{
         retiredTaskIDs: new Set(),
         feedbackMode,
         errorConsole,
+        activityId,
+        stepKeys: new Set(),
+        itemizedTaskBars: new Set(),
+        lastPercent: -1,
       };
 
       pendingFailureRef.current = null;
@@ -447,7 +477,7 @@ export const LipTaskConsoleProvider: React.FC<{
       runningRef.current = true;
       setRunning(true);
       setStatus("running");
-      setAction(options.action || "generic");
+      setAction(action);
       setTarget(targetName);
       setLogs([
         {
@@ -476,16 +506,27 @@ export const LipTaskConsoleProvider: React.FC<{
 
       try {
         const result = await runner(tools);
+        finishActivityTask(activityId, "success");
         if (!isCurrentSession()) return result;
         if (feedbackMode === "always") {
           completeSuccess();
+          // The finished console only shows the result: later lip events
+          // belong to other work.
+          sessionRef.current = null;
         } else {
           setOpen(false);
           resetSessionState();
         }
         return result;
       } catch (error) {
-        if (!isCurrentSession()) throw error;
+        if (!isCurrentSession()) {
+          const message = parseErrorText(error) || t("common.error");
+          appendTaskLog(activityId, message, "error");
+          finishActivityTask(activityId, "error", message, {
+            quiet: !errorConsole,
+          });
+          throw error;
+        }
         const pendingFailure =
           pendingFailureRef.current as PendingFailure | null;
         const pendingMessage = pendingFailure ? pendingFailure.message : "";
@@ -494,6 +535,11 @@ export const LipTaskConsoleProvider: React.FC<{
           normalizeString(pendingMessage) ||
           t("common.error");
         appendLog("error", message);
+        // A caller that keeps failures quiet reports them itself: keep the
+        // log, but don't count it as unread.
+        finishActivityTask(activityId, "error", message, {
+          quiet: !errorConsole,
+        });
         if (errorConsole) {
           setFailedState(message);
         } else {
@@ -505,7 +551,6 @@ export const LipTaskConsoleProvider: React.FC<{
     },
     [
       appendLog,
-      clearCloseTimer,
       completeSuccess,
       resetProgressState,
       resetSessionState,
@@ -653,12 +698,74 @@ export const LipTaskConsoleProvider: React.FC<{
     logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
   }, [logs, logExpanded]);
 
-  useEffect(
-    () => () => {
-      clearCloseTimer();
-    },
-    [clearCloseTimer],
-  );
+  // Append every new stage, package, batch item and progress message to the
+  // step list and the activity log, and report the overall percentage.
+  useEffect(() => {
+    const session = sessionRef.current;
+    if (!session) return;
+    const added: LipProgressStep[] = [];
+    const add = (key: string, label: string, detail = "") => {
+      if (!label || session.stepKeys.has(key)) return;
+      session.stepKeys.add(key);
+      added.push({ key, at: Date.now(), label, detail });
+      appendTaskLog(
+        session.activityId,
+        detail ? `${label}: ${detail}` : label,
+      );
+    };
+    if (outer && outer.total > 0 && outer.completed < outer.total) {
+      add(
+        `outer:${outer.current}:${outer.label}`,
+        t("lip.task_progress.outer", {
+          current: outer.current,
+          total: outer.total,
+        }),
+        outer.label,
+      );
+    }
+    for (const bar of Object.values(bars.bars).sort(
+      (a, b) => a.order - b.order,
+    )) {
+      if (bar.stage === "") continue;
+      // The task bar's final update drops the package name: its packages
+      // are already listed.
+      if (
+        bar.stage === "task" &&
+        !bar.item &&
+        session.itemizedTaskBars.has(bar.key)
+      ) {
+        continue;
+      }
+      if (bar.stage === "task" && bar.item) {
+        session.itemizedTaskBars.add(bar.key);
+      }
+      add(
+        lipStepKey(bar),
+        stageLabel(bar, t),
+        bar.stage === "task"
+          ? bar.item
+          : bar.stage === "resolve"
+            ? ""
+            : bar.packageName || bar.item,
+      );
+    }
+    if (legacyProgress?.message) {
+      add(`legacy:${legacyProgress.message}`, legacyProgress.message);
+    }
+    if (added.length > 0) {
+      setSteps((prev) => [...prev, ...added].slice(-MAX_STEP_COUNT));
+    }
+
+    const percent = overallLipPercentage(
+      selectLipPrimaryBar(bars),
+      legacyProgress,
+      outer,
+    );
+    if (percent !== undefined && Math.floor(percent) !== session.lastPercent) {
+      session.lastPercent = Math.floor(percent);
+      setTaskProgress(session.activityId, percent);
+    }
+  }, [bars, legacyProgress, outer, t]);
 
   const modalType = useMemo(() => {
     if (status === "failed") return "error" as const;
@@ -679,20 +786,7 @@ export const LipTaskConsoleProvider: React.FC<{
   }, [status]);
 
   const modalTitle = useMemo(() => {
-    const base =
-      action === "install"
-        ? t("lip.task_console.title_install")
-        : action === "upgrade"
-          ? t("lip.task_console.title_upgrade")
-          : action === "downgrade"
-            ? t("lip.task_console.title_downgrade")
-            : action === "reinstall"
-              ? t("lip.task_console.title_reinstall")
-              : action === "update"
-                ? t("lip.task_console.title_update")
-                : action === "uninstall"
-                  ? t("lip.task_console.title_uninstall")
-                  : t("lip.task_console.title_generic");
+    const base = t(actionTitleKey(action));
     if (!target) return base;
     return `${base} - ${target}`;
   }, [action, target, t]);
@@ -712,16 +806,17 @@ export const LipTaskConsoleProvider: React.FC<{
 
     try {
       await Clipboard.SetText(lines.join("\n"));
-      toast(t("common.success"), {
+      notify({
         variant: "success",
-        description: t("lip.task_console.copy_success"),
-        timeout: 2000,
+        title: t("lip.task_console.copy_success"),
+        source: "lip",
       });
-    } catch {
-      toast(t("common.error"), {
+    } catch (error) {
+      notify({
         variant: "danger",
-        description: t("common.error"),
-        timeout: 2000,
+        title: t("activity.copy_failed"),
+        description: parseErrorText(error) || undefined,
+        source: "lip",
       });
     }
   }, [errorText, logs, statusText, t, target]);
@@ -741,8 +836,10 @@ export const LipTaskConsoleProvider: React.FC<{
       secondary: selectLipSecondaryBars(bars),
       outer,
       legacy: legacyProgress,
+      steps,
+      activeStepKeys: activeLipStepKeys(bars, legacyProgress, outer),
     }),
-    [bars, legacyProgress, outer, status, target],
+    [bars, legacyProgress, outer, status, steps, target],
   );
 
   // The compact view shows a running "progress" session; a failure, or a
@@ -820,6 +917,16 @@ export const LipTaskConsoleProvider: React.FC<{
           footer={
             compact ? null : (
               <>
+                <ModalAction
+                  onPress={() => {
+                    closeConsole();
+                    openActivityCenter();
+                  }}
+                  isDisabled={running}
+                  variant="tertiary"
+                >
+                  {t("activity.view_in_activity")}
+                </ModalAction>
                 <ModalAction
                   onPress={() => void handleCopyLogs()}
                   variant={"secondary"}

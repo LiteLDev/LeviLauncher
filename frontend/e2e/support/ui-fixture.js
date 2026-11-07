@@ -32,6 +32,10 @@ state.catalogPackages = Array.from({ length: 45 }, (_, index) => ({
   updated: '2026-09-08', tags: ['platform:levilamina', 'type:mod'],
   versions: ['1.0.0'], llDependencyRanges: ['>=0.1.0'], variants: [], preferredVariantKey: '',
 }));
+// Package details for the catalog: two releases needing LeviLamina, which the
+// fixture instance lacks until a test installs it.
+state.catalogDetails = Object.fromEntries(state.catalogPackages.map(pkg => [pkg.identifier, {...pkg, versions:['1.0.0','0.9.0'], variantDetails: [],
+  files: ['1.0.0','0.9.0'].map(version => ({version, dependencies:{'github.com/LiteLDev/LeviLamina':'>=0.1.0'}, llDependencyRanges:['>=0.1.0'], otherDependencies:{}}))}]));
 state.uwpVersions = Array.from({length: 24}, (_, index) => ({version: `1.21.${100-index}.0`, uuid:`00000000-0000-4000-8000-${String(index).padStart(12,'0')}`,type: ['release','beta','preview'][index%3], packageType:'uwp'}));
 if(scenario.startsWith('uwp-isolation-min')) state.uwpVersions[0].version=new URLSearchParams(location.search).get('version') || '';
 state.uwpMetas = ['release','beta','preview'].map((type,index)=>({name:`UWP ${type} instance`,gameVersion:state.uwpVersions[index].version,type,packageType:'uwp',enableIsolation:false,registered:index===0}));
@@ -73,6 +77,8 @@ state.call = async (name, ...args) => {
   }
   if (scenario.startsWith('lip-progress') && name==='DeleteMod') {const result=await state.runLipTask('UninstallLIPPackage', args);state.fixtureMods=state.fixtureMods.filter(mod=>mod!==args[1]);return result;}
   if (scenario.startsWith('lip-progress') && name==='GetLIPPackageInstallStates') return (args[1]||[]).map(identifierKey=>{const installed=!!state.llInstalled&&/levilamina/i.test(identifierKey);return {identifierKey,state:{installed,explicitInstalled:installed,installedVersion:installed?'0.2.0':'',error:''}};});
+  if (scenario.startsWith('catalog') && name==='GetLIPPackageInstallStates') return (args[1]||[]).map(identifierKey=>{const key=String(identifierKey).toLowerCase();const version=/levilamina/i.test(key)?(state.llInstalled||''):((state.lipInstalled||{})[key]||'');return {identifierKey,state:{installed:!!version,explicitInstalled:!!version,installedVersion:version,error:''}};});
+  if (scenario.startsWith('catalog') && ['InstallLeviLamina','InstallLIPPackage'].includes(name)) return state.runLipTask(name, args);
   if (scenario.startsWith('lip-progress') && ['InstallLeviLamina','UninstallLeviLamina','InstallLIPPackage','UninstallLIPPackage','CacheClean'].includes(name)) return state.runLipTask(name, args);
   if (name === 'TakeSponsorPrompt') {
     const count = Number(sponsorParams.get('count') || '100');
@@ -282,7 +288,8 @@ state.runLipTask = async (name, args) => {
   emit('lip_task_log', {level:'info', message:'Fixture task '+plan.method, raw:''});
   for (const [index, phase] of plan.phases.entries()) {
     for (const update of phase) emit('lip_task_progress', {message:'', percentage:update.total>0?update.current*100/update.total:0, package:'', item:'', done:false, indeterminate:false, ...update});
-    if (index < plan.phases.length - 1) {
+    // Catalog scenarios run lip tasks straight through.
+    if (index < plan.phases.length - 1 && !scenario.startsWith('catalog')) {
       state.lipPaused++;
       await new Promise(resolve => { state.lipReleases.push(resolve); });
     }
@@ -293,7 +300,8 @@ state.runLipTask = async (name, args) => {
     emit('lip_task_finished', {success:false, error, stderr:'', durationMs:1});
     return 'ERR_LIP_PACKAGE_UNINSTALL_FAILED';
   }
-  if (name==='InstallLeviLamina') state.llInstalled = true;
+  if (name==='InstallLeviLamina') state.llInstalled = scenario.startsWith('catalog') ? String(args[2]) : true;
+  if (name==='InstallLIPPackage') (state.lipInstalled = state.lipInstalled || {})[String(args[1]).toLowerCase()] = String(args[2]);
   if (name==='UninstallLeviLamina') state.llInstalled = false;
   emit('lip_task_finished', {success:true, error:'', stderr:'', durationMs:1});
   return '';

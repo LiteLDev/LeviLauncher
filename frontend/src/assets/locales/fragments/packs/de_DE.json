@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "Spieler",
+    "clear_search": "Suche löschen",
+    "no_instance_title": "Keine Instanz ausgewählt",
+    "no_instance_body": "Wähle eine Instanz, um ihre Inhalte zu verwalten.",
+    "delete_failed": "Löschen fehlgeschlagen",
+    "targets_load_failed": "Instanzen konnten nicht gelesen werden",
+    "transfer_start": "Übertragen",
+    "transfer_running": "Übertrage {{done}} von {{total}} nach {{target}}",
+    "transfer_summary": "{{success}} erfolgreich, {{failed}} fehlgeschlagen, {{skipped}} übersprungen",
+    "transfer_done_title": "Übertragung abgeschlossen",
+    "transfer_partial_title": "Übertragung mit Fehlern abgeschlossen",
+    "transfer_failed_title": "Übertragung fehlgeschlagen",
+    "transfer_log": "Übertragungsprotokoll",
+    "duplicate_prompt": "{{name}} ist in der Zielinstanz bereits vorhanden. Überschreiben?",
+    "overwrite": "Überschreiben",
+    "skip": "Überspringen",
+    "apply_to_rest": "Für alle weiteren Duplikate übernehmen",
+    "item_running": "Wird übertragen…",
+    "item_ok": "Übertragen",
+    "item_overwritten": "Überschrieben",
+    "item_skipped": "Übersprungen",
+    "item_failed": "Fehlgeschlagen"
+  }
+}

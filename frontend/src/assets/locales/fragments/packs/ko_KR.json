@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "플레이어",
+    "clear_search": "검색 지우기",
+    "no_instance_title": "선택된 인스턴스 없음",
+    "no_instance_body": "콘텐츠를 관리할 인스턴스를 선택하세요.",
+    "delete_failed": "삭제 실패",
+    "targets_load_failed": "인스턴스 목록을 불러올 수 없습니다",
+    "transfer_start": "전송",
+    "transfer_running": "{{target}}(으)로 전송 중 {{done}}/{{total}}",
+    "transfer_summary": "성공 {{success}}, 실패 {{failed}}, 건너뜀 {{skipped}}",
+    "transfer_done_title": "전송 완료",
+    "transfer_partial_title": "전송 완료 (일부 실패)",
+    "transfer_failed_title": "전송 실패",
+    "transfer_log": "전송 기록",
+    "duplicate_prompt": "{{name}}이(가) 대상 인스턴스에 이미 있습니다. 덮어쓸까요?",
+    "overwrite": "덮어쓰기",
+    "skip": "건너뛰기",
+    "apply_to_rest": "남은 중복 항목에도 동일하게 적용",
+    "item_running": "전송 중…",
+    "item_ok": "전송됨",
+    "item_overwritten": "덮어씀",
+    "item_skipped": "건너뜀",
+    "item_failed": "실패"
+  }
+}

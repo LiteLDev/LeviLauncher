@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "Игрок",
+    "clear_search": "Очистить поиск",
+    "no_instance_title": "Сборка не выбрана",
+    "no_instance_body": "Выберите сборку, чтобы управлять её контентом.",
+    "delete_failed": "Не удалось удалить",
+    "targets_load_failed": "Не удалось получить список сборок",
+    "transfer_start": "Перенести",
+    "transfer_running": "Перенос {{done}} из {{total}} в {{target}}",
+    "transfer_summary": "Успешно: {{success}}, ошибок: {{failed}}, пропущено: {{skipped}}",
+    "transfer_done_title": "Перенос завершён",
+    "transfer_partial_title": "Перенос завершён с ошибками",
+    "transfer_failed_title": "Перенос не удался",
+    "transfer_log": "Журнал переноса",
+    "duplicate_prompt": "{{name}} уже есть в целевой сборке. Перезаписать?",
+    "overwrite": "Перезаписать",
+    "skip": "Пропустить",
+    "apply_to_rest": "Сделать так же для остальных дубликатов",
+    "item_running": "Перенос…",
+    "item_ok": "Перенесено",
+    "item_overwritten": "Перезаписано",
+    "item_skipped": "Пропущено",
+    "item_failed": "Ошибка"
+  }
+}

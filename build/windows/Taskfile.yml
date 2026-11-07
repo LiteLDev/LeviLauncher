@@ -24,7 +24,10 @@ tasks:
       - cmd: rm -f *.syso
         platforms: [linux, darwin]
     vars:
-      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-H windowsgui"{{else}}-buildvcs=false -gcflags=all="-l"{{end}}'
+      # VERSION is the SemVer from the release tag (without leading "v"), e.g. 1.2.3 or 1.2.3-beta.1.
+      VERSION: '{{.VERSION | default "0.0.0-dev" | trimPrefix "v"}}'
+      VERSION_LDFLAGS: '-X github.com/liteldev/LeviLauncher/internal/update.appVersion={{.VERSION}}'
+      BUILD_FLAGS: '{{if eq .PRODUCTION "true"}}-tags production -trimpath -buildvcs=false -ldflags="-H windowsgui {{.VERSION_LDFLAGS}}"{{else}}-buildvcs=false -gcflags=all="-l" -ldflags="{{.VERSION_LDFLAGS}}"{{end}}'
     env:
       GOOS: windows
       CGO_ENABLED: 0
@@ -40,9 +43,19 @@ tasks:
     summary: Generates Windows `.syso` file
     dir: build
     cmds:
-      - wails3 generate syso -arch {{.ARCH}} -icon windows/icon.ico -manifest windows/wails.exe.manifest -info windows/info.json -out ../wails_windows_{{.ARCH}}.syso
+      # Stamp the version resource from VERSION: the fixed (numeric) versions drop the
+      # SemVer prerelease, while the ProductVersion string keeps the full version.
+      - >-
+        printf '%s\n' '{"fixed":{"file_version":"{{.NUMERIC_VERSION}}","product_version":"{{.NUMERIC_VERSION}}"},"info":{"0409":{"FileVersion":"{{.NUMERIC_VERSION}}","ProductVersion":"{{.VERSION}}","CompanyName":"LeviMC","FileDescription":"A Minecraft Launcher","LegalCopyright":"(c) 2024-2026, LeviMC","ProductName":"{{.APP_NAME}}","OriginalFilename":"{{.APP_NAME}}.exe"}}}' > ../wails_windows_info.json
+      - wails3 generate syso -arch {{.ARCH}} -icon windows/icon.ico -manifest windows/wails.exe.manifest -info ../wails_windows_info.json -out ../wails_windows_{{.ARCH}}.syso
+      - cmd: powershell Remove-item ../wails_windows_info.json
+        platforms: [windows]
+      - cmd: rm -f ../wails_windows_info.json
+        platforms: [linux, darwin]
     vars:
       ARCH: "{{.ARCH | default ARCH}}"
+      VERSION: '{{.VERSION | default "0.0.0-dev" | trimPrefix "v"}}'
+      NUMERIC_VERSION: '{{regexReplaceAll "[-+].*$" .VERSION ""}}'
 
   create:installer:
     summary: Creates the MSI and setup.exe installers with WiX

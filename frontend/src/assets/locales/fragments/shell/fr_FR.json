@@ -4,7 +4,7 @@
       "content": "Contenu",
       "discover": "Découvrir"
     },
-    "search": "Rechercher",
+    "search": "Rechercher des commandes",
     "search_placeholder": "Rechercher…",
     "activity_unread": "Activité, {{count}} non lues"
   }

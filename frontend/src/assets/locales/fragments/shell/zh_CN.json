@@ -4,7 +4,7 @@
       "content": "内容",
       "discover": "发现"
     },
-    "search": "搜索",
+    "search": "搜索命令",
     "search_placeholder": "搜索…",
     "activity_unread": "动态，{{count}} 条未读"
   }

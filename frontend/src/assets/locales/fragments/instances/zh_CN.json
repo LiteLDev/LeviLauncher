@@ -1,0 +1,39 @@
+{
+  "instances": {
+    "list": {
+      "current": "当前",
+      "settings": "设置",
+      "mods": "模组",
+      "now_current": "已将 {{name}} 设为当前实例",
+      "select_hint": "点击卡片即可设为当前实例。"
+    },
+    "settings": {
+      "sections": "实例设置分区"
+    },
+    "ll": {
+      "dialog_title": "{{action}} LeviLamina",
+      "installed_version": "已安装",
+      "target_version": "要安装的版本",
+      "instance": "实例"
+    },
+    "run": {
+      "activity_hint": "这些步骤也会保存在活动中心。",
+      "backup_failed_title": "备份失败"
+    },
+    "notify": {
+      "ll_install_failed": "LeviLamina 安装失败",
+      "ll_remove_failed": "无法移除 LeviLamina",
+      "ll_removed": "已移除 LeviLamina",
+      "backup_open_failed": "无法准备备份",
+      "restore_open_failed": "无法打开备份文件"
+    },
+    "steps": {
+      "backup_scan": "统计需要备份的文件",
+      "backup_write": "写入备份文件",
+      "restore_prepare": "准备恢复",
+      "restore_extract": "解压备份内容",
+      "restore_scope": "恢复 {{scope}}",
+      "restore_finalize": "整理恢复结果"
+    }
+  }
+}

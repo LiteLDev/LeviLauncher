@@ -1,0 +1,39 @@
+{
+  "instances": {
+    "list": {
+      "current": "Actuelle",
+      "settings": "Paramètres",
+      "mods": "Mods",
+      "now_current": "{{name}} est maintenant l’instance actuelle",
+      "select_hint": "Cliquez sur une carte pour en faire l’instance actuelle."
+    },
+    "settings": {
+      "sections": "Sections des paramètres de l’instance"
+    },
+    "ll": {
+      "dialog_title": "LeviLamina : {{action}}",
+      "installed_version": "Installée",
+      "target_version": "Version à installer",
+      "instance": "Instance"
+    },
+    "run": {
+      "activity_hint": "Ces étapes sont aussi conservées dans Activité.",
+      "backup_failed_title": "Échec de la sauvegarde"
+    },
+    "notify": {
+      "ll_install_failed": "Échec de l’installation de LeviLamina",
+      "ll_remove_failed": "Impossible de supprimer LeviLamina",
+      "ll_removed": "LeviLamina supprimé",
+      "backup_open_failed": "Impossible de préparer la sauvegarde",
+      "restore_open_failed": "Impossible d’ouvrir le fichier de sauvegarde"
+    },
+    "steps": {
+      "backup_scan": "Mesurer les fichiers à sauvegarder",
+      "backup_write": "Écrire l’archive de sauvegarde",
+      "restore_prepare": "Préparer la restauration",
+      "restore_extract": "Extraire le contenu de la sauvegarde",
+      "restore_scope": "Restaurer {{scope}}",
+      "restore_finalize": "Finaliser la restauration"
+    }
+  }
+}

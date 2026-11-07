@@ -542,8 +542,16 @@ func migrateV1ToV2(m *v1Manifest) (*v2Manifest, error) {
 	if m.commands != nil {
 		root := &v2Commands{}
 		for i, cmd := range m.commands {
+			// lip v0.38 checks each command before it is read, whatever its
+			// type.
 			if cmd == nil {
 				return nil, fmt.Errorf("migrate: commands[%d] is null", i)
+			}
+			if cmd.typ == nil {
+				return nil, fmt.Errorf("migrate: commands[%d].type is null", i)
+			}
+			if cmd.commands == nil {
+				return nil, fmt.Errorf("migrate: commands[%d].commands is null", i)
 			}
 			var target *v2Commands
 			if cmd.goos == nil || *cmd.goos == "" {
@@ -554,9 +562,6 @@ func migrateV1ToV2(m *v1Manifest) (*v2Manifest, error) {
 					p.commands = &v2Commands{}
 				}
 				target = p.commands
-			}
-			if cmd.typ == nil {
-				return nil, fmt.Errorf("migrate: commands[%d].type is null", i)
 			}
 			var list *[]*string
 			switch {
@@ -569,9 +574,6 @@ func migrateV1ToV2(m *v1Manifest) (*v2Manifest, error) {
 			}
 			if *list == nil {
 				*list = []*string{}
-			}
-			if cmd.commands == nil {
-				return nil, fmt.Errorf("migrate: commands[%d].commands is null", i)
 			}
 			*list = append(*list, cmd.commands...)
 		}
@@ -614,8 +616,8 @@ func migrateV1ToV2(m *v1Manifest) (*v2Manifest, error) {
 			if p == nil {
 				return nil, fmt.Errorf("migrate: placement[%d] is null", i)
 			}
-			if p.destination == nil {
-				return nil, fmt.Errorf("migrate: placement[%d].destination is null", i)
+			if p.source == nil || p.destination == nil {
+				return nil, fmt.Errorf("migrate: placement[%d] needs the strings source and destination", i)
 			}
 			dest := strings.TrimRight(*p.destination, "*")
 			files.place = append(files.place, &v2Place{src: p.source, dest: &dest})
@@ -841,7 +843,7 @@ func emptyVariant(platform string) *jvalue {
 // migrateV2ToV3 ports MigrateV2ToV3 and returns the format 3 document.
 // Version is emitted as written (package manifest normalizes it); tooth
 // path, tags and placement destinations are validated by manifest.Parse.
-func migrateV2ToV3(m *v2Manifest, rid string) (*jvalue, error) {
+func migrateV2ToV3(m *v2Manifest) (*jvalue, error) {
 	c := &v2Converter{m: m}
 	if m.tooth == nil {
 		return nil, fmt.Errorf("migrate: invalid package path: null")
@@ -852,111 +854,63 @@ func migrateV2ToV3(m *v2Manifest, rid string) (*jvalue, error) {
 	if m.info == nil {
 		return nil, fmt.Errorf("migrate: info is null")
 	}
-	if m.info.tags == nil {
-		return nil, fmt.Errorf("migrate: info.tags is null")
-	}
-	tags := make([]string, 0, len(m.info.tags))
-	for _, t := range m.info.tags {
-		if t == nil {
-			return nil, fmt.Errorf("migrate: info.tags contains null")
+	// Since lip v0.38 the tags of format 3 may be null (absent from the
+	// derived info); a null tag fails the tag check.
+	tags := jnull()
+	if m.info.tags != nil {
+		list := make([]string, 0, len(m.info.tags))
+		for _, t := range m.info.tags {
+			if t == nil {
+				return nil, fmt.Errorf("migrate: info.tags contains null")
+			}
+			list = append(list, *t)
 		}
-		tags = append(tags, *t)
+		tags = jstrs(list)
 	}
 	avatar, err := c.render(m.info.avatarURL)
 	if err != nil {
 		return nil, err
 	}
 
+	// Without platforms, the root fields make one variant without a
+	// platform, whose ranges are read as SemVer ranges and whose places,
+	// without an asset_url, are of a self asset; a platform uses its own
+	// fields and else the root ones, with ranges read as npm ranges. A
+	// platform that is JSON null is read like the root (lip v0.38 iterates
+	// the platforms as PackageManifestV2Platform? and tests for null).
+	platforms := m.platforms
+	if platforms == nil {
+		platforms = []*v2Platform{nil}
+	}
 	var variants []*jvalue
-	if m.platforms != nil {
-		for i, p := range m.platforms {
-			if p == nil {
-				return nil, fmt.Errorf("migrate: platforms[%d] is null", i)
-			}
-			var goos string
-			if p.goos != nil {
-				goos = *p.goos
-			}
-			prefix, ok := goosPrefix[goos]
-			if p.goos == nil || !ok {
-				return nil, fmt.Errorf("migrate: unsupported GOOS: %s", goos)
-			}
-			suffix := "*"
-			if p.goarch != nil {
-				if suffix, ok = goarchSuffix[*p.goarch]; !ok {
-					return nil, fmt.Errorf("migrate: unsupported GOARCH: %s", *p.goarch)
-				}
-			}
-
-			depSrc := p.dependencies
-			if depSrc == nil {
-				depSrc = m.dependencies
-			}
-			deps := c.dependencies(depSrc, true)
-
-			assets := jarr()
-			assetURL := p.assetURL
-			if assetURL == nil {
-				assetURL = m.assetURL
-			}
-			if assetURL != nil {
-				url, err := c.render(assetURL)
-				if err != nil {
-					return nil, err
-				}
-				var places []*v2Place
-				if p.files != nil && p.files.place != nil {
-					places = p.files.place
-				} else if m.files != nil {
-					places = m.files.place
-				}
-				pls, err := c.placements(places)
-				if err != nil {
-					return nil, err
-				}
-				assets.arr = append(assets.arr, asset(assetType(url), jstrs([]string{url}), pls))
-			}
-
-			cmds := p.commands
-			if cmds == nil {
-				cmds = m.commands
-			}
-			scripts, err := c.scripts(cmds)
-			if err != nil {
-				return nil, err
-			}
-
-			pick := func(get func(*v2Files) []*string) []*string {
-				if p.files != nil {
-					if l := get(p.files); l != nil {
-						return l
-					}
-				}
-				if m.files != nil {
-					return get(m.files)
-				}
-				return nil
-			}
-			preserve, err := c.renderGlobs(pick(func(f *v2Files) []*string { return f.preserve }))
-			if err != nil {
-				return nil, err
-			}
-			remove, err := c.renderGlobs(pick(func(f *v2Files) []*string { return f.remove }))
-			if err != nil {
-				return nil, err
-			}
-			variants = append(variants, variant(prefix+"-"+suffix, deps, assets, preserve, remove, scripts))
+	for _, p := range platforms {
+		var pFiles *v2Files
+		var pDeps []dictEntry[*string]
+		var pAssetURL *string
+		var pCommands *v2Commands
+		if p != nil {
+			pFiles, pDeps, pAssetURL, pCommands = p.files, p.dependencies, p.assetURL, p.commands
 		}
-	} else {
-		deps := c.dependencies(m.dependencies, false)
-		assets := jarr()
+
+		depSrc := pDeps
+		if depSrc == nil {
+			depSrc = m.dependencies
+		}
+		deps := c.dependencies(depSrc, p != nil)
+
 		var places []*v2Place
-		if m.files != nil {
+		if pFiles != nil && pFiles.place != nil {
+			places = pFiles.place
+		} else if m.files != nil {
 			places = m.files.place
 		}
-		switch {
-		case m.assetURL != nil:
-			url, err := c.render(m.assetURL)
+		assets := jarr()
+		assetURL := pAssetURL
+		if assetURL == nil {
+			assetURL = m.assetURL
+		}
+		if assetURL != nil {
+			url, err := c.render(assetURL)
 			if err != nil {
 				return nil, err
 			}
@@ -965,38 +919,64 @@ func migrateV2ToV3(m *v2Manifest, rid string) (*jvalue, error) {
 				return nil, err
 			}
 			assets.arr = append(assets.arr, asset(assetType(url), jstrs([]string{url}), pls))
-		case places != nil:
+		} else if p == nil && places != nil {
 			pls, err := c.placements(places)
 			if err != nil {
 				return nil, err
 			}
 			assets.arr = append(assets.arr, asset("self", jarr(), pls))
 		}
-		scripts, err := c.scripts(m.commands)
+
+		// lip reads the platform after the asset, before the files and
+		// scripts.
+		platform := ""
+		if p != nil {
+			var err error
+			if platform, err = platformOf(p); err != nil {
+				return nil, err
+			}
+		}
+
+		cmds := pCommands
+		if cmds == nil {
+			cmds = m.commands
+		}
+		scripts, err := c.scripts(cmds)
 		if err != nil {
 			return nil, err
 		}
-		var preserveSrc, removeSrc []*string
-		if m.files != nil {
-			preserveSrc, removeSrc = m.files.preserve, m.files.remove
+
+		pick := func(get func(*v2Files) []*string) []*string {
+			if pFiles != nil {
+				if l := get(pFiles); l != nil {
+					return l
+				}
+			}
+			if m.files != nil {
+				return get(m.files)
+			}
+			return nil
 		}
-		preserve, err := c.renderGlobs(preserveSrc)
+		preserve, err := c.renderGlobs(pick(func(f *v2Files) []*string { return f.preserve }))
 		if err != nil {
 			return nil, err
 		}
-		remove, err := c.renderGlobs(removeSrc)
+		remove, err := c.renderGlobs(pick(func(f *v2Files) []*string { return f.remove }))
 		if err != nil {
 			return nil, err
 		}
-		variants = append(variants, variant("", deps, assets, preserve, remove, scripts))
+
+		variants = append(variants, variant(platform, deps, assets, preserve, remove, scripts))
 	}
 
-	// A wildcard platform (e.g. "win-*" from a missing goarch) never fully
-	// matches the current RID, so lip adds an empty exact-RID variant that
-	// lets PackageManifest.GetVariant succeed.
+	// lip v0.37.0 added an empty variant for its own runtime when a platform
+	// is a pattern (e.g. "win-*" from a missing goarch), so that label ""
+	// has a variant for every runtime; lip v0.38 inserts an empty variant
+	// without a platform, which, merged for the runtime being read, does the
+	// same without depending on the machine lip runs on.
 	for _, v := range variants {
 		if pl, _ := v.get("platform"); strings.Contains(pl.str, "*") {
-			variants = append([]*jvalue{emptyVariant(rid)}, variants...)
+			variants = append([]*jvalue{emptyVariant("")}, variants...)
 			break
 		}
 	}
@@ -1009,7 +989,26 @@ func migrateV2ToV3(m *v2Manifest, rid string) (*jvalue, error) {
 		set("info", newObj().
 			set("name", jstrp(m.info.name)).
 			set("description", jstrp(m.info.description)).
-			set("tags", jstrs(tags)).
+			set("tags", tags).
 			set("avatar_url", jstr(avatar)).v).
 		set("variants", jarr(variants...)).v, nil
+}
+
+// platformOf is PlatformOf: the runtime identifier pattern of a platform.
+func platformOf(p *v2Platform) (string, error) {
+	var goos string
+	if p.goos != nil {
+		goos = *p.goos
+	}
+	prefix, ok := goosPrefix[goos]
+	if p.goos == nil || !ok {
+		return "", fmt.Errorf("migrate: unsupported GOOS: %s", goos)
+	}
+	suffix := "*"
+	if p.goarch != nil {
+		if suffix, ok = goarchSuffix[*p.goarch]; !ok {
+			return "", fmt.Errorf("migrate: unsupported GOARCH: %s", *p.goarch)
+		}
+	}
+	return prefix + "-" + suffix, nil
 }

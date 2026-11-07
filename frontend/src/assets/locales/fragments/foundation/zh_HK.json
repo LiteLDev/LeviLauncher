@@ -1,0 +1,15 @@
+{
+  "activity": {
+    "title": "動態",
+    "empty": "暫無動態",
+    "copy_all": "全部複製",
+    "clear": "清除記錄",
+    "log_lines": "{{count}} 行日誌",
+    "open": "動態"
+  },
+  "instance_picker": {
+    "label": "實例",
+    "placeholder": "選擇實例",
+    "none_installed": "尚未安裝實例"
+  }
+}

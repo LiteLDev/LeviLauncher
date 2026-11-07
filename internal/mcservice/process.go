@@ -68,7 +68,7 @@ func ListMinecraftProcesses() []types.ProcessInfo {
 		return []types.ProcessInfo{}
 	}
 
-	versionsDir, _ := apppath.VersionsDir()
+	versionsDir, _ := apppath.InstancesDir()
 	linkedRoots := linkedVersionRoots(versionsDir)
 	if versionsDir != "" {
 		versionsDir = normalizePath(versionsDir)

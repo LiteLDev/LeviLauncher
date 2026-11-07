@@ -458,7 +458,7 @@ func setupModsTestVersionsDir(t *testing.T) string {
 	t.Cleanup(func() {
 		apppath.SetBaseRootOverride("")
 	})
-	versionsDir, err := apppath.VersionsDir()
+	versionsDir, err := apppath.InstancesDir()
 	if err != nil {
 		t.Fatalf("resolve versions dir: %v", err)
 	}

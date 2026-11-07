@@ -15,11 +15,13 @@ import {
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 
+import { LIPInstallDialog } from "@/components/LIPInstallDialog";
 import { PageHeader } from "@/components/PageHeader";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { Link } from "react-router-dom";
@@ -70,6 +72,22 @@ const HIDDEN_LIP_PACKAGES = new Set([
 
 type LIPSortKey = "hotness" | "updated" | "name";
 type LIPOrderKey = "asc" | "desc";
+
+type CatalogSnapshot = {
+  queryInput: string;
+  query: string;
+  page: number;
+  sort: LIPSortKey;
+  order: LIPOrderKey;
+  selectedGameVersion: string;
+  selectedLLVersion: string;
+  packages: LIPPackageBasicInfo[];
+  scrollTop: number;
+};
+
+// Search, filters, page and scroll position survive opening a package and
+// coming back.
+let catalogSnapshot: CatalogSnapshot | null = null;
 
 const sortLLVersionValuesDesc = (values: string[]): string[] => {
   const unique = Array.from(
@@ -167,17 +185,22 @@ const LIPPage: React.FC = () => {
   } = useLeviLamina();
   const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
     useModIntelligence();
-  const [queryInput, setQueryInput] = useState("");
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const [allPackages, setAllPackages] = useState<LIPPackageBasicInfo[]>([]);
+  const [restored] = useState(() => catalogSnapshot);
+  const [queryInput, setQueryInput] = useState(restored?.queryInput ?? "");
+  const [query, setQuery] = useState(restored?.query ?? "");
+  const [page, setPage] = useState(restored?.page ?? 1);
+  const [allPackages, setAllPackages] = useState<LIPPackageBasicInfo[]>(
+    restored?.packages ?? [],
+  );
   const [loading, setLoading] = useState(false);
-  const [sort, setSort] = useState<LIPSortKey>("hotness");
-  const [order, setOrder] = useState<LIPOrderKey>("desc");
-  const [selectedGameVersion, setSelectedGameVersion] =
-    useState<string>(ALL_GAME_VERSION);
-  const [selectedLLVersion, setSelectedLLVersion] =
-    useState<string>(ALL_LL_VERSION);
+  const [sort, setSort] = useState<LIPSortKey>(restored?.sort ?? "hotness");
+  const [order, setOrder] = useState<LIPOrderKey>(restored?.order ?? "desc");
+  const [selectedGameVersion, setSelectedGameVersion] = useState<string>(
+    restored?.selectedGameVersion ?? ALL_GAME_VERSION,
+  );
+  const [selectedLLVersion, setSelectedLLVersion] = useState<string>(
+    restored?.selectedLLVersion ?? ALL_LL_VERSION,
+  );
   const [gameVersionOptions, setGameVersionOptions] = useState<string[]>([]);
   const [llVersionOptions, setLLVersionOptions] = useState<string[]>([]);
   const [currentInstalledLLVersion, setCurrentInstalledLLVersion] =
@@ -185,11 +208,45 @@ const LIPPage: React.FC = () => {
   const [error, setError] = useState("");
   const [filterContextReady, setFilterContextReady] = useState(false);
   const [developerGuideOpen, setDeveloperGuideOpen] = useState(false);
+  const [quickInstallId, setQuickInstallId] = useState("");
 
   const pageRootRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const gameFilterInitializedRef = useRef(false);
-  const llFilterInitializedRef = useRef(false);
+  const gameFilterInitializedRef = useRef(Boolean(restored));
+  const llFilterInitializedRef = useRef(Boolean(restored));
+  // Once the user (or a restored visit) has chosen filters, "All" stays "All"
+  // instead of snapping back to the current instance's versions.
+  const filtersChosenRef = useRef(Boolean(restored));
+  const scrollTopRef = useRef(restored?.scrollTop ?? 0);
+  const latestStateRef = useRef<Omit<CatalogSnapshot, "scrollTop"> | null>(
+    null,
+  );
+  latestStateRef.current = {
+    queryInput,
+    query,
+    page,
+    sort,
+    order,
+    selectedGameVersion,
+    selectedLLVersion,
+    packages: allPackages,
+  };
+
+  useEffect(
+    () => () => {
+      const latest = latestStateRef.current;
+      if (latest && latest.packages.length > 0) {
+        catalogSnapshot = { ...latest, scrollTop: scrollTopRef.current };
+      }
+    },
+    [],
+  );
+
+  useLayoutEffect(() => {
+    if (restored && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = restored.scrollTop;
+    }
+  }, [restored]);
   const versionFiltersEnabled = mappingAvailable;
   const showMappingUnavailableHint = mappingInitialized && !mappingAvailable;
 
@@ -264,7 +321,15 @@ const LIPPage: React.FC = () => {
   };
 
   useEffect(() => {
-    void loadPackages();
+    if (!restored?.packages.length) {
+      void loadPackages();
+      return;
+    }
+    // Coming back: keep the restored list and scroll position on screen and
+    // pick up index changes quietly (the index itself is cached).
+    fetchLIPPackagesIndex()
+      .then((list) => setAllPackages(list.filter((pkg) => !shouldHidePackage(pkg))))
+      .catch(() => {});
   }, []);
 
   const loadFilterContext = useCallback(async () => {
@@ -343,6 +408,7 @@ const LIPPage: React.FC = () => {
       }
       if (
         prev === ALL_GAME_VERSION &&
+        !filtersChosenRef.current &&
         currentGameVersion &&
         gameOptions.includes(currentGameVersion) &&
         currentGameHasMappedLLVersions
@@ -410,6 +476,7 @@ const LIPPage: React.FC = () => {
       }
       if (
         prev === ALL_LL_VERSION &&
+        !filtersChosenRef.current &&
         currentInstalledLLVersion &&
         nextOptions.includes(currentInstalledLLVersion)
       ) {
@@ -652,6 +719,7 @@ const LIPPage: React.FC = () => {
                 value={Array.from([selectedGameVersion])[0] ?? null}
                 onChange={(keys) => {
                   const value = keys as string;
+                  filtersChosenRef.current = true;
                   setSelectedGameVersion(value || ALL_GAME_VERSION);
                   setPage(1);
                 }}
@@ -702,6 +770,7 @@ const LIPPage: React.FC = () => {
                 value={Array.from([selectedLLVersion])[0] ?? null}
                 onChange={(keys) => {
                   const value = keys as string;
+                  filtersChosenRef.current = true;
                   setSelectedLLVersion(value || ALL_LL_VERSION);
                   setPage(1);
                 }}
@@ -859,6 +928,9 @@ const LIPPage: React.FC = () => {
               ref={scrollContainerRef}
               data-testid="catalog-results"
               className={LAYOUT.CATALOG.RESULTS_SCROLL}
+              onScroll={(event) => {
+                scrollTopRef.current = event.currentTarget.scrollTop;
+              }}
             >
               {loading ? (
                 <div className="flex flex-col gap-3">{renderSkeletons()}</div>
@@ -877,7 +949,7 @@ const LIPPage: React.FC = () => {
                   <p>{t("common.no_results")}</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,40rem),1fr))]">
                   {currentPageItems.map((pkg) => (
                     <motion.div
                       key={pkg.identifier}
@@ -885,77 +957,92 @@ const LIPPage: React.FC = () => {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Link
-                        className="w-full p-4 bg-surface/50 dark:bg-surface/5 hover:bg-surface-secondary/50 dark:hover:bg-surface/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-                        to={routeTo.lipPackage(pkg.identifier)}
-                        aria-label={t("audit.mods.view_details", { name: pkg.name })}
-                      >
-                        <div className="shrink-0">
-                          {pkg.avatarUrl ? (
-                            <img
-                              src={pkg.avatarUrl}
-                              alt={pkg.name}
-                              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-surface-tertiary shadow-sm"
-                              loading="lazy"
-                            />
-                          ) : (
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-surface-tertiary shadow-sm flex items-center justify-center text-muted">
-                              <LuDownload size={24} />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col flex-1 min-w-0 gap-1">
-                          <div className="flex items-baseline gap-2 truncate">
-                            <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
-                              {pkg.name}
-                            </h3>
-                            <span className="text-xs sm:text-sm text-muted dark:text-zinc-400 truncate">
-                              <span aria-hidden="true">|</span>{" "}
-                              {t("lip.by_author_inline", {
-                                author: pkg.author || t("common.unknown"),
-                              })}
-                            </span>
+                      <div className="w-full h-full bg-surface/50 dark:bg-surface/5 hover:bg-surface-secondary/50 dark:hover:bg-surface/10 transition-all rounded-2xl flex items-center gap-2 pr-3 group shadow-sm hover:shadow-md border border-border dark:border-white/5">
+                        <Link
+                          className="flex flex-1 min-w-0 gap-4 p-4 cursor-pointer rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                          to={routeTo.lipPackage(pkg.identifier)}
+                          aria-label={t("audit.mods.view_details", { name: pkg.name })}
+                        >
+                          <div className="shrink-0">
+                            {pkg.avatarUrl ? (
+                              <img
+                                src={pkg.avatarUrl}
+                                alt={pkg.name}
+                                className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-surface-tertiary shadow-sm"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-surface-tertiary shadow-sm flex items-center justify-center text-muted">
+                                <LuDownload size={24} />
+                              </div>
+                            )}
                           </div>
 
-                          <p className="text-xs sm:text-sm text-muted dark:text-zinc-400 line-clamp-2 w-full">
-                            {pkg.description || t("lip.no_description")}
-                          </p>
-
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted mt-1">
-                            <div
-                              className="flex items-center gap-1"
-                              title={t("lip.sort_options.hotness")}
-                            >
-                              <LuFlame className="text-orange-500" />
-                              <span>{pkg.hotness}</span>
+                          <div className="flex flex-col flex-1 min-w-0 gap-1">
+                            <div className="flex items-baseline gap-2 truncate">
+                              <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
+                                {pkg.name}
+                              </h3>
+                              <span className="text-xs sm:text-sm text-muted dark:text-zinc-400 truncate">
+                                <span aria-hidden="true">|</span>{" "}
+                                {t("lip.by_author_inline", {
+                                  author: pkg.author || t("common.unknown"),
+                                })}
+                              </span>
                             </div>
-                            <div
-                              className="flex items-center gap-1"
-                              title={t("lip.sort_options.updated")}
-                            >
-                              <LuClock />
-                              <span>{formatDate(pkg.updated)}</span>
-                            </div>
-                          </div>
 
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {pkg.tags.slice(0, 5).map((tag) => (
-                              <Chip
-                                key={tag}
-                                size="sm"
-                                variant="soft"
-                                className={cn(
-                                  "rounded-sm",
-                                  "h-5 text-[10px] bg-surface-secondary text-muted dark:text-zinc-400 group-hover:bg-surface-tertiary dark:group-hover:bg-surface-tertiary transition-colors",
-                                )}
+                            <p className="text-xs sm:text-sm text-muted dark:text-zinc-400 line-clamp-2 w-full">
+                              {pkg.description || t("lip.no_description")}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted mt-1">
+                              <div
+                                className="flex items-center gap-1"
+                                title={t("lip.sort_options.hotness")}
                               >
-                                <Chip.Label>{tag}</Chip.Label>
-                              </Chip>
-                            ))}
+                                <LuFlame className="text-orange-500" />
+                                <span>{pkg.hotness}</span>
+                              </div>
+                              <div
+                                className="flex items-center gap-1"
+                                title={t("lip.sort_options.updated")}
+                              >
+                                <LuClock />
+                                <span>{formatDate(pkg.updated)}</span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {pkg.tags.slice(0, 5).map((tag) => (
+                                <Chip
+                                  key={tag}
+                                  size="sm"
+                                  variant="soft"
+                                  className={cn(
+                                    "rounded-sm",
+                                    "h-5 text-[10px] bg-surface-secondary text-muted dark:text-zinc-400 group-hover:bg-surface-tertiary dark:group-hover:bg-surface-tertiary transition-colors",
+                                  )}
+                                >
+                                  <Chip.Label>{tag}</Chip.Label>
+                                </Chip>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      </Link>
+                        </Link>
+                        {/* Installs without opening the package page. */}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="shrink-0"
+                          aria-label={t("lip_install.quick_install_aria", {
+                            name: pkg.name,
+                          })}
+                          onPress={() => setQuickInstallId(pkg.identifier)}
+                        >
+                          <LuDownload aria-hidden="true" />
+                          {t("lip.files.install")}
+                        </Button>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -1014,6 +1101,11 @@ const LIPPage: React.FC = () => {
         </div>
       </UnifiedModal>
 
+      <LIPInstallDialog
+        isOpen={Boolean(quickInstallId)}
+        onClose={() => setQuickInstallId("")}
+        identifier={quickInstallId}
+      />
     </PageContainer>
   );
 };

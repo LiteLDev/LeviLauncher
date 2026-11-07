@@ -1,0 +1,27 @@
+{
+  "lip_install": {
+    "title": "Installer {{name}}",
+    "target_label": "Instance cible",
+    "version_label": "Version du paquet",
+    "ll_version_label": "Version de LeviLamina",
+    "ll_will_install": "LeviLamina n'est pas installé sur cette instance. LeviLamina {{version}} sera installé d'abord, puis ce paquet.",
+    "ll_will_replace": "LeviLamina {{installedVersion}} installé ne prend pas en charge ce paquet. LeviLamina {{version}} sera installé d'abord, puis ce paquet.",
+    "ll_no_compatible": "Aucune version de LeviLamina ne prend en charge ce paquet et la version du jeu {{gameVersion}}. Choisissez une autre version ou instance.",
+    "confirm_with_ll": "{{action}} avec LeviLamina",
+    "step_ll": "Installer LeviLamina {{version}}",
+    "step_package": "{{action}} {{name}} {{version}}",
+    "steps_label": "Étapes d'installation",
+    "status_pending": "En attente",
+    "status_running": "En cours",
+    "status_success": "Terminé",
+    "status_error": "Échec",
+    "status_skipped": "Ignoré",
+    "success_summary": "{{name}} {{version}} est installé sur {{instance}}.",
+    "failed_title": "Impossible d'installer {{name}}",
+    "activity_title": "Installer {{name}} sur {{instance}}",
+    "quick_install_aria": "Installer {{name}}",
+    "ll_check_failed": "Impossible de vérifier LeviLamina sur cette instance : {{error}}",
+    "ll_replace_warning": "D'autres mods de cette instance qui dépendent de LeviLamina {{installedVersion}} pourraient ne plus fonctionner.",
+    "ll_downgrade_note": "Il s'agit d'une rétrogradation."
+  }
+}

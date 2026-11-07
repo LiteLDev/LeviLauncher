@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "Jugador",
+    "clear_search": "Borrar búsqueda",
+    "no_instance_title": "No hay ninguna instancia seleccionada",
+    "no_instance_body": "Elige una instancia para gestionar su contenido.",
+    "delete_failed": "Error al eliminar",
+    "targets_load_failed": "No se pudieron listar las instancias",
+    "transfer_start": "Transferir",
+    "transfer_running": "Transfiriendo {{done}} de {{total}} a {{target}}",
+    "transfer_summary": "{{success}} correctos, {{failed}} fallidos, {{skipped}} omitidos",
+    "transfer_done_title": "Transferencia completada",
+    "transfer_partial_title": "Transferencia completada con errores",
+    "transfer_failed_title": "Error en la transferencia",
+    "transfer_log": "Registro de transferencia",
+    "duplicate_prompt": "{{name}} ya existe en la instancia de destino. ¿Sobrescribir?",
+    "overwrite": "Sobrescribir",
+    "skip": "Omitir",
+    "apply_to_rest": "Hacer lo mismo con los duplicados restantes",
+    "item_running": "Transfiriendo…",
+    "item_ok": "Transferido",
+    "item_overwritten": "Sobrescrito",
+    "item_skipped": "Omitido",
+    "item_failed": "Fallido"
+  }
+}

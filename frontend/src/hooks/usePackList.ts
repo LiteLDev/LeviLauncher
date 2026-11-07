@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "@heroui/react";
 import { GetContentRoots, ListPackDetailsForVersion } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import { GetPathSize } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import type { PackType } from "bindings/github.com/liteldev/LeviLauncher/internal/packages/models";
 import type { ContentRoots, PackListEntry } from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { EMPTY_CONTENT_ROOTS } from "@/utils/content";
-import { readCurrentVersionName } from "@/utils/currentVersion";
+import { notify } from "@/utils/activity";
+import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 
 export type ListedPack = PackListEntry & { size?: number };
 type SizeCache = Record<string, { modTime: number; size: number }>;
@@ -22,16 +22,15 @@ function readSizeCache(): SizeCache {
 
 export function usePackList(packType: PackType) {
   const { t } = useTranslation();
+  const { currentVersionName } = useCurrentVersion();
   const [loading, setLoading] = useState(true);
-  const [currentVersionName, setCurrentVersionName] = useState("");
   const [roots, setRoots] = useState<ContentRoots>(EMPTY_CONTENT_ROOTS);
   const [packs, setPacks] = useState<ListedPack[]>([]);
   const generation = useRef(0);
 
   const refreshAll = useCallback(async (silent = false) => {
     const request = ++generation.current;
-    const name = readCurrentVersionName();
-    setCurrentVersionName(name);
+    const name = currentVersionName;
     if (!silent) setLoading(true);
     try {
       if (!name) {
@@ -81,14 +80,22 @@ export function usePackList(packType: PackType) {
       if (missing.length) void loadSizes();
     } catch (error) {
       if (request === generation.current) {
-        toast(t("contentpage.error_resolve_paths"), { description: String(error), variant: "danger" });
+        notify({
+          title: t("contentpage.error_resolve_paths"),
+          description: String(error),
+          variant: "danger",
+          source: "content",
+        });
       }
     } finally {
       if (request === generation.current) setLoading(false);
     }
-  }, [packType, t]);
+  }, [currentVersionName, packType, t]);
 
+  // Reloads whenever the current instance changes, including from the picker.
   useEffect(() => {
+    setPacks([]);
+    setRoots(EMPTY_CONTENT_ROOTS);
     void refreshAll();
     return () => { generation.current++; };
   }, [refreshAll]);

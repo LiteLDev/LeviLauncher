@@ -1,19 +1,10 @@
-import { isContentTransferTarget } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
-import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
 import {
   Button,
-  Card,
   Checkbox,
-  Dropdown,
-  InputGroup,
-  Label,
-  ListBox, Select,
   Spinner,
-  TextField,
   Tooltip,
-  toast,
   useOverlayState
 } from "@heroui/react";
 
@@ -22,37 +13,30 @@ import { useTranslation } from "react-i18next";
 
 import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
-import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion } from "framer-motion";
 import {
   FaSync,
   FaFolderOpen,
-  FaSortAmountDown,
-  FaSortAmountUp,
-  FaFilter,
   FaTrash,
   FaBox,
   FaCheckSquare,
-  FaTimes,
   FaClock,
   FaHdd,
   FaTag,
-  FaExchangeAlt
 } from "react-icons/fa";
-import {
-  DeletePack,
-  TransferPackToVersion,
-} from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
+import { DeletePack } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import { PackType } from "bindings/github.com/liteldev/LeviLauncher/internal/packages/models";
-import {
-  GetVersionLogoDataUrl,
-  ListVersionMetas,
-} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
-import { readCurrentVersionName } from "@/utils/currentVersion";
 import { usePackList, type ListedPack } from "@/hooks/usePackList";
+import { usePackTransfer } from "@/hooks/usePackTransfer";
 import { renderMcText } from "@/utils/mcformat";
-import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
+import {
+  ContentPrerequisite,
+  ContentSearchField,
+  ContentSortMenu,
+  ContentSubpageHeader,
+} from "@/components/ContentSubpage";
+import { InstancePicker } from "@/components/InstancePicker";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -60,19 +44,12 @@ import { useScrollManager } from "@/hooks/useScrollManager";
 import { useSelectionMode } from "@/hooks/useSelectionMode";
 import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes, formatDate } from "@/utils/formatting";
-import { compareVersions } from "@/utils/version";
-import { ImportResultModal } from "@/components/ImportResultModal";
+import { notify } from "@/utils/activity";
 import { SelectionBar } from "@/components/SelectionBar";
 import { getPathBaseName } from "@/utils/fs";
 
 const getNameFn = (p: ListedPack) => p.name || getPathBaseName(p.path);
 const getTimeFn = (p: ListedPack) => p.modTime;
-type TransferTargetVersion = {
-  name: string;
-  gameVersion: string;
-  type: string;
-  icon?: string;
-};
 
 export default function PackListPage({ kind }: { kind: "resource" | "behavior" }) {
   const { t } = useTranslation();
@@ -96,43 +73,9 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
     open: delManyCfmOnOpen,
     setOpen: delManyCfmOnOpenChange,
   } = useOverlayState();
-  const {
-    isOpen: transferTargetOpen,
-    open: transferTargetOnOpen,
-    close: transferTargetOnClose,
-  } = useOverlayState();
-  const {
-    isOpen: transferResultOpen,
-    open: transferResultOnOpen,
-    setOpen: transferResultOnOpenChange,
-  } = useOverlayState();
-  const {
-    isOpen: dupOpen,
-    open: dupOnOpen,
-    close: dupOnClose,
-  } = useOverlayState();
 
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
-  const [transferring, setTransferring] = React.useState<boolean>(false);
-  const [currentTransferItem, setCurrentTransferItem] =
-    React.useState<string>("");
-  const [transferTargets, setTransferTargets] = React.useState<
-    TransferTargetVersion[]
-  >([]);
-  const [selectedTransferTargets, setSelectedTransferTargets] = React.useState<
-    string[]
-  >([]);
-  const [transferResultSuccess, setTransferResultSuccess] = React.useState<
-    string[]
-  >([]);
-  const [transferResultFailed, setTransferResultFailed] = React.useState<
-    Array<{ name: string; err: string }>
-  >([]);
-  const dupResolveRef = React.useRef<((overwrite: boolean) => void) | null>(
-    null,
-  );
-  const dupNameRef = React.useRef<string>("");
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const sort = useContentSort(
@@ -151,21 +94,40 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
   contentScopeRef.current = contentScope;
   const selection = useSelectionMode(sort.filtered, (item) => item.path, currentVersionName, packs);
 
+  const packNames = React.useMemo(
+    () => new Map(packs.map((pack) => [pack.path, getNameFn(pack)])),
+    [packs],
+  );
+  const transfer = usePackTransfer({
+    sourceName: currentVersionName,
+    roots,
+    getSelectedPaths: selection.getSelectedKeys,
+    nameOf: (path) => packNames.get(path) || getPathBaseName(path),
+    onTransferred: () => {
+      selection.clearSelection();
+      return refreshAll(true);
+    },
+  });
+
   const handleDelete = async () => {
     if (!activePack) return;
     setDeletingOne(true);
     try {
       const result = await DeletePack(currentVersionName, activePack.path);
       if (result) throw new Error(result);
-      const message = isResource ? t("contentpage.deleted_name", { name: activePack.name }) : t("common.success");
-      toast(message, { variant: "success", timeout: 2000 });
+      notify({
+        title: isResource ? t("contentpage.deleted_name", { name: activePack.name }) : t("common.success"),
+        variant: "success",
+        source: "content",
+      });
       setActivePack(null);
       if (contentScopeRef.current === contentScope) void refreshAll(!isResource);
     } catch (e) {
-      toast("Error", {
+      notify({
+        title: t("content_sub.delete_failed"),
         description: String(e),
         variant: "danger",
-        timeout: 2000,
+        source: "content",
       });
       throw e;
     } finally {
@@ -191,360 +153,45 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
     }
   };
 
-  const openTransferTargetModal = React.useCallback(async () => {
-    if (transferring || selection.selectedCount === 0) return;
-
-    const sourceVersionName = currentVersionName || readCurrentVersionName();
-    if (!sourceVersionName) {
-      toast(t("launcherpage.currentVersion_none") as string, {
-        variant: "danger",
-        timeout: 2000,
-      });
-      return;
-    }
-
-    try {
-      const list = await ListVersionMetas();
-      const metas = Array.isArray(list) ? list : [];
-      const targets: TransferTargetVersion[] = metas
-        .filter(
-          (m: any) =>
-            m &&
-            typeof m.name === "string" &&
-            m.name &&
-            isContentTransferTarget(roots, m) &&
-            m.name !== sourceVersionName,
-        )
-        .sort((a: any, b: any) => {
-          const byVersion = compareVersions(
-            String(b.gameVersion || "0"),
-            String(a.gameVersion || "0"),
-          );
-          if (byVersion !== 0) return byVersion;
-          return String(a.name || "").localeCompare(String(b.name || ""));
-        })
-        .map((m: any) => ({
-          name: String(m.name || ""),
-          gameVersion: String(m.gameVersion || ""),
-          type: String(m.type || ""),
-        }));
-
-      await Promise.all(
-        targets.map(async (target) => {
-          try {
-            const icon = await GetVersionLogoDataUrl(target.name);
-            if (icon) target.icon = icon;
-          } catch {}
-        }),
-      );
-
-      setTransferTargets(targets);
-      setSelectedTransferTargets(targets.length > 0 ? [targets[0].name] : []);
-      transferTargetOnOpen();
-    } catch (e) {
-      toast("Error", {
-        description: String(e),
-        variant: "danger",
-        timeout: 2000,
-      });
-    }
-  }, [
-    currentVersionName,
-    selection.selectedCount,
-    t,
-    transferring,
-    transferTargetOnOpen,
-    roots,
-  ]);
-
-  const transferSelectedPacksToTargets = React.useCallback(async () => {
-    if (transferring) return;
-
-    const sourceVersionName = currentVersionName || readCurrentVersionName();
-    if (!sourceVersionName) {
-      toast(t("launcherpage.currentVersion_none") as string, {
-        variant: "danger",
-        timeout: 2000,
-      });
-      return;
-    }
-
-    const selectedPaths = selection.getSelectedKeys().filter(Boolean);
-    const targetNames = selectedTransferTargets.filter(Boolean);
-    if (selectedPaths.length === 0 || targetNames.length === 0) return;
-
-    transferTargetOnClose();
-
-    const packNameMap = new Map<string, string>(
-      packs.map(pack => [pack.path, getNameFn(pack)]),
-    );
-
-    const succFiles: string[] = [];
-    const errPairs: Array<{ name: string; err: string }> = [];
-
-    try {
-      setTransferring(true);
-      setCurrentTransferItem("");
-
-      for (const targetName of targetNames) {
-        for (const packPath of selectedPaths) {
-          const fallbackName = getPathBaseName(packPath);
-          const packName = packNameMap.get(packPath) || fallbackName;
-          const itemLabel = `${packName} -> ${targetName}`;
-          setCurrentTransferItem(itemLabel);
-
-          let err = await TransferPackToVersion(
-            sourceVersionName,
-            packPath,
-            targetName,
-            false,
-          );
-          if (err) {
-            if (
-              String(err) === "ERR_DUPLICATE_FOLDER" ||
-              String(err) === "ERR_DUPLICATE_UUID"
-            ) {
-              dupNameRef.current = itemLabel;
-              await new Promise<void>((resolve) => setTimeout(resolve, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await TransferPackToVersion(
-                  sourceVersionName,
-                  packPath,
-                  targetName,
-                  true,
-                );
-                if (!err) {
-                  succFiles.push(itemLabel);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: itemLabel, err: String(err) });
-            continue;
-          }
-          succFiles.push(itemLabel);
-        }
-      }
-
-      if (succFiles.length > 0 || errPairs.length > 0) {
-        setTransferResultSuccess(succFiles);
-        setTransferResultFailed(errPairs);
-        transferResultOnOpen();
-      }
-      if (succFiles.length > 0) {
-        selection.clearSelection();
-        await refreshAll(true);
-      }
-    } catch (e) {
-      toast("Error", {
-        description: String(e),
-        variant: "danger",
-        timeout: 2000,
-      });
-    } finally {
-      setTransferring(false);
-      setCurrentTransferItem("");
-    }
-  }, [
-    currentVersionName,
-    selectedTransferTargets,
-    selection,
-    packs,
-    t,
-    transferring,
-    refreshAll,
-    transferTargetOnClose,
-    transferResultOnOpen,
-    dupOnOpen,
-  ]);
-
   return (
     <PageContainer ref={scrollRef}>
-      <Card className={LAYOUT.GLASS_CARD.BASE}>
-        <Card.Content className="p-6 flex flex-col gap-6">
-          <PageHeader
-            title={isResource ? t("contentpage.resource_packs") : t("contentpage.behavior_packs")}
-            endContent={
-              <div className="flex items-center gap-2">
-                <Button
-                  onPress={() => openDirectory(directory)}
-                  isDisabled={!directory}
-                  variant={"secondary"}
-                  className={cn(
-                    "rounded-full",
-                    "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
-                  )}
-                >
-                  {<FaFolderOpen />}
-                  {t("common.open")}
-                </Button>
-                <Tooltip>
-                  <Button
-                    isIconOnly
-                    aria-label={t("common.select_mode")}
-                    onPress={selection.toggleSelectMode}
-                    variant={"secondary"}
-                    className={cn(
-                      "rounded-full",
-                      "bg-surface-secondary text-foreground dark:text-zinc-200",
-                    )}
-                  >
-                    <FaCheckSquare />
-                  </Button>
-                  <Tooltip.Content>{t("common.select_mode")}</Tooltip.Content>
-                </Tooltip>
-                <Tooltip>
-                  <Button
-                    isIconOnly
-                    aria-label={t("common.refresh")}
-                    onPress={() => refreshAll()}
-                    isDisabled={loading}
-                    variant={"secondary"}
-                    className={cn(
-                      "rounded-full",
-                      "bg-surface-secondary text-foreground dark:text-zinc-200",
-                    )}
-                  >
-                    <FaSync
-                      className={loading ? "animate-spin" : ""}
-                      size={18}
-                    />
-                  </Button>
-                  <Tooltip.Content>
-                    {t("common.refresh") as unknown as string}
-                  </Tooltip.Content>
-                </Tooltip>
-              </div>
-            }
-          />
-          <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
-            <TextField
-              aria-label={t("common.search_placeholder")}
-              className={cn(
-                "group",
-                COMPONENT_STYLES.input.mainWrapper,
-                "w-full md:max-w-xs",
-              )}
-              value={sort.query}
-              onChange={sort.setQuery}
-            >
-              <InputGroup
-                className={cn(
-                  COMPONENT_STYLES.input.inputWrapper,
-                  COMPONENT_STYLES.input.innerWrapper,
-                  "rounded-full",
-                )}
-              >
-                <InputGroup.Prefix>
-                  {<FaFilter className="text-muted" />}
-                </InputGroup.Prefix>
-                <InputGroup.Input
-                  placeholder={t("common.search_placeholder")}
-                  className={COMPONENT_STYLES.input.input}
-                />
-                <InputGroup.Suffix>
-                  {sort.query && (
-                    <button onClick={() => sort.setQuery("")}>
-                      <FaTimes />
-                    </button>
-                  )}
-                </InputGroup.Suffix>
-              </InputGroup>
-            </TextField>
-
-            <div className="flex items-center gap-3">
-              <Dropdown>
-                <Button
-                  variant={"secondary"}
-                  className={cn(
-                    "rounded-full",
-                    "min-w-[120px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
-                  )}
-                >
-                  {sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
-                  {sort.sortKey === "name"
-                    ? (t("filemanager.sort.name") as string)
-                    : (t("contentpage.sort_time") as string)}
-                  {" / "}
-                  {sort.sortAsc
-                    ? t("contentpage.sort_asc")
-                    : t("contentpage.sort_desc")}
-                </Button>
-                <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
-                  <Dropdown.Menu
-                    selectionMode="single"
-                    selectedKeys={
-                      new Set([
-                        `${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`,
-                      ])
-                    }
-                    onSelectionChange={(keys) => {
-                      const val = Array.from(keys)[0] as string;
-                      const [k, order] = val.split("-");
-                      sort.setSortKey(k as "name" | "time");
-                      sort.setSortAsc(order === "asc");
-                    }}
-                  >
-                    <Dropdown.Item
-                      key="name-asc"
-                      id={"name-asc"}
-                      textValue={String("name-asc")}
-                    >
-                      {<FaSortAmountDown />}
-                      <Label>{t("filemanager.sort.name")}(A-Z)</Label>
-                      <Dropdown.ItemIndicator />
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      key="name-desc"
-                      id={"name-desc"}
-                      textValue={String("name-desc")}
-                    >
-                      {<FaSortAmountUp />}
-                      <Label>{t("filemanager.sort.name")}(Z-A)</Label>
-                      <Dropdown.ItemIndicator />
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      key="time-asc"
-                      id={"time-asc"}
-                      textValue={String("time-asc")}
-                    >
-                      {<FaSortAmountDown />}
-                      <Label>{t("contentpage.sort_old_new")}</Label>
-                      <Dropdown.ItemIndicator />
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      key="time-desc"
-                      id={"time-desc"}
-                      textValue={String("time-desc")}
-                    >
-                      {<FaSortAmountUp />}
-                      <Label>{t("contentpage.sort_new_old")}</Label>
-                      <Dropdown.ItemIndicator />
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown.Popover>
-              </Dropdown>
-            </div>
-          </div>
-          <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
-            <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
-              {currentVersionName || t("contentpage.none")}
-            </span>
-            <span className="text-muted dark:text-zinc-700">|</span>
-            <span>{t("contentpage.isolation")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
-              {roots.isIsolation ? t("common.yes") : t("common.no")}
-            </span>
-          </div>
-        </Card.Content>
-      </Card>
+      <ContentSubpageHeader
+        title={isResource ? t("contentpage.resource_packs") : t("contentpage.behavior_packs")}
+        isIsolation={currentVersionName ? roots.isIsolation : undefined}
+        actions={[
+          {
+            key: "open",
+            label: t("common.open_folder"),
+            icon: <FaFolderOpen />,
+            onPress: () => openDirectory(directory),
+            isDisabled: !directory,
+          },
+          {
+            key: "select",
+            label: t("common.select_mode"),
+            icon: <FaCheckSquare />,
+            onPress: selection.toggleSelectMode,
+            isDisabled: !packs.length,
+          },
+          {
+            key: "refresh",
+            label: t("common.refresh"),
+            icon: <FaSync className={loading ? "animate-spin" : ""} />,
+            onPress: () => void refreshAll(),
+            isDisabled: loading || !currentVersionName,
+          },
+        ]}
+      >
+        <ContentSearchField value={sort.query} onChange={sort.setQuery} />
+        <ContentSortMenu
+          sortKey={sort.sortKey}
+          sortAsc={sort.sortAsc}
+          onChange={(key, asc) => {
+            sort.setSortKey(key);
+            sort.setSortAsc(asc);
+          }}
+        />
+      </ContentSubpageHeader>
 
       <SelectionBar
         hiddenSelectedCount={selection.hiddenSelectedCount}
@@ -553,13 +200,21 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
         onSelectAll={selection.selectAll}
         onDelete={delManyCfmOnOpen}
         isSelectMode={selection.isSelectMode}
-        onTransfer={openTransferTargetModal}
+        onTransfer={() => void transfer.open()}
         isTransferDisabled={
-          selection.selectedCount === 0 || transferring
+          selection.selectedCount === 0 || transfer.transferring
         }
       />
 
-      {loading ? (
+      {!currentVersionName ? (
+        <ContentPrerequisite
+          icon={<MissingIcon />}
+          title={t("content_sub.no_instance_title")}
+          body={t("content_sub.no_instance_body")}
+        >
+          <InstancePicker />
+        </ContentPrerequisite>
+      ) : loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
           <span className="text-muted dark:text-zinc-400">
@@ -569,19 +224,20 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
       ) : (
         <div className="flex flex-col gap-4">
           {sort.filtered.length ? (
-            <div className="flex flex-col gap-3">
+            <div className={LAYOUT.GRID.AUTO(30)}>
               {sort.paginatedItems.map((p, idx) => (
                 <motion.div
                   key={`${p.path}-${idx}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2 }}
+                  className="min-w-0"
                 >
                   <div
                     className={cn(
                       COMPONENT_STYLES.contentListItem,
-                      "w-full p-5 flex gap-5 group relative overflow-hidden",
-                    selection.isSelectMode ? "cursor-pointer" : "cursor-default",
+                      "w-full h-full p-4 flex gap-4 group relative overflow-hidden",
+                      selection.isSelectMode ? "cursor-pointer" : "cursor-default",
                       selection.isSelectMode && selection.selected[p.path]
                         ? "ring-2 ring-accent bg-accent/5"
                         : "",
@@ -592,7 +248,7 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
                     }}
                   >
                     <div className="relative shrink-0">
-                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-surface-secondary/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                      <div className="size-20 sm:size-24 rounded-2xl bg-surface-secondary/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
                         {p.iconDataUrl ? (
                           <img
                             src={p.iconDataUrl}
@@ -603,19 +259,14 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
                             )}
                           />
                         ) : (
-                          <div className="flex flex-col items-center gap-2">
-                            <MissingIcon className="text-4xl text-muted" />
-                            <span className="text-[10px] text-muted font-medium uppercase tracking-wider">
-                              No Icon
-                            </span>
-                          </div>
+                          <MissingIcon aria-hidden="true" className="text-4xl text-muted" />
                         )}
                       </div>
                       {selection.isSelectMode && (
                         <div className="absolute -top-2 -left-2 z-20">
                           <Checkbox
                             aria-label={t("contentpage.select_item", { name: p.name })}
-                          onClick={(event) => event.stopPropagation()}
+                            onClick={(event) => event.stopPropagation()}
                             isSelected={!!selection.selected[p.path]}
                             onChange={() => selection.toggleSelect(p.path)}
                             className={"group"}
@@ -636,14 +287,12 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
                     </div>
 
                     <div className="flex flex-col flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2 mb-1">
-                        <h3
-                          className="text-lg font-bold text-foreground dark:text-white truncate"
-                          title={p.name}
-                        >
-                          {renderMcText(p.name || getPathBaseName(p.path))}
-                        </h3>
-                      </div>
+                      <h3
+                        className="text-lg font-bold text-foreground dark:text-white truncate mb-1"
+                        title={p.name}
+                      >
+                        {renderMcText(p.name || getPathBaseName(p.path))}
+                      </h3>
 
                       <p
                         className="text-sm text-muted dark:text-zinc-400 line-clamp-2 w-full mb-3"
@@ -652,8 +301,8 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
                         {renderMcText(p.description || "")}
                       </p>
 
-                      <div className="flex items-end justify-between mt-auto">
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-muted dark:text-zinc-500">
+                      <div className="flex flex-wrap items-end justify-between gap-2 mt-auto">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted dark:text-zinc-500">
                           <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
                             <FaHdd className="text-muted" />
                             <span>{formatBytes(p.size)}</span>
@@ -670,11 +319,11 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
                           )}
                         </div>
 
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity ml-4">
+                        <div className="flex gap-2 ml-auto opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                           <Tooltip>
                             <Button
                               isIconOnly
-                    aria-label={t("common.open")}
+                              aria-label={t("common.open")}
                               size="sm"
                               variant={"secondary"}
                               onClick={(event) => event.stopPropagation()}
@@ -695,7 +344,7 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
                           <Tooltip>
                             <Button
                               isIconOnly
-                    aria-label={t("common.delete")}
+                              aria-label={t("common.delete")}
                               size="sm"
                               variant={"danger-soft"}
                               onClick={(event) => event.stopPropagation()}
@@ -733,15 +382,13 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
           )}
 
           {sort.totalPages > 1 && (
-            <div className="relative h-12">
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full flex justify-center">
-                <PagePagination
-                  size="sm"
-                  pageCount={sort.totalPages}
-                  currentPage={sort.currentPage}
-                  onPageChange={sort.setCurrentPage}
-                />
-              </div>
+            <div className="flex justify-center">
+              <PagePagination
+                size="sm"
+                pageCount={sort.totalPages}
+                currentPage={sort.currentPage}
+                onPageChange={sort.setCurrentPage}
+              />
             </div>
           )}
         </div>
@@ -775,150 +422,7 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
         onConfirm={handleBatchDelete}
       />
 
-      <UnifiedModal
-        isOpen={transferring}
-        type="primary"
-        title={t("contentpage.transfer_progress_title")}
-        icon={<FaExchangeAlt className="w-6 h-6" />}
-        isDismissable={false}
-        showConfirmButton={false}
-        showCancelButton={false}
-      >
-        <ModalProgress
-          label={t("contentpage.transfer_progress_title")}
-          description={<> {t("contentpage.transfer_progress_body")} </>}
-          currentItem={currentTransferItem}
-        />
-      </UnifiedModal>
-
-      <UnifiedModal
-        size="wide"
-        isOpen={transferTargetOpen}
-        onOpenChange={(open) => {
-          if (!open) transferTargetOnClose();
-        }}
-        type="primary"
-        title={t("contentpage.transfer_resources_title")}
-        confirmText={t("common.confirm")}
-        cancelText={t("common.cancel")}
-        showCancelButton
-        onConfirm={() => void transferSelectedPacksToTargets()}
-        onCancel={() => transferTargetOnClose()}
-        confirmButtonProps={{
-          isDisabled:
-            selectedTransferTargets.length === 0 ||
-            selection.selectedCount === 0 ||
-            transferring,
-        }}
-      >
-        <div className="flex flex-col gap-4">
-          <ModalDescription>
-            {t("contentpage.transfer_resources_body_simple")}
-          </ModalDescription>
-
-          {transferTargets.length > 0 ? (
-            <Select
-              placeholder={t("contentpage.transfer_target_placeholder")}
-              value={Array.from(new Set(selectedTransferTargets))[0] ?? null}
-              onChange={(keys) => {
-                const selected = [keys].map(String);
-                setSelectedTransferTargets(selected);
-              }}
-            >
-              <Label>{t("mirror.target") || "Target Instance"}</Label>
-              <Select.Trigger className={COMPONENT_STYLES.select.trigger}>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover
-                className={COMPONENT_STYLES.select.popoverContent}
-              >
-                <ListBox
-                  items={transferTargets}
-                  className={COMPONENT_STYLES.select.listbox}
-                >
-                  {(item) => (
-                    <ListBox.Item
-                      key={item.name}
-                      id={item.name}
-                      textValue={item.name}
-                    >
-                      <Label>
-                        <div className="flex gap-2 items-center">
-                          <div className="w-8 h-8 rounded bg-surface-tertiary flex items-center justify-center overflow-hidden">
-                            <img
-                              src={
-                                item.icon ||
-                                "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
-                              }
-                              alt="icon"
-                              className="w-full h-full object-cover"
-                              onError={(e) =>
-                                (e.currentTarget.style.display = "none")
-                              }
-                            />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-sm">{item.name}</span>
-                            <span className="text-xs text-muted">
-                              {item.gameVersion}
-                            </span>
-                          </div>
-                        </div>
-                      </Label>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  )}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-muted dark:text-zinc-500">
-              <FaExchangeAlt className="text-4xl mb-3 opacity-20" />
-              <ModalDescription>{t("contentpage.transfer_no_targets")}</ModalDescription>
-            </div>
-          )}
-        </div>
-      </UnifiedModal>
-
-      <ImportResultModal
-        isOpen={transferResultOpen}
-        onOpenChange={transferResultOnOpenChange}
-        results={{
-          success: transferResultSuccess,
-          failed: transferResultFailed,
-        }}
-        onConfirm={() => {
-          setTransferResultSuccess([]);
-          setTransferResultFailed([]);
-        }}
-      />
-
-      <UnifiedModal
-        isOpen={dupOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            dupOnClose();
-            dupResolveRef.current?.(false);
-          }
-        }}
-        type="warning"
-        title={t("mods.overwrite_modal_title")}
-        confirmText={t("common.confirm")}
-        cancelText={t("common.cancel")}
-        showCancelButton
-        onConfirm={() => {
-          dupResolveRef.current?.(true);
-          dupOnClose();
-        }}
-        onCancel={() => {
-          dupResolveRef.current?.(false);
-          dupOnClose();
-        }}
-      >
-        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
-        {dupNameRef.current ? <ModalPanel className="font-mono">{dupNameRef.current}</ModalPanel> : null}
-      </UnifiedModal>
+      {transfer.modal}
     </PageContainer>
   );
 }

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 )
 
@@ -105,7 +106,7 @@ func TestUWPIsolationVersionBoundaryAppliesToRootsAndSavedSettings(t *testing.T)
 				t.Fatal(code)
 			}
 			// Inspect the persisted JSON too: ReadMeta deliberately filters stale flags.
-			raw, err := os.ReadFile(filepath.Join(dir, "version.json"))
+			raw, err := os.ReadFile(filepath.Join(dir, apppath.InstanceStateDirName, apppath.InstanceMetaFileName))
 			if err != nil {
 				t.Fatal(err)
 			}

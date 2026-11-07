@@ -112,7 +112,7 @@ func TestUWPSaveEditorModeMinimumVersion(t *testing.T) {
 			}
 			// Inspect persisted bytes so ReadMeta's effective-value guard cannot
 			// hide a failure to enforce the minimum during SaveVersionMeta.
-			raw, err := os.ReadFile(filepath.Join(dir, "version.json"))
+			raw, err := os.ReadFile(filepath.Join(dir, apppath.InstanceStateDirName, apppath.InstanceMetaFileName))
 			if err != nil {
 				t.Fatal(err)
 			}

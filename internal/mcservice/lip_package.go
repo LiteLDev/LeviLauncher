@@ -169,7 +169,7 @@ func resolveLIPTargetDir(targetName string) (string, string) {
 	if GetVersionMeta(targetName).PackageType == "uwp" {
 		return "", "ERR_UWP_UNSUPPORTED_FEATURE"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "", "ERR_ACCESS_VERSIONS_DIR"
 	}

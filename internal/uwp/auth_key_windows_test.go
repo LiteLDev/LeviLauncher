@@ -184,8 +184,11 @@ func TestLegacyAuthKeyMarkerWriteFailureRemainsRetryable(t *testing.T) {
 	dir := t.TempDir()
 	m := legacyAuthManifest()
 	exe := filepath.Join(dir, m.Applications[0].Executable)
-	marker := filepath.Join(dir, authKeyMarkerName)
+	marker := authKeyMarkerPath(dir)
 	if err := os.WriteFile(exe, []byte(legacyAuthPublicKey), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(marker), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(marker, []byte("pat"), 0444); err != nil {

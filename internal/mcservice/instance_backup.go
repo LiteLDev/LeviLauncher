@@ -18,6 +18,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/content"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/types"
@@ -575,11 +576,14 @@ func BackupInstance(name string, request types.InstanceBackupRequest) types.Inst
 		ctx.info.BackupDir,
 		fmt.Sprintf("%s_%s.zip", safeName, now.Format("20060102-150405")),
 	)
-	out, err := os.Create(archivePath)
+	// The archive is written to a staging file and renamed into place, so a
+	// crash never leaves a partial archive under its final name.
+	out, err := fsx.CreateTemp(ctx.info.BackupDir, archivePath)
 	if err != nil {
 		result.ErrorCode = "ERR_INSTANCE_BACKUP_CREATE_ARCHIVE"
 		return result
 	}
+	stagingPath := out.Name()
 	zw := zip.NewWriter(out)
 
 	zipClosed := false
@@ -593,7 +597,7 @@ func BackupInstance(name string, request types.InstanceBackupRequest) types.Inst
 			_ = out.Close()
 		}
 		if !success {
-			_ = os.Remove(archivePath)
+			_ = os.Remove(stagingPath)
 		}
 	}()
 
@@ -638,6 +642,10 @@ func BackupInstance(name string, request types.InstanceBackupRequest) types.Inst
 		return result
 	}
 	fileClosed = true
+	if err := os.Rename(stagingPath, archivePath); err != nil {
+		result.ErrorCode = "ERR_INSTANCE_BACKUP_WRITE_ARCHIVE"
+		return result
+	}
 
 	// Only a finished archive reports "done"; failures above emit nothing more
 	// and surface through the returned ErrorCode.
@@ -713,7 +721,7 @@ func PreviewInstanceBackupRestoreConflicts(name string, request types.InstanceBa
 	}
 	info.IncludedScopes = append([]string{}, selectedScopes...)
 
-	tempDir, err := os.MkdirTemp("", "levilauncher-instance-backup-preview-*")
+	tempDir, err := makeInstanceBackupTempDir("instance-backup-preview")
 	if err != nil {
 		info.ErrorCode = "ERR_INSTANCE_BACKUP_RESTORE_EXTRACT_ARCHIVE"
 		return info
@@ -784,7 +792,7 @@ func RestoreInstanceBackup(ctx context.Context, name string, request types.Insta
 	totalSteps := len(selectedScopes) + 3
 	emitInstanceBackupRestoreProgress("preparing", 1, totalSteps, "", "")
 
-	tempDir, err := os.MkdirTemp("", "levilauncher-instance-backup-*")
+	tempDir, err := makeInstanceBackupTempDir("instance-backup-restore")
 	if err != nil {
 		result.ErrorCode = "ERR_INSTANCE_BACKUP_RESTORE_EXTRACT_ARCHIVE"
 		return result
@@ -904,13 +912,11 @@ func buildInstanceBackupContext(name string) instanceBackupContext {
 	}
 
 	ctx.info.BackupDir = filepath.Join(
-		apppath.BaseRoot(),
-		"backups",
-		"instances",
+		apppath.InstanceBackupsDir(),
 		sanitizeInstanceBackupSegment(trimmedName, "instance"),
 	)
 
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		ctx.info.ErrorCode = "ERR_ACCESS_VERSIONS_DIR"
 		return ctx
@@ -3717,4 +3723,14 @@ func uniqueStrings(values []string) []string {
 		result = append(result, trimmed)
 	}
 	return result
+}
+
+// makeInstanceBackupTempDir creates the directory a restore extracts an
+// archive into, in the cache rather than the system temporary directory.
+func makeInstanceBackupTempDir(name string) (string, error) {
+	dir := apppath.CacheDir()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	return fsx.MkdirTemp(dir, name)
 }

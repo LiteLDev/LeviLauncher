@@ -38,7 +38,7 @@ func InstallExtractAppx(ctx context.Context, archivePath, folderName, channel st
 	if channel != "release" && channel != "beta" && channel != "preview" {
 		return "ERR_UWP_CHANNEL"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}

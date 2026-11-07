@@ -12,11 +12,12 @@ import (
 
 	json "github.com/goccy/go-json"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
 var _ = reflect.TypeOf(VersionMeta{})
-var _ = reflect.TypeOf(metaFileName)
 
 type VersionMeta struct {
 	Name             string    `json:"name"        `
@@ -31,8 +32,6 @@ type VersionMeta struct {
 	CreatedAt        time.Time `json:"createdAt"`
 	Registered       bool      `json:"registered,omitempty"`
 }
-
-const metaFileName = "version.json"
 
 const (
 	PackageTypeGDK = "gdk"
@@ -62,33 +61,79 @@ func DetectPackageType(versionDir string, meta VersionMeta) string {
 	return PackageTypeGDK
 }
 
-func metaPath(versionDir string) string { return filepath.Join(versionDir, metaFileName) }
+// metaPath is <instance>\.levilauncher\instance.json; legacyMetaPath is the
+// version.json of instances in the legacy layout.
+func metaPath(versionDir string) string {
+	return filepath.Join(apppath.InstanceStateDir(versionDir), apppath.InstanceMetaFileName)
+}
+
+func legacyMetaPath(versionDir string) string {
+	return filepath.Join(versionDir, apppath.LegacyInstanceMetaFileName)
+}
+
+// EnsureStateDir creates <instance>\.levilauncher with the hidden attribute,
+// as lip does for .lip.
+func EnsureStateDir(versionDir string) (string, error) {
+	dir := apppath.InstanceStateDir(versionDir)
+	if utils.DirExists(dir) {
+		return dir, nil
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	fsx.SetHidden(dir)
+	return dir, nil
+}
 
 func WriteMeta(versionDir string, meta VersionMeta) error {
-	if !utils.DirExists(versionDir) {
-		if err := os.MkdirAll(versionDir, 0755); err != nil {
-			return err
-		}
+	if _, err := EnsureStateDir(versionDir); err != nil {
+		return err
 	}
-	f, err := os.Create(metaPath(versionDir))
+	data, err := json.MarshalIndent(meta, "", "  ")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	return enc.Encode(meta)
+	if err := fsx.WriteFileAtomic(metaPath(versionDir), append(data, '\n'), 0o644); err != nil {
+		return err
+	}
+	_ = os.Remove(legacyMetaPath(versionDir))
+	return nil
+}
+
+// readMetaBytes reads instance.json, moving a legacy version.json there
+// first. The legacy file is removed only once its content is in place; when
+// that fails, it is read where it is.
+func readMetaBytes(versionDir string) ([]byte, error) {
+	data, err := os.ReadFile(metaPath(versionDir))
+	if err == nil || !os.IsNotExist(err) {
+		return data, err
+	}
+	legacy := legacyMetaPath(versionDir)
+	data, err = os.ReadFile(legacy)
+	if err != nil {
+		return nil, err
+	}
+	if _, serr := EnsureStateDir(versionDir); serr == nil {
+		if werr := fsx.WriteFileAtomic(metaPath(versionDir), data, 0o644); werr == nil {
+			_ = os.Remove(legacy)
+		}
+	}
+	return data, nil
+}
+
+// HasMeta reports whether versionDir holds instance metadata, current or
+// legacy.
+func HasMeta(versionDir string) bool {
+	return utils.FileExists(metaPath(versionDir)) || utils.FileExists(legacyMetaPath(versionDir))
 }
 
 func ReadMeta(versionDir string) (VersionMeta, error) {
 	var m VersionMeta
-	f, err := os.Open(metaPath(versionDir))
+	data, err := readMetaBytes(versionDir)
 	if err != nil {
 		return m, err
 	}
-	defer f.Close()
-	dec := json.NewDecoder(f)
-	err = dec.Decode(&m)
+	err = json.Unmarshal(data, &m)
 	if err == nil {
 		m.PackageType = DetectPackageType(versionDir, m)
 		// Expose the effective setting without rewriting imported or older metadata.

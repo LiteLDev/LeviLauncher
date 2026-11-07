@@ -14,6 +14,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 func TestStartVerifiedPublishesOnlyAfterFullResumedFilePasses(t *testing.T) {
@@ -29,7 +31,7 @@ func TestStartVerifiedPublishesOnlyAfterFullResumedFilePasses(t *testing.T) {
 	}))
 	defer server.Close()
 	dest := filepath.Join(t.TempDir(), "game.appx")
-	if err := os.WriteFile(dest+".download", []byte(payload[:prefixLength]), 0o644); err != nil {
+	if err := os.WriteFile(fsx.PartialPath(dest), []byte(payload[:prefixLength]), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	entered, release := make(chan struct{}), make(chan struct{})
@@ -38,7 +40,7 @@ func TestStartVerifiedPublishesOnlyAfterFullResumedFilePasses(t *testing.T) {
 	defer finishVerification()
 	manager, events := newVerifiedTestManager(Options{Resume: true})
 	manager.StartVerified(context.Background(), server.URL, dest, func(filename string) error {
-		if filename != dest+".download" {
+		if filename != fsx.PartialPath(dest) {
 			t.Errorf("verified %q instead of staging file", filename)
 		}
 		data, err := os.ReadFile(filename)
@@ -64,7 +66,7 @@ func TestStartVerifiedPublishesOnlyAfterFullResumedFilePasses(t *testing.T) {
 	if err != nil || string(data) != payload {
 		t.Fatalf("published archive: %q %v", data, err)
 	}
-	assertMissingDownloadFile(t, dest+".download")
+	assertMissingDownloadFile(t, fsx.PartialPath(dest))
 }
 
 func TestStartVerifiedFailureNeverPublishesAndRemovesUntrustedPartial(t *testing.T) {
@@ -82,7 +84,7 @@ func TestStartVerifiedFailureNeverPublishesAndRemovesUntrustedPartial(t *testing
 			var calls atomic.Int32
 			manager.StartVerified(context.Background(), server.URL, dest, func(filename string) error {
 				calls.Add(1)
-				if filename != dest+".download" {
+				if filename != fsx.PartialPath(dest) {
 					t.Errorf("wrong verification input %q", filename)
 				}
 				return errors.New("ERR_UWP_INTEGRITY")
@@ -94,7 +96,7 @@ func TestStartVerifiedFailureNeverPublishesAndRemovesUntrustedPartial(t *testing
 			if done, failures := events.snapshot(); done != 0 || len(failures) != 1 || failures[0] != "ERR_UWP_INTEGRITY" {
 				t.Fatalf("integrity failure events: done=%d errors=%v", done, failures)
 			}
-			assertMissingDownloadFile(t, dest+".download")
+			assertMissingDownloadFile(t, fsx.PartialPath(dest))
 			if existing {
 				data, err := os.ReadFile(dest)
 				if err != nil || string(data) != "previous verified archive" {
@@ -137,7 +139,7 @@ func TestStartVerifiedCancellationDuringVerificationNeverPublishes(t *testing.T)
 				t.Errorf("cancelled verification events: done=%d errors=%v", done, failures)
 			}
 			assertMissingDownloadFile(t, dest)
-			assertMissingDownloadFile(t, dest+".download")
+			assertMissingDownloadFile(t, fsx.PartialPath(dest))
 		})
 	}
 }
@@ -183,7 +185,7 @@ func TestVerificationPauseResumeRechecksCompleteFileWithoutHTTPRequest(t *testin
 			finishVerification()
 			waitForTaskState(t, manager, dest, false, true)
 			assertMissingDownloadFile(t, dest)
-			data, err := os.ReadFile(dest + ".download")
+			data, err := os.ReadFile(fsx.PartialPath(dest))
 			if err != nil || string(data) != payload {
 				t.Fatalf("paused file lost: %q %v", data, err)
 			}
@@ -198,7 +200,7 @@ func TestVerificationPauseResumeRechecksCompleteFileWithoutHTTPRequest(t *testin
 				}
 				waitForTaskRemoval(t, manager, dest)
 				assertMissingDownloadFile(t, dest)
-				assertMissingDownloadFile(t, dest+".download")
+				assertMissingDownloadFile(t, fsx.PartialPath(dest))
 				if done, failures := events.snapshot(); done != 0 || len(failures) != 0 {
 					t.Fatalf("paused cancellation: %d %v", done, failures)
 				}
@@ -206,7 +208,7 @@ func TestVerificationPauseResumeRechecksCompleteFileWithoutHTTPRequest(t *testin
 			}
 			if tampered {
 				data[len(data)-1] ^= 1
-				if err := os.WriteFile(dest+".download", data, 0o644); err != nil {
+				if err := os.WriteFile(fsx.PartialPath(dest), data, 0o644); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -233,7 +235,7 @@ func TestVerificationPauseResumeRechecksCompleteFileWithoutHTTPRequest(t *testin
 					t.Fatalf("published resumed archive: %q %v", data, err)
 				}
 			}
-			assertMissingDownloadFile(t, dest+".download")
+			assertMissingDownloadFile(t, fsx.PartialPath(dest))
 		})
 	}
 }
@@ -278,7 +280,7 @@ func TestMD5RetriesRetainOriginalSuccessAndFailureBehavior(t *testing.T) {
 				}
 				assertMissingDownloadFile(t, dest)
 			}
-			assertMissingDownloadFile(t, dest+".download")
+			assertMissingDownloadFile(t, fsx.PartialPath(dest))
 		})
 	}
 }
@@ -309,7 +311,7 @@ func TestMD5PauseResumeRechecksChangedFile(t *testing.T) {
 	manager.Start(context.Background(), server.URL, dest, expected)
 	waitForTaskState(t, manager, dest, false, true)
 	assertMissingDownloadFile(t, dest)
-	if err := os.WriteFile(dest+".download", []byte("modified package"), 0o644); err != nil {
+	if err := os.WriteFile(fsx.PartialPath(dest), []byte("modified package"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	manager.ResumeTask(dest)

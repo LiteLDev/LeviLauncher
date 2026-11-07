@@ -27,7 +27,7 @@ Remove any devices you no longer need in [Microsoft Store device management](htt
 ### LeviLauncher closes immediately or never shows a window
 
 - On Windows, LeviLauncher now starts WebView2 in a safer software-rendered mode to reduce startup crashes on some GPU and driver combinations.
-- If the launcher still fails before the UI appears, check `%APPDATA%\levilauncher.exe\logs\startup.log`.
+- If the launcher still fails before the UI appears, check `%LOCALAPPDATA%\LeviLauncher\Logs\startup.log`.
 - Retry once after a failed launch. If it still happens, attach `startup.log` when opening a GitHub issue.
 
 ### A version fails to launch

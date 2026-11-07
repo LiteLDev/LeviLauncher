@@ -27,6 +27,11 @@ dialog = dialog.replace(/\bDirExists\b/g, "FixtureDirExists").replace(
   "if OptionsForm.ShowModal <> mrOk then",
   "if ValidateDialog(OptionsForm, OkButton, CancelButton, InstallersCheck, VersionsCheck, BackupsCheck) <> mrOk then",
 );
+// The dialog only offers a check box for data that exists; take those checks
+// from the installer too, against the fixture folders.
+const dataChecks = ["HasInstallersData", "HasInstancesData", "HasBackupsData"]
+  .map((name) => functionSource(name).replace(/\bDirExists\b/g, "FixtureDirExists"))
+  .join("\n\n");
 const harness = String.raw`
 #define AppName "LeviLauncher"
 [Setup]
@@ -68,12 +73,18 @@ begin
   if not Value then RaiseException(Message);
 end;
 
+// Bit 1: Cache (installers), bit 2: Instances (versions), bit 4: Backups.
+// Only the current layout's folder names count, so a legacy name can't also
+// match and each check box maps to exactly one fixture bit.
 function FixtureDirExists(const Path: string): Boolean;
+var
+  DirName: string;
 begin
+  DirName := ExtractFileName(Path);
   Result :=
-    ((ExtractFileName(Path) = 'installers') and ((FixtureTargets and 1) <> 0)) or
-    ((ExtractFileName(Path) = 'versions') and ((FixtureTargets and 2) <> 0)) or
-    ((ExtractFileName(Path) = 'backups') and ((FixtureTargets and 4) <> 0));
+    ((DirName = 'Cache') and ((FixtureTargets and 1) <> 0)) or
+    ((DirName = 'Instances') and ((FixtureTargets and 2) <> 0)) or
+    ((DirName = 'Backups') and ((FixtureTargets and 4) <> 0));
 end;
 
 function ValidateDialog(Form: TSetupForm; OKButton, CancelButton: TNewButton;
@@ -123,6 +134,7 @@ begin
   end;
 end;
 
+${dataChecks}
 ${dialog}
 ${functionSource("ExistingInstallDir")}
 ${functionSource("ShouldSkipPage")}

@@ -27,7 +27,7 @@ Microsoft 계정 하나로 Microsoft Store에 로그인할 수 있는 기기는 
 ### LeviLauncher가 바로 종료되거나 창이 표시되지 않음
 
 - 이제 Windows에서 LeviLauncher는 일부 GPU와 드라이버 조합에서 시작 시 충돌을 줄이기 위해 더 안전한 소프트웨어 렌더링 모드로 WebView2를 시작합니다.
-- 그래도 UI가 나타나기 전에 런처가 실패하면 `%APPDATA%\levilauncher.exe\logs\startup.log`를 확인하세요.
+- 그래도 UI가 나타나기 전에 런처가 실패하면 `%LOCALAPPDATA%\LeviLauncher\Logs\startup.log`를 확인하세요.
 - 실행에 실패하면 한 번 다시 시도하세요. 그래도 발생하면 GitHub 이슈를 열 때 `startup.log`를 첨부하세요.
 
 ### 특정 버전이 실행되지 않음

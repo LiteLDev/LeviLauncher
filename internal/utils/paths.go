@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 func CanWriteDir(p string) bool {
@@ -16,11 +18,11 @@ func CanWriteDir(p string) bool {
 	}
 
 	isWritable := func(dir string) bool {
-		tf := filepath.Join(dir, ".ll_write_test.tmp")
-		f, err := os.Create(tf)
+		f, err := fsx.CreateTemp(dir, "levilauncher-write-test")
 		if err != nil {
 			return false
 		}
+		tf := f.Name()
 		_, werr := f.Write([]byte("ok"))
 		cerr := f.Close()
 		_ = os.Remove(tf)

@@ -26,12 +26,10 @@ func SetBaseRoot(root string) string {
 	return ""
 }
 
+// ResetBaseRoot returns to the default data root. config.json then names no
+// base_root, so the default follows the layout rather than being pinned.
 func ResetBaseRoot() string {
 	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = "" }); err != nil {
-		return "ERR_WRITE_FILE"
-	}
-	br := strings.TrimSpace(apppath.BaseRoot())
-	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = br }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""

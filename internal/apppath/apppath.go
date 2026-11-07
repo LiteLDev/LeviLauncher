@@ -42,6 +42,9 @@ const (
 	// (internal/storage); MigrationJournalFileName journals one in progress.
 	MigrationFileName        = "storage-migration.json"
 	MigrationJournalFileName = "storage-migration.journal"
+	// MigrationLockFileName is locked while a process decides the layout
+	// and, shared, for as long as it runs on it.
+	MigrationLockFileName = "storage-migration.lock"
 
 	// InstanceStateDirName holds the launcher's state inside an instance, as
 	// .lip holds lip's.
@@ -54,12 +57,15 @@ const (
 // Names of the legacy layout, read by the migration and by
 // legacy mode.
 const (
-	LegacyDefaultExeName         = "levilauncher.exe"
-	LegacyLogsDirName            = "logs"
-	LegacyAccountsDirName        = "microsoft-account"
-	LegacyWebViewDirName         = "EBWebView"
-	LegacyVersionsDirName        = "versions"
-	LegacyBackupsDirName         = "backups"
+	LegacyDefaultExeName  = "levilauncher.exe"
+	LegacyLogsDirName     = "logs"
+	LegacyAccountsDirName = "microsoft-account"
+	LegacyWebViewDirName  = "EBWebView"
+	LegacyVersionsDirName = "versions"
+	LegacyBackupsDirName  = "backups"
+	// LegacyEraABackupDirName is where launchers 0.0.8 and 0.0.9 kept world
+	// backups, <data root>\backup\worlds.
+	LegacyEraABackupDirName      = "backup"
 	LegacyWorldBackupsDirName    = "worlds"
 	LegacyInstanceBackupsDirName = "instances"
 	LegacyInstallersDirName      = "installers"
@@ -177,6 +183,7 @@ func WebView2Dir() string {
 // migration never moves.
 func MigrationPath() string        { return filepath.Join(LocalDir(), MigrationFileName) }
 func MigrationJournalPath() string { return filepath.Join(LocalDir(), MigrationJournalFileName) }
+func MigrationLockPath() string    { return filepath.Join(LocalDir(), MigrationLockFileName) }
 
 // DefaultBaseRoot is the data root when config.json names none.
 func DefaultBaseRoot() string {

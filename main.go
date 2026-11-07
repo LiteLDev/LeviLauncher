@@ -623,20 +623,6 @@ func main() {
 		)
 	}
 
-	if !vcruntime.EnsureStartupInteractive(context.Background()) {
-		startup.Mark("VC runtime unavailable")
-		return
-	}
-	startup.Mark("VC runtime ready")
-	if !webview2runtime.EnsureStartupInteractive(
-		context.Background(),
-		webView2Options.BrowserExecutableFolder,
-	) {
-		startup.Mark("WebView2 runtime unavailable")
-		return
-	}
-	startup.Mark("WebView2 runtime ready")
-
 	_ = godotenv.Load()
 
 	isFirstInstance, err := ensureSingleInstance(autoLaunchVersion, waitForPreviousInstance)
@@ -656,6 +642,8 @@ func main() {
 		return
 	case outcome == storage.Legacy:
 		log.Printf("[startup] storage migration deferred, running on the legacy layout %s: %v", apppath.LegacyMode(), err)
+	case outcome == storage.Deferred:
+		log.Printf("[startup] storage migration of legacy data deferred to the next start: %v", err)
 	case outcome == storage.Migrated:
 		log.Printf("[startup] storage migrated from the legacy layout")
 	}
@@ -671,6 +659,22 @@ func main() {
 	}
 	update.Init()
 	startup.Mark("config loaded")
+	// The runtimes are checked once the layout is decided: a redistributable
+	// they download goes to the data root's Cache\Installers.
+	if !vcruntime.EnsureStartupInteractive(context.Background()) {
+		startup.Mark("VC runtime unavailable")
+		return
+	}
+	startup.Mark("VC runtime ready")
+	if !webview2runtime.EnsureStartupInteractive(
+		context.Background(),
+		webView2Options.BrowserExecutableFolder,
+	) {
+		startup.Mark("WebView2 runtime unavailable")
+		return
+	}
+	startup.Mark("WebView2 runtime ready")
+
 	mc := app.NewMinecraft()
 	contentService := app.NewContentService(mc)
 	modsService := app.NewModsService(mc)

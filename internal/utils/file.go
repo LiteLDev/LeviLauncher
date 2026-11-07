@@ -189,11 +189,17 @@ func CopyDir(src, dst string) error {
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return err
 	}
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+	// Walk does not enter a junction or symbolic link given as its root; with
+	// a trailing separator it follows it.
+	root := src
+	if !strings.HasSuffix(root, string(filepath.Separator)) {
+		root += string(filepath.Separator)
+	}
+	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		rel, err := filepath.Rel(src, path)
+		rel, err := filepath.Rel(root, path)
 		if err != nil {
 			return err
 		}

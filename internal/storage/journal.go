@@ -8,7 +8,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 // The journal makes a migration all or nothing, as lip's .lip/journal does
@@ -33,6 +34,13 @@ type record struct {
 	Op   string `json:"op"`
 	Path string `json:"path,omitempty"`
 	From string `json:"from,omitempty"`
+	// Discard marks a Move that only kept a replaced file for an undo: once
+	// the migration is committed, Path is removed.
+	Discard bool `json:"discard,omitempty"`
+	// Deep marks a Move of an entry the migration merges recursively
+	// (Backups, Cache): an undo that finds its source recreated merges back
+	// recursively too.
+	Deep bool `json:"deep,omitempty"`
 }
 
 type journal struct {
@@ -86,14 +94,19 @@ func (j *journal) commit() error {
 		return err
 	}
 	j.close()
-	return os.Remove(j.path)
+	// The migration is committed once the Commit record is on disk. A journal
+	// that cannot be removed now is removed by the next start
+	// (recoverJournal); undoing a committed migration here would leave a
+	// journal that says it is done.
+	_ = os.Remove(j.path)
+	return nil
 }
 
 // rollback undoes every change and removes the journal. When a change cannot
 // be undone, the journal is kept for the next start.
 func (j *journal) rollback() error {
 	j.close()
-	if err := undo(j.records); err != nil {
+	if err := undo(j.path, j.records); err != nil {
 		return err
 	}
 	return os.Remove(j.path)
@@ -130,38 +143,54 @@ func recoverJournal(path string) error {
 	}
 	for _, r := range records {
 		if r.Op == opCommit {
+			// Committed, but the process ended before it removed the files
+			// it had kept for an undo.
+			for _, d := range records {
+				if d.Op == opMove && d.Discard {
+					_ = os.Remove(d.Path)
+				}
+			}
 			return os.Remove(path)
 		}
 	}
-	if err := undo(records); err != nil {
+	if err := undo(path, records); err != nil {
 		return err
 	}
 	return os.Remove(path)
 }
 
-func undo(records []record) error {
-	var errs []string
+// undo undoes the records from the last one back. After each step it
+// shortens the journal to the records still in effect, so that an undo that
+// fails or is cut off resumes where it stopped: a step undone twice could
+// act on what an earlier undo step put back.
+func undo(path string, records []record) error {
 	for i := len(records) - 1; i >= 0; i-- {
 		if err := undoRecord(records[i]); err != nil {
-			errs = append(errs, err.Error())
+			return fmt.Errorf("undo migration: %w", err)
+		}
+		if err := rewriteJournal(path, records[:i]); err != nil {
+			return fmt.Errorf("undo migration: %w", err)
 		}
 	}
-	if len(errs) > 0 {
-		return fmt.Errorf("undo migration: %s", strings.Join(errs, "; "))
-	}
 	return nil
+}
+
+func rewriteJournal(path string, records []record) error {
+	var b []byte
+	for _, r := range records {
+		line, err := json.Marshal(r)
+		if err != nil {
+			return err
+		}
+		b = append(append(b, line...), '\n')
+	}
+	return fsx.WriteFileAtomic(path, b, 0o644)
 }
 
 func undoRecord(r record) error {
 	switch r.Op {
 	case opMove:
-		if !exists(r.Path) {
-			return nil
-		}
-		if exists(r.From) && !samePath(r.From, r.Path) {
-			return fmt.Errorf("cannot move %s back: %s exists", r.Path, r.From)
-		}
-		return renameRetry(r.Path, r.From)
+		return undoMove(r.From, r.Path, r.Deep)
 	case opCopy, opCreate:
 		if err := os.RemoveAll(r.Path); err != nil {
 			return err
@@ -180,6 +209,56 @@ func undoRecord(r record) error {
 		return os.MkdirAll(r.Path, 0o755)
 	}
 	return nil
+}
+
+// undoMove moves path back to from. When something was put at from after the
+// move (an older launcher that ran between an interrupted migration and this
+// start recreates its directories and config.json), nothing is overwritten:
+// directories are merged back (recursively for deep entries), and where a
+// name is taken the entry moved back is the user's: what appeared since is
+// kept next to it under a "-legacy" name. Each step leaves a state from
+// which the undo can be run again.
+func undoMove(from, path string, deep bool) error {
+	if !exists(path) {
+		return nil
+	}
+	if !exists(from) || samePath(from, path) {
+		return renameRetry(path, from)
+	}
+	if isDir(from) && isDir(path) && !isLink(from) && !isLink(path) {
+		if !isNotEmpty(from) {
+			if err := os.Remove(from); err != nil {
+				return err
+			}
+			return renameRetry(path, from)
+		}
+		ents, err := os.ReadDir(path)
+		if err != nil {
+			return err
+		}
+		for _, e := range ents {
+			src, dst := filepath.Join(path, e.Name()), filepath.Join(from, e.Name())
+			if exists(dst) {
+				if deep && isDir(src) && isDir(dst) && !isLink(src) && !isLink(dst) {
+					if err := undoMove(dst, src, true); err != nil {
+						return err
+					}
+					continue
+				}
+				if err := renameRetry(dst, uniqueName(dst, "-legacy")); err != nil {
+					return err
+				}
+			}
+			if err := renameRetry(src, dst); err != nil {
+				return err
+			}
+		}
+		return os.Remove(path)
+	}
+	if err := renameRetry(from, uniqueName(from, "-legacy")); err != nil {
+		return fmt.Errorf("cannot move %s back: %w", path, err)
+	}
+	return renameRetry(path, from)
 }
 
 func exists(p string) bool {

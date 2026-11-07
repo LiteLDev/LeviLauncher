@@ -866,11 +866,13 @@ begin
   RemoveDir(CurrentConfigDir);
   DeleteDirIfExists(CurrentLocalDir + '\WebView2');
   DeleteFile(CurrentLocalDir + '\storage-migration.json');
+  DeleteFile(CurrentLocalDir + '\storage-migration.lock');
   RemoveDir(CurrentLocalDir);
 
   // The legacy layout.
   LocalPath := LegacyStorageDir;
   DeleteFile(LocalPath + '\config.json');
+  DeleteFile(LocalPath + '\config.migrated.json');
   DeleteFile(LocalPath + '\user_gamertag_map.json');
   DeleteDirIfExists(LocalPath + '\EBWebView');
   DeleteDirIfExists(LocalPath + '\bin');

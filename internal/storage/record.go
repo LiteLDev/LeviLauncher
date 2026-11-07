@@ -43,30 +43,62 @@ func readRecord() *Record {
 	return &r
 }
 
+// resetRecordCache makes the next LoadRecord read storage-migration.json
+// again, after a migration wrote it.
+func resetRecordCache() {
+	recordMu.Lock()
+	recordLoaded = false
+	recordCache = nil
+	recordMu.Unlock()
+}
+
 // TranslateLegacyPath maps a path of the legacy layout, such as the install
 // location Windows recorded for a registered instance, to where the
 // migration moved it. Any other path is returned unchanged.
+//
+// The most specific move wins: an instance that a merge placed under a
+// "-legacy" name has a move of its own besides the move of its parent
+// directory. Among equally specific moves the latest wins, as a legacy path
+// that was migrated twice (an older launcher ran in between) was last used
+// by what the later migration moved.
 func TranslateLegacyPath(p string) string {
 	r := LoadRecord()
 	if r == nil || strings.TrimSpace(p) == "" {
 		return p
 	}
+	// A path that still exists was not moved: a migration renames, or retires
+	// what it copied. It is legacy data still waiting to be migrated.
+	if _, err := os.Lstat(p); err == nil {
+		return p
+	}
 	norm := utils.NormalizeWindowsPath(p)
-	for _, m := range r.Moves {
+	best := -1
+	bestLen := -1
+	for i, m := range r.Moves {
 		from := utils.NormalizeWindowsPath(m.From)
-		if norm == from {
-			return m.To
+		if from == "" {
+			continue
 		}
-		if strings.HasPrefix(norm, from+string(filepath.Separator)) {
-			// Keep the case of the remainder when p is spelled plainly.
-			rest := norm[len(from)+1:]
-			if cp := filepath.Clean(p); len(cp) > len(from) && strings.EqualFold(cp[:len(from)], from) {
-				rest = cp[len(from)+1:]
+		if norm == from || strings.HasPrefix(norm, from+string(filepath.Separator)) {
+			if len(from) >= bestLen {
+				best, bestLen = i, len(from)
 			}
-			return filepath.Join(m.To, rest)
 		}
 	}
-	return p
+	if best < 0 {
+		return p
+	}
+	m := r.Moves[best]
+	from := utils.NormalizeWindowsPath(m.From)
+	if norm == from {
+		return m.To
+	}
+	// Keep the case of the remainder when p is spelled plainly.
+	rest := norm[len(from)+1:]
+	if cp := filepath.Clean(p); len(cp) > len(from) && strings.EqualFold(cp[:len(from)], from) {
+		rest = cp[len(from)+1:]
+	}
+	return filepath.Join(m.To, rest)
 }
 
 // IsMovedLegacyPath reports whether p is a path of the legacy layout that

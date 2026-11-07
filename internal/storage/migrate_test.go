@@ -31,6 +31,7 @@ func setup(t *testing.T) env {
 	recordLoaded = false
 	recordMu.Unlock()
 	t.Cleanup(func() {
+		releaseLock()
 		apppath.SetLegacyMode("")
 		recordMu.Lock()
 		recordLoaded = false
@@ -79,8 +80,14 @@ func TestPrepareWithoutLegacyLayout(t *testing.T) {
 	if err != nil || outcome != Current {
 		t.Fatalf("Prepare = %v, %v", outcome, err)
 	}
-	if exists(apppath.ConfigPath()) || exists(apppath.MigrationPath()) {
-		t.Fatal("a fresh start must not write config.json or a migration record")
+	if exists(apppath.ConfigPath()) {
+		t.Fatal("a fresh start must not write config.json")
+	}
+	// It records that the current layout is in use, so that legacy data an
+	// older launcher writes later does not take precedence over it.
+	rec := readRecord()
+	if rec == nil || len(rec.Moves) != 0 {
+		t.Fatalf("record = %+v, want one without moves", rec)
 	}
 	_ = e
 }
@@ -369,7 +376,7 @@ func TestPrepareMigratesLegacyDataThatReappears(t *testing.T) {
 		filepath.Join(local, "Instances", "A", "version.json"):                               `{"name":"A"}`,
 		filepath.Join(local, "Instances", "B", "version.json"):                               `{"name":"B"}`,
 		filepath.Join(local, "WebView2", "EBWebView", "Default", "Local Storage", "leveldb"): "storage",
-		filepath.Join(local, "WebView2", "EBWebView", "Default-legacy", "old"):               "old profile",
+		filepath.Join(e.legacy, "EBWebView", "Default", "old"):                               "old profile",
 		filepath.Join(e.legacy, "config.migrated.json"):                                      `{"window_width":900}`,
 		filepath.Join(e.legacy, "config.migrated-2.json"):                                    `{"window_width":800,"old_only":true}`,
 	} {
@@ -379,6 +386,11 @@ func TestPrepareMigratesLegacyDataThatReappears(t *testing.T) {
 	}
 	if exists(filepath.Join(local, "WebView2", "EBWebView-before-migration")) {
 		t.Error("the current WebView2 profile was replaced by the legacy one")
+	}
+	// The current profile wins: the old version's profile is not merged into
+	// it (and copied again at every such start), it stays where it was.
+	if exists(filepath.Join(local, "WebView2", "EBWebView", "Default-legacy")) {
+		t.Error("the old version's WebView2 profile was merged into the current one")
 	}
 	recordLoaded = false
 	for _, legacyPath := range []string{
@@ -402,11 +414,16 @@ func TestPrepareIgnoresAMigratedLegacyDirectory(t *testing.T) {
 	write(t, filepath.Join(e.legacy, "logs", "startup.log"), "log")
 	write(t, filepath.Join(e.legacy, "Instances", "A", "version.json"), `{}`)
 	write(t, filepath.Join(e.legacy, "Backups", "Worlds", "W", "W_1.mcworld"), "world")
+	// The data root was kept in place, across volumes from %LOCALAPPDATA%.
+	write(t, apppath.ConfigPath(), `{"base_root":`+quote(e.legacy)+`}`)
+	rec, _ := json.Marshal(Record{Format: recordFormat, LegacyDir: e.legacy, BaseRoot: e.legacy})
+	write(t, apppath.MigrationPath(), string(rec))
+	before := read(t, apppath.ConfigPath())
 
 	if outcome, err := Prepare(); err != nil || outcome != Current {
 		t.Fatalf("Prepare = %v, %v; want Current", outcome, err)
 	}
-	if exists(apppath.ConfigPath()) || exists(apppath.MigrationPath()) {
+	if read(t, apppath.ConfigPath()) != before || read(t, apppath.MigrationPath()) != string(rec) {
 		t.Error("a migrated legacy directory was migrated again")
 	}
 }
@@ -434,14 +451,25 @@ func TestPrepareUndoRestoresTheExistingCurrentLayout(t *testing.T) {
 				record = string(rec)
 				write(t, apppath.MigrationPath(), record)
 			}
-			f, err := os.Open(filepath.Join(e.legacy, "EBWebView", "Default", "Local Storage", "leveldb"))
+			// An instance in use: its directory cannot be renamed.
+			f, err := os.Open(filepath.Join(e.legacy, "versions", "A", "Minecraft.Windows.exe"))
 			if err != nil {
 				t.Fatal(err)
 			}
 			outcome, err := Prepare()
 			f.Close()
-			if outcome != Legacy || err == nil {
-				t.Fatalf("Prepare = %v, %v; want Legacy with an error", outcome, err)
+			// Without a record the user's data is in the legacy layout, which
+			// the launcher then runs on. After a migration it is in the
+			// current one, which stays in use.
+			want := Legacy
+			if withRecord {
+				want = Deferred
+			}
+			if outcome != want || err == nil {
+				t.Fatalf("Prepare = %v, %v; want %v with an error", outcome, err, want)
+			}
+			if withRecord && apppath.LegacyMode() != "" {
+				t.Fatal("legacy mode although the current layout holds the data")
 			}
 			apppath.SetLegacyMode("")
 			for path, want := range map[string]string{

@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "Player",
+    "clear_search": "Clear search",
+    "no_instance_title": "No instance selected",
+    "no_instance_body": "Choose an instance to manage its content.",
+    "delete_failed": "Delete failed",
+    "targets_load_failed": "Could not list instances",
+    "transfer_start": "Transfer",
+    "transfer_running": "Transferring {{done}} of {{total}} to {{target}}",
+    "transfer_summary": "{{success}} succeeded, {{failed}} failed, {{skipped}} skipped",
+    "transfer_done_title": "Transfer finished",
+    "transfer_partial_title": "Transfer finished with errors",
+    "transfer_failed_title": "Transfer failed",
+    "transfer_log": "Transfer log",
+    "duplicate_prompt": "{{name}} already exists in the target instance. Overwrite it?",
+    "overwrite": "Overwrite",
+    "skip": "Skip",
+    "apply_to_rest": "Do the same for the remaining duplicates",
+    "item_running": "Transferring…",
+    "item_ok": "Transferred",
+    "item_overwritten": "Overwritten",
+    "item_skipped": "Skipped",
+    "item_failed": "Failed"
+  }
+}

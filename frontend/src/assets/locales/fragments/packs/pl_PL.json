@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "Gracz",
+    "clear_search": "Wyczyść wyszukiwanie",
+    "no_instance_title": "Nie wybrano instancji",
+    "no_instance_body": "Wybierz instancję, aby zarządzać jej zawartością.",
+    "delete_failed": "Usuwanie nie powiodło się",
+    "targets_load_failed": "Nie udało się wczytać listy instancji",
+    "transfer_start": "Przenieś",
+    "transfer_running": "Przenoszenie {{done}} z {{total}} do {{target}}",
+    "transfer_summary": "Udane: {{success}}, nieudane: {{failed}}, pominięte: {{skipped}}",
+    "transfer_done_title": "Przenoszenie zakończone",
+    "transfer_partial_title": "Przenoszenie zakończone z błędami",
+    "transfer_failed_title": "Przenoszenie nie powiodło się",
+    "transfer_log": "Dziennik przenoszenia",
+    "duplicate_prompt": "{{name}} już istnieje w instancji docelowej. Zastąpić?",
+    "overwrite": "Zastąp",
+    "skip": "Pomiń",
+    "apply_to_rest": "Zrób to samo dla pozostałych duplikatów",
+    "item_running": "Przenoszenie…",
+    "item_ok": "Przeniesiono",
+    "item_overwritten": "Zastąpiono",
+    "item_skipped": "Pominięto",
+    "item_failed": "Niepowodzenie"
+  }
+}

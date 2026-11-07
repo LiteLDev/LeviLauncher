@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "콘텐츠 가져오기",
+    "transfer_title": "콘텐츠 전송",
+    "status_running": "처리 중…",
+    "status_success": "완료",
+    "status_overwritten": "덮어씀",
+    "status_skipped": "건너뜀(이미 있음)",
+    "summary": "성공 {{ok}}개, 실패 {{failed}}개, 건너뜀 {{skipped}}개",
+    "skip": "건너뛰기",
+    "overwrite_body": "대상에 이미 이 항목이 있습니다. 덮어쓸까요?",
+    "apply_to_all": "남은 중복 항목에도 같은 선택 적용",
+    "progress": "{{total}}개 중 {{done}}개 완료",
+    "progress_label": "진행률",
+    "log_label": "항목 로그",
+    "nothing_done": "가져온 항목이 없습니다.",
+    "transfer_done": "전송 완료",
+    "transfer_partial": "전송 완료(일부 실패)",
+    "transfer_failed": "전송 실패",
+    "no_instance_title": "먼저 인스턴스를 선택하세요",
+    "no_instance_body": "페이지 상단의 인스턴스 선택기에서 작업할 인스턴스를 고르세요.",
+    "load_targets_failed": "인스턴스를 불러올 수 없음",
+    "choose_instance_hint": "월드, 팩 등 콘텐츠를 관리할 인스턴스를 선택하세요.",
+    "back_to_hub": "콘텐츠 관리로 돌아가기",
+    "clear_search": "검색 지우기",
+    "world_deleted": "월드를 삭제했습니다",
+    "delete_failed": "삭제 실패",
+    "world_saved": "level.dat 저장됨"
+  }
+}

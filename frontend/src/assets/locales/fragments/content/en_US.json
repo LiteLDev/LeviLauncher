@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "Import content",
+    "transfer_title": "Transfer content",
+    "status_running": "Working…",
+    "status_success": "Done",
+    "status_overwritten": "Overwritten",
+    "status_skipped": "Skipped (already exists)",
+    "summary": "{{ok}} succeeded, {{failed}} failed, {{skipped}} skipped",
+    "skip": "Skip",
+    "overwrite_body": "This item already exists at the destination. Overwrite it?",
+    "apply_to_all": "Apply this choice to all remaining duplicates",
+    "progress": "{{done}} of {{total}} done",
+    "progress_label": "Progress",
+    "log_label": "Item log",
+    "nothing_done": "Nothing was imported.",
+    "transfer_done": "Transfer completed",
+    "transfer_partial": "Transfer completed (partial failures)",
+    "transfer_failed": "Transfer failed",
+    "no_instance_title": "Choose an instance first",
+    "no_instance_body": "Pick the instance to work with in the instance picker at the top of the page.",
+    "load_targets_failed": "Couldn't load instances",
+    "choose_instance_hint": "Choose an instance to manage its worlds, packs and other content.",
+    "back_to_hub": "Back to Content Management",
+    "clear_search": "Clear search",
+    "world_deleted": "World deleted",
+    "delete_failed": "Delete failed",
+    "world_saved": "level.dat saved"
+  }
+}

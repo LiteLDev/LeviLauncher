@@ -127,8 +127,13 @@ func TestDeflate64Corrupt(t *testing.T) {
 	w.fixedLit(257) // length 3
 	w.code(1, 5)    // distance 2, beyond the 1 byte decoded
 	w.fixedLit(256)
-	if _, err := io.ReadAll(newDeflate64Reader(bytes.NewReader(w.bytes()))); err != errDeflate64 {
-		t.Errorf("distance too far: err = %v", err)
+	// .NET's Deflate64 decoder copies from its zero-filled window (checked
+	// with lip v0.38.0-beta.1's ZipSource); zlib rejects the distance.
+	if got, err := io.ReadAll(newDeflate64Reader(bytes.NewReader(w.bytes()))); err != nil || string(got) != "a\x00a\x00" {
+		t.Errorf("Deflate64 distance too far: %q, %v", got, err)
+	}
+	if _, err := io.ReadAll(newDeflateReader(bytes.NewReader(w.bytes()))); err != errDeflate64 {
+		t.Errorf("Deflate distance too far: err = %v", err)
 	}
 	stream, _ := deflate64Fixed()
 	if _, err := io.ReadAll(newDeflate64Reader(bytes.NewReader(stream[:len(stream)/2]))); err != io.ErrUnexpectedEOF {

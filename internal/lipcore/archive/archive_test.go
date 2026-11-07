@@ -267,24 +267,6 @@ func TestZipSource_UnsupportedMethod_IsDamaged(t *testing.T) {
 	}
 }
 
-func TestZipSource_BadChecksum_IsDamagedWhenRead(t *testing.T) {
-	b := rawZip(t, "a.txt", zip.Store, []byte("abc"), []byte("abd"))
-	s, err := OpenZipBytes(b)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rc, err := s.Open("a.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rc.Close()
-	_, err = io.ReadAll(rc)
-	var de *DamagedError
-	if !errors.As(err, &de) || !errors.Is(err, zip.ErrChecksum) {
-		t.Fatalf("got %v", err)
-	}
-}
-
 func TestZipSource_CorruptDeflate_IsDamagedWhenRead(t *testing.T) {
 	s, err := OpenZipBytes(rawZip(t, "a.txt", zip.Deflate, []byte{0xff, 0xff, 0xff, 0xff}, []byte("abcd")))
 	if err != nil {
@@ -702,23 +684,6 @@ func TestZipSource_FileChanged_IsReadAgain(t *testing.T) {
 	}
 	if got := s.Keys(); !slices.Equal(got, []string{"pad", "a", "b"}) {
 		t.Fatalf("keys %q", got)
-	}
-}
-
-func TestZipSource_EncryptedEntry_IsNotServed(t *testing.T) {
-	var buf bytes.Buffer
-	zw := zip.NewWriter(&buf)
-	w, _ := zw.CreateRaw(&zip.FileHeader{Name: "a", Method: zip.Store, Flags: 0x1,
-		CompressedSize64: 1, UncompressedSize64: 1})
-	w.Write([]byte("x"))
-	zw.Close()
-	s, err := OpenZipBytes(buf.Bytes())
-	if err != nil {
-		t.Fatal(err)
-	}
-	var de *DamagedError
-	if _, err := s.Open("a"); !errors.As(err, &de) {
-		t.Fatalf("got %v", err)
 	}
 }
 

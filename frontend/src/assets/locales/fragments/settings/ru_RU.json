@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "Не удалось сменить зеркало",
+    "cache_clean_failed": "Не удалось очистить кэш LIP",
+    "updating": {
+      "log_title": "Шаги",
+      "error_code": "Код ошибки",
+      "details": "Подробности",
+      "download_line": "Загружено {{percent}}% ({{downloaded}} / {{total}} МБ)",
+      "retry_line": "Повторная попытка обновления (попытка {{count}})"
+    },
+    "onboarding": {
+      "footer_hint": "Это можно изменить позже в настройках."
+    }
+  }
+}

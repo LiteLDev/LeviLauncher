@@ -1,0 +1,39 @@
+{
+  "instances": {
+    "list": {
+      "current": "현재",
+      "settings": "설정",
+      "mods": "모드",
+      "now_current": "{{name}}을(를) 현재 인스턴스로 설정했습니다",
+      "select_hint": "카드를 클릭하면 현재 인스턴스로 설정됩니다."
+    },
+    "settings": {
+      "sections": "인스턴스 설정 섹션"
+    },
+    "ll": {
+      "dialog_title": "LeviLamina {{action}}",
+      "installed_version": "설치됨",
+      "target_version": "설치할 버전",
+      "instance": "인스턴스"
+    },
+    "run": {
+      "activity_hint": "이 단계는 활동에도 보관됩니다.",
+      "backup_failed_title": "백업 실패"
+    },
+    "notify": {
+      "ll_install_failed": "LeviLamina 설치 실패",
+      "ll_remove_failed": "LeviLamina를 제거할 수 없습니다",
+      "ll_removed": "LeviLamina를 제거했습니다",
+      "backup_open_failed": "백업을 준비할 수 없습니다",
+      "restore_open_failed": "백업 파일을 열 수 없습니다"
+    },
+    "steps": {
+      "backup_scan": "백업할 파일 측정",
+      "backup_write": "백업 파일 쓰기",
+      "restore_prepare": "복원 준비",
+      "restore_extract": "백업 내용 압축 해제",
+      "restore_scope": "{{scope}} 복원",
+      "restore_finalize": "복원 마무리"
+    }
+  }
+}

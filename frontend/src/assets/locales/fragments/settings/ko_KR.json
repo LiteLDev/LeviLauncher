@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "미러 소스를 변경할 수 없습니다",
+    "cache_clean_failed": "LIP 캐시를 정리할 수 없습니다",
+    "updating": {
+      "log_title": "단계",
+      "error_code": "오류 코드",
+      "details": "세부 정보",
+      "download_line": "{{percent}}% 다운로드됨 ({{downloaded}} / {{total}} MB)",
+      "retry_line": "업데이트 재시도 중 ({{count}}번째)"
+    },
+    "onboarding": {
+      "footer_hint": "나중에 설정에서 변경할 수 있습니다."
+    }
+  }
+}

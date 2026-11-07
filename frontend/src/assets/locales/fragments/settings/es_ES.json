@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "No se pudo cambiar la fuente espejo",
+    "cache_clean_failed": "No se pudo limpiar la caché de LIP",
+    "updating": {
+      "log_title": "Pasos",
+      "error_code": "Código de error",
+      "details": "Detalles",
+      "download_line": "Descargado {{percent}} % ({{downloaded}} / {{total}} MB)",
+      "retry_line": "Reintentando la actualización (intento {{count}})"
+    },
+    "onboarding": {
+      "footer_hint": "Puedes cambiar esto más tarde en Ajustes."
+    }
+  }
+}

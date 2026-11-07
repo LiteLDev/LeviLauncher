@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "Spiegelquelle konnte nicht geändert werden",
+    "cache_clean_failed": "LIP-Cache konnte nicht geleert werden",
+    "updating": {
+      "log_title": "Schritte",
+      "error_code": "Fehlercode",
+      "details": "Details",
+      "download_line": "{{percent}} % heruntergeladen ({{downloaded}} / {{total}} MB)",
+      "retry_line": "Update wird erneut versucht (Versuch {{count}})"
+    },
+    "onboarding": {
+      "footer_hint": "Du kannst das später in den Einstellungen ändern."
+    }
+  }
+}

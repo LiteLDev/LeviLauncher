@@ -19,7 +19,6 @@ import {
   Tabs,
   TextField,
   Tooltip,
-  toast,
 } from "@heroui/react";
 
 import { cn } from "@/utils/cn";
@@ -30,7 +29,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { RxUpdate, RxDesktop } from "react-icons/rx";
 import {
-  FaGithub,
   FaDiscord,
   FaList
 } from "react-icons/fa";
@@ -41,8 +39,13 @@ import {
   LuMoon,
   LuMonitor,
   LuImage, LuLayers,
-  LuShield
+  LuShield,
+  LuSettings2,
+  LuPuzzle,
+  LuSlidersHorizontal,
+  LuInfo,
 } from "react-icons/lu";
+import type { IconType } from "react-icons";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -70,7 +73,9 @@ import { THEMES, THEME_GROUPS } from "@/constants/themes";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { CustomColorPicker } from "@/components/CustomColorPicker";
 import { BackgroundAppearanceSettings } from "@/components/BackgroundAppearanceSettings";
-import { useSettings, ThemeMode } from "@/hooks/useSettings";
+import { useSettings, ThemeMode, SETTINGS_TABS, type SettingsTab } from "@/hooks/useSettings";
+import { AboutSection } from "@/pages/AboutPage";
+import { notify } from "@/utils/activity";
 import { LipTaskProgress } from "@/utils/LipTaskConsoleContext";
 
 const normalizeHexColor = (
@@ -112,6 +117,36 @@ const AppearanceNumberField = ({ label, value, min, max, onChange }: {
     </NumberField.Group>
   </NumberField>
 );
+
+const SETTINGS_TAB_ICONS: Record<SettingsTab, IconType> = {
+  general: LuSettings2,
+  personalization: LuPalette,
+  components: LuPuzzle,
+  others: LuSlidersHorizontal,
+  privacy: LuShield,
+  updates: RxUpdate,
+  about: LuInfo,
+};
+
+/** Content width (CSS px) from which the section list moves into a side column. */
+const SIDE_NAV_MIN_WIDTH = 1024;
+
+// Only the threshold result is stored, so resizing does not re-render the page
+// on every pixel.
+const useMinWidth = (ref: React.RefObject<HTMLElement | null>, minWidth: number) => {
+  const [matches, setMatches] = React.useState(false);
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setMatches(el.getBoundingClientRect().width >= minWidth);
+    const observer = new ResizeObserver(([entry]) => {
+      setMatches(entry.contentRect.width >= minWidth);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, minWidth]);
+  return matches;
+};
 
 const APPEARANCE_SECTIONS = ["theme", "layout", "wallpaper", "material"] as const;
 type AppearanceSection = typeof APPEARANCE_SECTIONS[number];
@@ -256,7 +291,7 @@ export const SettingsPage: React.FC = () => {
     { tab: "others", keys: ["settings.process.title", "settings.experimental.title", "settings.experimental.instance_backup.title"] },
     { tab: "privacy", keys: ["settings.tabs.privacy", "settings.privacy.analytics.title"] },
     { tab: "updates", keys: ["settings.tabs.updates", "settings.beta_updates.title"] },
-    { tab: "about", keys: ["settings.tabs.about"] },
+    { tab: "about", keys: ["settings.tabs.about", "about.authors", "about.thanks", "about.sponsors", "about.source", "about.contribute", "about.github_repo"] },
   ];
   const searchResults = searchEntries.filter((entry) =>
     [t(`settings.tabs.${entry.tab}`), ...entry.keys.map((key) => t(key))]
@@ -295,9 +330,12 @@ export const SettingsPage: React.FC = () => {
       setInstallerDir(String(installers || ""));
       setVersionsDir(String(versions || ""));
       setBaseRootWritable(true);
-      toast.success(
-        t(reset ? "audit.mods.path_reset_success" : "audit.mods.path_save_success"),
-      );
+      notify({
+        title: t(reset ? "audit.mods.path_reset_success" : "audit.mods.path_save_success"),
+        description: String(root || ""),
+        variant: "success",
+        source: "settings",
+      });
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -395,7 +433,11 @@ export const SettingsPage: React.FC = () => {
       if (typeof GetLipGithubProxy === "function") {
         setLipGithubProxyDraft(String((await GetLipGithubProxy()) || ""));
       }
-      toast.success(t("settings.lip.github_proxy.save_success"));
+      notify({
+        title: t("settings.lip.github_proxy.save_success"),
+        variant: "success",
+        source: "settings",
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       setLipGithubProxyError(
@@ -440,19 +482,21 @@ export const SettingsPage: React.FC = () => {
       const error = await SetMirrorEnabled(enabled);
       if (error) {
         setMirrorSourceEnabled(previous);
-        toast(t("common.error"), {
+        notify({
+          title: t("settings_ux.mirror_save_failed"),
           description: t(`errors.${error}`, { defaultValue: error }),
           variant: "danger",
-          timeout: 2000,
+          source: "settings",
         });
       }
     } catch (error) {
       setMirrorSourceEnabled(previous);
       const message = error instanceof Error ? error.message : String(error);
-      toast(t("common.error"), {
+      notify({
+        title: t("settings_ux.mirror_save_failed"),
         description: t(`errors.${message}`, { defaultValue: message }),
         variant: "danger",
-        timeout: 2000,
+        source: "settings",
       });
     } finally {
       setSavingMirrorSource(false);
@@ -462,9 +506,48 @@ export const SettingsPage: React.FC = () => {
   const customThemeIconColor =
     getColorLuminance(activeCustomThemeColor) > 0.6 ? "#111827" : "#ffffff";
 
+  // Wide content: a vertical section list beside the content. Narrow: a
+  // scrollable strip under the header, so all sections stay one click away.
+  const layoutRef = React.useRef<HTMLDivElement>(null);
+  const sideNav = useMinWidth(layoutRef, SIDE_NAV_MIN_WIDTH);
+  const settingsNav = (
+    <Tabs
+      selectedKey={selectedTab}
+      onSelectionChange={(k) => setSelectedTab(k as string)}
+      orientation={sideNav ? "vertical" : "horizontal"}
+      variant="primary"
+      className="w-full min-w-0"
+    >
+      <Tabs.ListContainer className={sideNav ? "w-full bg-transparent" : "w-full min-w-0"}>
+        <Tabs.List
+          aria-label={t("settings.header.title")}
+          className={cn(
+            COMPONENT_STYLES.tabs.tabList,
+            sideNav && "w-full bg-transparent px-0",
+          )}
+        >
+          {SETTINGS_TABS.map((id) => {
+            const Icon = SETTINGS_TAB_ICONS[id];
+            return (
+              <Tabs.Tab
+                key={id}
+                id={id}
+                className={sideNav ? "h-10 justify-start gap-3 px-3 text-start whitespace-nowrap" : "w-auto flex-[1_0_auto] gap-2 whitespace-nowrap"}
+              >
+                <Icon aria-hidden className="shrink-0" />
+                {t(`settings.tabs.${id}`)}
+                <Tabs.Indicator />
+              </Tabs.Tab>
+            );
+          })}
+        </Tabs.List>
+      </Tabs.ListContainer>
+    </Tabs>
+  );
+
   return (
-    <PageContainer ref={pageRef} className="relative [&_.tabs__tab]:min-w-max [&_.tabs__tab]:whitespace-nowrap" animate={false}>
-      <div className="flex flex-col gap-4">
+    <PageContainer ref={pageRef} className="relative [&_[role=tab]]:min-w-max [&_[role=tab]]:whitespace-nowrap" animate={false}>
+      <div ref={layoutRef} className="mx-auto flex w-full max-w-[92rem] flex-col gap-4">
         {/* Header Card */}
         <motion.div
           data-material-motion
@@ -473,12 +556,12 @@ export const SettingsPage: React.FC = () => {
           transition={{ duration: 0.4 }}
         >
           <Card className={LAYOUT.GLASS_CARD.BASE}>
-            <Card.Content className="p-6">
+            <Card.Content className="p-4 min-[1200px]:p-6">
               <PageHeader
                 title={t("settings.header.title")}
                 description={t("settings.header.content")}
                 endContent={
-                  <TextField aria-label={t("audit.usability.search_settings")} value={settingsQuery} onChange={setSettingsQuery} className="w-full sm:w-64">
+                  <TextField aria-label={t("audit.usability.search_settings")} value={settingsQuery} onChange={setSettingsQuery} className="w-full sm:w-64 max-w-full">
                     <InputGroup><InputGroup.Input placeholder={t("audit.usability.search_settings")} /></InputGroup>
                   </TextField>
                 }
@@ -496,52 +579,19 @@ export const SettingsPage: React.FC = () => {
                   </div>
                 </div>
               )}
-              <Tabs
-                selectedKey={selectedTab}
-                onSelectionChange={(k) => setSelectedTab(k as string)}
-                variant="primary"
-                className={"mt-4"}
-              >
-                <Tabs.ListContainer>
-                  <Tabs.List
-                    aria-label={t("settings.header.title")}
-                    className={COMPONENT_STYLES.tabs.tabList}
-                  >
-                    <Tabs.Tab key="general" id={"general"}>
-                      {t("settings.tabs.general")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="personalization" id={"personalization"}>
-                      {t("settings.tabs.personalization")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="components" id={"components"}>
-                      {t("settings.tabs.components")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="others" id={"others"}>
-                      {t("settings.tabs.others")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="privacy" id={"privacy"}>
-                      {t("settings.tabs.privacy")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="updates" id={"updates"}>
-                      {t("settings.tabs.updates")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="about" id={"about"}>
-                      {t("settings.tabs.about")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                  </Tabs.List>
-                </Tabs.ListContainer>
-              </Tabs>
+              {!sideNav && <div className="mt-4">{settingsNav}</div>}
             </Card.Content>
           </Card>
         </motion.div>
 
+        <div className={sideNav ? "grid grid-cols-[minmax(12rem,15rem)_minmax(0,1fr)] items-start gap-4" : "flex min-w-0 flex-col"}>
+        {sideNav && (
+          <nav aria-label={t("settings.header.title")} className="sticky top-0 self-start">
+            <Card className={LAYOUT.GLASS_CARD.BASE}>
+              <Card.Content className="p-2">{settingsNav}</Card.Content>
+            </Card>
+          </nav>
+        )}
         {/* Content Card */}
         <motion.div
           data-material-motion
@@ -549,9 +599,10 @@ export const SettingsPage: React.FC = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
+          className="min-w-0 w-full"
         >
           <Card className={LAYOUT.GLASS_CARD.BASE}>
-            <Card.Content className="p-6">
+            <Card.Content className="p-4 min-[1200px]:p-6">
               {selectedTab === "general" && (
                 <div className="flex flex-col gap-6">
                   {/* Paths */}
@@ -2525,22 +2576,24 @@ export const SettingsPage: React.FC = () => {
                         onPress={() => {
                           void cleanLipCache().then((err) => {
                             if (err) {
-                              toast(t("common.error"), {
+                              notify({
+                                title: t("settings_ux.cache_clean_failed"),
                                 description: t(`errors.${err}`, {
                                   defaultValue: err,
                                 }),
                                 variant: "danger",
-                                timeout: 2000,
+                                source: "settings",
                               });
                               return;
                             }
 
-                            toast(t("common.success"), {
+                            notify({
+                              title: t("common.success"),
                               description: t(
                                 "settings.lip.cache_clean_success",
                               ),
                               variant: "success",
-                              timeout: 2000,
+                              source: "settings",
                             });
                           });
                         }}
@@ -2977,11 +3030,15 @@ export const SettingsPage: React.FC = () => {
               )}
               {selectedTab === "about" && (
                 <div className="flex flex-col gap-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex min-w-0 items-center gap-4">
+                      <div className="min-w-0">
                         <p className="font-medium text-lg">
                           {t("aboutcard.title")}
+                          {appVersion && <span className="ml-2 text-sm font-normal text-muted tabular-nums">v{appVersion}</span>}
+                        </p>
+                        <p className="text-xs text-muted dark:text-zinc-400">
+                          {t("about.description")}
                         </p>
                         <p className="text-xs text-muted dark:text-zinc-400">
                           {t("aboutcard.description", { name: "LeviMC" })} ·{" "}
@@ -2990,22 +3047,7 @@ export const SettingsPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Tooltip>
-                        <Button
-                          isIconOnly
-                          aria-label={t("audit.mods.github")}
-                          onPress={() =>
-                            Browser.OpenURL("https://github.com/liteldev")
-                          }
-                          variant={"ghost"}
-                          className={"rounded-full"}
-                        >
-                          <FaGithub size={20} />
-                        </Button>
-                        <Tooltip.Content>
-                          {t("audit.mods.github")}
-                        </Tooltip.Content>
-                      </Tooltip>
+                      {/* GitHub links live in the About section below. */}
                       <Tooltip>
                         <Button
                           isIconOnly
@@ -3024,11 +3066,13 @@ export const SettingsPage: React.FC = () => {
                       </Tooltip>
                     </div>
                   </div>
+                  <AboutSection embedded />
                 </div>
               )}
             </Card.Content>
           </Card>
         </motion.div>
+        </div>
       </div>
 
       {/* Process Management Modal */}
@@ -3198,7 +3242,14 @@ export const SettingsPage: React.FC = () => {
             ? await handleKillAllProcesses()
             : await handleKillProcess(killTarget.pid);
           setKillTarget(null);
-          if (ok) toast.success(t("audit.usability.process_success"));
+          if (ok) {
+            notify({
+              title: t("audit.usability.process_success"),
+              description: killTarget.label,
+              variant: "success",
+              source: "settings",
+            });
+          }
         }}
       >
         <ModalDescription>{t("audit.usability.process_warning", { target: killTarget?.label })}</ModalDescription>

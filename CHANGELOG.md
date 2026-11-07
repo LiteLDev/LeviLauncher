@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 - Replaced the external lip package manager with a built-in lip-compatible package manager, so lip and the .NET runtime no longer need to be installed or updated from Settings; existing `tooth_lock.json` installs keep working
 - Aligned the built-in lip with lip 0.38.0-beta.1: packages are recorded in `.lip/workspace.yaml` and read from `lip.yaml`, existing `tooth_lock.json` installs are migrated automatically on the first package operation, the GitHub proxy is read from lip's `config.yaml` (a `liprc.json` is converted), and packages are installed without the `#client` variant while already installed `#client` packages are updated and uninstalled in place
+- Replaced the Inno Setup installer with an MSI and a `setup.exe` built with WiX
+- Releases are now published by pushing a `v*` tag, with the version taken from the tag and release notes generated from the merged pull requests
 
 ## [1.0.7] - 2026-11-04
 

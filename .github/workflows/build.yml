@@ -1,12 +1,16 @@
 name: LeviLauncher build
 
+# CI for branches and pull requests. release.yml reuses this workflow for a v* tag, in which case the
+# version stamped into LeviLauncher.exe and the installers is taken from the tag.
 on:
   push:
-    tags:
-      - "v*"
     branches:
       - "**"
   pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   quality:
@@ -69,26 +73,24 @@ jobs:
           go vet ./...
           go test -race ./internal/downloader ./internal/curseforge/client
 
+
   build:
     needs: quality
-    strategy:
-      fail-fast: false
-      matrix:
-        build:
-          [
-            {
-              name: LeviLauncher,
-              platform: windows/amd64,
-              archs: amd64,
-              os: windows-2022,
-            },
-          ]
-    runs-on: ${{ matrix.build.os }}
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+
+      - name: Set version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=0.0.0-ci" >> "$GITHUB_ENV"
+          fi
 
       - name: Set up xmake
         uses: xmake-io/github-action-setup-xmake@v1
@@ -102,341 +104,50 @@ jobs:
           xmake f -p windows -a x64 -m release --toolchain=msvc --deploy=y -y
           xmake -y
 
-      - name: Install Inno Setup
-        shell: pwsh
-        run: |
-          choco install innosetup --yes --no-progress
-
-          $isccPath = $null
-          $candidateDirs = @(
-            "${env:ProgramFiles(x86)}\Inno Setup 7",
-            "${env:ProgramFiles(x86)}\Inno Setup 6",
-            "$env:ProgramFiles\Inno Setup 7",
-            "$env:ProgramFiles\Inno Setup 6"
-          )
-
-          foreach ($dir in $candidateDirs) {
-            $candidate = Join-Path $dir "ISCC.exe"
-            if (Test-Path $candidate) {
-              $dir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-              $isccPath = $candidate
-              break
-            }
-          }
-
-          if (-not $isccPath) {
-            $command = Get-Command iscc.exe -ErrorAction SilentlyContinue
-            if ($command) {
-              $isccPath = $command.Source
-            }
-          }
-
-          if (-not $isccPath) {
-            throw "iscc.exe was not found after installing Inno Setup."
-          }
-
-          Write-Host "Using Inno Setup compiler: $isccPath"
-
-          # Supply every language file project.iss declares that this Inno Setup
-          # build does not ship, so adding a [Languages] entry cannot break CI.
-          $innoDir = Split-Path -Path $isccPath -Parent
-          $sourceRoot = "https://raw.githubusercontent.com/jrsoftware/issrc/6ef32198ef1f7b7b375cd4b6b90896c2a58eb4c2/Files"
-          $script = Get-Content -Path "build/windows/inno/project.iss" -Raw
-          $references = [regex]::Matches($script, 'MessagesFile: "compiler:([^"]+)"') |
-            ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
-
-          foreach ($reference in $references) {
-            $target = Join-Path $innoDir $reference
-            if (Test-Path $target) {
-              Write-Host "Language file already present: $reference"
-              continue
-            }
-            $url = "$sourceRoot/$($reference -replace '\\', '/')"
-            Write-Host "Downloading missing language file: $url"
-            New-Item -ItemType Directory -Path (Split-Path -Path $target -Parent) -Force | Out-Null
-            Invoke-WebRequest -Uri $url -OutFile $target -ErrorAction Stop
-          }
-
-      - uses: ToQuery/wails3-build-action@v3-alpha.14
+      - uses: actions/setup-go@v6
         with:
-          go-archs: ${{ matrix.build.archs }}
-          go-version: "1.25.3"
-          node-version: "24"
-          wails3-version: "v3.0.0"
-          package: false
+          go-version-file: go.mod
+          cache: true
 
-      - name: Test installer prerequisite handling
-        run: node build/windows/inno/prerequisites.test.mjs
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Test installer wizard layout
-        run: node build/windows/inno/wizard-ui.test.mjs
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10
 
-      - name: Verify build outputs
+      - name: Build LeviLauncher.exe
         shell: pwsh
         run: |
-          Write-Host "Checking build outputs for Windows ${{ matrix.build.archs }}"
-          cd bin
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0
+          wails3 task windows:build PRODUCTION=true
 
-          $requiredFiles = @(
-            "LeviLauncher.exe",
-            "LeviLauncher-${{ matrix.build.archs }}-installer.exe"
-          )
+      - name: Build installers
+        shell: pwsh
+        run: |
+          ./packaging/wix/build.ps1 `
+            -Version $env:VERSION `
+            -Arch x64 `
+            -BinDir bin `
+            -OutDir dist
 
-          foreach ($file in $requiredFiles) {
-            if (-not (Test-Path $file)) {
-              throw "Required build output not found: $file"
-            }
-          }
-
-          Write-Host "Files in bin directory:"
-          Get-ChildItem
-
-      - name: Upload standalone EXE artifact
-        uses: actions/upload-artifact@v7.0.0
+      - uses: actions/upload-artifact@v7
         with:
           path: bin/LeviLauncher.exe
           archive: false
           if-no-files-found: error
 
-      - name: Upload installer artifact
-        uses: actions/upload-artifact@v7.0.0
+      - uses: actions/upload-artifact@v7
         with:
-          path: bin/LeviLauncher-${{ matrix.build.archs }}-installer.exe
+          path: dist/LeviLauncher-${{ env.VERSION }}-win-x64.msi
           archive: false
           if-no-files-found: error
 
-  release:
-    name: Create Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v8.0.0
+      - uses: actions/upload-artifact@v7
         with:
-          path: ./artifacts
-
-      - name: List downloaded files
-        run: |
-          echo "Downloaded artifacts:"
-          find ./artifacts -type f -name "*" | sort
-          echo "Artifacts directory structure:"
-          ls -R ./artifacts/
-
-      - name: Determine Prerelease Status
-        id: check_prerelease
-        run: |
-          # Extract beta value from build/config.yml
-          # Look for line with "beta:", extract content between quotes
-          BETA=$(grep 'beta:' build/config.yml | sed -n 's/.*beta:[[:space:]]*"\([^"]*\)".*/\1/p')
-
-          echo "Beta value found: $BETA"
-
-          if [ "$BETA" == "true" ]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "Detected beta: true, setting prerelease to true"
-          else
-            echo "is_prerelease=false" >> $GITHUB_OUTPUT
-            echo "Detected beta: $BETA, setting prerelease to false"
-          fi
-
-      - name: Extract Release Notes From CHANGELOG
-        id: extract-release-notes
-        uses: ffurrer2/extract-release-notes@v3
-
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
-          body: |-
-            ${{ steps.extract-release-notes.outputs.release_notes }}
-
-      - name: Upload Release Assets
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Uploading release assets..."
-
-          for raw_exe_file in ./artifacts/*/LeviLauncher.exe; do
-            if [ -f "$raw_exe_file" ]; then
-              echo "Uploading standalone EXE: $raw_exe_file"
-              gh release upload ${{ github.ref_name }} "$raw_exe_file" --clobber
-            fi
-          done
-
-          for installer_file in ./artifacts/*/*installer.exe; do
-            if [ -f "$installer_file" ]; then
-              echo "Uploading installer: $installer_file"
-              gh release upload ${{ github.ref_name }} "$installer_file" --clobber
-            fi
-          done
-
-          echo "All assets uploaded successfully"
-      - name: Notify Discord
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          INSTALLER_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher-amd64-installer.exe"
-          STANDALONE_EXE_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher.exe"
-          TAG_NAME: ${{ github.ref_name }}
-        run: |
-          EMBED_TITLE="🚀 LeviLauncher Update!"
-          EMBED_DESC="A new version of **LeviLauncher** is ready."
-          EMBED_COLOR=5814783
-          THUMB_URL="https://avatars.githubusercontent.com/u/78095377?s=200&v=4"
-
-          curl -H "Content-Type: application/json" \
-          -d "{
-            \"embeds\": [{
-              \"title\": \"$EMBED_TITLE\",
-              \"description\": \"$EMBED_DESC\",
-              \"color\": $EMBED_COLOR,
-              \"thumbnail\": { \"url\": \"$THUMB_URL\" },
-              \"fields\": [
-                {
-                  \"name\": \"📦 Version\",
-                  \"value\": \"\`$TAG_NAME\`\",
-                  \"inline\": true
-                },
-                {
-                  \"name\": \"📦 Installer\",
-                  \"value\": \"[**Click here to download installer**]($INSTALLER_URL)\",
-                  \"inline\": true
-                },
-                {
-                  \"name\": \"🧩 Standalone EXE\",
-                  \"value\": \"[**Click here to download EXE**]($STANDALONE_EXE_URL)\",
-                  \"inline\": true
-                }
-              ] 
-            }]
-          }" \
-          "$DISCORD_WEBHOOK"
-
-  upload-to-target-repo:
-    name: Upload EXE to Target Repository
-    needs: build
-    # Temporarily disabled: no longer uploading to dreamguxiang/LeviLauncher
-    # if: startsWith(github.ref, 'refs/tags/')
-    if: false
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v8.0.0
-        with:
-          path: ./downloaded-artifacts
-
-      - name: Find EXE file
-        id: find_exe
-        run: |
-          set -euo pipefail
-          echo "Looking for LeviLauncher.exe in downloaded artifacts..."
-
-          EXE_FILE=$(find ./downloaded-artifacts -name "LeviLauncher.exe" -type f | head -1 || true)
-
-          if [ -n "${EXE_FILE}" ]; then
-            echo "Found EXE file: $EXE_FILE"
-            echo "exe_path=$EXE_FILE" >> $GITHUB_OUTPUT
-          else
-            echo "LeviLauncher.exe still not found, searching for non-installer EXE..."
-            OTHER_EXE=$(find ./downloaded-artifacts -name "*.exe" -type f | grep -v installer | head -1 || true)
-            if [ -n "${OTHER_EXE}" ]; then
-              echo "Found alternative EXE file: $OTHER_EXE"
-              echo "exe_path=$OTHER_EXE" >> $GITHUB_OUTPUT
-            else
-              echo "No suitable EXE file found"
-              exit 1
-            fi
-          fi
-
-      - name: Checkout target repository
-        uses: actions/checkout@v7
-        with:
-          repository: dreamguxiang/LeviLauncher
-          token: ${{ secrets.TARGET_REPO_TOKEN }}
-          path: target-repo
-
-      - name: Setup target repository
-        run: |
-          cd target-repo
-
-          mkdir -p windows
-
-          cp ../${{ steps.find_exe.outputs.exe_path }} windows/LeviLauncher.exe
-
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-          if git diff --quiet; then
-            echo "No changes to commit"
-            echo "has_changes=false" >> $GITHUB_ENV
-          else
-            echo "Changes detected, preparing commit"
-            echo "has_changes=true" >> $GITHUB_ENV
-          fi
-
-      - name: Commit and push to target repository
-        if: env.has_changes == 'true'
-        run: |
-          cd target-repo
-
-          git add windows/LeviLauncher.exe
-
-          git commit -m "Update LeviLauncher.exe from ${{ github.repository }}@${{ github.sha }}"
-
-          git push origin main
-
-      - name: Create tag in target repository
-        if: env.has_changes == 'true'
-        run: |
-          cd target-repo
-
-          TAG_NAME="${{ github.ref_name }}"
-
-          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
-          git push origin "$TAG_NAME"
-
-  prime-goproxy:
-    name: Prime GoProxy caches
-    needs:
-      - upload-to-target-repo
-    # Temporarily disabled: depends on dreamguxiang/LeviLauncher upload flow
-    # if: startsWith(github.ref, 'refs/tags/')
-    if: false
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Prime GoProxy caches
-        run: |
-          set -euo pipefail
-          TAG="${{ github.ref_name }}"
-          echo "Priming GoProxy caches for tag: ${TAG}"
-
-          URLS=(
-            "https://goproxy.io/github.com/dreamguxiang/!levi!launcher/@v/${TAG}.zip"
-            "https://mirrors.aliyun.com/goproxy/github.com/dreamguxiang/levilauncher/@v/${TAG}.zip"
-          )
-
-          for url in "${URLS[@]}"; do
-            echo "Requesting: ${url}"
-            for i in {1..5}; do
-              if curl -fsSL "${url}" -o /dev/null; then
-                echo "Primed: ${url}"
-                break
-              else
-                echo "Attempt ${i} failed for ${url}, retrying..."
-                sleep $((i*2))
-              fi
-            done
-          done
+          path: dist/LeviLauncher-${{ env.VERSION }}-win-x64-setup.exe
+          archive: false
+          if-no-files-found: error

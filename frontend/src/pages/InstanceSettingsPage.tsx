@@ -1,5 +1,5 @@
 import { UWP_ISOLATION_MIN_VERSION } from "@/utils/packageType";
-import { ModalDescription, ModalPanel, ModalAction, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
+import { ModalDescription, ModalDetails, ModalPanel, ModalAction, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -19,6 +19,7 @@ import {
 } from "@heroui/react";
 
 import { cn } from "@/utils/cn";
+import React from "react";
 
 import { Dialogs } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
@@ -30,7 +31,7 @@ import { formatBytes } from "@/utils/formatting";
 
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
+import { FiAlertTriangle, FiCheckCircle, FiXCircle } from "react-icons/fi";
 import {
   GetVersionLogoDataUrl,
   RemoveVersionLogo,
@@ -39,7 +40,7 @@ import {
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { PageHeader } from "@/components/PageHeader";
 import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
-import { useInstanceSettings } from "@/hooks/useInstanceSettings";
+import { useInstanceSettings, type TaskStep } from "@/hooks/useInstanceSettings";
 import { LipTaskProgress } from "@/utils/LipTaskConsoleContext";
 import { OpenModsExplorer } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 
@@ -200,9 +201,85 @@ const getScopeDisplayLabel = (
     ? "Mods"
     : String(fallbackLabel || "").trim() || "-";
 
+const SETTINGS_TABS = [
+  "general",
+  "launch",
+  "loader",
+  "features",
+  "manage",
+] as const;
+
+// Content width at which the tab strip becomes a vertical section nav.
+const SECTION_NAV_MIN_WIDTH = 1024;
+
+const useElementWidth = (ref: React.RefObject<HTMLElement | null>) => {
+  const [width, setWidth] = React.useState(0);
+  React.useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    setWidth(element.getBoundingClientRect().width);
+    const observer = new ResizeObserver(([entry]) => {
+      setWidth(entry.contentRect.width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width;
+};
+
+// Steps of a long-running task; finished steps stay with their result.
+function TaskStepList({ steps, label }: { steps: TaskStep[]; label: string }) {
+  if (steps.length === 0) return null;
+  return (
+    <ol
+      aria-label={label}
+      aria-live="polite"
+      data-testid="task-steps"
+      className="flex min-w-0 flex-col gap-2"
+    >
+      {steps.map((step) => (
+        <li
+          key={step.key}
+          data-status={step.status}
+          className="flex min-w-0 items-start gap-3 text-sm leading-6"
+        >
+          <span className="mt-1 flex size-4 shrink-0 items-center justify-center">
+            {step.status === "running" ? (
+              <Spinner size="sm" color="current" className="text-accent" />
+            ) : step.status === "done" ? (
+              <FiCheckCircle aria-hidden="true" className="size-4 text-success" />
+            ) : (
+              <FiXCircle aria-hidden="true" className="size-4 text-danger" />
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div
+              className={cn(
+                "[overflow-wrap:anywhere]",
+                step.status === "running"
+                  ? "font-medium text-foreground"
+                  : "text-foreground/80 dark:text-zinc-300",
+              )}
+            >
+              {step.label}
+            </div>
+            {step.detail ? (
+              <div className="text-xs leading-5 text-muted tabular-nums">
+                {step.detail}
+              </div>
+            ) : null}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 export default function InstanceSettingsPage() {
   const { t } = useTranslation();
   const vs = useInstanceSettings();
+  const layoutRef = React.useRef<HTMLDivElement>(null);
+  const sectionNav = useElementWidth(layoutRef) >= SECTION_NAV_MIN_WIDTH;
   const currentLLVersionText =
     vs.currentLLVersion ||
     (t("versions.edit.loader.ll_not_installed") as unknown as string);
@@ -294,9 +371,50 @@ export default function InstanceSettingsPage() {
       );
   })();
 
+  const renderSectionTabs = (vertical: boolean) => (
+    <Tabs
+      selectedKey={vs.selectedTab}
+      onSelectionChange={(k) => vs.setSelectedTab(k as string)}
+      orientation={vertical ? "vertical" : "horizontal"}
+      variant="primary"
+      className={vertical ? "w-full" : "mt-4 min-w-0"}
+    >
+      <Tabs.ListContainer
+        className={vertical ? "w-full" : "no-scrollbar max-w-full overflow-x-auto"}
+      >
+        <Tabs.List
+          aria-label={t("instances.settings.sections")}
+          className={cn(
+            COMPONENT_STYLES.tabs.tabList,
+            vertical
+              ? "w-full flex-col items-stretch gap-1 p-1"
+              : "w-max flex-nowrap",
+          )}
+        >
+          {SETTINGS_TABS.map((tab) => (
+            <Tabs.Tab
+              key={tab}
+              id={tab}
+              className={cn(
+                "whitespace-nowrap",
+                vertical ? "w-full justify-start px-4" : "w-auto flex-none px-3",
+              )}
+            >
+              {t(`versions.edit.tabs.${tab}`)}
+              <Tabs.Indicator />
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+      </Tabs.ListContainer>
+    </Tabs>
+  );
+
   return (
     <PageContainer className="relative" animate={false}>
-      <div className="flex flex-col gap-4">
+      <div
+        ref={layoutRef}
+        className="mx-auto flex w-full max-w-[90rem] flex-col gap-4"
+      >
         <motion.div
           data-material-motion
           initial={{ y: -20, opacity: 0 }}
@@ -304,30 +422,34 @@ export default function InstanceSettingsPage() {
           transition={{ duration: 0.4 }}
         >
           <Card className={LAYOUT.GLASS_CARD.BASE}>
-            <Card.Content className="p-6 w-full">
+            <Card.Content className="w-full p-4 min-[900px]:p-6">
               <PageHeader
                 title={t("versions.edit.title")}
                 titleClassName="text-left pb-1"
                 description={
-                  <div className="mt-1 text-xs text-muted dark:text-zinc-400 truncate text-left">
-                    <span className="mr-2 font-medium">{vs.packageType.toUpperCase()}</span>
-                    {t("versions.edit.mc_version")}:{" "}
-                    <span className="text-foreground dark:text-zinc-200 font-medium">
-                      {vs.loading ? (
-                        <span className="inline-block h-4 w-24 rounded bg-surface-tertiary animate-pulse" />
-                      ) : (
-                        vs.gameVersion ||
-                        (t(
-                          "launcherpage.version_select.unknown",
-                        ) as unknown as string)
-                      )}
+                  <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted dark:text-zinc-400 text-left">
+                    <span className="font-medium">{vs.packageType.toUpperCase()}</span>
+                    <span>
+                      {t("versions.edit.mc_version")}:{" "}
+                      <span className="text-foreground dark:text-zinc-200 font-medium">
+                        {vs.loading ? (
+                          <span className="inline-block h-4 w-24 rounded bg-surface-tertiary animate-pulse" />
+                        ) : (
+                          vs.gameVersion ||
+                          (t(
+                            "launcherpage.version_select.unknown",
+                          ) as unknown as string)
+                        )}
+                      </span>
                     </span>
-                    <span className="mx-2 text-muted">·</span>
-                    {t("versions.info.name")}:{" "}
-                    <span className="text-foreground dark:text-zinc-200 font-medium">
-                      {vs.targetName || "-"}
+                    <span className="text-muted" aria-hidden="true">·</span>
+                    <span className="min-w-0 [overflow-wrap:anywhere]">
+                      {t("versions.info.name")}:{" "}
+                      <span className="text-foreground dark:text-zinc-200 font-medium">
+                        {vs.targetName || "-"}
+                      </span>
                     </span>
-                    <span className="mx-2 text-muted">·</span>
+                    <span className="text-muted" aria-hidden="true">·</span>
                     {vs.versionType === "preview" ? (
                       <Chip size="sm" variant="soft" color={"warning"}>
                         <Chip.Label>{t("common.preview")}</Chip.Label>
@@ -344,7 +466,7 @@ export default function InstanceSettingsPage() {
                   </div>
                 }
                 endContent={
-                  <div className="hidden sm:flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                     <Button
                       onPress={() => vs.navigate(vs.returnToPath)}
                       variant={"ghost"}
@@ -368,53 +490,37 @@ export default function InstanceSettingsPage() {
                   </div>
                 }
               />
-              <Tabs
-                selectedKey={vs.selectedTab}
-                onSelectionChange={(k) => vs.setSelectedTab(k as string)}
-                variant="primary"
-                className={"mt-4"}
-              >
-                <Tabs.ListContainer>
-                  <Tabs.List
-                    aria-label={"Version Settings Tabs"}
-                    className={COMPONENT_STYLES.tabs.tabList}
-                  >
-                    <Tabs.Tab key="general" id={"general"}>
-                      {t("versions.edit.tabs.general")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="launch" id={"launch"}>
-                      {t("versions.edit.tabs.launch")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="loader" id={"loader"}>
-                      {t("versions.edit.tabs.loader")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="features" id={"features"}>
-                      {t("versions.edit.tabs.features")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                    <Tabs.Tab key="manage" id={"manage"}>
-                      {t("versions.edit.tabs.manage")}
-                      <Tabs.Indicator />
-                    </Tabs.Tab>
-                  </Tabs.List>
-                </Tabs.ListContainer>
-              </Tabs>
+              {sectionNav ? null : renderSectionTabs(false)}
             </Card.Content>
           </Card>
         </motion.div>
 
-        <motion.div
-          data-material-motion
-          key={vs.selectedTab}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+        <div
+          className={cn(
+            "min-w-0",
+            sectionNav &&
+              "grid grid-cols-[minmax(11rem,15rem)_minmax(0,1fr)] items-start gap-4",
+          )}
         >
+          {sectionNav ? (
+            <Card
+              className={cn(LAYOUT.GLASS_CARD.BASE, "sticky top-0 rounded-3xl")}
+            >
+              <Card.Content className="p-2">
+                {renderSectionTabs(true)}
+              </Card.Content>
+            </Card>
+          ) : null}
+          <motion.div
+            data-material-motion
+            key={vs.selectedTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="min-w-0"
+          >
           <Card className={LAYOUT.GLASS_CARD.BASE}>
-            <Card.Content className="p-6">
+            <Card.Content className="@container p-4 min-[900px]:p-6">
               {vs.selectedTab === "general" && (
                 <div className="flex flex-col gap-6">
                   <div>
@@ -722,7 +828,7 @@ export default function InstanceSettingsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       {vs.isLLSupported(vs.gameVersion) ? (
                         <>
                           {vs.isLLInstalled && (
@@ -745,7 +851,7 @@ export default function InstanceSettingsPage() {
                             </Button>
                           )}
                           <Button
-                            onPress={vs.openLeviLaminaVersionSelect}
+                            onPress={vs.openLeviLaminaInstall}
                             isDisabled={
                               vs.installingLL ||
                               vs.uninstallingLL ||
@@ -834,7 +940,7 @@ export default function InstanceSettingsPage() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col gap-4 @3xl:flex-row @3xl:items-center @3xl:justify-between">
                       <div className="flex flex-col gap-1 max-w-2xl">
                         <p className="text-sm text-foreground dark:text-zinc-300 leading-7">
                           {t("versions.edit.backup.section_body")}
@@ -893,25 +999,30 @@ export default function InstanceSettingsPage() {
                     </div>
                   </section>
 
-                  <Separator className="bg-surface-tertiary/50" />
-
-                  <section className="flex flex-col gap-3">
+                  <section
+                    aria-labelledby="instance-danger-zone"
+                    className="flex flex-col gap-4 rounded-2xl border border-danger/40 bg-danger/5 p-4"
+                  >
                     <div className="flex flex-col gap-1">
-                      <p className="font-medium text-foreground dark:text-zinc-200">
+                      <h2
+                        id="instance-danger-zone"
+                        className="flex items-center gap-2 font-semibold text-danger"
+                      >
+                        <FiAlertTriangle aria-hidden="true" className="size-4" />
                         {t("versions.edit.danger_title")}
-                      </p>
+                      </h2>
                       <p className="text-xs text-muted dark:text-zinc-400 max-w-2xl">
                         {t("versions.edit.danger_hint")}
                       </p>
                     </div>
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                      <div className="flex flex-col gap-2 max-w-2xl">
+                    <div className="flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:justify-between">
+                      <div className="flex min-w-0 flex-col gap-1 max-w-2xl">
                         <p className="font-medium text-foreground dark:text-zinc-200">
                           {vs.isRegistered
                             ? t("versions.edit.unregister_button")
                             : t("common.delete")}
                         </p>
-                        <p className="text-sm text-muted dark:text-zinc-400 leading-7">
+                        <p className="text-sm text-muted dark:text-zinc-400 leading-6">
                           {vs.isRegistered
                             ? t("versions.edit.unregister_hint")
                             : t("versions.edit.delete_hint")}
@@ -952,7 +1063,7 @@ export default function InstanceSettingsPage() {
                         ) : (
                           <Button
                             onPress={() => vs.setDeleteOpen(true)}
-                            variant={"danger-soft"}
+                            variant={"danger"}
                             className={cn("rounded-full", "font-medium")}
                           >
                             {t("common.delete")}
@@ -965,7 +1076,8 @@ export default function InstanceSettingsPage() {
               )}
             </Card.Content>
           </Card>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
 
       <UnifiedModal
@@ -1151,21 +1263,6 @@ export default function InstanceSettingsPage() {
             </div>
           ) : null}
         </div>
-      </UnifiedModal>
-
-      <UnifiedModal
-        isOpen={vs.backingUpInstance}
-        isDismissable={false}
-        type="primary"
-        title={t("versions.edit.backup.progress_title")}
-      >
-        <ModalProgress
-          label={t("versions.edit.backup.progress_title")}
-          description={vs.backupProgressText}
-          value={vs.backupProgressPercent}
-          detail={vs.backupProgressDetail || undefined}
-          currentItem={vs.backupProgress?.currentFile || undefined}
-        />
       </UnifiedModal>
 
       <UnifiedModal
@@ -1397,7 +1494,7 @@ export default function InstanceSettingsPage() {
                               variant={"outline"}
                               className={cn(
                                 "rounded-full",
-                                "min-w-[132px] border-border bg-surface-secondary px-4 text-foreground shadow-sm transition-colors hover:bg-surface-tertiary dark:border-white/15 dark:bg-surface/10 dark:text-zinc-300 dark:hover:bg-surface/15",
+                                "border-border bg-surface-secondary px-4 whitespace-normal text-foreground shadow-sm transition-colors hover:bg-surface-tertiary dark:border-white/15 dark:bg-surface/10 dark:text-zinc-300 dark:hover:bg-surface/15",
                               )}
                             >
                               {t(
@@ -1418,7 +1515,7 @@ export default function InstanceSettingsPage() {
                               variant={"outline"}
                               className={cn(
                                 "rounded-full",
-                                "min-w-[132px] border-border bg-surface-secondary px-4 text-foreground shadow-sm transition-colors hover:bg-surface-tertiary dark:border-white/15 dark:bg-surface/10 dark:text-zinc-300 dark:hover:bg-surface/15",
+                                "border-border bg-surface-secondary px-4 whitespace-normal text-foreground shadow-sm transition-colors hover:bg-surface-tertiary dark:border-white/15 dark:bg-surface/10 dark:text-zinc-300 dark:hover:bg-surface/15",
                               )}
                             >
                               {t(
@@ -1761,106 +1858,166 @@ export default function InstanceSettingsPage() {
       </UnifiedModal>
 
       <UnifiedModal
-        isOpen={vs.restoringInstance}
-        isDismissable={false}
-        type="primary"
-        title={t("versions.edit.backup.restore.progress_title")}
-      >
-        <div className="space-y-4">
-          <ModalProgress
-            label={t("versions.edit.backup.restore.progress_title")}
-            description={vs.restoreProgressText || t("versions.edit.backup.restore.progress_body")}
-            detail={vs.restoreProgressStepText}
-            value={vs.restoreProgress ? vs.restoreProgressPercent : undefined}
-          />
-          {vs.restoreSubProgress ? (
-            <ModalProgress
-              key={vs.restoreSubProgress.id}
-              label={vs.restoreProgressText || t("versions.edit.backup.restore.progress_title")}
-              value={vs.restoreSubProgress.percent}
-              detail={vs.restoreSubProgress.detail}
-              currentItem={vs.restoreSubProgress.label || undefined}
-            />
-          ) : null}
-        </div>
-      </UnifiedModal>
-
-      <UnifiedModal
-        isOpen={vs.backupSuccessOpen}
+        isOpen={vs.backupRunOpen}
         onOpenChange={(open) => {
-          if (!open) vs.setBackupSuccessOpen(false);
+          if (!open) vs.closeBackupRun();
         }}
+        isDismissable={!vs.backingUpInstance}
+        isKeyboardDismissDisabled={vs.backingUpInstance}
         size="standard"
-        type="success"
-        title={t("versions.edit.backup.success_title")}
-        icon={<FiCheckCircle className="w-6 h-6" />}
+        contentKey="backup-run"
+        type={
+          vs.backingUpInstance
+            ? "primary"
+            : vs.backupRunError
+              ? "error"
+              : "success"
+        }
+        title={
+          vs.backingUpInstance
+            ? t("versions.edit.backup.progress_title")
+            : vs.backupRunError
+              ? t("instances.run.backup_failed_title")
+              : t("versions.edit.backup.success_title")
+        }
+        icon={
+          vs.backingUpInstance ? (
+            <Spinner size="sm" color="current" />
+          ) : vs.backupRunError ? (
+            <FiAlertTriangle className="w-6 h-6" />
+          ) : (
+            <FiCheckCircle className="w-6 h-6" />
+          )
+        }
         footer={
-          <>
-            <ModalAction
-              onPress={() => vs.setBackupSuccessOpen(false)}
-              variant="secondary"
-            >
-              {t("launcherpage.delete.complete.close_button")}
-            </ModalAction>
-            <ModalAction
-              onPress={async () => {
-                await vs.openInstanceBackupDirectory();
-                vs.setBackupSuccessOpen(false);
-              }}
-              variant={"primary"}
-            >
-              {t("versions.edit.backup.open_dir")}
-            </ModalAction>
-          </>
+          vs.backingUpInstance ? null : (
+            <>
+              <ModalAction onPress={vs.closeBackupRun} variant="secondary">
+                {t("launcherpage.delete.complete.close_button")}
+              </ModalAction>
+              {!vs.backupRunError ? (
+                <ModalAction
+                  onPress={async () => {
+                    await vs.openInstanceBackupDirectory();
+                  }}
+                  variant={"primary"}
+                >
+                  {t("versions.edit.backup.open_dir")}
+                </ModalAction>
+              ) : null}
+            </>
+          )
         }
       >
-        <ModalDescription className="space-y-3">
-          <ModalDescription>
-            {t("versions.edit.backup.success_body")}
-          </ModalDescription>
-          <ModalPanel>
-            <div className="text-xs text-muted dark:text-zinc-400 mb-1">
-              {t("versions.edit.backup.archive_label")}
-            </div>
-            <div className="font-mono text-sm break-all text-foreground dark:text-zinc-100">
-              {vs.backupArchiveName || "-"}
-            </div>
-          </ModalPanel>
-          <ModalPanel>
-            <div className="text-xs text-muted dark:text-zinc-400 mb-1">
-              {t("versions.edit.backup.location_label")}
-            </div>
-            <div className="font-mono text-sm break-all text-foreground dark:text-zinc-100">
-              {vs.backupResult?.backupDir || vs.backupInfo?.backupDir || "-"}
-            </div>
-          </ModalPanel>
-        </ModalDescription>
+        <TaskStepList
+          steps={vs.backupSteps}
+          label={t("versions.edit.backup.progress_title")}
+        />
+        {vs.backingUpInstance ? (
+          <ModalProgress
+            label={t("versions.edit.backup.progress_title")}
+            value={vs.backupProgressPercent}
+            currentItem={vs.backupProgress?.currentFile || undefined}
+          />
+        ) : vs.backupRunError ? (
+          <ModalNotice tone="danger">
+            {vs.resolveToastText(vs.backupRunError)}
+          </ModalNotice>
+        ) : (
+          <>
+            <ModalDescription>
+              {t("versions.edit.backup.success_body")}
+            </ModalDescription>
+            <ModalDetails
+              items={[
+                {
+                  label: t("versions.edit.backup.archive_label"),
+                  value: vs.backupArchiveName || "-",
+                  mono: true,
+                  fullWidth: true,
+                },
+                {
+                  label: t("versions.edit.backup.location_label"),
+                  value:
+                    vs.backupResult?.backupDir ||
+                    vs.backupInfo?.backupDir ||
+                    "-",
+                  mono: true,
+                  fullWidth: true,
+                },
+              ]}
+            />
+          </>
+        )}
+        <p className="text-xs text-muted">{t("instances.run.activity_hint")}</p>
       </UnifiedModal>
 
       <UnifiedModal
-        isOpen={vs.restoreResultOpen}
+        isOpen={vs.restoreRunOpen}
         onOpenChange={(open) => {
-          if (!open) vs.setRestoreResultOpen(false);
+          if (!open) vs.closeRestoreRun();
         }}
+        isDismissable={!vs.restoringInstance}
+        isKeyboardDismissDisabled={vs.restoringInstance}
         size="wide"
-        type={vs.restoreResultType}
-        title={t(vs.restoreResultTitleKey)}
+        contentKey="restore-run"
+        type={
+          vs.restoringInstance
+            ? "primary"
+            : vs.restoreRunError
+              ? "error"
+              : vs.restoreResultType
+        }
+        title={
+          vs.restoringInstance
+            ? t("versions.edit.backup.restore.progress_title")
+            : vs.restoreRunError
+              ? t("versions.edit.backup.restore.failed_title")
+              : t(vs.restoreResultTitleKey)
+        }
         icon={
-          vs.restoreResultType === "success" ? (
+          vs.restoringInstance ? (
+            <Spinner size="sm" color="current" />
+          ) : !vs.restoreRunError && vs.restoreResultType === "success" ? (
             <FiCheckCircle className="w-6 h-6" />
           ) : (
             <FiAlertTriangle className="w-6 h-6" />
           )
         }
         footer={
-          <ModalAction
-            onPress={() => vs.setRestoreResultOpen(false)}
-            variant="secondary"
-          >
-            {t("launcherpage.delete.complete.close_button")}
-          </ModalAction>
+          vs.restoringInstance ? null : (
+            <ModalAction onPress={vs.closeRestoreRun} variant="secondary">
+              {t("launcherpage.delete.complete.close_button")}
+            </ModalAction>
+          )
         }
       >
+        <TaskStepList
+          steps={vs.restoreSteps}
+          label={t("versions.edit.backup.restore.progress_title")}
+        />
+        {vs.restoringInstance ? (
+          <>
+            <ModalProgress
+              label={t("versions.edit.backup.restore.progress_title")}
+              detail={vs.restoreProgressStepText}
+              value={vs.restoreProgress ? vs.restoreProgressPercent : undefined}
+            />
+            {vs.restoreSubProgress ? (
+              <ModalProgress
+                key={vs.restoreSubProgress.id}
+                label={vs.restoreProgressText || t("versions.edit.backup.restore.progress_title")}
+                value={vs.restoreSubProgress.percent}
+                detail={vs.restoreSubProgress.detail}
+                currentItem={vs.restoreSubProgress.label || undefined}
+              />
+            ) : null}
+          </>
+        ) : vs.restoreRunError ? (
+          <ModalNotice tone="danger">
+            {vs.resolveToastText(vs.restoreRunError)}
+          </ModalNotice>
+        ) : vs.restoreResult ? (
         <ModalDescription className="space-y-3">
           <ModalDescription>
             {t(
@@ -1943,6 +2100,8 @@ export default function InstanceSettingsPage() {
             </ModalPanel>
           ))}
         </ModalDescription>
+        ) : null}
+        <p className="text-xs text-muted">{t("instances.run.activity_hint")}</p>
       </UnifiedModal>
 
       <UnifiedModal
@@ -2107,137 +2266,86 @@ export default function InstanceSettingsPage() {
 
       <UnifiedModal
         size="standard"
-        isOpen={vs.llVersionSelectOpen}
-        onOpenChange={vs.llVersionSelectOnOpenChange}
-        type="primary"
-        title={t("versions.edit.loader.ll_select_version")}
-        cancelText={t("common.cancel")}
-        confirmText={t(vs.llInstallActionLabelKey)}
-        showCancelButton
-        onCancel={() => vs.llVersionSelectOnClose()}
-        onConfirm={async () => {
-          await vs.confirmLeviLaminaVersionSelect();
-        }}
-        confirmButtonProps={{
-          isPending: vs.installingLL,
-          isDisabled: !vs.selectedLLVersion || !vs.canInstallSelectedLLVersion,
-        }}
-      >
-        <div className="space-y-3">
-          <ModalDescription>
-            {t("versions.edit.loader.ll_select_guidance")}
-          </ModalDescription>
-          <Select
-            placeholder={
-              t(
-                "versions.edit.loader.ll_select_placeholder",
-              ) as unknown as string
-            }
-            isDisabled={vs.installingLL || vs.uninstallingLL}
-            value={
-              Array.from(
-                vs.selectedLLVersion
-                  ? new Set([vs.selectedLLVersion])
-                  : new Set([]),
-              )[0] ?? null
-            }
-            onChange={(keys) => {
-              const selected = keys;
-              vs.setSelectedLLVersion(String(selected || ""));
-            }}
-          >
-            <Label>
-              {t("versions.edit.loader.ll_select_version") as unknown as string}
-            </Label>
-            <Select.Trigger className={COMPONENT_STYLES.select.trigger}>
-              <Select.Value />
-              <Select.Indicator />
-            </Select.Trigger>
-            <Select.Popover className={COMPONENT_STYLES.select.popoverContent}>
-              <ListBox className={COMPONENT_STYLES.select.listbox}>
-                {vs.llSupportedVersions.map((version: string) => (
-                  <ListBox.Item
-                    key={version}
-                    isDisabled={false}
-                    id={version}
-                    textValue={version}
-                  >
-                    <Label>{version}</Label>
-                    <ListBox.ItemIndicator />
-                  </ListBox.Item>
-                ))}
-              </ListBox>
-            </Select.Popover>
-          </Select>
-        </div>
-      </UnifiedModal>
-
-      <UnifiedModal
-        size="standard"
-        isOpen={vs.llInstallConfirmOpen}
+        isOpen={vs.llInstallOpen}
         onOpenChange={(open) => {
-          if (open) {
-            vs.openLLInstallConfirm();
-            return;
-          }
-          vs.closeLLInstallConfirm();
+          if (!open) vs.closeLeviLaminaInstall();
         }}
-        type="primary"
-        title={t("lip.package.confirm_install_title")}
-        confirmText={t("common.confirm")}
+        type={vs.llTargetIsRC ? "warning" : "primary"}
+        contentKey="ll-install"
+        title={t("instances.ll.dialog_title", { action: llInstallActionLabel })}
         cancelText={t("common.cancel")}
+        confirmText={llInstallActionLabel}
         showCancelButton
         isDismissable={!vs.installingLL}
-        onCancel={() => vs.closeLLInstallConfirm()}
+        isKeyboardDismissDisabled={vs.installingLL}
+        onCancel={() => vs.closeLeviLaminaInstall()}
         onConfirm={async () => {
-          await vs.confirmInstallLeviLaminaAction();
+          await vs.confirmLeviLaminaInstall();
         }}
         confirmButtonProps={{
           isPending: vs.installingLL,
-          isDisabled: !vs.resolvedLLTargetVersion || vs.installingLL,
+          isDisabled:
+            !vs.selectedLLVersion ||
+            !vs.canInstallSelectedLLVersion ||
+            !vs.resolvedLLTargetVersion,
         }}
         cancelButtonProps={{
           isDisabled: vs.installingLL,
         }}
       >
-        <ModalDescription className="whitespace-pre-wrap">
-          {t("lip.package.confirm_install_body", {
-            action: llInstallActionLabel,
-            package: "LeviLamina",
-            version: vs.resolvedLLTargetVersion || "-",
-            instance: vs.targetName || "-",
-          })}
+        <ModalDescription>
+          {t("versions.edit.loader.ll_select_guidance")}
         </ModalDescription>
-        {vs.installingLL ? <LipTaskProgress className="pt-4" /> : null}
-      </UnifiedModal>
-
-      <UnifiedModal
-        size="standard"
-        isOpen={vs.rcOpen}
-        onOpenChange={vs.rcOnOpenChange}
-        type="warning"
-        title={t("mods.rc_warning.title")}
-        icon={<FiAlertTriangle className="w-6 h-6" />}
-        cancelText={t("common.cancel")}
-        confirmText={t("common.continue")}
-        showCancelButton
-        onCancel={() => vs.rcOnClose()}
-        onConfirm={() => {
-          vs.rcOnClose();
-          vs.proceedInstallLeviLamina(vs.selectedLLVersion);
-        }}
-      >
-        <ModalDescription className="space-y-2">
-          <p>
-            {t("mods.rc_warning.body_1", {
-              version: vs.rcVersion,
-            })}
-          </p>
-          <p className="font-semibold text-amber-700 dark:text-amber-300">
-            {t("mods.rc_warning.body_2")}
-          </p>
-          <p>{t("mods.rc_warning.body_3")}</p>
-        </ModalDescription>
+        <Select
+          placeholder={
+            t("versions.edit.loader.ll_select_placeholder") as unknown as string
+          }
+          isDisabled={vs.installingLL || vs.uninstallingLL}
+          value={vs.selectedLLVersion || null}
+          onChange={(selected) => {
+            vs.setSelectedLLVersion(String(selected || ""));
+          }}
+        >
+          <Label>{t("instances.ll.target_version")}</Label>
+          <Select.Trigger className={COMPONENT_STYLES.select.trigger}>
+            <Select.Value />
+            <Select.Indicator />
+          </Select.Trigger>
+          <Select.Popover className={COMPONENT_STYLES.select.popoverContent}>
+            <ListBox className={COMPONENT_STYLES.select.listbox}>
+              {vs.llSupportedVersions.map((version: string) => (
+                <ListBox.Item key={version} id={version} textValue={version}>
+                  <Label>{version}</Label>
+                  <ListBox.ItemIndicator />
+                </ListBox.Item>
+              ))}
+            </ListBox>
+          </Select.Popover>
+        </Select>
+        <ModalDetails
+          items={[
+            {
+              label: t("instances.ll.installed_version"),
+              value: currentLLVersionText,
+            },
+            {
+              label: t("instances.ll.instance"),
+              value: vs.targetName || "-",
+            },
+          ]}
+        />
+        {vs.llTargetIsRC ? (
+          <ModalNotice tone="warning">
+            <p>
+              {t("mods.rc_warning.body_1", {
+                version: vs.resolvedLLTargetVersion,
+              })}
+            </p>
+            <p className="font-semibold">{t("mods.rc_warning.body_2")}</p>
+            <p>{t("mods.rc_warning.body_3")}</p>
+          </ModalNotice>
+        ) : null}
+        {vs.installingLL ? <LipTaskProgress /> : null}
       </UnifiedModal>
     </PageContainer>
   );

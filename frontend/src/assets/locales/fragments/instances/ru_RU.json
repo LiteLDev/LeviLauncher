@@ -1,0 +1,39 @@
+{
+  "instances": {
+    "list": {
+      "current": "Текущий",
+      "settings": "Настройки",
+      "mods": "Моды",
+      "now_current": "{{name}} теперь текущий экземпляр",
+      "select_hint": "Нажмите на карточку, чтобы сделать её текущим экземпляром."
+    },
+    "settings": {
+      "sections": "Разделы настроек экземпляра"
+    },
+    "ll": {
+      "dialog_title": "LeviLamina: {{action}}",
+      "installed_version": "Установлена",
+      "target_version": "Версия для установки",
+      "instance": "Экземпляр"
+    },
+    "run": {
+      "activity_hint": "Эти шаги также сохраняются в разделе «Активность».",
+      "backup_failed_title": "Ошибка резервного копирования"
+    },
+    "notify": {
+      "ll_install_failed": "Не удалось установить LeviLamina",
+      "ll_remove_failed": "Не удалось удалить LeviLamina",
+      "ll_removed": "LeviLamina удалена",
+      "backup_open_failed": "Не удалось подготовить резервную копию",
+      "restore_open_failed": "Не удалось открыть файл резервной копии"
+    },
+    "steps": {
+      "backup_scan": "Подсчёт файлов для копирования",
+      "backup_write": "Запись архива",
+      "restore_prepare": "Подготовка восстановления",
+      "restore_extract": "Распаковка содержимого",
+      "restore_scope": "Восстановление {{scope}}",
+      "restore_finalize": "Завершение восстановления"
+    }
+  }
+}

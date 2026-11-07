@@ -1,6 +1,6 @@
 import { editorMinVersion, normalizePackageType, supportsEditorMode, supportsVersionIsolation, type PackageType } from "@/utils/packageType";
 import { openDirectory } from "@/utils/explorer";
-import { toast, useOverlayState } from "@heroui/react";
+import { useOverlayState } from "@heroui/react";
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -36,6 +36,13 @@ import {
   EXPERIMENTAL_FEATURES_EVENT_NAME,
   readExperimentalInstanceBackupEnabled,
 } from "@/utils/experimentalFeatures";
+import {
+  appendTaskLog,
+  finishActivityTask,
+  notify,
+  setTaskProgress,
+  startActivityTask,
+} from "@/utils/activity";
 
 type InstanceBackupScopeMode = {
   key: string;
@@ -209,6 +216,11 @@ const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+
+const getFileName = (path: string): string => {
+  const parts = String(path || "").trim().split(/[/\\]+/);
+  return parts[parts.length - 1] || "";
+};
 
 const toStringArray = (value: unknown): string[] =>
   Array.isArray(value)
@@ -530,6 +542,91 @@ const toInstanceBackupRestoreConflictInfo = (
   };
 };
 
+export type TaskStepStatus = "running" | "done" | "error";
+
+export type TaskStep = {
+  key: string;
+  label: string;
+  status: TaskStepStatus;
+  detail?: string;
+};
+
+// Growing step list for a long-running task. A new phase is appended and the
+// previous one stays visible as done, together with its last detail line; the
+// same steps are mirrored into the activity history.
+const useTaskSteps = (source: string) => {
+  const [steps, setSteps] = React.useState<TaskStep[]>([]);
+  const activityIdRef = React.useRef<string | null>(null);
+  const lastKeyRef = React.useRef<string>("");
+  const lastPercentRef = React.useRef<number>(-1);
+
+  const begin = React.useCallback(
+    (title: string, description?: string) => {
+      setSteps([]);
+      lastKeyRef.current = "";
+      lastPercentRef.current = -1;
+      activityIdRef.current = startActivityTask({ title, description, source });
+    },
+    [source],
+  );
+
+  const step = React.useCallback((key: string, label: string) => {
+    if (!key || key === lastKeyRef.current) return;
+    lastKeyRef.current = key;
+    setSteps((prev) => [
+      ...prev.map((item) =>
+        item.status === "running" ? { ...item, status: "done" as const } : item,
+      ),
+      { key, label, status: "running" },
+    ]);
+    if (activityIdRef.current) appendTaskLog(activityIdRef.current, label);
+  }, []);
+
+  const detail = React.useCallback((text: string) => {
+    setSteps((prev) => {
+      const last = prev[prev.length - 1];
+      if (!last || last.status !== "running" || last.detail === text) {
+        return prev;
+      }
+      return [...prev.slice(0, -1), { ...last, detail: text }];
+    });
+  }, []);
+
+  const progress = React.useCallback((percent: number | undefined) => {
+    if (percent === undefined || !activityIdRef.current) return;
+    const rounded = Math.round(percent);
+    if (rounded === lastPercentRef.current) return;
+    lastPercentRef.current = rounded;
+    setTaskProgress(activityIdRef.current, rounded);
+  }, []);
+
+  // `partial`: the steps all ran but the result has failures, so the steps
+  // stay done while the task itself is recorded as not fully successful.
+  const finish = React.useCallback(
+    (status: "success" | "partial" | "error", summary: string) => {
+      setSteps((prev) => [
+        ...prev.map((item) =>
+          item.status === "running"
+            ? { ...item, status: status === "error" ? ("error" as const) : ("done" as const) }
+            : item,
+        ),
+      ]);
+      const id = activityIdRef.current;
+      if (!id) return;
+      appendTaskLog(
+        id,
+        summary,
+        status === "success" ? "success" : status === "partial" ? "warning" : "error",
+      );
+      finishActivityTask(id, status === "success" ? "success" : "error", summary);
+      activityIdRef.current = null;
+    },
+    [],
+  );
+
+  return { steps, begin, step, detail, progress, finish };
+};
+
 export const useInstanceSettings = () => {
   const { t } = useTranslation();
   const { runWithLipTask } = useLipTaskConsole();
@@ -704,7 +801,8 @@ export const useInstanceSettings = () => {
 
   // Form state
   const [targetName, setTargetName] = React.useState<string>(initialName);
-  const [selectedTab, setSelectedTab] = React.useState<string>(initialTab);
+  const [selectedTab, setSelectedTabState] =
+    React.useState<string>(initialTab);
   const [newName, setNewName] = React.useState<string>(initialName);
   const [packageType, setPackageType] = React.useState<PackageType>("gdk");
   const isUWP = packageType === "uwp";
@@ -761,8 +859,10 @@ export const useInstanceSettings = () => {
     React.useState<InstanceBackupModsLIPPackage[]>([]);
   const [backingUpInstance, setBackingUpInstance] =
     React.useState<boolean>(false);
-  const [backupSuccessOpen, setBackupSuccessOpen] =
-    React.useState<boolean>(false);
+  // The run dialog shows progress and then the result in place; it stays
+  // open until the user closes it.
+  const [backupRunOpen, setBackupRunOpen] = React.useState<boolean>(false);
+  const [backupRunError, setBackupRunError] = React.useState<string>("");
   const [backupResult, setBackupResult] =
     React.useState<InstanceBackupResult | null>(null);
   const [restoreOpen, setRestoreOpen] = React.useState<boolean>(false);
@@ -796,10 +896,26 @@ export const useInstanceSettings = () => {
   const restorePreviewAcceptRef = React.useRef<boolean>(false);
   const [backupProgress, setBackupProgress] =
     React.useState<InstanceBackupCreateProgress | null>(null);
-  const [restoreResultOpen, setRestoreResultOpen] =
-    React.useState<boolean>(false);
+  const [restoreRunOpen, setRestoreRunOpen] = React.useState<boolean>(false);
+  const [restoreRunError, setRestoreRunError] = React.useState<string>("");
   const [restoreResult, setRestoreResult] =
     React.useState<InstanceBackupRestoreResult | null>(null);
+  const {
+    steps: backupSteps,
+    begin: beginBackupSteps,
+    step: backupStep,
+    detail: backupStepDetail,
+    progress: backupStepProgress,
+    finish: finishBackupSteps,
+  } = useTaskSteps("instances");
+  const {
+    steps: restoreSteps,
+    begin: beginRestoreSteps,
+    step: restoreStep,
+    detail: restoreStepDetail,
+    progress: restoreStepProgress,
+    finish: finishRestoreSteps,
+  } = useTaskSteps("instances");
   const [
     instanceBackupExperimentalEnabled,
     setInstanceBackupExperimentalEnabled,
@@ -826,16 +942,11 @@ export const useInstanceSettings = () => {
   const [demotedWarningNames, setDemotedWarningNames] = React.useState<
     string[]
   >([]);
+  // One dialog picks the LeviLamina version and confirms the install.
   const {
-    isOpen: llVersionSelectOpen,
-    open: llVersionSelectOnOpen,
-    setOpen: llVersionSelectOnOpenChange,
-    close: llVersionSelectOnClose,
-  } = useOverlayState();
-  const {
-    isOpen: llInstallConfirmOpen,
-    open: llInstallConfirmOnOpen,
-    close: llInstallConfirmOnClose,
+    isOpen: llInstallOpen,
+    open: llInstallOnOpen,
+    close: llInstallOnClose,
   } = useOverlayState();
   const {
     isOpen: llUninstallConfirmOpen,
@@ -843,17 +954,10 @@ export const useInstanceSettings = () => {
     close: llUninstallConfirmOnClose,
   } = useOverlayState();
   const {
-    isOpen: rcOpen,
-    open: rcOnOpen,
-    setOpen: rcOnOpenChange,
-    close: rcOnClose,
-  } = useOverlayState();
-  const {
     isOpen: demotedWarningOpen,
     open: demotedWarningOnOpen,
     close: demotedWarningOnClose,
   } = useOverlayState();
-  const [rcVersion, setRcVersion] = React.useState("");
   const [isLLInstalled, setIsLLInstalled] = React.useState(false);
   const [llExplicitInstalled, setLLExplicitInstalled] = React.useState(false);
   const [currentLLVersion, setCurrentLLVersion] = React.useState("");
@@ -942,6 +1046,10 @@ export const useInstanceSettings = () => {
   const llInstallSuccessKey = React.useMemo(
     () => `lip.files.${llInstallActionKind}_success`,
     [llInstallActionKind],
+  );
+  const llTargetIsRC = React.useMemo(
+    () => resolvedLLTargetVersion.toLowerCase().includes("rc"),
+    [resolvedLLTargetVersion],
   );
 
   // Load LL install status
@@ -1067,9 +1175,25 @@ export const useInstanceSettings = () => {
 
   React.useEffect(() => {
     if (location.state && (location.state as any).tab) {
-      setSelectedTab((location.state as any).tab);
+      setSelectedTabState((location.state as any).tab);
     }
   }, [location.state]);
+
+  // Record the tab in the history entry so Back from a linked page reopens it.
+  const setSelectedTab = React.useCallback(
+    (tab: string) => {
+      setSelectedTabState(tab);
+      if ((location.state as any)?.tab === tab) return;
+      navigate(
+        { pathname: location.pathname, search: location.search },
+        {
+        replace: true,
+        state: { ...(location.state || {}), tab },
+        },
+      );
+    },
+    [location.pathname, location.search, location.state, navigate],
+  );
 
   // Unsaved changes navigation guard
   React.useEffect(() => {
@@ -1421,12 +1545,6 @@ export const useInstanceSettings = () => {
     return undefined;
   }, [backupProgress]);
 
-  const backupProgressText = React.useMemo(() => {
-    if (!backupProgress || backupProgress.phase === "scanning") {
-      return t("versions.edit.backup.progress_scanning") as string;
-    }
-    return t("versions.edit.backup.progress_body") as string;
-  }, [backupProgress, t]);
 
   const backupProgressDetail = React.useMemo(() => {
     if (!backupProgress || backupProgress.phase === "scanning") return "";
@@ -1497,6 +1615,66 @@ export const useInstanceSettings = () => {
     );
     return () => off();
   }, []);
+
+  // Each new phase becomes a step; the previous step keeps its last detail.
+  React.useEffect(() => {
+    if (!backingUpInstance || !backupProgress) return;
+    if (backupProgress.phase === "scanning") {
+      backupStep("scanning", t("instances.steps.backup_scan") as string);
+      return;
+    }
+    backupStep("writing", t("instances.steps.backup_write") as string);
+    if (backupProgressDetail) backupStepDetail(backupProgressDetail);
+    backupStepProgress(backupProgressPercent);
+  }, [
+    backingUpInstance,
+    backupProgress,
+    backupProgressDetail,
+    backupProgressPercent,
+    backupStep,
+    backupStepDetail,
+    backupStepProgress,
+    t,
+  ]);
+
+  React.useEffect(() => {
+    if (!restoringInstance || !restoreProgress) return;
+    const phase = String(restoreProgress.phase || "").trim();
+    const scopeKey = String(restoreProgress.scopeKey || "").trim();
+    let label: string;
+    switch (phase) {
+      case "preparing":
+        label = t("instances.steps.restore_prepare") as string;
+        break;
+      case "extracting":
+        label = t("instances.steps.restore_extract") as string;
+        break;
+      case "restoring_scope":
+        label = t("instances.steps.restore_scope", {
+          scope: restoreProgressScopeLabel || "-",
+        }) as string;
+        break;
+      case "finalizing":
+        label = t("instances.steps.restore_finalize") as string;
+        break;
+      default:
+        label = restoreProgressText;
+    }
+    restoreStep(phase === "restoring_scope" ? `${phase}:${scopeKey}` : phase, label);
+    if (restoreSubProgress) restoreStepDetail(restoreSubProgress.detail);
+    restoreStepProgress(restoreProgressPercent);
+  }, [
+    restoreProgress,
+    restoreProgressPercent,
+    restoreProgressScopeLabel,
+    restoreProgressText,
+    restoreStep,
+    restoreStepDetail,
+    restoreStepProgress,
+    restoreSubProgress,
+    restoringInstance,
+    t,
+  ]);
 
   React.useEffect(() => {
     if (!restoringInstance) {
@@ -1614,17 +1792,18 @@ export const useInstanceSettings = () => {
   const openInstanceBackup = React.useCallback(async () => {
     if (!instanceBackupExperimentalEnabled || !targetName) return false;
     setBackupInfoLoading(true);
-    setBackupSuccessOpen(false);
+    setBackupRunOpen(false);
     try {
       const info = toInstanceBackupInfo(
         await GetInstanceBackupInfo(targetName),
       );
       const errorCode = String(info?.errorCode || "").trim();
       if (errorCode) {
-        toast(undefined, {
+        notify({
+          title: t("instances.notify.backup_open_failed"),
           description: resolveToastText(errorCode),
           variant: "danger",
-          timeout: 2000,
+          source: "instances",
         });
         return false;
       }
@@ -1715,6 +1894,7 @@ export const useInstanceSettings = () => {
     resolveToastText,
     setError,
     instanceBackupExperimentalEnabled,
+    t,
     targetName,
   ]);
 
@@ -1784,6 +1964,14 @@ export const useInstanceSettings = () => {
 
     setBackupOpen(false);
     setBackupProgress(null);
+    setBackupResult(null);
+    setBackupRunError("");
+    beginBackupSteps(
+      t("versions.edit.backup.progress_title") as string,
+      targetName,
+    );
+    backupStep("scanning", t("instances.steps.backup_scan") as string);
+    setBackupRunOpen(true);
     setBackingUpInstance(true);
     try {
       const request: InstanceBackupRequest = {
@@ -1817,18 +2005,24 @@ export const useInstanceSettings = () => {
       );
       const errorCode = String(resolvedResult?.errorCode || "").trim();
       if (errorCode) {
-        setError(errorCode);
+        setBackupRunError(errorCode);
+        finishBackupSteps("error", resolveToastText(errorCode));
         return false;
       }
       setBackupResult(resolvedResult);
-      setBackupSuccessOpen(true);
-      toast(t("versions.edit.backup.success_title") as string, {
-        variant: "success",
-        timeout: 2000,
-      });
+      finishBackupSteps(
+        "success",
+        `${t("versions.edit.backup.success_title")}: ${
+          getFileName(resolvedResult.archivePath) || targetName
+        }`,
+      );
       return true;
     } catch (e: any) {
-      setError(String(e?.message || e || "ERR_INSTANCE_BACKUP_WRITE_ARCHIVE"));
+      const code = String(
+        e?.message || e || "ERR_INSTANCE_BACKUP_WRITE_ARCHIVE",
+      );
+      setBackupRunError(code);
+      finishBackupSteps("error", resolveToastText(code));
       return false;
     } finally {
       setBackingUpInstance(false);
@@ -1837,11 +2031,20 @@ export const useInstanceSettings = () => {
     backupPreparedLipPackages,
     backupScopeModes,
     backupScopes,
+    backupStep,
+    beginBackupSteps,
+    finishBackupSteps,
     instanceBackupExperimentalEnabled,
+    resolveToastText,
     selectedBackupScopes,
     t,
     targetName,
   ]);
+
+  const closeBackupRun = React.useCallback(() => {
+    if (backingUpInstance) return;
+    setBackupRunOpen(false);
+  }, [backingUpInstance]);
 
   const openInstanceRestore = React.useCallback(async () => {
     if (!instanceBackupExperimentalEnabled || !targetName) return false;
@@ -1867,7 +2070,7 @@ export const useInstanceSettings = () => {
       }
 
       setRestoreInfoLoading(true);
-      setRestoreResultOpen(false);
+      setRestoreRunOpen(false);
       setRestoreConflictInfo(null);
       setRestoreConflictChoices({});
       setRestoreProgress(null);
@@ -1876,10 +2079,11 @@ export const useInstanceSettings = () => {
       );
       const errorCode = String(info.errorCode || "").trim();
       if (errorCode) {
-        toast(undefined, {
+        notify({
+          title: t("instances.notify.restore_open_failed"),
           description: resolveToastText(errorCode),
           variant: "danger",
-          timeout: 2000,
+          source: "instances",
         });
         return false;
       }
@@ -1996,6 +2200,13 @@ export const useInstanceSettings = () => {
       subLabel: "",
     });
     setRestoreOpen(false);
+    setRestoreResult(null);
+    setRestoreRunError("");
+    beginRestoreSteps(
+      t("versions.edit.backup.restore.progress_title") as string,
+      `${restoreArchiveInfo.archiveName || ""} → ${targetName}`,
+    );
+    setRestoreRunOpen(true);
     setRestoringInstance(true);
     try {
       const conflictResolutions: InstanceBackupRestoreResolution[] =
@@ -2025,12 +2236,17 @@ export const useInstanceSettings = () => {
         ),
       );
       if (!resolvedResult.scopeResults.length && resolvedResult.errorCode) {
-        setError(resolvedResult.errorCode);
+        setRestoreRunError(resolvedResult.errorCode);
+        finishRestoreSteps("error", resolveToastText(resolvedResult.errorCode));
         return false;
       }
       setRestoreResult(resolvedResult);
-      setRestoreResultOpen(true);
-      toast(
+      finishRestoreSteps(
+        resolvedResult.status === "success"
+          ? "success"
+          : resolvedResult.status === "partial"
+            ? "partial"
+            : "error",
         t(
           resolvedResult.status === "success"
             ? "versions.edit.backup.restore.success_title"
@@ -2038,26 +2254,22 @@ export const useInstanceSettings = () => {
               ? "versions.edit.backup.restore.partial_title"
               : "versions.edit.backup.restore.failed_title",
         ) as string,
-        {
-          variant:
-            resolvedResult.status === "success"
-              ? "success"
-              : resolvedResult.status === "partial"
-                ? "warning"
-                : "danger",
-          timeout: 2000,
-        },
       );
       return resolvedResult.status === "success";
     } catch (e: any) {
-      setError(
-        String(e?.message || e || "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"),
+      const code = String(
+        e?.message || e || "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET",
       );
+      setRestoreRunError(code);
+      finishRestoreSteps("error", resolveToastText(code));
       return false;
     } finally {
       setRestoringInstance(false);
     }
   }, [
+    beginRestoreSteps,
+    finishRestoreSteps,
+    resolveToastText,
     instanceBackupExperimentalEnabled,
     restoreConflictChoices,
     restoreConflictLoading,
@@ -2068,6 +2280,11 @@ export const useInstanceSettings = () => {
     t,
     targetName,
   ]);
+
+  const closeRestoreRun = React.useCallback(() => {
+    if (restoringInstance) return;
+    setRestoreRunOpen(false);
+  }, [restoringInstance]);
 
   // Save handler
   const onSave = React.useCallback(
@@ -2201,10 +2418,11 @@ export const useInstanceSettings = () => {
         forcedVersion || resolvedLLTargetVersion || "",
       ).trim();
       if (!installVersion) {
-        toast(undefined, {
+        notify({
+          title: t("instances.notify.ll_install_failed"),
           description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
           variant: "danger",
-          timeout: 2000,
+          source: "instances",
         });
         return false;
       }
@@ -2217,7 +2435,7 @@ export const useInstanceSettings = () => {
               action: llInstallActionKind,
               target: targetName,
               methods: ["Install", "Update"],
-              feedbackMode: llInstallConfirmOpen ? "inline" : "progress",
+              feedbackMode: llInstallOpen ? "inline" : "progress",
             },
             async () => {
               const err: string = await installLL(
@@ -2234,9 +2452,11 @@ export const useInstanceSettings = () => {
           setIsLLInstalled(true);
           setLLExplicitInstalled(true);
           setCurrentLLVersion(installVersion);
-          toast(t(llInstallSuccessKey) as string, {
+          notify({
+            title: t(llInstallSuccessKey),
+            description: `LeviLamina ${installVersion} · ${targetName}`,
             variant: "success",
-            timeout: 2000,
+            source: "instances",
           });
           return true;
         }
@@ -2247,10 +2467,11 @@ export const useInstanceSettings = () => {
         if (rawError.includes("ERR_LIP_INSTALL_FAILED")) {
           toastKeyOrMsg = "mods.err_lip_install_failed_suggestion";
         }
-        toast(undefined, {
+        notify({
+          title: t("instances.notify.ll_install_failed"),
           description: resolveToastText(toastKeyOrMsg),
           variant: "danger",
-          timeout: 2000,
+          source: "instances",
         });
         return false;
       } finally {
@@ -2261,7 +2482,7 @@ export const useInstanceSettings = () => {
       gameVersion,
       isLLInstalled,
       llInstallActionKind,
-      llInstallConfirmOpen,
+      llInstallOpen,
       llInstallSuccessKey,
       resolveToastText,
       resolvedLLTargetVersion,
@@ -2274,82 +2495,47 @@ export const useInstanceSettings = () => {
 
   const handleInstallLeviLamina = React.useCallback(async () => {
     if (!targetName || !gameVersion) return false;
-
-    const targetLLVersion = resolvedLLTargetVersion;
-    if (!targetLLVersion) {
-      toast(undefined, {
+    if (!resolvedLLTargetVersion) {
+      notify({
+        title: t("instances.notify.ll_install_failed"),
         description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
         variant: "danger",
-        timeout: 2000,
+        source: "instances",
       });
       return false;
     }
     if (isLLInstalled && !canInstallSelectedLLVersion) {
       return false;
     }
-
-    if (targetLLVersion && targetLLVersion.includes("rc")) {
-      setRcVersion(targetLLVersion);
-      rcOnOpen();
-      return true;
-    }
-
-    return await proceedInstallLeviLamina(targetLLVersion);
+    // The RC warning is shown inside the install dialog, so confirming the
+    // dialog is the consent; there is no second dialog.
+    return await proceedInstallLeviLamina(resolvedLLTargetVersion);
   }, [
     targetName,
     gameVersion,
     isLLInstalled,
     canInstallSelectedLLVersion,
-    rcOnOpen,
     proceedInstallLeviLamina,
     resolvedLLTargetVersion,
     resolveToastText,
+    t,
   ]);
 
-  const openLeviLaminaVersionSelect = React.useCallback(() => {
-    llVersionSelectOnOpen();
-  }, [llVersionSelectOnOpen]);
+  const openLeviLaminaInstall = React.useCallback(() => {
+    llInstallOnOpen();
+  }, [llInstallOnOpen]);
 
-  const openLLInstallConfirm = React.useCallback(() => {
-    llInstallConfirmOnOpen();
-  }, [llInstallConfirmOnOpen]);
-
-  const closeLLInstallConfirm = React.useCallback(() => {
+  const closeLeviLaminaInstall = React.useCallback(() => {
     if (installingLL) return;
-    llInstallConfirmOnClose();
-  }, [installingLL, llInstallConfirmOnClose]);
+    llInstallOnClose();
+  }, [installingLL, llInstallOnClose]);
 
-  const confirmLeviLaminaVersionSelect = React.useCallback(async () => {
-    if (!resolvedLLTargetVersion) {
-      toast(undefined, {
-        description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
-        variant: "danger",
-        timeout: 2000,
-      });
-      return false;
-    }
-    if (isLLInstalled && !canInstallSelectedLLVersion) {
-      return false;
-    }
-    llVersionSelectOnClose();
-    llInstallConfirmOnOpen();
-    return true;
-  }, [
-    canInstallSelectedLLVersion,
-    isLLInstalled,
-    llInstallConfirmOnOpen,
-    llVersionSelectOnClose,
-    resolveToastText,
-    resolvedLLTargetVersion,
-  ]);
-
-  const confirmInstallLeviLaminaAction = React.useCallback(async () => {
+  const confirmLeviLaminaInstall = React.useCallback(async () => {
     const ok = await handleInstallLeviLamina();
-    if (ok) {
-      llInstallConfirmOnClose();
-    }
+    // A failed install keeps the dialog and its inline log open.
+    if (ok) llInstallOnClose();
     return ok;
-  }, [handleInstallLeviLamina, llInstallConfirmOnClose]);
+  }, [handleInstallLeviLamina, llInstallOnClose]);
 
   const openLLUninstallConfirm = React.useCallback(async () => {
     const latestState = await refreshLLStateForUninstall();
@@ -2365,10 +2551,11 @@ export const useInstanceSettings = () => {
   const confirmUninstallLL = React.useCallback(async (): Promise<boolean> => {
     if (!targetName) return false;
     if (llUninstallBlocked) {
-      toast(undefined, {
+      notify({
+        title: t("instances.notify.ll_remove_failed"),
         description: resolveToastText(ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS),
         variant: "danger",
-        timeout: 2000,
+        source: "instances",
       });
       return false;
     }
@@ -2407,9 +2594,11 @@ export const useInstanceSettings = () => {
       setIsLLInstalled(false);
       setLLExplicitInstalled(false);
       setCurrentLLVersion("");
-      toast(t("common.success") as string, {
+      notify({
+        title: t("instances.notify.ll_removed"),
+        description: targetName,
         variant: "success",
-        timeout: 2000,
+        source: "instances",
       });
       return true;
     } catch (e) {
@@ -2420,10 +2609,11 @@ export const useInstanceSettings = () => {
       ) {
         await refreshLLStateForUninstall();
       }
-      toast(undefined, {
+      notify({
+        title: t("instances.notify.ll_remove_failed"),
         description: resolveToastText(errCode),
         variant: "danger",
-        timeout: 2000,
+        source: "instances",
       });
       return false;
     } finally {
@@ -2508,8 +2698,10 @@ export const useInstanceSettings = () => {
     backupFullModeSelected,
     backingUpInstance,
     instanceBackupExperimentalEnabled,
-    backupSuccessOpen,
-    setBackupSuccessOpen,
+    backupRunOpen,
+    backupRunError,
+    backupSteps,
+    closeBackupRun,
     backupResult,
     backupArchiveName,
     backupGameDataLabel,
@@ -2534,10 +2726,11 @@ export const useInstanceSettings = () => {
     restorePreviewSubProgress,
     backupProgress,
     backupProgressPercent,
-    backupProgressText,
     backupProgressDetail,
-    restoreResultOpen,
-    setRestoreResultOpen,
+    restoreRunOpen,
+    restoreRunError,
+    restoreSteps,
+    closeRestoreRun,
     restoreResult,
     restoreHasHighRiskScope,
     restoreArchiveCreatedAtText,
@@ -2566,22 +2759,17 @@ export const useInstanceSettings = () => {
     demotedWarningNames,
     installingLL,
     uninstallingLL,
-    llInstallConfirmOpen,
+    llInstallOpen,
     llUninstallConfirmOpen,
-    llVersionSelectOpen,
-    llVersionSelectOnOpenChange,
-    llVersionSelectOnClose,
-    rcOpen,
-    rcOnOpenChange,
-    rcOnClose,
-    rcVersion,
+    llTargetIsRC,
     isLLInstalled,
     resolvedLLTargetVersion,
     demotedWarningOpen,
     demotedWarningOnOpenChange,
 
-    // Error helper
+    // Error helpers
     getErrorKey,
+    resolveToastText,
 
     // Actions
     onSave,
@@ -2600,16 +2788,12 @@ export const useInstanceSettings = () => {
     setRestoreConflictChoice,
     setRestoreConflictChoicesBulk,
     confirmInstanceRestore,
-    proceedInstallLeviLamina,
-    openLeviLaminaVersionSelect,
-    confirmLeviLaminaVersionSelect,
-    openLLInstallConfirm,
-    closeLLInstallConfirm,
-    confirmInstallLeviLaminaAction,
+    openLeviLaminaInstall,
+    closeLeviLaminaInstall,
+    confirmLeviLaminaInstall,
     openLLUninstallConfirm,
     closeLLUninstallConfirm,
     closeDemotedWarning,
     confirmUninstallLL,
-    handleInstallLeviLamina,
   };
 };

@@ -1,0 +1,39 @@
+{
+  "instances": {
+    "list": {
+      "current": "Bieżąca",
+      "settings": "Ustawienia",
+      "mods": "Mody",
+      "now_current": "{{name}} jest teraz bieżącą instancją",
+      "select_hint": "Kliknij kartę, aby ustawić ją jako bieżącą instancję."
+    },
+    "settings": {
+      "sections": "Sekcje ustawień instancji"
+    },
+    "ll": {
+      "dialog_title": "LeviLamina: {{action}}",
+      "installed_version": "Zainstalowana",
+      "target_version": "Wersja do instalacji",
+      "instance": "Instancja"
+    },
+    "run": {
+      "activity_hint": "Te kroki są też zapisywane w Aktywności.",
+      "backup_failed_title": "Kopia zapasowa nie powiodła się"
+    },
+    "notify": {
+      "ll_install_failed": "Instalacja LeviLamina nie powiodła się",
+      "ll_remove_failed": "Nie można usunąć LeviLamina",
+      "ll_removed": "Usunięto LeviLamina",
+      "backup_open_failed": "Nie można przygotować kopii zapasowej",
+      "restore_open_failed": "Nie można otworzyć pliku kopii zapasowej"
+    },
+    "steps": {
+      "backup_scan": "Zmierz pliki do kopii",
+      "backup_write": "Zapisz archiwum kopii",
+      "restore_prepare": "Przygotuj przywracanie",
+      "restore_extract": "Rozpakuj zawartość kopii",
+      "restore_scope": "Przywróć {{scope}}",
+      "restore_finalize": "Zakończ przywracanie"
+    }
+  }
+}

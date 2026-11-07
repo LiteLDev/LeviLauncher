@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 )
 
 func legacyAuthManifest() Manifest {
@@ -159,8 +161,9 @@ func TestLegacyAuthKeyFailuresRemainRetryable(t *testing.T) {
 		t.Fatalf("cancellation: %v", err)
 	}
 	assertAuthMarker(t, dir, "")
-	// A truncated marker is not accepted as completion.
-	if err := os.WriteFile(filepath.Join(dir, authKeyMarkerName), []byte("pat"), 0644); err != nil {
+	// A truncated marker is not accepted as completion, also where instances
+	// kept it before .levilauncher: it is moved there first.
+	if err := os.WriteFile(filepath.Join(dir, apppath.LegacyInstanceAuthKeyMarker), []byte("pat"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	if err := ensureLegacyAuthKey(context.Background(), dir, m); err != nil {
@@ -190,9 +193,9 @@ func TestInstallPatchesLegacyAuthKeyBeforePublishing(t *testing.T) {
 			manifest := strings.Replace(testManifest("neutral"), "1.21.9301.0", "1.16.4002.0", 1)
 			manifest = strings.Replace(manifest, "Minecraft.Windows.exe", exe, 1)
 			archive := writeArchive(t, zipBytes(t, map[string]string{
-				"AppxManifest.xml": manifest,
-				exe:                "prefix" + legacyAuthPublicKey + "suffix",
-				authKeyMarkerName:  "patched\n",
+				"AppxManifest.xml":                  manifest,
+				exe:                                 "prefix" + legacyAuthPublicKey + "suffix",
+				apppath.LegacyInstanceAuthKeyMarker: "patched\n",
 			}))
 			target := filepath.Join(t.TempDir(), "instance")
 			_, err := Install(context.Background(), archive, target, Options{Prepare: func(stage string, _ Manifest) error {
@@ -236,7 +239,7 @@ func TestInstallPreservesBothAuthKeys(t *testing.T) {
 
 func assertAuthMarker(t *testing.T, dir, want string) {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join(dir, authKeyMarkerName))
+	data, err := os.ReadFile(authKeyMarkerPath(dir))
 	if want == "" {
 		if !os.IsNotExist(err) {
 			t.Fatalf("unexpected completion marker: %q, %v", data, err)

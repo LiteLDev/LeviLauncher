@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -35,6 +36,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/oslang"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/processinfo"
+	"github.com/liteldev/LeviLauncher/internal/storage"
 	"github.com/liteldev/LeviLauncher/internal/tray"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
@@ -113,7 +115,8 @@ func initStartupDiagnostics(debugMode bool) *startupDiagnostics {
 	writers := []io.Writer{}
 
 	var logFile *os.File
-	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	_ = os.MkdirAll(filepath.Dir(logPath), 0o755)
+	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|rotateStartupLogs(logPath), 0o644)
 	if err == nil {
 		logFile = file
 		writers = append(writers, file)
@@ -144,6 +147,30 @@ func initStartupDiagnostics(debugMode bool) *startupDiagnostics {
 	}
 
 	return diag
+}
+
+// startupLogsKept is how many startup logs are kept: startup.log and
+// startup.1.log up to startup.4.log, the oldest last.
+const startupLogsKept = 5
+
+// rotateStartupLogs shifts the previous startup logs and returns the open
+// flag for the new one. When startup.log is still open in a running instance,
+// it is not rotated and is appended to rather than truncated.
+func rotateStartupLogs(logPath string) int {
+	ext := filepath.Ext(logPath)
+	stem := strings.TrimSuffix(logPath, ext)
+	numbered := func(i int) string { return fmt.Sprintf("%s.%d%s", stem, i, ext) }
+	if _, err := os.Stat(logPath); err != nil {
+		return os.O_TRUNC
+	}
+	_ = os.Remove(numbered(startupLogsKept - 1))
+	for i := startupLogsKept - 2; i >= 1; i-- {
+		_ = os.Rename(numbered(i), numbered(i+1))
+	}
+	if err := os.Rename(logPath, numbered(1)); err != nil {
+		return os.O_APPEND
+	}
+	return os.O_TRUNC
 }
 
 func (s *startupDiagnostics) Logger() *slog.Logger {
@@ -621,6 +648,22 @@ func main() {
 		return
 	}
 	defer win.CloseHandle(singleInstanceGuard)
+	// Decide the storage layout, migrating the legacy one, before anything
+	// reads config.json or the data root.
+	switch outcome, err := storage.Prepare(); {
+	case err != nil && outcome == storage.Current:
+		diagnostics.HandleError("storage migration could not be undone", err)
+		return
+	case outcome == storage.Legacy:
+		log.Printf("[startup] storage migration deferred, running on the legacy layout %s: %v", apppath.LegacyMode(), err)
+	case outcome == storage.Migrated:
+		log.Printf("[startup] storage migrated from the legacy layout")
+	}
+	if err := apppath.EnsureDirs(); err != nil {
+		diagnostics.HandleError("failed to create the launcher directories", err)
+		return
+	}
+	startup.Mark("storage ready")
 	c, err := config.Load()
 	if err != nil {
 		diagnostics.HandleError("config.Load failed", err)
@@ -669,7 +712,8 @@ func main() {
 			Middleware: mc.LocalImageMiddleware,
 		},
 		Windows: application.WindowsOptions{
-			WebviewBrowserPath: webView2Options.BrowserExecutableFolder,
+			WebviewBrowserPath:  webView2Options.BrowserExecutableFolder,
+			WebviewUserDataPath: apppath.WebView2Dir(),
 		},
 	})
 	tray.Setup(wailsApp, appIcon)

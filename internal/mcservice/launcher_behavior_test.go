@@ -14,6 +14,7 @@ func TestGameBehaviorSettings(t *testing.T) {
 		_, _ = config.Reload()
 	})
 	t.Setenv("APPDATA", t.TempDir())
+	t.Setenv("LOCALAPPDATA", t.TempDir())
 
 	if _, err := config.Reload(); err != nil {
 		t.Fatalf("config.Reload() = %v", err)

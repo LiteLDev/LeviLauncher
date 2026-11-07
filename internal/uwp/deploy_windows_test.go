@@ -16,7 +16,7 @@ func setupDeployment(t *testing.T) (string, string) {
 	t.Helper()
 	apppath.SetBaseRootOverride(t.TempDir())
 	t.Cleanup(func() { apppath.SetBaseRootOverride("") })
-	root, err := apppath.VersionsDir()
+	root, err := apppath.InstancesDir()
 	if err != nil {
 		t.Fatal(err)
 	}

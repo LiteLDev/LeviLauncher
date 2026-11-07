@@ -15,6 +15,7 @@ import (
 	"text/template"
 
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/storage"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
@@ -554,9 +555,11 @@ func UnregisterIfExists(isPreview bool) string {
 	if info, err := registry.GetAppxInfo(pkg); err == nil && info != nil {
 		// UWP stores worlds in LocalState. The legacy GDK removal only
 		// preserves roaming data, so delegate to the data-preserving UWP path.
-		meta, _ := versions.ReadMeta(info.InstallLocation)
-		if versions.DetectPackageType(info.InstallLocation, meta) == versions.PackageTypeUWP {
-			if err := uwp.Unregister(context.Background(), info.InstallLocation); err != nil {
+		// An instance the storage migration moved is read where it is now.
+		location := storage.TranslateLegacyPath(info.InstallLocation)
+		meta, _ := versions.ReadMeta(location)
+		if versions.DetectPackageType(location, meta) == versions.PackageTypeUWP {
+			if err := uwp.Unregister(context.Background(), location); err != nil {
 				return uwp.ErrorCode(err)
 			}
 			return ""
@@ -597,7 +600,7 @@ func UnregisterVersionFolder(folder string) string {
 			}
 			return ""
 		}
-		loc := normalizeInstallPath(info.InstallLocation)
+		loc := normalizeInstallPath(storage.TranslateLegacyPath(info.InstallLocation))
 		f := normalizeInstallPath(folder)
 		log.Printf("gdk.UnregisterVersionFolder: compare package=%s installLocation=%s target=%s", pkg, loc, f)
 		if loc == f {
@@ -621,4 +624,19 @@ func UnregisterVersionFolder(folder string) string {
 	}
 	log.Printf("gdk.UnregisterVersionFolder: completed folder=%s", folder)
 	return ""
+}
+
+// IsMovedRegistration reports whether Windows records the package of the
+// channel at the legacy location of folder, which the storage migration
+// moved: the registration must be renewed before the package is launched.
+func IsMovedRegistration(folder string, isPreview bool) bool {
+	pkg := "MICROSOFT.MINECRAFTUWP"
+	if isPreview {
+		pkg = "Microsoft.MinecraftWindowsBeta"
+	}
+	info, err := registry.GetAppxInfo(pkg)
+	if err != nil || info == nil || !storage.IsMovedLegacyPath(info.InstallLocation) {
+		return false
+	}
+	return normalizeInstallPath(storage.TranslateLegacyPath(info.InstallLocation)) == normalizeInstallPath(folder)
 }

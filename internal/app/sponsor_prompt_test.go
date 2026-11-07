@@ -13,6 +13,7 @@ func setupSponsorConfig(t *testing.T) {
 	t.Helper()
 	t.Cleanup(func() { _, _ = config.Reload() })
 	t.Setenv("APPDATA", t.TempDir())
+	t.Setenv("LOCALAPPDATA", t.TempDir())
 	if _, err := config.Reload(); err != nil {
 		t.Fatal(err)
 	}

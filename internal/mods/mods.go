@@ -13,6 +13,7 @@ import (
 	json "github.com/goccy/go-json"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
@@ -22,7 +23,7 @@ func GetMods(mcname string) (result []types.ModInfo) {
 	if name == "" {
 		return result
 	}
-	vroot, err := apppath.VersionsDir()
+	vroot, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return result
 	}
@@ -33,6 +34,10 @@ func GetMods(mcname string) (result []types.ModInfo) {
 	}
 	modDirs := utils.GetDirNames(modsDir)
 	for _, modDir := range modDirs {
+		// An import or a replacement in progress stages its files here.
+		if fsx.IsTempName(modDir) {
+			continue
+		}
 		jsonfile := filepath.Join(modsDir, modDir, "manifest.json")
 		jsonClosed := jsonfile + ".close"
 		var manifestPath string
@@ -69,7 +74,7 @@ func HasNamedMod(mcname string, targetName string) bool {
 		return false
 	}
 
-	vroot, err := apppath.VersionsDir()
+	vroot, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return false
 	}
@@ -113,7 +118,7 @@ func DeleteMod(mcname string, modFolder string) string {
 	if name == "" || mod == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := apppath.VersionsDir()
+	vroot, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -142,7 +147,7 @@ func DisableMod(mcname string, modFolder string) string {
 	if name == "" || mod == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := apppath.VersionsDir()
+	vroot, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -179,7 +184,7 @@ func EnableMod(mcname string, modFolder string) string {
 	if name == "" || mod == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := apppath.VersionsDir()
+	vroot, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -216,7 +221,7 @@ func IsModEnabled(mcname string, modFolder string) bool {
 	if name == "" || mod == "" {
 		return false
 	}
-	vroot, err := apppath.VersionsDir()
+	vroot, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return false
 	}
@@ -249,7 +254,7 @@ func UpdateModManifest(mcname string, modFolder string, modName string, version 
 	if mod == "." || strings.ContainsAny(mod, `/\`) {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := apppath.VersionsDir()
+	vroot, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -314,21 +319,7 @@ func UpdateModManifest(mcname string, modFolder string, modName string, version 
 		targetPaths = append(targetPaths, closedPath)
 	}
 	for _, path := range targetPaths {
-		tmp := path + ".tmp"
-		f, er := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-		if er != nil {
-			return "ERR_WRITE_FILE"
-		}
-		if _, er = f.Write(mbytes); er != nil {
-			_ = f.Close()
-			_ = os.Remove(tmp)
-			return "ERR_WRITE_FILE"
-		}
-		_ = f.Sync()
-		_ = f.Close()
-		_ = os.Remove(path)
-		if er = os.Rename(tmp, path); er != nil {
-			_ = os.Remove(tmp)
+		if er := fsx.WriteFileAtomic(path, mbytes, 0o644); er != nil {
 			return "ERR_WRITE_FILE"
 		}
 	}
@@ -340,7 +331,7 @@ func ImportZipToMods(mcname string, data []byte, overwrite bool) string {
 	if name == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := apppath.VersionsDir()
+	vroot, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -371,7 +362,7 @@ func ImportZipToMods(mcname string, data []byte, overwrite bool) string {
 		}
 	}
 
-	stagingRoot, err := os.MkdirTemp(modsDir, ".mod-import-*")
+	stagingRoot, err := fsx.MkdirTemp(modsDir, modFolderName)
 	if err != nil {
 		return "ERR_CREATE_TARGET_DIR"
 	}
@@ -557,7 +548,7 @@ func replaceImportedMod(stagingRoot string, targetRoot string, overwrite bool) s
 		return "ERR_DUPLICATE_FOLDER"
 	}
 
-	backupRoot, err := os.MkdirTemp(filepath.Dir(targetRoot), ".mod-backup-*")
+	backupRoot, err := fsx.MkdirTemp(filepath.Dir(targetRoot), filepath.Base(targetRoot))
 	if err != nil {
 		return "ERR_WRITE_FILE"
 	}
@@ -589,7 +580,7 @@ func ImportDllToMods(mcname string, dllFileName string, data []byte, modName str
 	if name == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := apppath.VersionsDir()
+	vroot, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -624,40 +615,14 @@ func ImportDllToMods(mcname string, dllFileName string, data []byte, modName str
 		return "ERR_CREATE_TARGET_DIR"
 	}
 	dllTarget := filepath.Join(targetRoot, filepath.Base(dllFileName))
-	dllTmp := dllTarget + ".tmp"
-	f, er := os.OpenFile(dllTmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if er != nil {
-		return "ERR_WRITE_FILE"
-	}
-	if _, er = f.Write(data); er != nil {
-		_ = f.Close()
-		return "ERR_WRITE_FILE"
-	}
-	_ = f.Sync()
-	_ = f.Close()
-	_ = os.Remove(dllTarget)
-	if er = os.Rename(dllTmp, dllTarget); er != nil {
-		_ = os.Remove(dllTmp)
+	if er := fsx.WriteFileAtomic(dllTarget, data, 0o644); er != nil {
 		return "ERR_WRITE_FILE"
 	}
 
 	manifest := types.ModManifestJson{Name: finalName, Entry: filepath.Base(dllFileName), Version: version, Type: modType}
 	mbytes, _ := json.MarshalIndent(manifest, "", "  ")
 	mpath := filepath.Join(targetRoot, "manifest.json")
-	mtmp := mpath + ".tmp"
-	mf, me := os.OpenFile(mtmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
-	if me != nil {
-		return "ERR_WRITE_FILE"
-	}
-	if _, me = mf.Write(mbytes); me != nil {
-		_ = mf.Close()
-		return "ERR_WRITE_FILE"
-	}
-	_ = mf.Sync()
-	_ = mf.Close()
-	_ = os.Remove(mpath)
-	if me = os.Rename(mtmp, mpath); me != nil {
-		_ = os.Remove(mtmp)
+	if me := fsx.WriteFileAtomic(mpath, mbytes, 0o644); me != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""

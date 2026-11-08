@@ -1,7 +1,11 @@
 import { TFunction } from "i18next";
+import { splitErrorResult } from "@/utils/errorDetail";
 
 export const resolveImportError = (err: string, t: TFunction): string => {
-  const code = String(err || "").trim();
+  // "ERR_X: detail" results carry the technical detail after the code; it is
+  // shown separately (ErrorDetail), so only the code picks the message.
+  const { code: parsed } = splitErrorResult(err);
+  const code = parsed || String(err || "").trim();
   switch (code) {
     case "ERR_NO_PLAYER":
       return t("contentpage.no_player_selected");

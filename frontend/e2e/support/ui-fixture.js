@@ -177,6 +177,12 @@ state.call = async (name, ...args) => {
     if(name==='ValidateVersionFolderName') return '';
   }
  if(scenario==='no-instances' && /^(IsGameInputInstalled|IsGamingServicesInstalled|IsVcRuntimeInstalled)$/.test(name)) return true;
+ if(scenario==='launch-error') {
+   if(name==='IsGameInputInstalled'||name==='IsGamingServicesInstalled'||name==='IsVcRuntimeInstalled') return true;
+   if(name==='GetVersionMenuDetails') return [{name:'UI test instance',registered:false,leviLaminaInstalled:false,logoDataUrl:''}];
+   if(name==='LaunchVersionByName') {await new Promise(resolve=>setTimeout(resolve,300));return new URLSearchParams(location.search).get('result') || 'ERR_LAUNCH_GAME';}
+   if(name==='GetLogsDir') return 'C:\\Fixture\\Logs';
+ }
  if(scenario==='gdk-launch') {
    if(name==='IsGameInputInstalled'||name==='IsGamingServicesInstalled'||name==='IsVcRuntimeInstalled') return true;
    if(name==='GetVersionMenuDetails') return [{name:'UI test instance',registered:false,leviLaminaInstalled:false,logoDataUrl:''}];

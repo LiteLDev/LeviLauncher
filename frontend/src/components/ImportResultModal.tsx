@@ -2,6 +2,8 @@ import { ModalNotice, ModalPanel } from "@/components/ModalPrimitives";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
+import { ErrorDetail } from "@/components/ErrorDetail";
+import { splitErrorResult } from "@/utils/errorDetail";
 import { resolveImportError } from "@/utils/importError";
 import { UnifiedModal, ModalType } from "./UnifiedModal";
 
@@ -91,12 +93,16 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
             </div>
             <ModalNotice tone="danger" className="max-h-60 overflow-y-auto">
               <div className="whitespace-pre-wrap [overflow-wrap:anywhere] flex flex-col gap-3">
-                {failed.map((it, idx) => (
-                  <div key={idx} className="flex min-w-0 flex-col gap-1">
-                    <span className="font-mono font-medium">{it.name}</span>
-                    <span>{resolveImportError(it.err, t)}</span>
-                  </div>
-                ))}
+                {failed.map((it, idx) => {
+                  const { code, detail } = splitErrorResult(it.err);
+                  return (
+                    <div key={idx} className="flex min-w-0 flex-col gap-1">
+                      <span className="font-mono font-medium">{it.name}</span>
+                      <span>{resolveImportError(it.err, t)}</span>
+                      <ErrorDetail code={code} detail={detail} className="mt-1 text-foreground" />
+                    </div>
+                  );
+                })}
               </div>
             </ModalNotice>
           </div>

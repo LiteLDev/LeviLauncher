@@ -3,6 +3,7 @@ package mcservice
 import (
 	"context"
 	"errors"
+	"strings"
 	"fmt"
 	"reflect"
 	"testing"
@@ -166,7 +167,7 @@ func TestInstallLIPPackageDoesNotFallBackForAnotherPackage(t *testing.T) {
 	}
 	useFakeLipWorkspace(t, ws)
 
-	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "ERR_LIP_PACKAGE_INSTALL_FAILED" {
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); !strings.HasPrefix(got, "ERR_LIP_PACKAGE_INSTALL_FAILED: ") {
 		t.Fatalf("unexpected error code: %q", got)
 	}
 	ws.expect(t, []string{"install"}, [][]string{{"github.com/LiteLDev/Foo#client@1.0.0"}})
@@ -277,7 +278,8 @@ func TestInstallLIPPackageFailure(t *testing.T) {
 	ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{}, installErr: []error{errors.New("network down")}}
 	useFakeLipWorkspace(t, ws)
 
-	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "ERR_LIP_PACKAGE_INSTALL_FAILED" {
+	// The result carries lip's message after the code, for the GUI to explain.
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "ERR_LIP_PACKAGE_INSTALL_FAILED: network down" {
 		t.Fatalf("unexpected error code: %q", got)
 	}
 	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", " "); got != "ERR_LIP_PACKAGE_VERSION_REQUIRED" {

@@ -256,7 +256,7 @@ func monitorWithTimeouts(ctx context.Context, versionDir string, launchPID int, 
 			RestoreLauncherWindow()
 		}
 		if launchExited {
-			sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
+			sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME: the game process exited right after starting")
 		} else {
 			sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_TIMEOUT")
 		}
@@ -280,7 +280,7 @@ func monitorWithTimeouts(ctx context.Context, versionDir string, launchPID int, 
 		if launchBehaviorApplied && !userHidLauncher.Load() {
 			RestoreLauncherWindow()
 		}
-		sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
+		sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME: the game process is running but never showed a window")
 		if gui {
 			discord.SetLauncherIdle()
 		}

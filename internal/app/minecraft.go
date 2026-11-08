@@ -298,7 +298,7 @@ func (a *Minecraft) SetLipGithubProxy(proxy string) string {
 func (a *Minecraft) CacheClean() string {
 	if err := lip.CacheClean(a.ctx); err != nil {
 		log.Printf("lip: cache clean failed: %v", err)
-		return lip.ErrorCode(err)
+		return lip.ErrorResult(lip.ErrorCode(err), err)
 	}
 	return ""
 }
@@ -384,6 +384,10 @@ func (a *Minecraft) OpenWorldsExplorer(name string, isPreview bool) error {
 }
 
 func (a *Minecraft) OpenPathDir(dir string) error { return explorer.OpenPath(dir) }
+
+// GetLogsDir is the folder holding the launcher's full log (startup.log), so
+// the GUI can offer it next to an error message.
+func (a *Minecraft) GetLogsDir() string { return apppath.LogsDir() }
 
 func (a *Minecraft) OpenGameDataExplorer(isPreview bool) error {
 	return mcservice.OpenGameDataExplorer(isPreview)

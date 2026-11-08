@@ -144,3 +144,16 @@ func extractErrCode(err error) string {
 func ErrorCode(err error) string {
 	return extractErrCode(err)
 }
+
+// ErrorResult is the result string handed to the GUI for a failed package
+// operation: code, then lip's full message for err (the failure, its causes
+// and its "hint:" lines, as lip prints them), so the launcher can explain
+// the failure instead of showing a bare code. Without a message it is just
+// code.
+func ErrorResult(code string, err error) string {
+	msg := strings.TrimSpace(formatEngineError(err))
+	if msg == "" {
+		return code
+	}
+	return code + ": " + msg
+}

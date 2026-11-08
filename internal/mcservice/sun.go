@@ -1,67 +1,84 @@
 package mcservice
 
 import (
-	"fmt"
+	"math"
 	"time"
-
-	json "github.com/goccy/go-json"
-	"github.com/liteldev/LeviLauncher/internal/httpx"
 )
 
+// SunTimes holds local sunrise/sunset as "HH:MM" strings.
 type SunTimes struct {
 	Sunrise string `json:"sunrise"`
 	Sunset  string `json:"sunset"`
-	IP      string `json:"ip"`
 }
 
+// approxLatitude is the latitude assumed for the computation. The launcher no
+// longer geolocates the user by IP, so the location is estimated from the
+// system time zone: longitude from the standard (non-DST) UTC offset, latitude
+// fixed at a mid-latitude value. That is accurate enough to switch light/dark
+// themes.
+const approxLatitude = 35.0
+
 func GetSunTimes() SunTimes {
-	resp, err := httpx.Get("http://ip-api.com/json")
-	if err != nil {
+	return sunTimesAt(time.Now(), approxLatitude)
+}
+
+func sunTimesAt(now time.Time, lat float64) SunTimes {
+	lon := float64(standardOffset(now)) / 3600.0 * 15.0
+
+	rise, set, ok := solveSun(now, lat, lon)
+	if !ok {
 		return SunTimes{Sunrise: "06:00", Sunset: "18:00"}
 	}
-	defer resp.Body.Close()
-
-	var geo struct {
-		Status    string  `json:"status"`
-		IP        string  `json:"query"`
-		Longitude float64 `json:"lon"`
-		Latitude  float64 `json:"lat"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&geo); err != nil || geo.Status != "success" {
-		return SunTimes{Sunrise: "06:00", Sunset: "18:00"}
-	}
-
-	apiURL := fmt.Sprintf("https://api.sunrise-sunset.org/json?lat=%f&lng=%f&formatted=0", geo.Latitude, geo.Longitude)
-	sunResp, err := httpx.Get(apiURL)
-	if err != nil {
-		return SunTimes{Sunrise: "06:00", Sunset: "18:00", IP: geo.IP}
-	}
-	defer sunResp.Body.Close()
-
-	var sunData struct {
-		Results struct {
-			Sunrise string `json:"sunrise"`
-			Sunset  string `json:"sunset"`
-		} `json:"results"`
-		Status string `json:"status"`
-	}
-
-	if err := json.NewDecoder(sunResp.Body).Decode(&sunData); err != nil || sunData.Status != "OK" {
-		return SunTimes{Sunrise: "06:00", Sunset: "18:00", IP: geo.IP}
-	}
-
-	parseAndConvert := func(utcStr string) string {
-		t, err := time.Parse(time.RFC3339, utcStr)
-		if err != nil {
-			return "00:00"
-		}
-		localTime := t.Local()
-		return localTime.Format("15:04")
-	}
-
 	return SunTimes{
-		Sunrise: parseAndConvert(sunData.Results.Sunrise),
-		Sunset:  parseAndConvert(sunData.Results.Sunset),
-		IP:      geo.IP,
+		Sunrise: rise.In(now.Location()).Format("15:04"),
+		Sunset:  set.In(now.Location()).Format("15:04"),
 	}
+}
+
+// standardOffset returns the zone's UTC offset without daylight saving time:
+// the smaller of the January and July offsets, which holds in both
+// hemispheres.
+func standardOffset(t time.Time) int {
+	loc := t.Location()
+	_, jan := time.Date(t.Year(), time.January, 1, 12, 0, 0, 0, loc).Zone()
+	_, jul := time.Date(t.Year(), time.July, 1, 12, 0, 0, 0, loc).Zone()
+	if jan < jul {
+		return jan
+	}
+	return jul
+}
+
+// solveSun implements the standard sunrise equation (NOAA approximation) and
+// returns the UTC sunrise and sunset for the calendar day of t at lat/lon.
+// ok is false for polar day/night, where the sun does not rise or set.
+func solveSun(t time.Time, lat, lon float64) (rise, set time.Time, ok bool) {
+	const rad = math.Pi / 180
+
+	y, m, d := t.Date()
+	dayStart := time.Date(y, m, d, 12, 0, 0, 0, time.UTC)
+	n := float64(dayStart.YearDay())
+
+	// Fractional year, equation of time (minutes) and solar declination.
+	g := 2 * math.Pi / 365 * (n - 1)
+	eqTime := 229.18 * (0.000075 + 0.001868*math.Cos(g) - 0.032077*math.Sin(g) -
+		0.014615*math.Cos(2*g) - 0.040849*math.Sin(2*g))
+	decl := 0.006918 - 0.399912*math.Cos(g) + 0.070257*math.Sin(g) -
+		0.006758*math.Cos(2*g) + 0.000907*math.Sin(2*g) -
+		0.002697*math.Cos(3*g) + 0.00148*math.Sin(3*g)
+
+	// Hour angle at sunrise/sunset (zenith 90.833° accounts for refraction).
+	cosH := math.Cos(90.833*rad)/(math.Cos(lat*rad)*math.Cos(decl)) -
+		math.Tan(lat*rad)*math.Tan(decl)
+	if cosH > 1 || cosH < -1 {
+		return time.Time{}, time.Time{}, false
+	}
+	h := math.Acos(cosH) / rad
+
+	riseMin := 720 - 4*(lon+h) - eqTime
+	setMin := 720 - 4*(lon-h) - eqTime
+
+	midnight := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	rise = midnight.Add(time.Duration(riseMin * float64(time.Minute)))
+	set = midnight.Add(time.Duration(setMin * float64(time.Minute)))
+	return rise, set, true
 }

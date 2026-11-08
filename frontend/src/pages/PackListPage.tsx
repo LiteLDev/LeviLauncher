@@ -1,3 +1,4 @@
+import DefaultAppIcon from "@/assets/images/appicon.png";
 import { isContentTransferTarget } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
@@ -849,7 +850,7 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
                             <img
                               src={
                                 item.icon ||
-                                "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                                DefaultAppIcon
                               }
                               alt="icon"
                               className="w-full h-full object-cover"

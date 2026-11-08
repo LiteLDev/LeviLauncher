@@ -1,3 +1,4 @@
+import DefaultAppIcon from "@/assets/images/appicon.png";
 import { ModalDescription, ModalDetails, ModalProgress } from "@/components/ModalPrimitives";
 import {
   Button,
@@ -1590,7 +1591,7 @@ const LIPPackagePage: React.FC = () => {
                           <img
                             src={
                               instanceLogos[instanceName] ||
-                              "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                              DefaultAppIcon
                             }
                             alt="icon"
                             className="w-full h-full object-cover"

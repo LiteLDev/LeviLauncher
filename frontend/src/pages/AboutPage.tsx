@@ -1,3 +1,4 @@
+import RhymcLogo from "@/assets/images/rhymc-logo.png";
 import { Button, Card, Chip } from "@heroui/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -158,7 +159,7 @@ export default function AboutPage() {
               <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-surface/50 dark:bg-surface/5 border border-border dark:border-white/5">
                 <div className="flex items-center gap-3">
                   <img
-                    src="https://www.rhymc.com/assets/img/logo.png"
+                    src={RhymcLogo}
                     alt={t("about.rhymc_name")}
                     className="h-8 object-contain"
                   />

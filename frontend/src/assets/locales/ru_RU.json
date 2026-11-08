@@ -387,6 +387,7 @@
         "title": "Прокси GitHub",
         "desc": "Прокси GitHub, используемый при загрузке пакетов LIP. Оставьте пустым, чтобы восстановить значение по умолчанию.",
         "placeholder": "https://github.bibk.top",
+        "preset_custom": "Свой",
         "save_success": "Прокси GitHub сохранён",
         "save_failed": "Не удалось сохранить прокси GitHub"
       }

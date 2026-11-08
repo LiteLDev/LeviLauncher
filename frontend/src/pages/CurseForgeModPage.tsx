@@ -1,3 +1,4 @@
+import DefaultAppIcon from "@/assets/images/appicon.png";
 import { ModalAction, ModalDescription, ModalPanel, ModalNotice, ModalProgress } from "@/components/ModalPrimitives";
 import {
   Button,
@@ -1367,7 +1368,7 @@ const CurseForgeModPage: React.FC = () => {
                             <img
                               src={
                                 versionLogos[ver.name] ||
-                                "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                                DefaultAppIcon
                               }
                               alt="icon"
                               className="w-full h-full object-cover"

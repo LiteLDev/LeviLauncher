@@ -387,6 +387,7 @@
         "title": "GitHub-Proxy",
         "desc": "GitHub-Proxy, der beim Herunterladen von LIP-Paketen verwendet wird. Leer lassen, um den Standard wiederherzustellen.",
         "placeholder": "https://github.bibk.top",
+        "preset_custom": "Benutzerdefiniert",
         "save_success": "GitHub-Proxy gespeichert",
         "save_failed": "GitHub-Proxy konnte nicht gespeichert werden"
       }

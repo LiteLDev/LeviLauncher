@@ -4,8 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0-beta.1] - 2026-11-08
+
+### Added
+
+- Added a command-line mode: `LeviLauncher.exe` with a `<noun> <verb>` command (for example `play`, `install`, `instance list`, `mod install`, `curseforge search`) runs in the terminal and exits; without arguments the launcher window opens as before
+
 ### Changed
 
+- Unified the launcher's storage layout and naming: settings live in `%APPDATA%\LeviLauncher`, while logs, accounts, instances, backups and cache live in `%LOCALAPPDATA%\LeviLauncher`; existing data is migrated once at startup without deleting anything, and the launcher keeps using the old layout until the next start if an instance is in use or a custom data folder is offline
 - Replaced the external lip package manager with a built-in lip-compatible package manager, so lip and the .NET runtime no longer need to be installed or updated from Settings; existing `tooth_lock.json` installs keep working
 - Aligned the built-in lip with the files of lip's format 4: packages are recorded in `.lip/state.json` and read from `lip.toml` (packages with only a `tooth.json` still work), existing `tooth_lock.json` installs are migrated automatically on the first package operation, and the GitHub proxy is read from lip's `config.toml` (a `liprc.json` is converted)
 - Packages, LeviLamina included, are installed from their `client` variant, or from their default variant when they have none; installed packages are updated and uninstalled in place
@@ -304,7 +311,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.7...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.1...HEAD
+[1.1.0-beta.1]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.7...v1.1.0-beta.1
 [1.0.7]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.4...v1.0.5

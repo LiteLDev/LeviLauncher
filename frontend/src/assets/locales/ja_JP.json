@@ -539,8 +539,8 @@
       "on_exit_reopen": "ランチャーを再表示",
       "on_exit_keep": "何もしない",
       "on_exit_close": "ランチャーを閉じる",
-      "minimize_to_tray": "閉じる時にトレイに最小化",
-      "minimize_to_tray_desc": "ウィンドウを閉じる時に終了せずタスクトレイに最小化します"
+      "minimize_to_tray": "閉じる時にトレイに隠す",
+      "minimize_to_tray_desc": "閉じるボタンを押すと終了せずにランチャーをタスクトレイに隠します。最小化ボタンは引き続きタスクバーに最小化します"
     }
   },
   "downloadmodal": {

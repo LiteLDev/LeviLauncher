@@ -539,8 +539,8 @@
       "on_exit_reopen": "Rouvrir le lanceur",
       "on_exit_keep": "Ne rien faire",
       "on_exit_close": "Fermer le lanceur",
-      "minimize_to_tray": "Réduire dans la zone de notification",
-      "minimize_to_tray_desc": "Réduire le lanceur dans la zone de notification lors de la fermeture au lieu de quitter"
+      "minimize_to_tray": "Masquer dans la zone de notification à la fermeture",
+      "minimize_to_tray_desc": "Cliquer sur le bouton de fermeture masque le lanceur dans la zone de notification au lieu de quitter ; le bouton de réduction réduit toujours dans la barre des tâches"
     }
   },
   "downloadmodal": {

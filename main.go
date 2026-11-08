@@ -538,7 +538,6 @@ func init() {
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)
 	application.RegisterEvent[string](launch.EventMcLaunchFailed)
-	application.RegisterEvent[struct{}](launch.EventGamingServicesMissing)
 	//msixvc
 	application.RegisterEvent[msixvc.DownloadStatus](msixvc.EventDownloadStatus)
 	application.RegisterEvent[msixvc.DownloadProgress](msixvc.EventDownloadProgress)
@@ -864,6 +863,12 @@ func main() {
 		})
 	})
 	persistWindowSize := func() {
+		// Width/Height report the current frame, which for a minimised,
+		// maximised or fullscreen window is not the size to restore next
+		// launch. Keep the last normal size in those states.
+		if windows.IsMinimised() || windows.IsMaximised() || windows.IsFullscreen() {
+			return
+		}
 		w := windows.Width()
 		h := windows.Height()
 		if w <= 0 || h <= 0 {
@@ -890,7 +895,13 @@ func main() {
 	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		persistWindowSize()
 
-		if config.GetMinimizeToTray() && !launch.QuitRequested() {
+		if launch.QuitRequested() {
+			return
+		}
+		// While the frontend reports a critical operation (install, update)
+		// a taskbar close or Alt+F4 must not kill the launcher mid-write, so
+		// hide to the tray instead; the tray menu still offers an explicit quit.
+		if config.GetMinimizeToTray() || launch.CloseBlocked() {
 			event.Cancel()
 			windows.Hide()
 			launch.MarkLauncherHiddenByUser()

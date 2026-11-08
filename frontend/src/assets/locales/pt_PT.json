@@ -539,8 +539,8 @@
       "on_exit_reopen": "Reabrir o inicializador",
       "on_exit_keep": "Não fazer nada",
       "on_exit_close": "Fechar o inicializador",
-      "minimize_to_tray": "Minimizar para a área de notificação ao fechar",
-      "minimize_to_tray_desc": "Ocultar o inicializador na área de notificação ao fechar a janela em vez de sair"
+      "minimize_to_tray": "Ocultar na área de notificação ao fechar",
+      "minimize_to_tray_desc": "Clicar no botão de fechar oculta o inicializador na área de notificação em vez de sair; o botão de minimizar continua a minimizar para a barra de tarefas"
     }
   },
   "downloadmodal": {

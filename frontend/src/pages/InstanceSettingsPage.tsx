@@ -40,7 +40,10 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
 import { useInstanceSettings } from "@/hooks/useInstanceSettings";
-import { LipTaskProgress } from "@/utils/LipTaskConsoleContext";
+import {
+  LipTaskProgress,
+  useLipTaskProgress,
+} from "@/utils/LipTaskConsoleContext";
 import { OpenModsExplorer } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 
 type RestoreConflictDiffField = {
@@ -203,6 +206,7 @@ const getScopeDisplayLabel = (
 export default function InstanceSettingsPage() {
   const { t } = useTranslation();
   const vs = useInstanceSettings();
+  const lipProgress = useLipTaskProgress();
   const currentLLVersionText =
     vs.currentLLVersion ||
     (t("versions.edit.loader.ll_not_installed") as unknown as string);
@@ -752,21 +756,11 @@ export default function InstanceSettingsPage() {
                               vs.llSupportedVersions.length === 0
                             }
                             variant={"secondary"}
-                            isPending={vs.installingLL}
                             className={
                               "bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold"
                             }
                           >
-                            {({ isPending }) => (
-                              <>
-                                <Spinner
-                                  size="sm"
-                                  color="current"
-                                  className={isPending ? "" : "hidden"}
-                                />
-                                {t(vs.llInstallActionLabelKey)}
-                              </>
-                            )}
+                            {t(vs.llInstallActionLabelKey)}
                           </Button>
                         </>
                       ) : (
@@ -2193,7 +2187,6 @@ export default function InstanceSettingsPage() {
           await vs.confirmInstallLeviLaminaAction();
         }}
         confirmButtonProps={{
-          isPending: vs.installingLL,
           isDisabled: !vs.resolvedLLTargetVersion || vs.installingLL,
         }}
         cancelButtonProps={{
@@ -2208,7 +2201,24 @@ export default function InstanceSettingsPage() {
             instance: vs.targetName || "-",
           })}
         </ModalDescription>
-        {vs.installingLL ? <LipTaskProgress className="pt-4" /> : null}
+        {vs.installingLL ? (
+          lipProgress.status === "running" ? (
+            <LipTaskProgress className="pt-4" />
+          ) : (
+            <div className="pt-4">
+              <ProgressBar
+                size="sm"
+                isIndeterminate
+                color="accent"
+                aria-label={t("lip.task_console.waiting_start")}
+              >
+                <ProgressBar.Track>
+                  <ProgressBar.Fill />
+                </ProgressBar.Track>
+              </ProgressBar>
+            </div>
+          )
+        ) : null}
       </UnifiedModal>
 
       <UnifiedModal

@@ -329,8 +329,8 @@ export default function ServersPage() {
   }, [servers, query, sortKey, sortAsc]);
 
   return (
-    <PageContainer>
-      <Card className={LAYOUT.GLASS_CARD.BASE}>
+    <PageContainer className={LAYOUT.LIST_PAGE.PAGE}>
+      <Card className={cn(LAYOUT.LIST_PAGE.HEADER, LAYOUT.GLASS_CARD.BASE)}>
         <Card.Content className="p-6 flex flex-col gap-6">
           <PageHeader
             title={t("contentpage.servers")}
@@ -556,6 +556,7 @@ export default function ServersPage() {
         </Card.Content>
       </Card>
 
+      <div className={LAYOUT.LIST_PAGE.SCROLL}>
       {(loadError || playerLoadError) && (
         <ModalNotice role="alert" tone="danger">
           <p>{t("audit.usability.content_load_failed")}</p>
@@ -594,6 +595,7 @@ export default function ServersPage() {
           ))}
         </div>
       )}
+      </div>
     </PageContainer>
   );
 }

@@ -539,8 +539,8 @@
       "on_exit_reopen": "런처 다시 열기",
       "on_exit_keep": "아무것도 하지 않음",
       "on_exit_close": "런처 닫기",
-      "minimize_to_tray": "닫을 때 트레이로 최소화",
-      "minimize_to_tray_desc": "창을 닫을 때 프로그램을 종료하지 않고 시스템 트레이로 숨깁니다"
+      "minimize_to_tray": "닫을 때 트레이로 숨기기",
+      "minimize_to_tray_desc": "닫기 버튼을 누르면 종료하지 않고 런처를 시스템 트레이로 숨깁니다. 최소화 버튼은 계속 작업 표시줄로 최소화합니다"
     }
   },
   "downloadmodal": {

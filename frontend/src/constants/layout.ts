@@ -23,5 +23,12 @@ export const LAYOUT = {
     RESULTS_SCROLL: "min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 min-[1200px]:p-4 relative",
     FOOTER: "flex shrink-0 justify-center px-4 py-2 border-t border-border dark:border-white/5 bg-surface/50 launcher-material-panel",
   },
+  /** List pages whose header card stays fixed while only the list scrolls. */
+  LIST_PAGE: {
+    PAGE: "min-h-0 !overflow-hidden",
+    HEADER: "shrink-0",
+    SCROLL: "min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar flex flex-col gap-4 p-1",
+    FOOTER: "flex shrink-0 justify-center",
+  },
   NAVBAR_BG: "launcher-chrome bg-surface/85 backdrop-blur-sm",
 };

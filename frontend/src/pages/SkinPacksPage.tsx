@@ -516,9 +516,9 @@ export default function SkinPacksPage() {
   ]);
 
   return (
-    <PageContainer ref={scrollRef}>
-      <div className="w-full max-w-none pb-12 flex flex-col gap-6">
-        <Card className={LAYOUT.GLASS_CARD.BASE}>
+    <PageContainer className={LAYOUT.LIST_PAGE.PAGE}>
+      <div className="w-full max-w-none min-h-0 flex-1 flex flex-col gap-6">
+        <Card className={cn(LAYOUT.LIST_PAGE.HEADER, LAYOUT.GLASS_CARD.BASE)}>
           <Card.Content className="p-6 flex flex-col gap-6">
             <PageHeader
               title={t("contentpage.skin_packs")}
@@ -796,6 +796,7 @@ export default function SkinPacksPage() {
           }
         />
 
+        <div ref={scrollRef} className={cn(LAYOUT.LIST_PAGE.SCROLL, "pb-12")}>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Spinner size="lg" />
@@ -968,17 +969,18 @@ export default function SkinPacksPage() {
                 </p>
               </div>
             )}
+          </div>
+        )}
+        </div>
 
-            {sort.totalPages > 1 && (
-              <div className="flex justify-center pb-4">
-                <PagePagination
-                  size="sm"
-                  pageCount={sort.totalPages}
-                  currentPage={sort.currentPage}
-                  onPageChange={sort.setCurrentPage}
-                />
-              </div>
-            )}
+        {!loading && sort.totalPages > 1 && (
+          <div className={LAYOUT.LIST_PAGE.FOOTER}>
+            <PagePagination
+              size="sm"
+              pageCount={sort.totalPages}
+              currentPage={sort.currentPage}
+              onPageChange={sort.setCurrentPage}
+            />
           </div>
         )}
       </div>

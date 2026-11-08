@@ -539,8 +539,8 @@
       "on_exit_reopen": "重新打開啟動器",
       "on_exit_keep": "保持原樣",
       "on_exit_close": "關閉啟動器",
-      "minimize_to_tray": "關閉視窗時最小化到系統匣",
-      "minimize_to_tray_desc": "關閉主視窗時將啟動器最小化到系統匣，而不是直接結束"
+      "minimize_to_tray": "關閉視窗時隱藏到系統匣",
+      "minimize_to_tray_desc": "點擊關閉按鈕時將啟動器隱藏到系統匣，而不是結束；最小化按鈕仍最小化到工作列"
     }
   },
   "downloadmodal": {

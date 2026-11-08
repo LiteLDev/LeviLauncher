@@ -6,7 +6,6 @@ import {
   Label,
   Link,
   ListBox,
-  ProgressBar,
   Select,
   Skeleton,
   Spinner,
@@ -208,10 +207,19 @@ const CurseForgeModPage: React.FC = () => {
     };
     cleanupRef.current = cleanup;
 
+    // The file downloader is shared, so only follow events for this file's
+    // destination (DownloadsDir/<base name>, see StartFileDownload).
+    const baseName = (path: string) =>
+      String(path || "").trim().split(/[\\/]/).pop()?.toLowerCase() || "";
+    const expectedName = baseName(file.fileName);
+    const isOwnDest = (dest: unknown) =>
+      typeof dest === "string" && baseName(dest) === expectedName;
+
     try {
       subscriptions.push(Events.On("file.download.progress", (event) => {
         if (!isCurrentAttempt()) return;
         const data = event.data || {};
+        if (!isOwnDest(data.Dest)) return;
         setDownloadProgress({
           downloaded: Number(data.Downloaded || 0),
           total: Number(data.Total || 0),
@@ -220,8 +228,9 @@ const CurseForgeModPage: React.FC = () => {
 
       subscriptions.push(Events.On("file.download.done", async (event) => {
         if (!isCurrentAttempt()) return;
-        cleanup();
         const dest = event.data;
+        if (!isOwnDest(dest)) return;
+        cleanup();
         try {
           let type = "unknown";
           const lowerName = file.fileName.toLowerCase();
@@ -849,7 +858,7 @@ const CurseForgeModPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <Card className={`${LAYOUT.GLASS_CARD.BASE} min-h-[500px]`}>
+        <Card className={LAYOUT.GLASS_CARD.BASE}>
           <Card.Content className="p-6">
             <div ref={tabsRef} className="flex w-full flex-col scroll-mt-24">
               <Tabs
@@ -1301,36 +1310,25 @@ const CurseForgeModPage: React.FC = () => {
         }
       >
         {installStep === "downloading" && (
-          <div className="flex flex-col gap-4 w-full">
-            <ModalDescription>
-              {t("curseforge.install.downloading_body")}
-            </ModalDescription>
-            {downloadProgress ? (
-              <ProgressBar
-                aria-label="Downloading..."
-                value={
-                  (downloadProgress.downloaded / downloadProgress.total) * 100
-                }
-                color={"accent"}
-                className={"w-full"}
-              >
-                {true && <ProgressBar.Output />}
-                <ProgressBar.Track>
-                  <ProgressBar.Fill
-                    className={"bg-brand-500 dark:bg-brand-500"}
-                  />
-                </ProgressBar.Track>
-              </ProgressBar>
-            ) : (
-              <Spinner size="lg" color={"accent"} />
-            )}
-            {downloadProgress && (
-              <ModalDescription>
-                {formatFileSize(downloadProgress.downloaded)} /{" "}
-                {formatFileSize(downloadProgress.total)}
-              </ModalDescription>
-            )}
-          </div>
+          <ModalProgress
+            label={t("curseforge.install.downloading_title")}
+            description={t("curseforge.install.downloading_body")}
+            value={
+              downloadProgress && downloadProgress.total > 0
+                ? Math.min(
+                    100,
+                    (downloadProgress.downloaded / downloadProgress.total) * 100,
+                  )
+                : undefined
+            }
+            detail={
+              downloadProgress
+                ? downloadProgress.total > 0
+                  ? `${formatFileSize(downloadProgress.downloaded)} / ${formatFileSize(downloadProgress.total)}`
+                  : formatFileSize(downloadProgress.downloaded)
+                : undefined
+            }
+          />
         )}
 
         {installStep === "version_select" && (

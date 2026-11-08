@@ -720,7 +720,9 @@ export default function ContentPage() {
           <ModalDescription>
             {t("contentpage.select_player_for_import")}
           </ModalDescription>
-          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar p-1">
+          {/* Viewport-bounded so at 960x600 only this list scrolls, not the
+              modal body as well (modal chrome + description ≈ 20rem). */}
+          <div className="flex flex-col gap-2 max-h-[min(300px,calc(100dvh-20rem))] overflow-y-auto custom-scrollbar p-1">
             {cp.players.length ? (
               cp.players.map((p) => (
                 <Button

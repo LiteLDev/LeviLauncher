@@ -117,14 +117,11 @@ function ProgressRow({
             </span>
           ) : null}
         </div>
-        <div className="flex shrink-0 items-baseline gap-2 tabular-nums text-muted">
-          {amount ? <span>{amount}</span> : null}
-          {value !== undefined ? (
-            <span className="min-w-9 text-right font-medium text-foreground/80 dark:text-zinc-300">
-              {percentText(value)}
-            </span>
-          ) : null}
-        </div>
+        {value !== undefined ? (
+          <span className="min-w-9 shrink-0 text-right font-medium tabular-nums text-foreground/80 dark:text-zinc-300">
+            {percentText(value)}
+          </span>
+        ) : null}
       </div>
       <ProgressBar
         aria-label={detail ? `${label} ${detail}` : label}
@@ -138,12 +135,14 @@ function ProgressRow({
           <ProgressBar.Fill />
         </ProgressBar.Track>
       </ProgressBar>
-      {item ? (
-        <div
-          className="truncate font-mono text-[11px] leading-4 text-muted"
-          title={item}
-        >
-          {item}
+      {item || amount ? (
+        <div className="flex min-w-0 items-baseline justify-between gap-3 text-[11px] leading-4 text-muted">
+          <span className="min-w-0 truncate font-mono" title={item || undefined}>
+            {item}
+          </span>
+          {amount ? (
+            <span className="shrink-0 tabular-nums">{amount}</span>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -220,12 +219,9 @@ export function LipTaskProgressView({
       ) : null}
       {primaryRow}
       {status === "running" && secondary.length > 0 ? (
-        <div
-          className={cn(
-            "flex min-w-0 flex-col gap-3",
-            primaryRow && "border-l-2 border-border/70 pl-3",
-          )}
-        >
+        // Step bars keep the full width so every track shares the same edges;
+        // the non-emphasised label is what marks them as sub-steps.
+        <div className="flex min-w-0 flex-col gap-3">
           {secondary.map((bar) => (
             <ProgressRow
               key={bar.key}

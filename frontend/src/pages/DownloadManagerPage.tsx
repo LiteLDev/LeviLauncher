@@ -34,8 +34,8 @@ export const DownloadManagerPage: React.FC = () => {
   const visibleDownloads = downloads.filter((task) => matchesFilter(task.status, filter));
 
   return (
-    <PageContainer>
-      <Card className={cn("flex-none", LAYOUT.GLASS_CARD.BASE)}>
+    <PageContainer className={LAYOUT.LIST_PAGE.PAGE}>
+      <Card className={cn(LAYOUT.LIST_PAGE.HEADER, LAYOUT.GLASS_CARD.BASE)}>
         <Card.Content className="p-6">
           <PageHeader
             title={t("download_manager.title")}
@@ -52,7 +52,7 @@ export const DownloadManagerPage: React.FC = () => {
         </Card.Content>
       </Card>
 
-      <div className="flex flex-col gap-4">
+      <div className={LAYOUT.LIST_PAGE.SCROLL}>
         {visibleDownloads.length === 0 && (
           <div role="status" className="flex flex-col items-center justify-center gap-4 py-20 text-muted">
             <FaDownload size={48} className="mb-4" />

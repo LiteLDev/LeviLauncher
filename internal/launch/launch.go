@@ -14,22 +14,21 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
-	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"golang.org/x/sys/windows"
 )
 
 const (
-	EventMcLaunchStart         = "mc.launch.start"
-	EventMcLaunchDone          = "mc.launch.done"
-	EventMcLaunchFailed        = "mc.launch.failed"
-	EventGamingServicesMissing = "gamingservices.missing"
+	EventMcLaunchStart  = "mc.launch.start"
+	EventMcLaunchDone   = "mc.launch.done"
+	EventMcLaunchFailed = "mc.launch.failed"
 )
 
 var (
 	quitRequested   atomic.Bool
 	userHidLauncher atomic.Bool
+	closeBlocked    atomic.Bool
 
 	// activeMonitors keys the running monitors by version directory. Force
 	// launches skip the already-running check, so the same game can be asked
@@ -46,6 +45,18 @@ func QuitRequested() bool {
 	return quitRequested.Load()
 }
 
+// SetCloseBlocked records whether the frontend is running an operation that
+// must not be interrupted by closing the window (an install or an update).
+func SetCloseBlocked(blocked bool) {
+	closeBlocked.Store(blocked)
+}
+
+// CloseBlocked reports whether the window close button should hide the
+// launcher instead of quitting, regardless of the minimise-to-tray setting.
+func CloseBlocked() bool {
+	return closeBlocked.Load()
+}
+
 // QuitLauncher terminates the launcher regardless of the minimise-to-tray
 // setting. Every "quit" affordance outside the window close button goes
 // through here.
@@ -54,14 +65,6 @@ func QuitLauncher() {
 	if app := application.Get(); app != nil {
 		app.Quit()
 	}
-}
-
-func EnsureGamingServicesInstalled(ctx context.Context) bool {
-	if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err != nil {
-		eventsink.From(ctx).Emit(EventGamingServicesMissing, struct{}{})
-		return false
-	}
-	return true
 }
 
 func isGameRunning(versionDir string) bool {

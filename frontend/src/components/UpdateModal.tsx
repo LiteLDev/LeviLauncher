@@ -66,7 +66,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
       </>}
     >
       {body ? (
-        <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-border bg-surface-secondary/60 overflow-hidden dark:border-zinc-700 ">
+        <div className="flex flex-col rounded-2xl border border-border bg-surface-secondary/60 overflow-hidden dark:border-zinc-700 ">
           <div className="border-b border-border/80 px-4 py-3 dark:border-zinc-700/80">
             <ModalDescription>
               {t("downloadpage.changelog.title")}
@@ -75,7 +75,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               {version}
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 pr-3 text-sm text-foreground leading-6 wrap-break-word custom-scrollbar dark:text-zinc-300">
+          <div className="max-h-[clamp(6rem,calc(100vh-21rem),28rem)] overflow-y-auto px-4 py-3 pr-3 text-sm text-foreground leading-6 wrap-break-word custom-scrollbar dark:text-zinc-300">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{

@@ -113,9 +113,11 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="max-h-48 overflow-y-auto"
+              className="overflow-hidden"
             >
-              <ModalNotice role="alert" tone="danger">{error || confirmError}</ModalNotice>
+              <div className="max-h-48 overflow-y-auto">
+                <ModalNotice role="alert" tone="danger" className="whitespace-pre-wrap">{error || confirmError}</ModalNotice>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

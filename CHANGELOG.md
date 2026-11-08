@@ -4,7 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Kept the search, sort and filter bars of the resource pack, behavior pack, world, skin pack, server, screenshot and download task pages in place while only the list scrolls; scrolling dialogs (update changelog, process management, mirror selection, lip task console) likewise keep their headers and toolbars fixed
+- Renamed the close-to-tray setting to "Hide to tray on close" and clarified that the minimize button still minimizes to the taskbar
+- Closing the window from the taskbar or with Alt+F4 while an install or update is running now hides the launcher to the tray instead of quitting
+
 ### Fixed
+
+- Removed duplicate busy indicators where a progress bar is already shown (launch dialog, lip cache cleaning, LeviLamina and lip package install dialogs, install page), and showed an indeterminate bar instead of an empty track or nothing before the first progress update
+- Aligned simultaneously shown lip task progress bars and their percentages, and gave the install page's extraction bar the same style as the LeviLamina bar that follows it
+- CurseForge downloads no longer show progress from other downloads running at the same time, or an invalid value when the file size is unknown
+- The launcher update's download bar no longer starts animating again after the download has finished
+- Detail pages for lip packages and CurseForge mods no longer scroll when their content is short
+- Gaming Services is no longer checked at startup when only UWP instances are used
+- The saved window size is no longer overwritten with a minimized or maximized size on close
 
 - Brought the built-in lip in line with lip's latest package-engine fixes: package scripts are passed to `cmd.exe` as written, so quoted paths work; whether a preserved file is kept, and what uninstalling removes, is decided after the package's scripts run; installed dependencies keep their versions when they still fit; updating without arguments handles sources that now give another package; the `mods` folder is only created when an operation changes files; and local paths with `%`, `#` or non-ASCII characters are recorded correctly
 

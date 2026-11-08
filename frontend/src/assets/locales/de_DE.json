@@ -539,8 +539,8 @@
       "on_exit_reopen": "Launcher wieder öffnen",
       "on_exit_keep": "Nichts tun",
       "on_exit_close": "Launcher schließen",
-      "minimize_to_tray": "Beim Schließen ins Tray minimieren",
-      "minimize_to_tray_desc": "Den Launcher beim Schließen ins System-Tray minimieren statt zu beenden"
+      "minimize_to_tray": "Beim Schließen ins Tray ausblenden",
+      "minimize_to_tray_desc": "Ein Klick auf die Schließen-Schaltfläche blendet den Launcher in den Infobereich aus, statt ihn zu beenden; die Minimieren-Schaltfläche minimiert weiterhin in die Taskleiste"
     }
   },
   "downloadmodal": {

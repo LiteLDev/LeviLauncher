@@ -187,6 +187,27 @@ export default function UpdatingPage() {
     "elevating",
     "restarting",
   ].includes(currentStatus);
+  // The download is over once the update moved on to installing; the
+  // backend can skip the "downloaded" status, so infer it from later phases.
+  const downloadDone = [
+    "downloaded",
+    "installing",
+    "verifying",
+    "installed",
+    "restarting",
+  ].includes(currentStatus);
+  const downloadPercent = downloadDone
+    ? 100
+    : total > 0
+      ? Math.max(0, Math.min(100, Math.round((downloaded / total) * 100)))
+      : undefined;
+  // Only an active download of unknown size animates; any other state shows
+  // a settled bar so it never runs alongside the install bar.
+  const downloadIndeterminate =
+    downloadPercent === undefined &&
+    currentStatus === "downloading" &&
+    running &&
+    !errorCode;
 
   return (
     <PageContainer>
@@ -231,45 +252,27 @@ export default function UpdatingPage() {
                           1024
                         ).toFixed(1)} MB`
                       : `${(downloaded / 1024 / 1024).toFixed(1)} MB`}
+                    {downloadPercent !== undefined && downloaded > 0
+                      ? ` · ${downloadPercent}%`
+                      : ""}
                   </div>
                 </div>
-                {total > 0 ? (
-                  <ProgressBar
-                    aria-label={t("updating.phase.download")}
-                    size="md"
-                    value={Math.max(
-                      0,
-                      Math.min(100, Math.round((downloaded / total) * 100)),
-                    )}
-                    color={"success"}
-                    className={"w-full"}
-                  >
-                    <ProgressBar.Track className={"rounded-md"}>
-                      <ProgressBar.Fill
-                        className={
-                          "bg-accent"
-                        }
-                      />
-                    </ProgressBar.Track>
-                  </ProgressBar>
-                ) : (
-                  <ProgressBar
-                    isIndeterminate={currentStatus !== "downloaded"}
-                    aria-label={t("updating.phase.download")}
-                    size="md"
-                    value={currentStatus === "downloaded" ? 100 : undefined}
-                    color={"success"}
-                    className={"w-full"}
-                  >
-                    <ProgressBar.Track className={"rounded-md"}>
-                      <ProgressBar.Fill
-                        className={
-                          "bg-accent"
-                        }
-                      />
-                    </ProgressBar.Track>
-                  </ProgressBar>
-                )}
+                <ProgressBar
+                  isIndeterminate={downloadIndeterminate}
+                  aria-label={t("updating.phase.download")}
+                  size="md"
+                  value={downloadIndeterminate ? undefined : (downloadPercent ?? 0)}
+                  color={"success"}
+                  className={"w-full"}
+                >
+                  <ProgressBar.Track className={"rounded-md"}>
+                    <ProgressBar.Fill
+                      className={
+                        "bg-accent"
+                      }
+                    />
+                  </ProgressBar.Track>
+                </ProgressBar>
               </div>
 
               <div className="space-y-2">

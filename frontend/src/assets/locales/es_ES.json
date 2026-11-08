@@ -539,8 +539,8 @@
       "on_exit_reopen": "Volver a abrir el iniciador",
       "on_exit_keep": "No hacer nada",
       "on_exit_close": "Cerrar el iniciador",
-      "minimize_to_tray": "Minimizar a la bandeja al cerrar",
-      "minimize_to_tray_desc": "Ocultar el iniciador en la bandeja del sistema en lugar de salir al cerrar la ventana"
+      "minimize_to_tray": "Ocultar en la bandeja al cerrar",
+      "minimize_to_tray_desc": "Al pulsar el botón de cerrar, el iniciador se oculta en la bandeja del sistema en lugar de salir; el botón de minimizar sigue minimizando a la barra de tareas"
     }
   },
   "downloadmodal": {

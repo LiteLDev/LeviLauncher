@@ -440,6 +440,12 @@ func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error 
 				break
 			}
 		}
+		// A chunked response has no Content-Length (-1); once the body is fully
+		// read the size is known, so report a complete bar instead of an
+		// unknown total.
+		if ferr == nil && total <= 0 {
+			total = downloaded
+		}
 		eventsink.From(ctx).Emit(EventAppUpdateProgress, AppUpdateProgress{Phase: "download", Downloaded: downloaded, Total: total})
 		cerr := f.Close()
 		resp.Body.Close()

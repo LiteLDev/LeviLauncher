@@ -1,4 +1,4 @@
-import { ModalDescription, ModalDetails } from "@/components/ModalPrimitives";
+import { ModalDescription, ModalDetails, ModalProgress } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -66,6 +66,7 @@ import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { formatDateStr } from "@/utils/formatting";
 import {
   LipTaskProgress,
+  useLipTaskProgress,
   useLipTaskConsole,
 } from "@/utils/LipTaskConsoleContext";
 import { compareVersions } from "@/utils/version";
@@ -224,6 +225,7 @@ const LIPPackagePage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { runWithLipTask } = useLipTaskConsole();
+  const lipProgress = useLipTaskProgress();
   const { currentVersionName } = useCurrentVersion();
   const {
     gameToLLVersions,
@@ -1138,7 +1140,7 @@ const LIPPackagePage: React.FC = () => {
 
   if (loading) {
     return (
-      <PageContainer animate={false} className="min-h-0 no-scrollbar">
+      <PageContainer animate={false} className="min-h-0">
         <Card className={LAYOUT.GLASS_CARD.BASE}>
           <Card.Content className="p-6">
             <div className="flex flex-col md:flex-row gap-6">
@@ -1231,7 +1233,7 @@ const LIPPackagePage: React.FC = () => {
   }
 
   return (
-    <PageContainer animate={false} className="min-h-0 no-scrollbar">
+    <PageContainer animate={false} className="min-h-0">
       <div className="max-w-7xl mx-auto w-full">
         <motion.div
           data-material-motion
@@ -1354,7 +1356,7 @@ const LIPPackagePage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <Card className={cn(LAYOUT.GLASS_CARD.BASE, "min-h-[500px]")}>
+          <Card className={LAYOUT.GLASS_CARD.BASE}>
             <Card.Content className="p-6 overflow-hidden">
               <div ref={tabsRef} className="flex w-full flex-col scroll-mt-24">
                 <Tabs
@@ -1534,13 +1536,17 @@ const LIPPackagePage: React.FC = () => {
         icon={<LuGamepad2 size={24} />}
         title={t("lip.files.select_instance_title")}
         isDismissable={!actionRunning}
-        isPending={actionRunning}
+        // Not isPending: the dialog body shows the task progress, so the
+        // confirm button only needs to be disabled, not spin as well.
+        isKeyboardDismissDisabled={actionRunning}
         showCancelButton
+        cancelButtonProps={{ isDisabled: actionRunning }}
         onCancel={closeInstallDialog}
         onConfirm={() => void handleConfirmInstall()}
         confirmText={t(installDialogPrimaryActionLabelKey)}
         confirmButtonProps={{
           isDisabled:
+            actionRunning ||
             !installDialogSelectedInstance ||
             !installDialogTriggerVersion ||
             dialogPackageStateLoading ||
@@ -1651,7 +1657,13 @@ const LIPPackagePage: React.FC = () => {
               })}
             </div>
           ) : null}
-          {actionRunning ? <LipTaskProgress className="pt-1" /> : null}
+          {actionRunning ? (
+            lipProgress.status === "running" ? (
+              <LipTaskProgress className="pt-1" />
+            ) : (
+              <ModalProgress label={t(installDialogPrimaryActionLabelKey)} />
+            )
+          ) : null}
         </div>
       </UnifiedModal>
 

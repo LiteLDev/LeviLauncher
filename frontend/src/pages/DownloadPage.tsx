@@ -1235,7 +1235,6 @@ export const DownloadPage: React.FC = () => {
           type="primary"
           title={t("downloadpage.mirror.title")}
           icon={<FaCloudDownloadAlt size={24} />}
-          hideScrollbar={true}
           showConfirmButton={false}
           showCancelButton={false}
           footer={
@@ -1445,7 +1444,10 @@ export const DownloadPage: React.FC = () => {
                   <div className="text-sm font-bold text-foreground dark:text-zinc-300 uppercase tracking-wider px-1">
                     {t("downloadpage.mirror.others")}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {/* Only this list scrolls: the target panel, recommended
+                      mirror and headings above stay put. The bound is the
+                      modal's height minus that fixed content (~35rem). */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 content-start max-h-[calc(100dvh-35rem)] min-h-12 overflow-y-auto pr-1 scrollbar-thin">
                     {mirrorResults.map((m, i) => (
                       <div
                         key={`mirror-${i}`}

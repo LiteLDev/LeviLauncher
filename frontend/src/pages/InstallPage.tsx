@@ -10,7 +10,7 @@ import {
   Label,
   ListBox,
   Select,
-  Spinner,
+  ProgressBar,
   Switch,
   TextField,
   toast,
@@ -21,13 +21,14 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FaChevronDown } from "react-icons/fa";
+import { FaChevronDown, FaDownload } from "react-icons/fa";
 import { ROUTES } from "@/constants/routes";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import {
   LipTaskProgress,
   useLipTaskConsole,
+  useLipTaskProgress,
 } from "@/utils/LipTaskConsoleContext";
 import { resolveInstallError } from "@/utils/installError";
 import { saveCurrentVersionName } from "@/utils/currentVersion";
@@ -68,9 +69,64 @@ function readInstallIsolationPreference(): boolean {
   return true;
 }
 
+function formatInstallSize(n: number): string {
+  const kb = 1024;
+  const mb = kb * 1024;
+  const gb = mb * 1024;
+  if (n >= gb) return (n / gb).toFixed(2) + " GB";
+  if (n >= mb) return (n / mb).toFixed(2) + " MB";
+  if (n >= kb) return (n / kb).toFixed(2) + " KB";
+  return n + " B";
+}
+
+// Mirrors LipTaskProgressView's row (label + amount/percent above a small
+// bar) so the extract bar and the LeviLamina step look the same in one slot.
+function InstallProgressRow({
+  label,
+  amount,
+  value,
+  className,
+}: {
+  label: string;
+  amount?: string;
+  value?: number;
+  className?: string;
+}) {
+  return (
+    <div className={cn("min-w-0 space-y-1.5", className)}>
+      <div className="flex min-w-0 items-baseline justify-between gap-3 text-xs leading-5">
+        <span className="min-w-0 truncate font-semibold text-foreground">
+          {label}
+        </span>
+        <div className="flex shrink-0 items-baseline gap-2 tabular-nums text-muted">
+          {amount ? <span>{amount}</span> : null}
+          {value !== undefined ? (
+            <span className="min-w-9 text-right font-medium text-foreground/80 dark:text-zinc-300">
+              {`${Math.floor(value)}%`}
+            </span>
+          ) : null}
+        </div>
+      </div>
+      <ProgressBar
+        aria-label={label}
+        value={value}
+        isIndeterminate={value === undefined}
+        size="sm"
+        color="accent"
+        className="w-full"
+      >
+        <ProgressBar.Track>
+          <ProgressBar.Fill />
+        </ProgressBar.Track>
+      </ProgressBar>
+    </div>
+  );
+}
+
 export default function InstallPage() {
   const { t } = useTranslation();
   const { runWithLipTask } = useLipTaskConsole();
+  const lipProgress = useLipTaskProgress();
   const navigate = useNavigate();
   const location = useLocation() as any;
   const { refreshAll } = useVersionStatus();
@@ -719,11 +775,8 @@ export default function InstallPage() {
               <Card className={LAYOUT.GLASS_CARD.BASE}>
                 <Card.Content className="py-12">
                   <div className="flex flex-col items-center justify-center h-full gap-4">
-                    <div className="relative flex items-center justify-center">
-                      <div className="absolute inset-0 bg-brand-500/20 blur-xl rounded-full animate-pulse" />
-                      <div className="w-16 h-16 rounded-full bg-surface dark:bg-surface-secondary border-4 border-border dark:border-zinc-700 flex items-center justify-center relative z-10">
-                        <Spinner size="md" color={"accent"} />
-                      </div>
+                    <div className="w-16 h-16 rounded-full bg-surface dark:bg-surface-secondary border-4 border-border dark:border-zinc-700 flex items-center justify-center">
+                      <FaDownload className="w-5 h-5 text-accent" />
                     </div>
 
                     <div className="flex flex-col items-center gap-1 text-center max-w-sm">
@@ -759,85 +812,38 @@ export default function InstallPage() {
                       )}
 
                       {installingLL ? (
-                        <LipTaskProgress className="mt-1 px-1" />
+                        lipProgress.status === "running" ? (
+                          <LipTaskProgress className="mt-1 px-1" />
+                        ) : (
+                          <InstallProgressRow
+                            className="mt-1 px-1"
+                            label={t("lip.task_console.waiting_start")}
+                          />
+                        )
                       ) : (
-                        <div className="mt-1 flex flex-col gap-2">
-                          <div className="h-1.5 w-full rounded-full bg-surface-tertiary/50 overflow-hidden border border-border dark:border-white/5 relative">
-                            {extractInfo?.totalBytes ? (
-                              <motion.div
-                                className="h-full bg-brand-500 rounded-full"
-                                initial={{ width: 0 }}
-                                animate={{
-                                  width: `${Math.min(
-                                    100,
-                                    Math.max(
-                                      0,
-                                      (extractInfo.bytes /
-                                        extractInfo.totalBytes) *
-                                        100,
-                                    ),
-                                  )}%`,
-                                }}
-                                transition={{ duration: 0.3, ease: "easeOut" }}
-                              />
-                            ) : (
-                              <></>
-                            )}
-                          </div>
-
-                          {typeof extractInfo?.bytes === "number" &&
-                          extractInfo.bytes > 0 ? (
-                            <div className="flex justify-between text-xs text-muted dark:text-zinc-400 font-medium">
-                              <span>
-                                {extractInfo.totalBytes
-                                  ? (() => {
-                                      const formatSize = (n: number) => {
-                                        const kb = 1024;
-                                        const mb = kb * 1024;
-                                        const gb = mb * 1024;
-                                        if (n >= gb)
-                                          return (n / gb).toFixed(2) + " GB";
-                                        if (n >= mb)
-                                          return (n / mb).toFixed(2) + " MB";
-                                        if (n >= kb)
-                                          return (n / kb).toFixed(2) + " KB";
-                                        return n + " B";
-                                      };
-                                      return `${formatSize(extractInfo.bytes)} / ${formatSize(extractInfo.totalBytes)}`;
-                                    })()
-                                  : t("downloadpage.install.estimated_size")}
-                              </span>
-                              <span className="font-mono">
-                                {(() => {
-                                  const formatSize = (n: number) => {
-                                    const kb = 1024;
-                                    const mb = kb * 1024;
-                                    const gb = mb * 1024;
-                                    if (n >= gb)
-                                      return (n / gb).toFixed(2) + " GB";
-                                    if (n >= mb)
-                                      return (n / mb).toFixed(2) + " MB";
-                                    if (n >= kb)
-                                      return (n / kb).toFixed(2) + " KB";
-                                    return n + " B";
-                                  };
-                                  const current = formatSize(
-                                    extractInfo?.bytes ?? 0,
-                                  );
-                                  if (extractInfo?.totalBytes) {
-                                    const percent = (
-                                      (extractInfo.bytes /
-                                        extractInfo.totalBytes) *
-                                      100
-                                    ).toFixed(1);
-                                    return `${percent}%`;
-                                  }
-                                  return current;
-                                })()}
-                              </span>
-                            </div>
-                          ) : null}
-                        </div>
+                        <InstallProgressRow
+                          className="mt-1 px-1"
+                          label={t("downloadpage.install.progress")}
+                          amount={
+                            extractInfo?.totalBytes
+                              ? `${formatInstallSize(extractInfo.bytes)} / ${formatInstallSize(extractInfo.totalBytes)}`
+                              : extractInfo && extractInfo.bytes > 0
+                                ? formatInstallSize(extractInfo.bytes)
+                                : undefined
+                          }
+                          value={
+                            extractInfo?.totalBytes
+                              ? Math.min(
+                                  100,
+                                  Math.max(
+                                    0,
+                                    (extractInfo.bytes / extractInfo.totalBytes) *
+                                      100,
+                                  ),
+                                )
+                              : undefined
+                          }
+                        />
                       )}
                     </div>
                   </div>

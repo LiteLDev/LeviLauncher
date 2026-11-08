@@ -365,8 +365,8 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
   ]);
 
   return (
-    <PageContainer ref={scrollRef}>
-      <Card className={LAYOUT.GLASS_CARD.BASE}>
+    <PageContainer className={LAYOUT.LIST_PAGE.PAGE}>
+      <Card className={cn(LAYOUT.LIST_PAGE.HEADER, LAYOUT.GLASS_CARD.BASE)}>
         <Card.Content className="p-6 flex flex-col gap-6">
           <PageHeader
             title={isResource ? t("contentpage.resource_packs") : t("contentpage.behavior_packs")}
@@ -559,6 +559,7 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
         }
       />
 
+      <div ref={scrollRef} className={LAYOUT.LIST_PAGE.SCROLL}>
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
@@ -731,19 +732,18 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
               </p>
             </div>
           )}
+        </div>
+      )}
+      </div>
 
-          {sort.totalPages > 1 && (
-            <div className="relative h-12">
-              <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full flex justify-center">
-                <PagePagination
-                  size="sm"
-                  pageCount={sort.totalPages}
-                  currentPage={sort.currentPage}
-                  onPageChange={sort.setCurrentPage}
-                />
-              </div>
-            </div>
-          )}
+      {!loading && sort.totalPages > 1 && (
+        <div className={LAYOUT.LIST_PAGE.FOOTER}>
+          <PagePagination
+            size="sm"
+            pageCount={sort.totalPages}
+            currentPage={sort.currentPage}
+            onPageChange={sort.setCurrentPage}
+          />
         </div>
       )}
       {/* Delete Confirmation Modal */}

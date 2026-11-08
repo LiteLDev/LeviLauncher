@@ -539,8 +539,8 @@
       "on_exit_reopen": "重新打开启动器",
       "on_exit_keep": "保持原样",
       "on_exit_close": "关闭启动器",
-      "minimize_to_tray": "关闭窗口时最小化到托盘",
-      "minimize_to_tray_desc": "关闭主窗口时将启动器最小化到系统托盘，而不是直接退出"
+      "minimize_to_tray": "关闭窗口时隐藏到托盘",
+      "minimize_to_tray_desc": "点击关闭按钮时将启动器隐藏到系统托盘，而不是退出；最小化按钮仍最小化到任务栏"
     }
   },
   "downloadmodal": {

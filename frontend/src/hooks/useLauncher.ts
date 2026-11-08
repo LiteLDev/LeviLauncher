@@ -657,14 +657,24 @@ export const useLauncher = (args: any) => {
       if (
         !hasSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput)
       ) {
-        markSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput);
+        // Mark only once a result arrives, like the VC runtime check, so a
+        // failed check is retried on the next mount instead of being lost
+        // for the rest of the session.
         try {
-          minecraft?.IsGameInputInstalled?.().then((ok: boolean) => {
-            if (disposed) return;
-            if (!ok) {
-              gameInputMissingDisclosure.open();
-            }
-          });
+          minecraft
+            ?.IsGameInputInstalled?.()
+            .then((ok: boolean) => {
+              if (disposed) return;
+              markSessionDependencyCheckRun(
+                DEPENDENCY_CHECK_SESSION_KEYS.gameInput,
+              );
+              if (!ok) {
+                gameInputMissingDisclosure.open();
+              }
+            })
+            .catch((error: unknown) => {
+              console.warn("Failed to check GameInput status", error);
+            });
         } catch {}
       }
       if (
@@ -672,18 +682,23 @@ export const useLauncher = (args: any) => {
           DEPENDENCY_CHECK_SESSION_KEYS.gamingServices,
         )
       ) {
-        markSessionDependencyCheckRun(
-          DEPENDENCY_CHECK_SESSION_KEYS.gamingServices,
-        );
         try {
           const ig = String(localStorage.getItem(IGNORE_GS_KEY) || "") === "1";
           if (!ig) {
-            minecraft?.IsGamingServicesInstalled?.().then((ok: boolean) => {
-              if (disposed) return;
-              if (!ok) {
-                gamingServicesMissingDisclosure.open();
-              }
-            });
+            minecraft
+              ?.IsGamingServicesInstalled?.()
+              .then((ok: boolean) => {
+                if (disposed) return;
+                markSessionDependencyCheckRun(
+                  DEPENDENCY_CHECK_SESSION_KEYS.gamingServices,
+                );
+                if (!ok) {
+                  gamingServicesMissingDisclosure.open();
+                }
+              })
+              .catch((error: unknown) => {
+                console.warn("Failed to check Gaming Services status", error);
+              });
           }
         } catch {}
       }
@@ -821,12 +836,6 @@ export const useLauncher = (args: any) => {
       }
     });
 
-    const unlistenGsMissing = Events.On("gamingservices.missing", () => {
-      const ig = String(localStorage.getItem(IGNORE_GS_KEY) || "") === "1";
-      if (ig) return;
-      gamingServicesMissingDisclosure.open();
-    });
-
     return () => {
       try {
         unlistenGiStart && (unlistenGiStart as any)();
@@ -857,9 +866,6 @@ export const useLauncher = (args: any) => {
       } catch {}
       try {
         unlistenVcDone && (unlistenVcDone as any)();
-      } catch {}
-      try {
-        unlistenGsMissing && (unlistenGsMissing as any)();
       } catch {}
     };
   }, []);

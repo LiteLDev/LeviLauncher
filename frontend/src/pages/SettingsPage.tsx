@@ -2545,21 +2545,13 @@ export const SettingsPage: React.FC = () => {
                           });
                         }}
                         variant={"outline"}
-                        isPending={cleaningLipCache}
                         className={"rounded-full"}
                       >
-                        {({ isPending }) => (
-                          <>
-                            <Spinner
-                              size="sm"
-                              color="current"
-                              className={isPending ? "" : "hidden"}
-                            />
-                            {cleaningLipCache
-                              ? t("settings.lip.cache_cleaning")
-                              : t("settings.lip.cache_clean_button")}
-                          </>
-                        )}
+                        {/* Busy state is the progress bar below (it shows a
+                            "waiting to start" row before lip reports). */}
+                        {cleaningLipCache
+                          ? t("settings.lip.cache_cleaning")
+                          : t("settings.lip.cache_clean_button")}
                       </Button>
                     </div>
                   </div>
@@ -3056,7 +3048,7 @@ export const SettingsPage: React.FC = () => {
           </ModalAction>
         }
       >
-        <div className="flex items-center justify-end mb-4 gap-2">
+        <div className="flex shrink-0 items-center justify-end gap-2">
           <Button
             size="sm"
             onPress={() => void refreshProcesses()}
@@ -3095,11 +3087,13 @@ export const SettingsPage: React.FC = () => {
               {t("settings.process.no_process")}
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            // Bounded so the scan / kill-all toolbar above stays put and only
+            // this list scrolls (modal chrome + toolbar ≈ 100dvh - 20rem).
+            <div className="flex max-h-[calc(100dvh-21rem)] min-h-24 flex-col gap-2 overflow-y-auto pr-1 scrollbar-thin">
               {processes.map((p) => (
                 <ModalPanel
                   key={p.pid}
-                  className="flex items-center justify-between"
+                  className="flex shrink-0 items-center justify-between"
                 >
                   <div className="flex flex-col gap-1 overflow-hidden">
                     <div className="flex items-center gap-2">

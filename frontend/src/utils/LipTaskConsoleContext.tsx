@@ -1,5 +1,6 @@
 import { ModalAction, ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
 import { LipTaskProgressView } from "@/components/LipTaskProgressView";
+import { cn } from "@/utils/cn";
 import { Button, Chip, toast } from "@heroui/react";
 
 import React, {
@@ -840,7 +841,19 @@ export const LipTaskConsoleProvider: React.FC<{
           {compact ? (
             <div className="flex min-w-0 flex-col gap-4">
               {statusHeader}
-              <LipTaskProgressView snapshot={progressSnapshot} />
+              {/* The bars get their own bounded scroll region (tighter while
+                  the log is open) so a long list of step bars never pushes
+                  the modal body into a second scrollbar at 960x600. */}
+              <div
+                className={cn(
+                  "min-w-0 overflow-y-auto custom-scrollbar",
+                  logExpanded
+                    ? "max-h-[clamp(4.5rem,calc(100vh-30rem),16rem)]"
+                    : "max-h-[clamp(6rem,calc(100vh-18rem),28rem)]",
+                )}
+              >
+                <LipTaskProgressView snapshot={progressSnapshot} />
+              </div>
               <div className="flex min-w-0 flex-col gap-2">
                 <Button
                   size="sm"
@@ -867,26 +880,28 @@ export const LipTaskConsoleProvider: React.FC<{
             </div>
           ) : (
             <div className="flex h-[min(52vh,32rem)] min-h-[15rem] flex-col gap-3">
-              <div className="shrink-0 space-y-3">
-                {statusHeader}
-                <div className="space-y-2">
-                  <div className="text-xs text-muted dark:text-zinc-400">
-                    {t("lip.task_console.progress_label")}
-                  </div>
+              <div className="shrink-0">{statusHeader}</div>
+              {/* Bars shrink and scroll on their own before the log loses its
+                  guaranteed minimum height. */}
+              <div className="flex min-h-0 shrink flex-col gap-2">
+                <div className="shrink-0 text-xs text-muted dark:text-zinc-400">
+                  {t("lip.task_console.progress_label")}
+                </div>
+                <div className="min-h-0 overflow-y-auto custom-scrollbar">
                   <LipTaskProgressView snapshot={progressSnapshot} />
                 </div>
-
-                {errorText ? (
-                  <ModalNotice
-                    tone="danger"
-                    className="whitespace-pre-wrap break-all"
-                  >
-                    {errorText}
-                  </ModalNotice>
-                ) : null}
               </div>
 
-              <div className="min-h-0 flex flex-1 flex-col space-y-1">
+              {errorText ? (
+                <ModalNotice
+                  tone="danger"
+                  className="max-h-24 shrink-0 overflow-y-auto whitespace-pre-wrap break-all custom-scrollbar"
+                >
+                  {errorText}
+                </ModalNotice>
+              ) : null}
+
+              <div className="flex min-h-[7rem] flex-1 flex-col space-y-1">
                 <ModalDescription>
                   {t("lip.task_console.log_title")}
                 </ModalDescription>

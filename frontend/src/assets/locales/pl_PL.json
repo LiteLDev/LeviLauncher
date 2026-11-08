@@ -539,8 +539,8 @@
       "on_exit_reopen": "Otwórz launcher ponownie",
       "on_exit_keep": "Nic nie rób",
       "on_exit_close": "Zamknij launcher",
-      "minimize_to_tray": "Minimalizuj do zasobnika przy zamykaniu",
-      "minimize_to_tray_desc": "Przy zamykaniu okna ukryj launcher w zasobniku systemowym, zamiast go zamykać"
+      "minimize_to_tray": "Ukrywaj w zasobniku przy zamykaniu",
+      "minimize_to_tray_desc": "Kliknięcie przycisku zamykania ukrywa launcher w zasobniku systemowym zamiast go zamykać; przycisk minimalizacji nadal minimalizuje do paska zadań"
     }
   },
   "downloadmodal": {

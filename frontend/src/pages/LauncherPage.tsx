@@ -1108,7 +1108,6 @@ export const LauncherPage = (args: any) => {
         >
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-4">
-              <Spinner size="lg" color={"accent"} />
               <div className="flex flex-col gap-1">
                 <motion.p
                   className="text-foreground dark:text-zinc-300 font-medium"

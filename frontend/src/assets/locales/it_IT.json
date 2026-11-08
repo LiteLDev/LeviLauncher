@@ -539,8 +539,8 @@
       "on_exit_reopen": "Riapri il launcher",
       "on_exit_keep": "Non fare nulla",
       "on_exit_close": "Chiudi il launcher",
-      "minimize_to_tray": "Riduci nella barra delle applicazioni alla chiusura",
-      "minimize_to_tray_desc": "Nascondi il launcher nella barra di sistema alla chiusura invece di uscire"
+      "minimize_to_tray": "Nascondi nell'area di notifica alla chiusura",
+      "minimize_to_tray_desc": "Facendo clic sul pulsante di chiusura il launcher viene nascosto nell'area di notifica invece di uscire; il pulsante di riduzione riduce ancora a icona nella barra delle applicazioni"
     }
   },
   "downloadmodal": {

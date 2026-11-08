@@ -248,8 +248,8 @@ export default function ScreenshotsPage() {
   );
 
   return (
-    <PageContainer ref={scrollRef}>
-      <Card className={LAYOUT.GLASS_CARD.BASE}>
+    <PageContainer className={LAYOUT.LIST_PAGE.PAGE}>
+      <Card className={cn(LAYOUT.LIST_PAGE.HEADER, LAYOUT.GLASS_CARD.BASE)}>
         <Card.Content className="p-6 flex flex-col gap-6">
           <PageHeader
             title={t("contentpage.screenshots")}
@@ -331,6 +331,7 @@ export default function ScreenshotsPage() {
         isSelectMode={selection.isSelectMode}
       />
 
+      <div ref={scrollRef} className={LAYOUT.LIST_PAGE.SCROLL}>
       {(!player && roots.packageType !== "uwp") || (!loading && !currentVersionName) ? (
         <div role="status" className="flex flex-col items-center gap-4 py-16 text-muted">
           <p>{t(!player ? "contentpage.screenshot_select_player" : "contentpage.screenshot_no_instance")}</p>
@@ -484,6 +485,7 @@ export default function ScreenshotsPage() {
           )}
         </div>
       )}
+      </div>
 
       {/* Single Delete Modal */}
       <DeleteConfirmModal

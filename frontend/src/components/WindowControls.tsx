@@ -2,8 +2,27 @@ import { cn } from "@/utils/cn";
 import { Button } from "@heroui/react";
 import React, { useEffect, useState } from "react";
 
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { Events, Window } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
+
+// Several WindowControls can be mounted at once (top bar and navbar layouts),
+// so the backend close guard is held while any of them reports a lock.
+let closeBlockHolders = 0;
+
+const syncCloseBlocked = () => {
+  try {
+    const setCloseBlocked = (minecraft as any)?.SetCloseBlocked;
+    if (typeof setCloseBlocked !== "function") return;
+    void Promise.resolve(setCloseBlocked(closeBlockHolders > 0)).catch(
+      () => {},
+    );
+  } catch {}
+};
+
+// A webview reload drops the counter without running effect cleanups; clear
+// any flag a previous page instance left set in the backend.
+syncCloseBlocked();
 
 const controlButtonClassName =
   "wails-no-drag size-8 min-w-8 shrink-0 rounded-lg p-0 hover:bg-default data-[hovered=true]:bg-default";
@@ -45,6 +64,20 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
 }) => {
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
+  const closeLocked = navLocked && !isOnboardingMode;
+
+  // The close button below is disabled while locked, but a taskbar close or
+  // Alt+F4 bypasses it; tell the backend so its close hook hides to the tray
+  // instead of quitting mid-install.
+  useEffect(() => {
+    if (!closeLocked) return;
+    closeBlockHolders += 1;
+    syncCloseBlocked();
+    return () => {
+      closeBlockHolders = Math.max(0, closeBlockHolders - 1);
+      syncCloseBlocked();
+    };
+  }, [closeLocked]);
 
   useEffect(() => {
     let disposed = false;

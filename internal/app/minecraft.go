@@ -320,7 +320,6 @@ func (a *Minecraft) StartupEssential() {
 //
 //wails:ignore
 func (a *Minecraft) StartupDeferred() {
-	launch.EnsureGamingServicesInstalled(a.ctx)
 	mcservice.ReconcileRegisteredFlags()
 	storage.CleanImports()
 	mcservice.RepairMigratedShortcuts()
@@ -534,6 +533,10 @@ func (a *Minecraft) SetTrayLabels(show string, exit string) string {
 }
 
 func (a *Minecraft) QuitLauncher() { launch.QuitLauncher() }
+
+// SetCloseBlocked lets the frontend mark an install or update in progress, so
+// closing the window hides it to the tray instead of quitting.
+func (a *Minecraft) SetCloseBlocked(blocked bool) { launch.SetCloseBlocked(blocked) }
 
 func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
 

@@ -1019,6 +1019,7 @@
     "ERR_AUTH_DEVICE_CACHE": "無法讀取裝置授權快取，請檢查目前 Windows 使用者與檔案權限。",
     "ERR_AUTH_DEVICE_BUSY": "帳戶正被另一項操作使用，請稍後再試。",
     "ERR_AUTH_DEVICE_PROVISION": "裝置授權失敗，請檢查網絡後重試。",
+    "ERR_AUTH_DEVICE_TOKEN": "微軟未簽發裝置授權權杖。請關閉代理或網絡加速器，確認系統時間準確後重試。",
     "ERR_AUTH_ACCOUNT_CHANGED": "目前的 Microsoft 帳戶已變更。請透過啟動器頭像重新整理帳戶，然後重試。",
     "ERR_AUTH_INTERACTION_REQUIRED": "請先在 Windows 登入擁有此遊戲的 Microsoft 帳戶，然後透過啟動器頭像重新整理帳戶並重試。",
     "ERR_LICENSE_NOT_ENTITLED": "目前帳戶沒有此版本的授權。",

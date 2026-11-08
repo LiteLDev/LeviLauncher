@@ -25,6 +25,9 @@ All notable changes to this project will be documented in this file.
 - Detail pages for lip packages and CurseForge mods no longer scroll when their content is short
 - Gaming Services is no longer checked at startup when only UWP instances are used
 - The saved window size is no longer overwritten with a minimized or maximized size on close
+- Installing a GDK version no longer fails over and over with `ERR_NATIVE_MSIXVC: missing device STS` when Microsoft stops accepting the launcher's registered device: the launcher registers a new device once and retries, keeping the old credential as `device.dpapi.rejected` in the accounts folder
+- When Microsoft still does not issue the device token, the install error is now `ERR_AUTH_DEVICE_TOKEN` and shows which step failed with its HTTP status and fault codes, or that login.live.com could not be reached or was answered by something else (such as a proxy), instead of suggesting a damaged download
+- GDK install errors in the GUI and CLI now include the failure reason after the error code
 
 - Brought the built-in lip in line with lip's latest package-engine fixes: package scripts are passed to `cmd.exe` as written, so quoted paths work; whether a preserved file is kept, and what uninstalling removes, is decided after the package's scripts run; installed dependencies keep their versions when they still fit; updating without arguments handles sources that now give another package; the `mods` folder is only created when an operation changes files; and local paths with `%`, `#` or non-ASCII characters are recorded correctly
 

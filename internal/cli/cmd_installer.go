@@ -188,6 +188,7 @@ func init() {
 		"ERR_AUTH_ACCOUNT_SELECTION": {Exit: ExitAuth, Message: "the saved Microsoft account cannot be used", Hint: ProgramName + " account login"},
 		"ERR_AUTH_DEVICE_CACHE":      {Exit: ExitAuth, Message: "the device licence cache cannot be used"},
 		"ERR_AUTH_DEVICE_PROVISION":  {Exit: ExitAuth, Message: "this device could not be registered for game licences"},
+		"ERR_AUTH_DEVICE_TOKEN":      {Exit: ExitNetwork, Message: "Microsoft did not issue a device licence token", Hint: "turn off any proxy or network accelerator, check the system clock, then try again"},
 		"ERR_LICENSE_NOT_ENTITLED": {Exit: ExitAuth, Message: "the signed-in Microsoft account does not own Minecraft for Windows",
 			Hint: ProgramName + " account login (with the account that bought the game)"},
 		"ERR_LICENSE_FULL_REQUIRED":   {Exit: ExitAuth, Message: "the signed-in account only has a trial licence; the full game is needed"},

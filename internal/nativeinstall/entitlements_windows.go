@@ -207,8 +207,7 @@ func checkGameLicenses(ctx context.Context, dir, expectedXUID string, forceRefre
 		acquireUserTicket(ctx, func(ctx context.Context) (string, string, error) {
 			return xbox.GetStoreTicketForUser(ctx, expectedXUID)
 		})
-		ensureDevice()
-		device := ownDeviceTicket()
+		device := deviceTicket()
 		if result.Release != "authorized" {
 			result.Release = checkChannelLicense(ctx, device, releaseProductID, "Microsoft.MinecraftUWP_8wekyb3d8bbwe")
 		}

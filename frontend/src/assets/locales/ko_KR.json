@@ -1019,6 +1019,7 @@
     "ERR_AUTH_DEVICE_CACHE": "장치 인증 캐시를 읽을 수 없습니다. 현재 Windows 사용자와 파일 권한을 확인하세요.",
     "ERR_AUTH_DEVICE_BUSY": "이 계정이 다른 작업에서 사용 중입니다. 잠시 후 다시 시도하세요.",
     "ERR_AUTH_DEVICE_PROVISION": "장치 인증에 실패했습니다. 네트워크를 확인한 뒤 다시 시도하세요.",
+    "ERR_AUTH_DEVICE_TOKEN": "Microsoft에서 장치 라이선스 토큰을 발급하지 않았습니다. 프록시나 네트워크 가속기를 끄고 시스템 시간이 정확한지 확인한 뒤 다시 시도하세요.",
     "ERR_AUTH_ACCOUNT_CHANGED": "Microsoft 계정이 변경되었습니다. 런처 아바타에서 계정을 새로 고친 후 다시 시도하세요.",
     "ERR_AUTH_INTERACTION_REQUIRED": "이 게임을 소유한 Microsoft 계정으로 Windows에 로그인한 후 런처 아바타에서 계정을 새로 고치고 다시 시도하세요.",
     "ERR_LICENSE_NOT_ENTITLED": "이 계정은 이 버전을 소유하고 있지 않습니다.",

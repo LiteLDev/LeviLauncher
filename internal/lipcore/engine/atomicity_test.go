@@ -24,7 +24,7 @@ import (
 func (h *harness) addModZip(name, extra string) {
 	url := "https://example.com/" + name + ".mcmod"
 	h.addDownload(url, mcmod(name))
-	h.addZip(strings.ToLower(name)+".zip", "lip.yaml", lipYAML("example.com/"+strings.ToLower(name), "1.0.0",
+	h.addZip(strings.ToLower(name)+".zip", "lip.toml", lipJSON("example.com/"+strings.ToLower(name), "1.0.0",
 		extra+` "assets": [ { "type": "mcmod", "urls": [ "`+url+`" ] } ]`))
 }
 
@@ -34,7 +34,7 @@ func hooks(stage, command string) string {
 
 func TestInstallAssetCannotBeDownloadedChangesNothing(t *testing.T) {
 	h := newHarness(t)
-	h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0",
+	h.addZip("x.zip", "lip.toml", lipJSON("example.com/x", "1.0.0",
 		`"assets": [ { "type": "zip", "urls": [ "https://example.com/missing.zip" ], "place": [ { "src": "a", "dest": "a" } ] } ]`))
 	before := h.snapshot()
 	err := h.install("x.zip")
@@ -91,7 +91,7 @@ func TestInstallPreInstallFailsUndoesLayout(t *testing.T) {
 	delete(after, ".lip")
 	equalMaps(t, after, before)
 	if h.hasLock() {
-		t.Fatal("workspace file written")
+		t.Fatal("state file written")
 	}
 }
 
@@ -236,7 +236,7 @@ func TestInstallSucceedsLeavesNoBackupJournalOrStagedFile(t *testing.T) {
 	for _, e := range entries {
 		names = append(names, e.Name())
 	}
-	equal(t, names, []string{"lock", "workspace.yaml"})
+	equal(t, names, []string{"lock", "state.json"})
 	for k := range h.snapshot() {
 		if strings.Contains(k, ".bak") {
 			t.Fatalf("backup left: %s", k)

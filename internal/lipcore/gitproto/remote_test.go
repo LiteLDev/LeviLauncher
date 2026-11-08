@@ -167,7 +167,7 @@ func createRepositoryPack(includeBlobs bool) (pack []byte, tagID string, blobIDs
 		treeItem{"100644", "README.md", readmeID},
 		treeItem{"40000", "bin", binTreeID},
 		treeItem{"160000", "submodule", strings.Repeat("d", 40)},
-		treeItem{"100644", "lip.yaml", packageFileID})
+		treeItem{"100644", "lip.toml", packageFileID})
 	commit := commitData(objectID(gitpack.ObjTree, rootTree))
 	tag := tagData(objectID(gitpack.ObjCommit, commit))
 
@@ -184,7 +184,7 @@ func createRepositoryPack(includeBlobs bool) (pack []byte, tagID string, blobIDs
 	return b.build(), objectID(gitpack.ObjTag, tag), map[string]string{
 		"README.md":  readmeID,
 		"bin/run.sh": scriptID,
-		"lip.yaml":   packageFileID,
+		"lip.toml":   packageFileID,
 	}
 }
 
@@ -513,14 +513,14 @@ func TestRemoteFetchBlobsProxyIncompletePack(t *testing.T) {
 	})
 	var received []string
 	err := h.client("https://proxy.example.com/gh").FetchBlobs(context.Background(), "https://github.com/owner/repo.git",
-		[]string{blobIDs["lip.yaml"], blobIDs["README.md"]}, func(oid string, _ []byte) error {
+		[]string{blobIDs["lip.toml"], blobIDs["README.md"]}, func(oid string, _ []byte) error {
 			received = append(received, oid)
 			return nil
 		})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{blobIDs["README.md"], blobIDs["lip.yaml"]}
+	want := []string{blobIDs["README.md"], blobIDs["lip.toml"]}
 	sort.Strings(want)
 	sort.Strings(received)
 	if !reflect.DeepEqual(received, want) {
@@ -630,7 +630,7 @@ func TestRemoteListTreeThroughAnnotatedTag(t *testing.T) {
 		{"README.md", 100644, blobIDs["README.md"]},
 		{"bin/link", 120000, blobIDs["README.md"]},
 		{"bin/run.sh", 100755, blobIDs["bin/run.sh"]},
-		{"lip.yaml", 100644, blobIDs["lip.yaml"]},
+		{"lip.toml", 100644, blobIDs["lip.toml"]},
 	}
 	if !reflect.DeepEqual(entries, want) {
 		t.Fatalf("entries %+v", entries)
@@ -653,7 +653,7 @@ func singleTreePack(name string, blobID string) (pack []byte, commitID string, t
 }
 
 func TestRemoteListTreeUnsafeEntryName(t *testing.T) {
-	for _, name := range []string{"..", ".", "", "a/b"} {
+	for _, name := range []string{"..", ".", "", "a/b", `a\b`} {
 		pack, commit, tree := singleTreePack(name, strings.Repeat("a", 40))
 		h := newHosts(map[string]http.HandlerFunc{"example.com": gitHandler(allFeatures, fixed(fetchResponse(pack, true)))})
 		_, err := h.client("").ListTree(context.Background(), testRepoURL, commit)
@@ -670,9 +670,9 @@ func TestRemoteListTreeUnsafeEntryName(t *testing.T) {
 }
 
 func TestRemoteListTreeNameGitDoesNotCheckOutIsListed(t *testing.T) {
-	// protocol/package.md §1 puts no restriction on the names in a git
+	// protocol/package.md §1 puts no other restriction on the names in a git
 	// archive.
-	for _, name := range []string{".git", `a\b`} {
+	for _, name := range []string{".git"} {
 		blob := strings.Repeat("a", 40)
 		pack, commit, _ := singleTreePack(name, blob)
 		h := newHosts(map[string]http.HandlerFunc{"example.com": gitHandler(allFeatures, fixed(fetchResponse(pack, true)))})
@@ -988,10 +988,10 @@ func TestRemoteOpenCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if keys := src.Keys(); !reflect.DeepEqual(keys, []string{"README.md", "bin/run.sh", "lip.yaml"}) {
+	if keys := src.Keys(); !reflect.DeepEqual(keys, []string{"README.md", "bin/run.sh", "lip.toml"}) {
 		t.Fatalf("keys %v", keys)
 	}
-	rc, err := src.Open("lip.yaml")
+	rc, err := src.Open("lip.toml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1000,7 +1000,7 @@ func TestRemoteOpenCommit(t *testing.T) {
 	if !bytes.Equal(data, sPackageFile) {
 		t.Fatalf("content %q", data)
 	}
-	if _, ok := src.Size("lip.yaml"); ok {
+	if _, ok := src.Size("lip.toml"); ok {
 		t.Fatal("size known before prefetch")
 	}
 	if err := src.Prefetch(context.Background(), []string{"README.md", "bin/run.sh"}); err != nil {

@@ -566,47 +566,47 @@ func TestRecover_NoJournal_ReturnsNil(t *testing.T) {
 
 func TestCommit_StagesRecordsAndMovesWorkspaceFileIntoPlace(t *testing.T) {
 	f := newFixture(t)
-	f.addFile(".lip/workspace.yaml", "old")
+	f.addFile(".lip/state.json", "old")
 	tx := f.begin(Options{})
 	change(t, tx)
 
 	warnings, err := tx.Commit(func() error {
-		return os.WriteFile(f.full(".lip/workspace.yaml.tmp"), []byte("new"), 0o666)
+		return os.WriteFile(f.full(".lip/state.json.tmp"), []byte("new"), 0o666)
 	})
 
 	must(t, err)
 	if len(warnings) != 0 {
 		t.Fatal(warnings)
 	}
-	if got := f.read(".lip/workspace.yaml"); got != "new" {
+	if got := f.read(".lip/state.json"); got != "new" {
 		t.Fatal(got)
 	}
-	if f.exists(".lip/workspace.yaml.tmp") || f.exists(".lip/journal") || f.exists("dir") {
+	if f.exists(".lip/state.json.tmp") || f.exists(".lip/journal") || f.exists("dir") {
 		t.Fatal("left over")
 	}
 }
 
 func TestCommit_WorkspaceFileCannotBeMoved_UncommitsAndUndoes(t *testing.T) {
 	f := newFixture(t)
-	f.addFile(".lip/workspace.yaml", "old")
+	f.addFile(".lip/state.json", "old")
 	before := f.snapshot()
 	tx := f.begin(Options{})
 	change(t, tx)
-	staged := f.full(".lip/workspace.yaml.tmp")
+	staged := f.full(".lip/state.json.tmp")
 	f.fs.fail = func(op, path string) bool { return op == "move" && path == staged }
 
 	_, err := tx.Commit(func() error { return os.WriteFile(staged, []byte("new"), 0o666) })
 
 	var re *RollbackError
 	if !errors.As(err, &re) || len(re.UndoErrors) != 0 ||
-		!strings.HasPrefix(re.Error(), "Cannot replace the workspace file") {
+		!strings.HasPrefix(re.Error(), "Cannot replace the state file") {
 		t.Fatal(err)
 	}
 	assertSnapshot(t, before, f.snapshot())
-	if got := f.read(".lip/workspace.yaml"); got != "old" {
+	if got := f.read(".lip/state.json"); got != "old" {
 		t.Fatal(got)
 	}
-	if f.exists(".lip/workspace.yaml.tmp") || f.exists(".lip/journal") {
+	if f.exists(".lip/state.json.tmp") || f.exists(".lip/journal") {
 		t.Fatal("left over")
 	}
 }

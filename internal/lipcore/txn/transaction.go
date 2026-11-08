@@ -30,12 +30,12 @@ type Options struct {
 	// Now is the clock of the Begin records (time.Now when nil).
 	Now func() time.Time
 	// CommitStaged makes the operation's result durable at the commit point
-	// (by default: moves .lip/workspace.yaml.tmp onto .lip/workspace.yaml;
+	// (by default: moves .lip/state.json.tmp onto .lip/state.json;
 	// nothing when no file is staged). Used by Commit.
 	CommitStaged func() error
 	// DiscardStaged throws the operation's result away on rollback (by
-	// default: deletes .lip/workspace.yaml.tmp). Used by Commit and by
-	// Rollback(nil), which ignore its failure: a staged workspace file is
+	// default: deletes .lip/state.json.tmp). Used by Commit and by
+	// Rollback(nil), which ignore its failure: a staged state file is
 	// never read, and the next save replaces it.
 	DiscardStaged func() error
 }
@@ -263,7 +263,7 @@ func (t *Transaction) Complete() []error {
 }
 
 // Commit is the commit point of McmodService.Apply: it checks for
-// cancellation, writes the staged workspace file (writeStaged, may be nil),
+// cancellation, writes the staged state file (writeStaged, may be nil),
 // records the commit in the journal, moves the staged file into place
 // (Options.CommitStaged) and completes the transaction, returning the
 // warnings of Complete. When any step fails, the transaction is rolled back
@@ -295,7 +295,7 @@ func (t *Transaction) Commit(writeStaged func() error) ([]error, error) {
 
 // Rollback undoes the operation (protocol/workspace.md §7.5): discardLock
 // throws its result away (nil: Options.DiscardStaged, else deleting
-// .lip/workspace.yaml.tmp, ignoring failures), then every change is undone
+// .lip/state.json.tmp, ignoring failures), then every change is undone
 // in reverse order. Best effort: it returns what could not be undone, which
 // the journal keeps for the next operation. A committed transaction loses
 // its "Commit" record first (§7.4); when it cannot, nothing is undone and
@@ -314,7 +314,7 @@ func (t *Transaction) Rollback(discardLock func() error) []error {
 		t.journal.Close()
 		t.journal = nil
 		if err := writeJournal(t.fs, t.journalPath, t.root, t.entries, false, t.opts.Now()); err != nil {
-			// The journal still commits the operation, and the staged workspace file is kept,
+			// The journal still commits the operation, and the staged state file is kept,
 			// so that the next operation completes it rather than finding it partly undone.
 			return append(errs, wrap(err, fmt.Sprintf("Could not undo the operation, because the"+
 				" journal '%s' cannot be updated: %s The changes are kept, and the next install,"+

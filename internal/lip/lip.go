@@ -1,8 +1,8 @@
 // Package lip adapts the native lip engine (internal/lipcore) to the
 // launcher: it runs package operations per instance directory, forwards
 // engine reports as lip_task_* events and exposes package states keyed by
-// package id. Workspaces follow lip 0.38 (lip.yaml packages,
-// .lip/workspace.yaml) on the client platform.
+// package id. Workspaces follow lip (lip.toml packages, .lip/state.json) on
+// the client platform.
 package lip
 
 import (
@@ -32,11 +32,11 @@ var (
 )
 
 // lipConfigDir is lip's configuration directory (%APPDATA%\lip), holding
-// config.yaml; replaced in tests.
+// config.toml; replaced in tests.
 var lipConfigDir = lipdirs.ConfigDir
 
-// lipConfigGithubProxy returns github_proxy from lip's config.yaml, as set
-// with `lip config set github_proxy`. Like lip 0.38, a missing config.yaml
+// lipConfigGithubProxy returns github_proxy from lip's config.toml, as set
+// with `lip config set github_proxy`. Like lip, a missing config.toml
 // is first migrated from a lip v0.x liprc.json, and a missing or invalid
 // file means no proxy (lip reports it and continues).
 func lipConfigGithubProxy() string {
@@ -55,7 +55,7 @@ func lipConfigGithubProxy() string {
 }
 
 // configuredGithubProxy is the proxy the user chose: the launcher override,
-// otherwise github_proxy from lip's config.yaml.
+// otherwise github_proxy from lip's config.toml.
 func configuredGithubProxy() string {
 	if proxy := strings.TrimSpace(githubProxyOverride()); proxy != "" {
 		return proxy
@@ -74,7 +74,7 @@ func GithubProxy() string {
 }
 
 // EffectiveGithubProxy returns the proxy the engine uses for GitHub URLs:
-// the launcher override, then github_proxy from config.yaml (what lip itself
+// the launcher override, then github_proxy from config.toml (what lip itself
 // reads), then the built-in default when mirrors are enabled. Otherwise
 // GitHub is reached directly (lip's default behavior).
 func EffectiveGithubProxy() string {

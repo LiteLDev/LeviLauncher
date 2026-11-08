@@ -10,8 +10,8 @@ import (
 // Names of lip's own files in <root>/.lip (LockStore.cs).
 const (
 	LipDirectory  = ".lip"
-	WorkspaceFile = "workspace.yaml"
-	StagedFile    = "workspace.yaml.tmp"
+	WorkspaceFile = "state.json"
+	StagedFile    = "state.json.tmp"
 	MutexFile     = "lock"
 	JournalFile   = "journal"
 )

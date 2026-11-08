@@ -22,6 +22,12 @@ import (
 // explicitly installed ... run 'lip update ...' instead").
 var ErrAlreadyExplicitlyInstalled = errors.New("engine: package already explicitly installed")
 
+// ErrNoPackageFound matches (errors.Is) the failure of an operation because
+// a package argument resolves to no package that can be installed in the
+// workspace ("No package found for '...' that can be installed in this
+// workspace ...").
+var ErrNoPackageFound = errors.New("engine: no package found for a package argument")
+
 // Error is the InvalidOperationException (or ArgumentException) McmodService
 // throws: an operation that cannot be carried out. Error() is lip's message;
 // the cause, if any, is reachable through errors.Unwrap.

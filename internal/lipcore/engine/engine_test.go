@@ -28,15 +28,15 @@ func libPackageFile(version string, hook bool) string {
 	if hook {
 		entry += `, "hooks": { "post_install": [ "lib-installed" ] }`
 	}
-	return lipYAML(libID, version, entry)
+	return lipJSON(libID, version, entry)
 }
 
 func (h *harness) addLib(version string, hook bool) string {
-	return h.addTag(libID, version, "lip.yaml", libPackageFile(version, hook), "lib.dll", "lib "+version)
+	return h.addTag(libID, version, "lip.toml", libPackageFile(version, hook), "lib.dll", "lib "+version)
 }
 
 func (h *harness) addApp(version, libRange string) {
-	h.addTag(appID, version, "lip.yaml", lipYAML(appID, version,
+	h.addTag(appID, version, "lip.toml", lipJSON(appID, version,
 		`"deps": { "`+libID+`": "`+libRange+`" }, `+selfAsset("app.dll", "app/app.dll")), "app.dll", "app "+version)
 }
 
@@ -58,14 +58,14 @@ func (h *harness) addVariantsPackage(id string) {
 		return `[ { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "` +
 			f + `", "dest": "` + f + `" } ] } ] } ]`
 	}
-	h.addTag(id, "1.0.0", "lip.yaml", `{ "format": 4, "id": "`+id+`", "version": "1.0.0", "variants": { "a": `+
+	h.addTag(id, "1.0.0", "lip.toml", `{ "format": 4, "id": "`+id+`", "version": "1.0.0", "variants": { "a": `+
 		entry("a.dll")+`, "b": `+entry("b.dll")+` } }`, "a.dll", "a", "b.dll", "b")
 }
 
 // addLocalDirectory: a local directory holding a package example.com/local
 // placing x.txt at out/x.txt.
 func (h *harness) addLocalDirectory(rel, version, content string) {
-	h.addFile(rel+"/lip.yaml", lipYAML("example.com/local", version, selfAsset("x.txt", "out/x.txt")))
+	h.addFile(rel+"/lip.toml", lipJSON("example.com/local", version, selfAsset("x.txt", "out/x.txt")))
 	h.addFile(rel+"/x.txt", content)
 }
 
@@ -75,7 +75,7 @@ func (h *harness) addLocalDirectory(rel, version, content string) {
 func (h *harness) addMod(id, name, entry string) {
 	url := "https://example.com/" + name + ".mcmod"
 	h.addDownload(url, mcmod(name))
-	h.addTag(id, "1.0.0", "lip.yaml", lipYAML(id, "1.0.0", entry+` "assets": [ { "type": "mcmod", "urls": [ "`+url+`" ] } ]`))
+	h.addTag(id, "1.0.0", "lip.toml", lipJSON(id, "1.0.0", entry+` "assets": [ { "type": "mcmod", "urls": [ "`+url+`" ] } ]`))
 }
 
 func findPackage(t *testing.T, lf *pkgmodel.LockFile, id string) *pkgmodel.LockedPackage {
@@ -99,7 +99,7 @@ func single(t *testing.T, lf *pkgmodel.LockFile) *pkgmodel.LockedPackage {
 
 func TestInstallRemoteRepositoryRecordsWorkspaceFile(t *testing.T) {
 	h := newHarness(t)
-	commit := h.addTag(libID, "1.0.0", "lip.yaml", libPackageFile("1.0.0", false), "lib.dll", "lib 1.0.0")
+	commit := h.addTag(libID, "1.0.0", "lip.toml", libPackageFile("1.0.0", false), "lib.dll", "lib 1.0.0")
 	h.must(h.install(libID))
 
 	if got := h.read("lib/lib.dll"); got != "lib 1.0.0" {
@@ -115,7 +115,7 @@ func TestInstallRemoteRepositoryRecordsWorkspaceFile(t *testing.T) {
 		t.Fatalf("package = %+v", p)
 	}
 	equal(t, p.Files, []string{"lib/lib.dll"})
-	want, _ := doc.ParseYAML([]byte(libPackageFile("1.0.0", false)), "lip.yaml")
+	want, _ := doc.ParseJSON([]byte(libPackageFile("1.0.0", false)), "lip.toml")
 	if !doc.Equal(want, p.Manifest) {
 		t.Fatalf("manifest = %s", doc.MarshalJSONCompact(p.Manifest))
 	}
@@ -124,14 +124,14 @@ func TestInstallRemoteRepositoryRecordsWorkspaceFile(t *testing.T) {
 func TestInstallWritesTheMembersOfTheSchema(t *testing.T) {
 	h := newHarness(t)
 	h.addLib("1.0.0", false)
-	h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "x")
+	h.addZip("x.zip", "lip.toml", lipJSON("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "x")
 	h.must(h.install(libID, "x.zip"))
 
 	data, err := os.ReadFile(h.path(pkgmodel.WorkspaceFile))
 	if err != nil {
 		t.Fatal(err)
 	}
-	root, err := doc.ParseYAML(data, "workspace.yaml")
+	root, err := doc.ParseJSONFile(data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,10 +144,10 @@ func TestInstallWritesTheMembersOfTheSchema(t *testing.T) {
 func TestInstallLocalZipRecordsFileURISourceAndNoCommit(t *testing.T) {
 	h := newHarness(t)
 	h.addDownload("https://example.com/extra.zip", zipOf("y.txt", "y"))
-	packageFile := lipYAML("example.com/pkg", "1.0.0", `"assets": [
+	packageFile := lipJSON("example.com/pkg", "1.0.0", `"assets": [
 	  { "type": "self", "place": [ { "src": "x.txt", "dest": "mods/pkg/x.txt" } ] },
 	  { "type": "zip", "urls": [ "https://example.com/extra.zip" ], "place": [ { "src": "y.txt", "dest": "extra/y.txt" } ] } ]`)
-	path := h.addZip("pkg.zip", "lip.yaml", packageFile, "x.txt", "x")
+	path := h.addZip("pkg.zip", "lip.toml", packageFile, "x.txt", "x")
 	h.must(h.install("pkg.zip"))
 
 	if h.read("mods/pkg/x.txt") != "x" || h.read("extra/y.txt") != "y" {
@@ -384,10 +384,10 @@ func pkgIdentity(p *pkgmodel.LockedPackage) string {
 
 func TestInstallBranchRefRecordsCommitAndUpdateFollowsHead(t *testing.T) {
 	h := newHarness(t)
-	first := h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.2.0", false), "lib.dll", "head 1")
+	first := h.git.addBranch(libID, "main", "lip.toml", libPackageFile("1.2.0", false), "lib.dll", "head 1")
 	h.must(h.install(libID + "@branch:main"))
 	installed := *single(t, h.lock())
-	second := h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.2.0", false), "lib.dll", "head 2")
+	second := h.git.addBranch(libID, "main", "lip.toml", libPackageFile("1.2.0", false), "lib.dll", "head 2")
 	h.restart()
 	h.must(h.update())
 
@@ -406,9 +406,9 @@ func TestInstallBranchRefRecordsCommitAndUpdateFollowsHead(t *testing.T) {
 
 func TestInstallTagAndRevRefsUsePackageFileVersionAndExactCommit(t *testing.T) {
 	h := newHarness(t)
-	h.git.addTagName(libID, "nightly", "lip.yaml", libPackageFile("3.0.0-nightly", false), "lib.dll", "nightly")
-	rev := h.git.addBranch(appID, "dev", "lip.yaml", lipYAML(appID, "0.1.0", ""))
-	h.git.addBranch(appID, "dev", "lip.yaml", lipYAML(appID, "0.2.0", ""))
+	h.git.addTagName(libID, "nightly", "lip.toml", libPackageFile("3.0.0-nightly", false), "lib.dll", "nightly")
+	rev := h.git.addBranch(appID, "dev", "lip.toml", lipJSON(appID, "0.1.0", ""))
+	h.git.addBranch(appID, "dev", "lip.toml", lipJSON(appID, "0.2.0", ""))
 	h.must(h.install(libID+"@tag:nightly", appID+"@rev:"+rev))
 	lf := h.lock()
 	app, lib := findPackage(t, lf, appID), findPackage(t, lf, libID)
@@ -430,7 +430,7 @@ func TestInstallRecordedPlatformOfOtherKindFailsWithoutChanges(t *testing.T) {
 			h.platform = tc.engine
 			h.restart()
 			h.addLibAndApp(true, false)
-			h.addFile(".lip/workspace.yaml", `{ "format": 4, "platform": "`+tc.recorded+`", "runtime": "win-x64", "packages": [] }`)
+			h.addFile(".lip/state.json", `{ "format": 4, "platform": "`+tc.recorded+`", "runtime": "win-x64", "packages": [] }`)
 			before := h.snapshot()
 			err := h.install(libID)
 			if err == nil || !strings.Contains(err.Error(), tc.says) {
@@ -443,7 +443,7 @@ func TestInstallRecordedPlatformOfOtherKindFailsWithoutChanges(t *testing.T) {
 
 func TestInstallRuntimeOptionRecordsRuntime(t *testing.T) {
 	h := newHarness(t)
-	h.addTag(libID, "1.0.0", "lip.yaml", `{ "format": 4, "id": "`+libID+`", "version": "1.0.0", "variants": { "": [
+	h.addTag(libID, "1.0.0", "lip.toml", `{ "format": 4, "id": "`+libID+`", "version": "1.0.0", "variants": { "": [
 	  { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "win.dll", "dest": "lib.dll" } ] } ] },
 	  { "platform": "server", "runtime": "linux-x64", "assets": [ { "type": "self", "place": [ { "src": "linux.so", "dest": "lib.so" } ] } ] } ] } }`,
 		"win.dll", "win", "linux.so", "linux")
@@ -458,7 +458,7 @@ func TestInstallClientPlatformByDefault(t *testing.T) {
 	h := newHarness(t)
 	h.platform = ""
 	h.restart()
-	h.addTag(libID, "1.0.0", "lip.yaml", lipYAMLFor(libID, "1.0.0", "client", selfAsset("lib.dll", "lib/lib.dll")),
+	h.addTag(libID, "1.0.0", "lip.toml", lipJSONFor(libID, "1.0.0", "client", selfAsset("lib.dll", "lib/lib.dll")),
 		"lib.dll", "lib")
 	h.must(h.install(libID))
 	if lf := h.lock(); lf.Platform != "client" {
@@ -567,7 +567,7 @@ func TestUninstallMatching(t *testing.T) {
 	})
 	t.Run("source without ref matches every ref", func(t *testing.T) {
 		h := newHarness(t)
-		h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.5.0", false), "lib.dll", "x")
+		h.git.addBranch(libID, "main", "lip.toml", libPackageFile("1.5.0", false), "lib.dll", "x")
 		h.must(h.install(libID + "@branch:main"))
 		h.must(h.uninstall(libID))
 		if len(h.lock().Packages) != 0 {
@@ -587,7 +587,7 @@ func TestUninstallMatching(t *testing.T) {
 	}
 	t.Run("deleted local path fails", func(t *testing.T) {
 		h := newHarness(t)
-		path := h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "x")
+		path := h.addZip("x.zip", "lip.toml", lipJSON("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "x")
 		h.must(h.install("x.zip"))
 		os.Remove(path)
 		before := h.snapshot()
@@ -639,7 +639,7 @@ func TestUpdateTagMovedToOtherCommitReplacesPackage(t *testing.T) {
 	h := newHarness(t)
 	h.addLib("1.0.0", false)
 	h.must(h.install(libID))
-	moved := h.addTag(libID, "1.0.0", "lip.yaml", libPackageFile("1.0.0", false), "lib.dll", "lib moved")
+	moved := h.addTag(libID, "1.0.0", "lip.toml", libPackageFile("1.0.0", false), "lib.dll", "lib moved")
 	h.restart()
 	h.must(h.update())
 	if h.read("lib/lib.dll") != "lib moved" || single(t, h.lock()).Commit != moved {
@@ -649,7 +649,7 @@ func TestUpdateTagMovedToOtherCommitReplacesPackage(t *testing.T) {
 
 func TestUpdateBranchAtTheSameCommitReplacesNothing(t *testing.T) {
 	h := newHarness(t)
-	commit := h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.0.0", true), "lib.dll", "head")
+	commit := h.git.addBranch(libID, "main", "lip.toml", libPackageFile("1.0.0", true), "lib.dll", "head")
 	h.must(h.install(libID + "@branch:main"))
 	h.restart()
 	h.must(h.update())
@@ -662,7 +662,7 @@ func TestInstallNoDependenciesOfSameVersionAtOtherCommitReplacesIt(t *testing.T)
 	h := newHarness(t)
 	h.addLib("1.0.0", true)
 	h.must(h.install(libID))
-	moved := h.addTag(libID, "1.0.0", "lip.yaml", libPackageFile("1.0.0", true), "lib.dll", "lib moved")
+	moved := h.addTag(libID, "1.0.0", "lip.toml", libPackageFile("1.0.0", true), "lib.dll", "lib moved")
 	h.restart()
 	h.must(h.e.Install(context.Background(), []string{libID}, false, false, true))
 	if h.read("lib/lib.dll") != "lib moved" || single(t, h.lock()).Commit != moved || h.ran("lib-installed") != 2 {
@@ -675,7 +675,7 @@ func TestInstallInstalledPackageWhoseTagMovedIsKeptWithItsRecordedPackageFile(t 
 	h.addMod("example.com/a", "A", "")
 	h.must(h.install("example.com/a"))
 	h.addDownload("https://example.com/moved.mcmod", mcmod("B"))
-	h.addTag("example.com/a", "1.0.0", "lip.yaml", lipYAML("example.com/a", "1.0.0",
+	h.addTag("example.com/a", "1.0.0", "lip.toml", lipJSON("example.com/a", "1.0.0",
 		`"assets": [ { "type": "mcmod", "urls": [ "https://example.com/moved.mcmod" ] } ]`))
 	h.addMod("example.com/b", "B", "")
 	h.restart()
@@ -692,7 +692,7 @@ func TestUpdateVersionRefWhoseTagMovedKeepsTheRecordedCommit(t *testing.T) {
 	h := newHarness(t)
 	h.addLib("1.0.0", false)
 	h.must(h.install(libID + "@1.0.0"))
-	h.addTag(libID, "1.0.0", "lip.yaml", libPackageFile("1.0.0", false), "lib.dll", "moved")
+	h.addTag(libID, "1.0.0", "lip.toml", libPackageFile("1.0.0", false), "lib.dll", "moved")
 	h.addLib("1.1.0", false)
 	h.restart()
 	h.must(h.update())
@@ -705,7 +705,7 @@ func TestUpdateVersionRefWhoseTagMovedKeepsTheRecordedCommit(t *testing.T) {
 func TestUpdateSourceWithoutRefMovesBackToVersionTags(t *testing.T) {
 	h := newHarness(t)
 	h.addLibAndApp(true, false)
-	h.git.addBranch(libID, "main", "lip.yaml", libPackageFile("1.5.0", false), "lib.dll", "head")
+	h.git.addBranch(libID, "main", "lip.toml", libPackageFile("1.5.0", false), "lib.dll", "head")
 	h.must(h.install(libID + "@branch:main"))
 	h.must(h.update(libID))
 	p := single(t, h.lock())
@@ -717,7 +717,7 @@ func TestUpdateSourceWithoutRefMovesBackToVersionTags(t *testing.T) {
 func TestUpdateAssetChangedReplacesNothing(t *testing.T) {
 	h := newHarness(t)
 	h.addDownload("https://example.com/data.zip", zipOf("d.txt", "1"))
-	h.addTag(libID, "1.0.0", "lip.yaml", lipYAML(libID, "1.0.0",
+	h.addTag(libID, "1.0.0", "lip.toml", lipJSON(libID, "1.0.0",
 		`"assets": [ { "type": "zip", "urls": [ "https://example.com/data.zip" ], "place": [ { "src": "d.txt", "dest": "d.txt" } ] } ]`))
 	h.must(h.install(libID))
 	h.addDownload("https://example.com/data.zip", zipOf("d.txt", "2"))
@@ -731,9 +731,9 @@ func TestUpdateAssetChangedReplacesNothing(t *testing.T) {
 
 func TestUpdateLocalZipOfSameVersionReplacesNothing(t *testing.T) {
 	h := newHarness(t)
-	h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "v1")
+	h.addZip("x.zip", "lip.toml", lipJSON("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "v1")
 	h.must(h.install("x.zip"))
-	h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "v2")
+	h.addZip("x.zip", "lip.toml", lipJSON("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "v2")
 	h.must(h.update())
 	if h.read("x.txt") != "v1" {
 		t.Fatal("replaced")
@@ -758,7 +758,7 @@ func TestUpdateLocalDirectoryOfSameVersionReplacesNothing(t *testing.T) {
 
 func TestUpdateLocalPathGoneKeepsPackageAndWarns(t *testing.T) {
 	h := newHarness(t)
-	path := h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "v1")
+	path := h.addZip("x.zip", "lip.toml", lipJSON("example.com/x", "1.0.0", selfAsset("x.txt", "x.txt")), "x.txt", "v1")
 	h.must(h.install(path))
 	os.Remove(path)
 	h.must(h.update())
@@ -796,7 +796,7 @@ func TestUpdateNotInstalledFails(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	if h.hasLock() {
-		t.Fatal("workspace file written")
+		t.Fatal("state file written")
 	}
 }
 
@@ -814,7 +814,7 @@ func TestInstallTwoModsOfOneModNameFails(t *testing.T) {
 	h := newHarness(t)
 	h.addMod("example.com/a", "Same", "")
 	h.addDownload("https://example.com/other.mcmod", mcmod("same"))
-	h.addTag("example.com/b", "1.0.0", "lip.yaml", lipYAML("example.com/b", "1.0.0",
+	h.addTag("example.com/b", "1.0.0", "lip.toml", lipJSON("example.com/b", "1.0.0",
 		`"assets": [ { "type": "mcmod", "urls": [ "https://example.com/other.mcmod" ] } ]`))
 	err := h.install("example.com/a", "example.com/b")
 	if err == nil {
@@ -858,7 +858,7 @@ func TestInstallInstalledPackageWithoutEntryForTheRuntimeFailsWithoutChanges(t *
 	h := newHarness(t)
 	h.addLib("1.0.0", false)
 	h.must(h.install(libID))
-	h.addTag("example.com/any", "1.0.0", "lip.yaml", `{ "format": 4, "id": "example.com/any", "version": "1.0.0",
+	h.addTag("example.com/any", "1.0.0", "lip.toml", `{ "format": 4, "id": "example.com/any", "version": "1.0.0",
 	  "variants": { "": [ { "platform": "server", "runtime": "linux-x64" } ] } }`)
 	before := h.snapshot()
 	h.withRuntime("linux-x64")
@@ -874,11 +874,12 @@ func TestOperationsInvalidWorkspaceFileFailWithoutChanges(t *testing.T) {
 	for _, content := range []string{
 		`{ "format": "bf45b1", "platform": "server", "packages": [] }`,
 		`{ "format_version": 3, "packages": [] }`,
-		"format: 4\nplatform: server\nruntime: win-x64\npackages: [ { } ]\n",
+		`{ "format": 4, "platform": "server", "runtime": "win-x64", "packages": [ { } ] }`,
+		"format = 4\n",
 	} {
 		h := newHarness(t)
 		h.addLibAndApp(true, false)
-		h.addFile(".lip/workspace.yaml", content)
+		h.addFile(".lip/state.json", content)
 		before := h.snapshot()
 		if h.install(libID) == nil || h.uninstall(libID) == nil || h.update() == nil {
 			t.Fatal("an operation succeeded")

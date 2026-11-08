@@ -1,13 +1,15 @@
 // Package lipcore is a native Go reimplementation of the parts of lip
-// (https://github.com/LiteLDev/lip, v0.38.0-beta.1) that LeviLauncher uses:
-// installing, updating, uninstalling and listing packages inside an
-// instance directory, and cleaning lip's download cache.
+// (https://github.com/LiteLDev/lip, ported from v0.38.0-beta.1 and kept in
+// step with the protocol of lip main) that LeviLauncher uses: installing,
+// updating, uninstalling and listing packages inside an instance directory,
+// and cleaning lip's download cache.
 //
-// The implementation is file-compatible with lip 0.38: it reads and writes
-// the same .lip/workspace.yaml, shares the same cache directory
+// The implementation is file-compatible with lip's format 4: it reads and
+// writes the same .lip/state.json (a JSON file), reads lip.toml package files
+// and lip's config.toml (TOML files), shares the same cache directory
 // (lipdirs.CacheDir()) and resolves packages the same way (git refs via the
-// git smart-HTTP v2 protocol, lip.yaml package files). The files of lip v0.x
-// (tooth.json, tooth_lock.json) are read as lip 0.38 reads them.
+// git smart-HTTP v2 protocol). The files of lip v0.x (tooth.json,
+// tooth_lock.json, liprc.json) are read as lip reads them.
 //
 // Sub-packages:
 //
@@ -17,15 +19,15 @@
 //	config     - user configuration and liprc.json migration
 //	semver     - SemVer 2.0 versions and WalkerCodeRanger Semver 3 ranges
 //	ref        - package sources, git refs and package arguments
-//	doc        - JSON value model, strict JSON and YAML files
-//	pkgmodel   - package file and workspace file types
-//	pkgfile    - package file parser and workspace file store
+//	doc        - JSON value model, strict JSON, TOML and JSON files
+//	pkgmodel   - package file and state file types
+//	pkgfile    - package file parser and state file store
 //	compat     - tooth.json and tooth_lock.json of lip v0.x
 //	manifest   - tooth.json (format 3) entities, used by compat
 //	migrate    - tooth.json format 1/2 -> 3 migration, used by compat
 //	glob       - DotNet.Glob 3.1.3 compatible glob matching
 //	stjson     - System.Text.Json compatible JSON writer
-//	pathglob   - lip 0.38 path patterns (globs, place)
+//	pathglob   - lip path patterns (globs, place)
 //	gitproto   - git smart-HTTP protocol v2 client and git tree sources
 //	gitpack    - git packfile decoding and tree walking
 //	fetch      - download cache, GitHub proxy rewrite, file downloader

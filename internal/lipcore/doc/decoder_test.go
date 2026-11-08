@@ -11,6 +11,8 @@ import (
 
 // utf8Corpus is the corpus testdata/dotnet_utf8_errors.json was made from:
 // a C# harness over lip v0.38.0-beta.1's Lip.Core ran YamlJson.Parse(bytes)
+// (whose StreamReader decoding TomlJson.Parse shares: its "YAML" results are
+// those of ParseTOML)
 // and PackageFileParser.ParseJson(bytes, "lip.json") on each input and
 // recorded the message of the DecoderFallbackException under lip's "not
 // valid UTF-8" message ("" when the input failed otherwise or not at all).
@@ -88,9 +90,9 @@ func TestDotnetUTF8Errors(t *testing.T) {
 		return de.Error()
 	}
 	for i, in := range cases {
-		_, err := ParseYAML(in, "")
+		_, err := ParseTOML(in)
 		if got := cause(err, "The file is not valid UTF-8 text. Save it with the UTF-8 encoding."); got != golden.YAML[i] {
-			t.Errorf("ParseYAML(case %d, % x...) cause %q, want %q", i, in[:min(len(in), 8)], got, golden.YAML[i])
+			t.Errorf("ParseTOML(case %d, % x...) cause %q, want %q", i, in[:min(len(in), 8)], got, golden.YAML[i])
 		}
 		_, err = ParseJSON(in, "lip.json")
 		if got := cause(err, "Invalid lip.json: not valid UTF-8."); got != golden.JSON[i] {

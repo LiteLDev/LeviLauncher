@@ -42,7 +42,6 @@ type fakeCandidate struct {
 	archiveKey  string
 	commit      string
 	deps        []Dependency
-	derived     bool
 
 	mod       func() (string, error)
 	loaded    bool
@@ -63,7 +62,6 @@ func (c *fakeCandidate) Variant() string            { return c.variant }
 func (c *fakeCandidate) Commit() string             { return c.commit }
 func (c *fakeCandidate) ArchiveKey() string         { return c.archiveKey }
 func (c *fakeCandidate) Source() Ref                { return c.source }
-func (c *fakeCandidate) Derived() bool              { return c.derived }
 func (c *fakeCandidate) Dependencies() []Dependency { return c.deps }
 func (c *fakeCandidate) ModName(context.Context) (string, error) {
 	if c.mod == nil {
@@ -103,7 +101,7 @@ func pkg(id, version string, o pkgOpts) *fakeCandidate {
 	sum := sha1.Sum([]byte(Fold(key)))
 	c := &fakeCandidate{
 		id: id, variant: o.variant, version: semver.MustParse(version), source: ref,
-		archiveKey: key, commit: hex.EncodeToString(sum[:]), deps: o.deps, derived: o.legacy,
+		archiveKey: key, commit: hex.EncodeToString(sum[:]), deps: o.deps,
 		downloads: o.downloads, modURL: fmt.Sprintf("https://example.com/%s/%s.mcmod", id, version),
 	}
 	label := id + " " + version
@@ -135,8 +133,8 @@ func unavailableAsset(label string) (string, error) {
 		" type \"mcmod\" to tell the mod name.: %w", label, errors.New("404"))
 }
 
-func dep(source string, rng string, compat bool) Dependency {
-	return Dependency{Source: parseRef(source), Range: mustRange(rng), ClientCompat: compat}
+func dep(source string, rng string) Dependency {
+	return Dependency{Source: parseRef(source), Range: mustRange(rng)}
 }
 
 func mustRange(s string) Range {
@@ -150,9 +148,8 @@ func mustRange(s string) Range {
 func request(source string) Request { return Request{Source: parseRef(source)} }
 
 type resolveCall struct {
-	ref    string
-	rng    string
-	compat bool
+	ref string
+	rng string
 }
 
 // fakeResolver maps a source, as written, to its candidates in order, and
@@ -193,9 +190,8 @@ func (s *countingSequence) Next(context.Context) (Candidate, bool, error) {
 	return nil, false, nil
 }
 
-func (r *fakeResolver) ResolveLazy(_ context.Context, source Ref, rng Constraint, compat bool,
-	_ func(Diagnostic)) Sequence {
-	call := resolveCall{ref: source.Text, compat: compat}
+func (r *fakeResolver) ResolveLazy(_ context.Context, source Ref, rng Constraint, _ func(Diagnostic)) Sequence {
+	call := resolveCall{ref: source.Text}
 	if rng != nil {
 		call.rng = rng.String()
 	}

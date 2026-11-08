@@ -45,7 +45,7 @@ LeviLauncher は、「基本ランチャー」の範囲を超えた Mod 関連�
 
 ## lip と LeviLamina <Badge platform="windows" />
 
-LeviLauncher には [lip](https://github.com/LiteLDev/lip) 互換のパッケージマネージャーが内蔵されているため、lip や .NET ランタイムを別途インストールする必要はありません。lip 0.38 に準拠しており、各バージョンはパッケージを `.lip/workspace.yaml` に記録し、パッケージは `lip.yaml` から読み込まれます（`tooth.json` しかない古いパッケージも引き続き使えます）。以前のランチャーで LeviLamina や LIP パッケージをインストールしたバージョン（`tooth_lock.json`）は、最初のパッケージ操作時に自動的に移行されます。**ミラーソースを使用** がオンのときは、GitHub からのパッケージのダウンロードに[設定](./settings-personalization)の **GitHub プロキシ** が使われます。オフのときは GitHub に直接接続します（システムプロキシが設定されていればそれを経由します）。以前に保存した GitHub プロキシや、lip の `config.yaml`（`%APPDATA%\lip` 内。例: `lip config set github_proxy <URL>`）で設定した `github_proxy` はどちらの場合にも適用されます。**キャッシュを削除** でダウンロード済みのパッケージファイルを削除できます。
+LeviLauncher には [lip](https://github.com/LiteLDev/lip) 互換のパッケージマネージャーが内蔵されているため、lip や .NET ランタイムを別途インストールする必要はありません。lip に準拠しており、各バージョンはパッケージを `.lip/state.json` に記録し、パッケージは `lip.toml` から読み込まれます（`tooth.json` しかない古いパッケージも引き続き使えます）。以前のランチャーで LeviLamina や LIP パッケージをインストールしたバージョン（`tooth_lock.json`）は、最初のパッケージ操作時に自動的に移行されます。**ミラーソースを使用** がオンのときは、GitHub からのパッケージのダウンロードに[設定](./settings-personalization)の **GitHub プロキシ** が使われます。オフのときは GitHub に直接接続します（システムプロキシが設定されていればそれを経由します）。以前に保存した GitHub プロキシや、lip の `config.toml`（`%APPDATA%\lip` 内。例: `lip config set github_proxy <URL>`）で設定した `github_proxy` はどちらの場合にも適用されます。**キャッシュを削除** でダウンロード済みのパッケージファイルを削除できます。
 
 これらの統合は、パッケージ駆動またはローダー駆動のワークフローを使用したい上級ユーザーに最適です。
 

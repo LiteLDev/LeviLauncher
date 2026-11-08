@@ -33,7 +33,7 @@ import (
 //
 // The mods directory is never deleted, and purge never matches it (so a
 // directory pattern naming it removes nothing). .lip, where lip keeps the
-// workspace file, is never written, deleted or matched.
+// state file, is never written, deleted or matched.
 //
 // An Installer may be used for several operations, one at a time.
 type Installer struct {
@@ -50,7 +50,7 @@ type Installer struct {
 type Options struct {
 	// Root is the workspace root.
 	Root string
-	// Installed are the packages of the workspace file as the changes
+	// Installed are the packages of the state file as the changes
 	// planned before this one leave it (InstallContext.Lock.Packages): their
 	// files are owned by them.
 	Installed []pkgmodel.LockedPackage
@@ -390,7 +390,7 @@ func (in *Installer) plan(ctx context.Context, pkg *Package, m *mounted, root st
 		}
 
 		// The package file of the package is never written
-		// (protocol/workspace.md §4 step 2): its lip.yaml, or, for an archive
+		// (protocol/workspace.md §4 step 2): its lip.toml, or, for an archive
 		// without one, the tooth.json it is read from.
 		if asset.Type == pkgmodel.AssetSelf {
 			packageFile := archive.ToothFileName
@@ -758,7 +758,13 @@ func enumerateMatches(ctx context.Context, root string, glob *pathglob.Glob, vie
 			if e.IsDirectory {
 				suffix = "/"
 			}
-			matched := all || (!(e.IsDirectory && IsModsDirectory(path)) && glob.IsMatch(path+suffix))
+			// A path below mods does not match only because mods does
+			// (protocol/workspace.md §4).
+			minSegments := 0
+			if slash := strings.IndexByte(path, '/'); slash >= 0 && IsModsDirectory(path[:slash]) {
+				minSegments = 2
+			}
+			matched := all || (!(e.IsDirectory && IsModsDirectory(path)) && glob.IsMatchBelow(path+suffix, minSegments))
 			if matched {
 				result = append(result, match{path, e.IsDirectory})
 			}

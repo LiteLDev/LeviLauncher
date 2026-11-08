@@ -1,7 +1,7 @@
 // Package pkgmodel holds plain types for lip's format-4 package file
-// (protocol/lip.schema.yaml; PackageFile and PackageEntry of
-// src/Lip.Core/Mcmod/Documents.cs) and workspace file
-// (protocol/workspace.schema.yaml; LockFile and LockedPackage of
+// (protocol/lip.schema.toml; PackageFile and PackageEntry of
+// src/Lip.Core/Mcmod/Documents.cs) and state file
+// (protocol/state.schema.json; LockFile and LockedPackage of
 // src/Lip.Core/Mcmod/Contracts.cs), as of lip v0.38.0-beta.1. It does no
 // parsing or validation.
 package pkgmodel
@@ -11,8 +11,8 @@ import "strings"
 const (
 	// PackageFileName is the package file at the root of an archive
 	// (PackageFormat.FileName).
-	PackageFileName = "lip.yaml"
-	// Format is the "format" of package files and workspace files
+	PackageFileName = "lip.toml"
+	// Format is the "format" of package files and state files
 	// (PackageFormat.Format).
 	Format = 4
 	// FormatKey is the key of the format (PackageFormat.FormatKey).
@@ -22,8 +22,8 @@ const (
 	ModManifestFileName = "manifest.json"
 	// LipDir is the directory of lip's state in a workspace.
 	LipDir = ".lip"
-	// WorkspaceFile is the workspace file, relative to the workspace root.
-	WorkspaceFile = ".lip/workspace.yaml"
+	// WorkspaceFile is the state file, relative to the workspace root.
+	WorkspaceFile = ".lip/state.json"
 	// ModsDir is the directory mods are installed into.
 	ModsDir = "mods"
 )
@@ -48,7 +48,7 @@ type Document struct {
 	// Variants are the entries of each variant ("" for the default variant),
 	// in document order.
 	Variants []VariantEntries
-	// Raw is the package file as read (for lip.yaml) or the derived one; a
+	// Raw is the package file as read (for lip.toml) or the derived one; a
 	// *doc.Object (ordered JSON object) when set.
 	Raw any
 }
@@ -95,7 +95,7 @@ type Info struct {
 	Logo string
 }
 
-// Entry is an entry of a variant (lip.schema.yaml, the items of "variants").
+// Entry is an entry of a variant (lip.schema.toml, the items of "variants").
 type Entry struct {
 	Platform string
 	// Runtime is a .NET runtime identifier.
@@ -107,10 +107,7 @@ type Entry struct {
 	Preserve []string
 	Purge    []string
 	Hooks    Hooks
-	// Derived marks an entry that protocol/compatibility.md §2 derived from a
-	// tooth.json while resolving; it is not recorded.
-	Derived bool
-	// Raw is the entry as written, which the workspace file records; a
+	// Raw is the entry as written, which the state file records; a
 	// *doc.Object when set.
 	Raw any
 }
@@ -199,7 +196,7 @@ type Hooks struct {
 	PostUninstall []string
 }
 
-// LockFile is the workspace file (protocol/workspace.md §7.1).
+// LockFile is the state file (protocol/workspace.md §7.1).
 type LockFile struct {
 	Format int
 	// Platform is "server" or "client".
@@ -209,7 +206,7 @@ type LockFile struct {
 	Packages []LockedPackage
 }
 
-// LockedPackage is an installed package in the workspace file.
+// LockedPackage is an installed package in the state file.
 type LockedPackage struct {
 	// Manifest is its package file as protocol/package.md §4 read it (for a
 	// package read from a tooth.json, the derived one); a *doc.Object when

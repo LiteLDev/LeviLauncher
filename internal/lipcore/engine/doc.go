@@ -14,12 +14,12 @@
 //	CacheClean()
 //
 // An operation takes the workspace lock (.lip/lock) and first finishes or
-// undoes an interrupted operation (txn), reads the workspace file
-// (.lip/workspace.yaml, or the one protocol/compatibility.md §3 derives from a
+// undoes an interrupted operation (txn), reads the state file
+// (.lip/state.json, or the one protocol/compatibility.md §3 derives from a
 // tooth_lock.json), resolves the requests (the resolver of this package),
 // solves the package set (graph), plans every uninstall and install against
 // one view of the workspace (install), then applies the plans in one
-// transaction and writes the workspace file at the commit point.
+// transaction and writes the state file at the commit point.
 //
 // The engine follows lip exactly, with one parameter: the platform of the
 // workspaces it manages. lip manages server workspaces only; LeviLauncher's

@@ -93,19 +93,18 @@ func Solve(ctx context.Context, p Problem) (*Solution, error) {
 }
 
 // resolveKey identifies a candidate sequence by what determines it: the
-// source, the range and clientCompat.
+// source and the range.
 type resolveKey struct {
-	ref    string
-	rng    string
-	compat bool
+	ref string
+	rng string
 }
 
-func keyOf(source Ref, rng Constraint, compat bool) resolveKey {
+func keyOf(source Ref, rng Constraint) resolveKey {
 	k := ""
 	if rng != nil {
 		k = rng.Key()
 	}
-	return resolveKey{source.Text, k, compat}
+	return resolveKey{source.Text, k}
 }
 
 // requirement is an open obligation: a request (owner nil), or a dependency
@@ -118,7 +117,6 @@ type requirement struct {
 	ownerLevel  int
 	ref         Ref
 	rng         Constraint
-	compat      bool
 	deferred    bool
 }
 
@@ -305,7 +303,7 @@ func (s *search) run(requests []Request, pinned []Candidate) (*Solution, error) 
 		len(requests), len(pinned)))
 	for _, r := range requests {
 		s.agenda = append(s.agenda, &requirement{
-			key:         keyOf(r.Source, r.Range, false),
+			key:         keyOf(r.Source, r.Range),
 			description: "You requested " + showRequirement(r.Source, r.Range),
 			ownerLevel:  -1,
 			ref:         r.Source,
@@ -321,7 +319,7 @@ func (s *search) run(requests []Request, pinned []Candidate) (*Solution, error) 
 				continue
 			}
 			return nil, &ResolutionError{Message: fmt.Sprintf("Installed packages %s and %s have the"+
-				" same identity, which the workspace file .lip/workspace.yaml must not record."+
+				" same identity, which the state file .lip/state.json must not record."+
 				" Uninstall them with --no-dependencies and install the one you want again.",
 				showSource(other.candidate), showSource(c))}
 		}
@@ -746,9 +744,7 @@ func isPinned(c Candidate) bool {
 // isPinnedSatisfier: whether a candidate resolved from a remote repository
 // with a ref stands in for a requirement without a ref (protocol/workspace.md
 // §3): same repository (ignoring ASCII case) and variant, and a version in
-// the requirement's range. A dependency of a tooth.json on "client" names
-// the variant "" of a package that has a package file
-// (protocol/compatibility.md §2).
+// the requirement's range.
 func isPinnedSatisfier(r *requirement, c Candidate) bool {
 	pinned := c.Source()
 	if !pinned.Spec || !pinned.Pinned || !r.ref.specWithoutRef() {
@@ -758,9 +754,7 @@ func isPinnedSatisfier(r *requirement, c Candidate) bool {
 		return false
 	}
 	wanted := r.ref
-	return namesEqual(wanted.Target, pinned.Target) &&
-		(wanted.Variant == c.Variant() ||
-			(r.compat && !c.Derived() && wanted.Variant == ClientLabel && c.Variant() == ""))
+	return namesEqual(wanted.Target, pinned.Target) && wanted.Variant == c.Variant()
 }
 
 // isCandidate: whether a member is one of the candidates of a requirement,
@@ -774,7 +768,7 @@ func (s *search) isCandidate(r *requirement, m *member) (bool, error) {
 	if r.ref.Spec {
 		rng = ExactVersion{version}
 	}
-	seq := s.resolve(r.ref, rng, r.compat)
+	seq := s.resolve(r.ref, rng)
 	for i := 0; ; i++ {
 		ok, err := seq.has(s.ctx, i)
 		if err != nil || !ok {
@@ -789,14 +783,13 @@ func (s *search) isCandidate(r *requirement, m *member) (bool, error) {
 func (s *search) addEdges(owner Candidate, level int, suffix string) {
 	for _, d := range owner.Dependencies() {
 		s.agenda = append(s.agenda, &requirement{
-			key:   keyOf(d.Source, d.Range, d.ClientCompat),
+			key:   keyOf(d.Source, d.Range),
 			owner: owner,
 			description: fmt.Sprintf("%s%s requires %s", show(owner), suffix,
 				showRequirement(d.Source, d.Range)),
 			ownerLevel: level,
 			ref:        d.Source,
 			rng:        d.Range,
-			compat:     d.ClientCompat,
 		})
 	}
 }
@@ -804,18 +797,18 @@ func (s *search) addEdges(owner Candidate, level int, suffix string) {
 func (s *search) getChoices(r *requirement) *choices {
 	ch, ok := s.choices[r.key]
 	if !ok {
-		ch = &choices{sequence: s.resolve(r.ref, r.rng, r.compat), keys: map[PackageKey]bool{}}
+		ch = &choices{sequence: s.resolve(r.ref, r.rng), keys: map[PackageKey]bool{}}
 		s.choices[r.key] = ch
 	}
 	return ch
 }
 
-func (s *search) resolve(ref Ref, rng Constraint, compat bool) *lazySequence {
-	key := keyOf(ref, rng, compat)
+func (s *search) resolve(ref Ref, rng Constraint) *lazySequence {
+	key := keyOf(ref, rng)
 	seq, ok := s.resolved[key]
 	if !ok {
 		seq = &lazySequence{start: func(l *lazySequence) Sequence {
-			return s.resolver.ResolveLazy(s.ctx, ref, rng, compat, func(d Diagnostic) {
+			return s.resolver.ResolveLazy(s.ctx, ref, rng, func(d Diagnostic) {
 				l.diagnostics = append(l.diagnostics, d)
 			})
 		}}

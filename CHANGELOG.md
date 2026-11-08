@@ -7,7 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Replaced the external lip package manager with a built-in lip-compatible package manager, so lip and the .NET runtime no longer need to be installed or updated from Settings; existing `tooth_lock.json` installs keep working
-- Aligned the built-in lip with lip 0.38.0-beta.1: packages are recorded in `.lip/workspace.yaml` and read from `lip.yaml`, existing `tooth_lock.json` installs are migrated automatically on the first package operation, the GitHub proxy is read from lip's `config.yaml` (a `liprc.json` is converted), and packages are installed without the `#client` variant while already installed `#client` packages are updated and uninstalled in place
+- Aligned the built-in lip with the files of lip's format 4: packages are recorded in `.lip/state.json` and read from `lip.toml` (packages with only a `tooth.json` still work), existing `tooth_lock.json` installs are migrated automatically on the first package operation, and the GitHub proxy is read from lip's `config.toml` (a `liprc.json` is converted)
+- Packages, LeviLamina included, are installed from their `client` variant, or from their default variant when they have none; installed packages are updated and uninstalled in place
 
 ## [1.0.7] - 2026-11-04
 

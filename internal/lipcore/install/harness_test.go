@@ -282,7 +282,7 @@ func selfAsset(places ...pkgmodel.Placement) []pkgmodel.Asset {
 
 func place(src, dest string) pkgmodel.Placement { return pkgmodel.Placement{Src: src, Dest: dest} }
 
-// locked is the workspace file entry of an installed package.
+// locked is the state file entry of an installed package.
 func locked(p *Package, files []string) pkgmodel.LockedPackage {
 	m := doc.NewObject()
 	m.Set("format", "4")

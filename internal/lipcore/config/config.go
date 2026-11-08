@@ -1,19 +1,19 @@
-// Package config ports lip 0.38's user configuration
-// (src/Lip.Core/Services/ConfigService.cs at v0.38.0-beta.1;
-// protocol/userspace.md §2, config.schema.yaml) and the migration of lip
-// v0.x's liprc.json (protocol/compatibility.md §4).
+// Package config ports lip's user configuration
+// (src/Lip.Core/Services/ConfigService.cs; protocol/userspace.md §2,
+// config.schema.toml) and the migration of lip v0.x's liprc.json
+// (protocol/compatibility.md §4).
 //
-// The configuration is <Config>/config.yaml (lipdirs.ConfigDir()): a YAML
-// file with "format": 4 and a mapping of the configuration keys to their
+// The configuration is <Config>/config.toml (lipdirs.ConfigDir()): a TOML
+// file with format 4 and a mapping of the configuration keys to their
 // values. The only configuration key is github_proxy; an absent key has its
-// default value, none. A missing, unreadable or invalid config.yaml means
+// default value, none. A missing, unreadable or invalid config.toml means
 // every key has its default, which lip reports to the user (Message) and
 // does not treat as a failure.
 //
-// When config.yaml is missing and <Config>/liprc.json is a JSON object with
-// format_version 3, its github_proxy (when a string) is written atomically as
-// config.yaml before it is read, and liprc.json is deleted. Any other
-// liprc.json is kept, and every key has its default.
+// When config.toml is missing and <Config>/liprc.json is a JSON object whose
+// format_version, when present, is 3, its github_proxy (when a string) is
+// written atomically as config.toml before it is read, and liprc.json is
+// deleted. Any other liprc.json is kept, and every key has its default.
 //
 // Every function has a variant taking the configuration directory (In), for
 // tests; the others use lipdirs.ConfigDir().
@@ -37,7 +37,7 @@ const (
 	// which lip reaches GitHub.
 	GithubProxyKey = "github_proxy"
 	// FileName is the configuration file in the configuration directory.
-	FileName = "config.yaml"
+	FileName = "config.toml"
 	// LiprcFileName is lip v0.x's configuration file.
 	LiprcFileName = "liprc.json"
 
@@ -45,7 +45,7 @@ const (
 	format                 = 4
 	liprcFormatVersionKey  = "format_version"
 	liprcFormatVersion     = 3
-	configHelpLines        = "'format: 4' and 'github_proxy: https://example.com/'"
+	configHelpLines        = "'format = 4' and 'github_proxy = \"https://example.com/\"'"
 	unknownKeyMessageFront = "' is not a configuration key. The only configuration key is "
 )
 
@@ -86,7 +86,7 @@ func (e *KeyError) Error() string {
 }
 
 // WriteError is the IOException or UnauthorizedAccessException of a failed
-// write of config.yaml; Message is lip's message, Err the cause.
+// write of config.toml; Message is lip's message, Err the cause.
 type WriteError struct {
 	Message string
 	Err     error
@@ -99,9 +99,9 @@ func (e *WriteError) Unwrap() error { return e.Err }
 func Load() (Config, []Message, error) { return LoadIn(lipdirs.ConfigDir()) }
 
 // LoadIn reads the configuration in dir, migrating liprc.json when
-// config.yaml is missing. A config.yaml that cannot be read yields the
+// config.toml is missing. A config.toml that cannot be read yields the
 // default configuration and messages saying so; an error is returned only
-// when migrating liprc.json fails to write config.yaml or to delete
+// when migrating liprc.json fails to write config.toml or to delete
 // liprc.json.
 func LoadIn(dir string) (Config, []Message, error) {
 	var msgs []Message
@@ -134,14 +134,14 @@ func ListIn(dir string) (map[string]string, []Message, error) {
 }
 
 // Set is ConfigService.Set: sets a key (only github_proxy), writing
-// config.yaml with "format": 4 and the key.
+// config.toml with format 4 and the key.
 func Set(key, value string) ([]Message, error) { return SetIn(lipdirs.ConfigDir(), key, value) }
 
 // SetIn is Set in dir.
 func SetIn(dir, key, value string) ([]Message, error) { return save(dir, key, &value) }
 
 // Delete is ConfigService.Delete: resets a key (only github_proxy) to its
-// default, writing config.yaml with "format": 4 only.
+// default, writing config.toml with format 4 only.
 func Delete(key string) ([]Message, error) { return DeleteIn(lipdirs.ConfigDir(), key) }
 
 // DeleteIn is Delete in dir.
@@ -152,7 +152,7 @@ func save(dir, key string, value *string) ([]Message, error) {
 		return nil, err
 	}
 	// Read first, as lip does: it migrates liprc.json and reports an invalid
-	// config.yaml before replacing it.
+	// config.toml before replacing it.
 	_, msgs, err := LoadIn(dir)
 	if err != nil {
 		return msgs, err
@@ -182,7 +182,7 @@ func loadGithubProxy(dir string, msgs *[]Message) (Config, error) {
 		*msgs = append(*msgs,
 			Message{Error, fmt.Sprintf("Cannot read the configuration file %s: %s", configPath, err.Error())},
 			Message{Info, fmt.Sprintf("lip continues with the default configuration (no %s). Fix the file so"+
-				" that it is YAML with the lines %s, or run 'lip config set %s <URL>' or 'lip config delete"+
+				" that it is TOML with the lines %s, or run 'lip config set %s <URL>' or 'lip config delete"+
 				" %s' to rewrite it.", GithubProxyKey, configHelpLines, GithubProxyKey, GithubProxyKey)})
 		return Config{}, nil
 	}
@@ -194,17 +194,13 @@ func readConfig(path string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	v, err := doc.ParseYAML(data, "")
+	v, err := doc.ParseTOML(data)
 	if err != nil {
 		return Config{}, err
 	}
-	root, ok := v.(*doc.Object)
-	if !ok {
-		return Config{}, errors.New("It is not a YAML mapping of configuration keys to their values, like " +
-			configHelpLines + " on separate lines.")
-	}
+	root := v.(*doc.Object)
 	if f, ok := integerMember(root, formatKey); !ok || f != format {
-		return Config{}, errors.New("Its field format is missing or not 4; it must be 'format: 4'.")
+		return Config{}, errors.New("Its field format is missing or not 4; it must be 'format = 4'.")
 	}
 	// Keys that are not configuration keys are ignored, whatever their value.
 	value, ok := root.Get(GithubProxyKey)
@@ -272,10 +268,15 @@ func readLiprc(path string) (Config, error) {
 		return Config{}, err
 	}
 	root, ok := v.(liprcObject)
-	f, isInt := doc.IntegerMember(root[liprcFormatVersionKey])
-	if !ok || !isInt || f != liprcFormatVersion {
-		return Config{}, errors.New("It is not a JSON object with the field format_version set to 3, the" +
-			" only lip v0.x configuration that lip can convert.")
+	if ok {
+		if version, present := root[liprcFormatVersionKey]; present {
+			f, isInt := doc.IntegerMember(version)
+			ok = isInt && f == liprcFormatVersion
+		}
+	}
+	if !ok {
+		return Config{}, errors.New("It is not a JSON object whose field format_version, when present, is 3," +
+			" the only lip v0.x configuration that lip can convert.")
 	}
 	if raw, ok := root[GithubProxyKey].(liprcString); ok {
 		s, err := decodeJSONString(raw)
@@ -287,10 +288,10 @@ func readLiprc(path string) (Config, error) {
 	return Config{}, nil
 }
 
-// saveConfig is ConfigService.SaveConfig: writes config.yaml atomically
+// saveConfig is ConfigService.SaveConfig: writes config.toml atomically
 // (protocol/userspace.md §2) with "format" and, unless value is nil,
 // github_proxy: the whole content goes to a uniquely named .tmp file in the
-// configuration directory, which is then renamed over config.yaml.
+// configuration directory, which is then renamed over config.toml.
 func saveConfig(dir string, value *string) error {
 	o := doc.NewObject()
 	o.Set(formatKey, json.Number("4"))
@@ -299,7 +300,11 @@ func saveConfig(dir string, value *string) error {
 	}
 	configPath := filepath.Join(dir, FileName)
 	tempPath := filepath.Join(dir, txn.NewGUID()+".tmp")
-	err := writeAndMove(dir, tempPath, configPath, doc.MarshalYAML(o))
+	data, err := doc.MarshalTOML(o)
+	if err != nil {
+		panic(err) // an object of strings and a number
+	}
+	err = writeAndMove(dir, tempPath, configPath, data)
 	if fileExists(tempPath) {
 		_ = os.Remove(tempPath)
 	}

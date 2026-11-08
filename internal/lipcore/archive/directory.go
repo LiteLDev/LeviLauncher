@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 )
 
 // DirectorySource is a directory archive (protocol/package.md §1;
@@ -28,6 +29,21 @@ func NewDirectorySource(dir string) (*DirectorySource, error) {
 	files, err := listFiles(root)
 	if err != nil {
 		return nil, &FileError{Message: listError(root), Err: err}
+	}
+	// Outside Windows '\' is not a separator, so a name may contain it; such
+	// a directory is not a valid archive (protocol/package.md §1).
+	if filepath.Separator != '\\' {
+		for _, f := range files {
+			if i := strings.IndexByte(f.key, '\\'); i >= 0 {
+				name := f.key
+				if end := strings.IndexByte(f.key[i:], '/'); end >= 0 {
+					name = f.key[:i+end]
+				}
+				return nil, &UnavailableError{Message: "The package directory " + root + " is not a valid archive: '" +
+					filepath.Join(root, filepath.FromSlash(name)) + "' has a '\\' in its name, which lip does not" +
+					" install. Rename it."}
+			}
+		}
 	}
 	s := &DirectorySource{root: root, sizes: make(map[string]int64, len(files))}
 	for _, f := range files {

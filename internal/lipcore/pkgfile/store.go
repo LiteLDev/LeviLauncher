@@ -16,14 +16,14 @@ import (
 )
 
 // This file ports LockStore (src/Lip.Core/Mcmod/Lock/LockStore.cs): the
-// workspace file <root>/.lip/workspace.yaml (protocol/workspace.md §7.1,
-// workspace.schema.yaml), a YAML file read and written through package doc.
-// A workspace without the workspace file has no installed packages, unless
+// state file <root>/.lip/state.json (protocol/workspace.md §7.1,
+// state.schema.json), a JSON file read and written through package doc.
+// A workspace without the state file has no installed packages, unless
 // it has a tooth_lock.json (protocol/compatibility.md §3), which the first
-// workspace file written replaces (CommitStaged).
+// state file written replaces (CommitStaged).
 //
 // Writing goes through a staged file: StageWorkspace writes
-// .lip/workspace.yaml.tmp, CommitStaged renames it over .lip/workspace.yaml
+// .lip/state.json.tmp, CommitStaged renames it over .lip/state.json
 // (the commit point of an operation), DiscardStaged deletes it. Inside a
 // transaction, pass StagedHooks to txn.Options and RecoverHooks to
 // txn.RecoverWith, so that recovery commits the staged file as lip does,
@@ -33,9 +33,9 @@ import (
 // (ToothLockMigration.FileName).
 const ToothLockFile = "tooth_lock.json"
 
-// LockFormatError is LockFormatException: a workspace file exists but cannot
+// LockFormatError is LockFormatException: a state file exists but cannot
 // be read. Message is lip's message exactly; Err is what is wrong.
-// OtherFormat marks a workspace file whose "format" is an integer other than
+// OtherFormat marks a state file whose "format" is an integer other than
 // 4, written by a different version of lip.
 type LockFormatError struct {
 	Message     string
@@ -47,22 +47,22 @@ func (e *LockFormatError) Error() string { return e.Message }
 func (e *LockFormatError) Unwrap() error { return e.Err }
 
 // ErrInvalidWorkspace is the cause of the error StageWorkspace returns for a
-// workspace file that is not valid: a bug in the caller (lip's
+// state file that is not valid: a bug in the caller (lip's
 // ArgumentException).
-var ErrInvalidWorkspace = errors.New("pkgfile: invalid workspace file")
+var ErrInvalidWorkspace = errors.New("pkgfile: invalid state file")
 
 // invalidWorkspaceError is the ArgumentException of LockStore.Stage.
 type invalidWorkspaceError struct{ err error }
 
 func (e *invalidWorkspaceError) Error() string {
-	return "lip was about to write an invalid workspace file, and did not write it. This is a bug in" +
+	return "lip was about to write an invalid state file, and did not write it. This is a bug in" +
 		" lip. (Parameter 'lockFile')"
 }
 func (e *invalidWorkspaceError) Unwrap() []error { return []error{e.err, ErrInvalidWorkspace} }
 
 var commitRegex = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
-// WorkspaceStore reads and writes workspace files on a file system. The zero
+// WorkspaceStore reads and writes state files on a file system. The zero
 // value uses the operating system.
 type WorkspaceStore struct {
 	// FS is the file system (txn.OS when nil).
@@ -85,7 +85,7 @@ func (s WorkspaceStore) fileExists(path string) bool {
 // separator.
 func normalizeRoot(root string) (string, error) { return filepath.Abs(root) }
 
-// WorkspacePath is the path of the workspace file, <root>/.lip/workspace.yaml.
+// WorkspacePath is the path of the state file, <root>/.lip/state.json.
 func WorkspacePath(root string) (string, error) {
 	r, err := normalizeRoot(root)
 	if err != nil {
@@ -118,8 +118,8 @@ func DiscardStaged(root string) error { return WorkspaceStore{}.DiscardStaged(ro
 // RecoverHooks is RecoverHooks on the operating system.
 func RecoverHooks(root string) txn.RecoverOptions { return WorkspaceStore{}.RecoverHooks(root) }
 
-// LoadWorkspace is LockStore.Load: the workspace file of root, and whether it
-// exists (nil, false, nil when it does not). A workspace file that exists but
+// LoadWorkspace is LockStore.Load: the state file of root, and whether it
+// exists (nil, false, nil when it does not). A state file that exists but
 // cannot be read is a *txn.Error; one that is not valid a *LockFormatError.
 // Manifests are kept as read (*doc.Object).
 func (s WorkspaceStore) LoadWorkspace(root string) (*pkgmodel.LockFile, bool, error) {
@@ -132,7 +132,7 @@ func (s WorkspaceStore) LoadWorkspace(root string) (*pkgmodel.LockFile, bool, er
 	}
 	data, err := s.fs().ReadFile(path)
 	if err != nil {
-		return nil, false, &txn.Error{Msg: fmt.Sprintf("Cannot read the workspace file '%s'.", path), Err: err}
+		return nil, false, &txn.Error{Msg: fmt.Sprintf("Cannot read the state file '%s'.", path), Err: err}
 	}
 	lf, err := ParseWorkspace(data, path)
 	if err != nil {
@@ -141,18 +141,18 @@ func (s WorkspaceStore) LoadWorkspace(root string) (*pkgmodel.LockFile, bool, er
 	return lf, true, nil
 }
 
-// ParseWorkspace is LockStore.Parse: reads the bytes of a workspace file;
+// ParseWorkspace is LockStore.Parse: reads the bytes of a state file;
 // path names it in messages. The error is a *LockFormatError.
 func ParseWorkspace(data []byte, path string) (*pkgmodel.LockFile, error) {
 	otherFormat := false
 	lf, err := func() (*pkgmodel.LockFile, error) {
-		v, err := doc.ParseYAML(data, "")
+		v, err := doc.ParseJSONFile(data)
 		if err != nil {
 			return nil, err
 		}
 		root, ok := v.(*doc.Object)
 		if !ok {
-			return nil, lockErr("The file is not a YAML mapping of keys to values.", nil)
+			return nil, lockErr("The file is not a JSON object.", nil)
 		}
 		format, ok := Format(root)
 		if !ok || format != pkgmodel.Format {
@@ -197,11 +197,11 @@ func ParseWorkspace(data []byte, path string) (*pkgmodel.LockFile, error) {
 		return lf, nil
 	}
 	if otherFormat {
-		return nil, &LockFormatError{OtherFormat: true, Err: err, Message: fmt.Sprintf("The workspace file"+
+		return nil, &LockFormatError{OtherFormat: true, Err: err, Message: fmt.Sprintf("The state file"+
 			" '%s' was written by a different version of lip, so this lip cannot tell which packages"+
 			" are installed.", path)}
 	}
-	return nil, &LockFormatError{Err: err, Message: fmt.Sprintf("The workspace file '%s' is invalid, so lip"+
+	return nil, &LockFormatError{Err: err, Message: fmt.Sprintf("The state file '%s' is invalid, so lip"+
 		" cannot tell which packages are installed. If you edited it by hand, undo the change; if you"+
 		" have a copy of the file, restore it.", path)}
 }
@@ -247,7 +247,7 @@ func (lf *lockFile) toModel() *pkgmodel.LockFile {
 	return out
 }
 
-// validateRead is LockStore.Validate on a deserialized workspace file, which
+// validateRead is LockStore.Validate on a deserialized state file, which
 // may hold null packages and null files.
 func validateRead(lf *lockFile) error {
 	if err := validateEnvironment(lf.platform, lf.runtime); err != nil {
@@ -300,8 +300,8 @@ func validatePackage(at string, manifest any, variant string, commit *string) er
 	return nil
 }
 
-// ValidateWorkspace is LockStore.Validate: checks what workspace.schema.yaml
-// requires of a workspace file beyond its shape. The error is a
+// ValidateWorkspace is LockStore.Validate: checks what state.schema.json
+// requires of a state file beyond its shape. The error is a
 // *LockFormatError. A nil Packages or Files is an empty array; a Commit of ""
 // is an absent one.
 func ValidateWorkspace(lf *pkgmodel.LockFile) error {
@@ -347,7 +347,7 @@ func describePackage(manifest any, variant string) string {
 	return strings.TrimRightFunc(ref.Identity(id, variant)+" "+stringMember(manifest, "version"), unicode.IsSpace)
 }
 
-// MarshalWorkspace is the bytes LockStore.Stage writes for a workspace file:
+// MarshalWorkspace is the bytes LockStore.Stage writes for a state file:
 // format, platform, runtime and packages; for each package its manifest (as
 // it is), variant, explicit, ref, commit (left out when "") and files.
 func MarshalWorkspace(lf *pkgmodel.LockFile) []byte {
@@ -373,7 +373,7 @@ func MarshalWorkspace(lf *pkgmodel.LockFile) []byte {
 		packages[i] = o
 	}
 	root.Set("packages", packages)
-	return doc.MarshalYAML(root)
+	return doc.MarshalJSONFile(root)
 }
 
 // SaveWorkspace is LockStore.Save: StageWorkspace, then CommitStaged. It is
@@ -385,9 +385,9 @@ func (s WorkspaceStore) SaveWorkspace(root string, lf *pkgmodel.LockFile) error 
 	return s.CommitStaged(root)
 }
 
-// StageWorkspace is LockStore.Stage: writes the workspace file to
-// <root>/.lip/workspace.yaml.tmp, replacing an earlier staged one, creating
-// .lip (hidden) when needed. A workspace file that is not valid is not
+// StageWorkspace is LockStore.Stage: writes the state file to
+// <root>/.lip/state.json.tmp, replacing an earlier staged one, creating
+// .lip (hidden) when needed. A state file that is not valid is not
 // written: the error is a bug of the caller (errors.Is ErrInvalidWorkspace).
 func (s WorkspaceStore) StageWorkspace(root string, lf *pkgmodel.LockFile) error {
 	if err := ValidateWorkspace(lf); err != nil {
@@ -403,22 +403,22 @@ func (s WorkspaceStore) StageWorkspace(root string, lf *pkgmodel.LockFile) error
 	temp := filepath.Join(r, txn.LipDirectory, txn.StagedFile)
 	if err := s.fs().WriteFile(temp, MarshalWorkspace(lf)); err != nil {
 		if s.fileExists(temp) {
-			// A staged workspace file is never read, and the next save replaces it.
+			// A staged state file is never read, and the next save replaces it.
 			_ = s.fs().Remove(temp)
 		}
-		return &txn.Error{Msg: fmt.Sprintf("Cannot write the new workspace file '%s'.", temp), Err: err}
+		return &txn.Error{Msg: fmt.Sprintf("Cannot write the new state file '%s'.", temp), Err: err}
 	}
 	return nil
 }
 
-// CommitStaged is LockStore.CommitStaged: moves the staged workspace file into
+// CommitStaged is LockStore.CommitStaged: moves the staged state file into
 // place in one rename, the point at which an operation commits. It does
 // nothing when none is staged, and fails only when the file was not moved.
 //
-// The first workspace file of a workspace whose workspace file was derived
-// from its tooth_lock.json replaces it: when no workspace file existed and
+// The first state file of a workspace whose state file was derived
+// from its tooth_lock.json replaces it: when no state file existed and
 // tooth_lock.json is one protocol/compatibility.md §3 reads, tooth_lock.json
-// is deleted (best effort) once the workspace file is in place.
+// is deleted (best effort) once the state file is in place.
 func (s WorkspaceStore) CommitStaged(root string) error {
 	r, err := normalizeRoot(root)
 	if err != nil {
@@ -434,8 +434,8 @@ func (s WorkspaceStore) CommitStaged(root string) error {
 		return err
 	}
 	if migrated {
-		// The workspace file is in place; what follows must not fail the
-		// operation. A tooth_lock.json is not read once the workspace file
+		// The state file is in place; what follows must not fail the
+		// operation. A tooth_lock.json is not read once the state file
 		// exists.
 		_ = s.fs().Remove(filepath.Join(r, ToothLockFile))
 	}
@@ -459,7 +459,7 @@ func (s WorkspaceStore) StagedHooks(root string) (commit, discard func() error) 
 }
 
 // RecoverHooks are the txn.RecoverOptions with which recovery commits or
-// discards the staged workspace file as lip does (CommitStaged, with its
+// discards the staged state file as lip does (CommitStaged, with its
 // tooth_lock.json deletion, and DiscardStaged), on the store's file system.
 func (s WorkspaceStore) RecoverHooks(root string) txn.RecoverOptions {
 	commit, discard := s.StagedHooks(root)

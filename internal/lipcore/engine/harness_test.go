@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/archive"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/doc"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/gitproto"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/install"
@@ -27,7 +28,7 @@ import (
 )
 
 // A port of WorkspaceHarness.cs: a workspace with the whole pipeline (the
-// real archive provider, resolver, solver, installer and workspace file
+// real archive provider, resolver, solver, installer and state file
 // store) over a fake git remote whose repositories are in memory, and a
 // fake HTTP server for downloads.
 
@@ -141,8 +142,26 @@ func (h *harness) addDownload(url string, content []byte) {
 // path is the absolute path of a workspace-relative '/'-separated path.
 func (h *harness) path(rel string) string { return filepath.Join(h.root, filepath.FromSlash(rel)) }
 
+// tomlFixture is the content of a file of a test: a lip.toml written as
+// JSON becomes the TOML file of the same value; anything else is as written.
+func tomlFixture(name, content string) string {
+	if name != "lip.toml" && !strings.HasSuffix(name, "/lip.toml") {
+		return content
+	}
+	v, err := doc.ParseJSON([]byte(content), name)
+	if err != nil {
+		return content
+	}
+	b, err := doc.MarshalTOML(v)
+	if err != nil {
+		return content
+	}
+	return string(b)
+}
+
 func (h *harness) addFile(rel, content string) {
 	h.t.Helper()
+	content = tomlFixture(rel, content)
 	p := h.path(rel)
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		h.t.Fatal(err)
@@ -175,12 +194,12 @@ func (h *harness) read(rel string) string {
 	return string(b)
 }
 
-// lock is the workspace file; it fails the test when there is none.
+// lock is the state file; it fails the test when there is none.
 func (h *harness) lock() *pkgmodel.LockFile {
 	h.t.Helper()
 	lf, ok, err := pkgfile.LoadWorkspace(h.root)
 	if err != nil || !ok {
-		h.t.Fatalf("no workspace file: %v", err)
+		h.t.Fatalf("no state file: %v", err)
 	}
 	return lf
 }
@@ -268,13 +287,13 @@ func (h *harness) addTag(spec, version string, files ...string) string {
 	return h.git.setRef(spec, "refs/tags/v"+version, files)
 }
 
-// lipYAML is a lip.yaml whose variant "" has one entry for (server,
-// win-x64) with the given members (comma-separated JSON members).
-func lipYAML(id, version, entry string) string {
-	return lipYAMLFor(id, version, pkgmodel.PlatformServer, entry)
+// lipJSON is a lip.toml, written as JSON, whose variant "" has one entry for
+// (server, win-x64) with the given members (comma-separated JSON members).
+func lipJSON(id, version, entry string) string {
+	return lipJSONFor(id, version, pkgmodel.PlatformServer, entry)
 }
 
-func lipYAMLFor(id, version, platform, entry string) string {
+func lipJSONFor(id, version, platform, entry string) string {
 	if entry != "" {
 		entry = ", " + entry
 	}
@@ -320,7 +339,7 @@ func zipOf(files ...string) []byte {
 		if err != nil {
 			panic(err)
 		}
-		if _, err := f.Write([]byte(files[i+1])); err != nil {
+		if _, err := f.Write([]byte(tomlFixture(files[i], files[i+1]))); err != nil {
 			panic(err)
 		}
 	}
@@ -355,7 +374,7 @@ func (g *fakeGit) setRef(spec, refName string, files []string) string {
 	src := &memSource{files: map[string][]byte{}}
 	for i := 0; i+1 < len(files); i += 2 {
 		src.keys = append(src.keys, files[i])
-		src.files[files[i]] = []byte(files[i+1])
+		src.files[files[i]] = []byte(tomlFixture(files[i], files[i+1]))
 	}
 	sum := sha1.Sum([]byte(fmt.Sprintf("%s@%s#%d", repo, refName, g.n)))
 	g.n++

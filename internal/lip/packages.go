@@ -50,9 +50,9 @@ var engineHTTPClient = &http.Client{
 }
 
 // dirLocks serializes writing operations per workspace so the workspace
-// (.lip/workspace.yaml) has one writer at a time. List does not take it: lip
+// (.lip/state.json) has one writer at a time. List does not take it: lip
 // runs one process per call, so a List during an install reads the last
-// saved workspace file, which lip replaces atomically.
+// saved state file, which lip replaces atomically.
 var dirLocks sync.Map // lock key -> chan struct{} (capacity 1)
 
 // cacheLock lets package operations share the download cache while
@@ -465,10 +465,17 @@ func isAlreadyExplicitlyInstalled(err error) bool {
 }
 
 // IsAlreadyExplicitlyInstalled reports whether err is lip's refusal to
-// install a package that is already explicitly installed (lip 0.38 asks to
-// run update instead).
+// install a package that is already explicitly installed (lip asks to run
+// update instead).
 func IsAlreadyExplicitlyInstalled(err error) bool {
 	return isAlreadyExplicitlyInstalled(err)
+}
+
+// IsNoPackageFound reports whether err is lip's failure to find a package
+// that can be installed in the workspace for a package argument (for
+// example a variant the package does not have).
+func IsNoPackageFound(err error) bool {
+	return errors.Is(err, engine.ErrNoPackageFound)
 }
 
 // formatEngineError is the full message of an engine error, as lip prints

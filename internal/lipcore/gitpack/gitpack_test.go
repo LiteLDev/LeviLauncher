@@ -95,7 +95,7 @@ func TestParseTree(t *testing.T) {
 }
 
 func TestWalkNames(t *testing.T) {
-	for _, name := range []string{"", ".", "..", "a/b"} {
+	for _, name := range []string{"", ".", "..", "a/b", "a\\b"} {
 		s := NewStore()
 		blob := s.Put(ObjBlob, []byte("x"))
 		root := s.Put(ObjTree, rawTree(TreeEntry{"100644", name, blob}))
@@ -107,7 +107,7 @@ func TestWalkNames(t *testing.T) {
 		}
 	}
 	// protocol/package.md section 1 puts no other restriction on names.
-	for _, name := range []string{".git", ".GIT", "a\\b"} {
+	for _, name := range []string{".git", ".GIT"} {
 		s := NewStore()
 		blob := s.Put(ObjBlob, []byte("x"))
 		root := s.Put(ObjTree, rawTree(TreeEntry{"100644", name, blob}))
@@ -619,5 +619,14 @@ func checkTree(t *testing.T, dir string, s *Store, commitish string) {
 	}
 	if !sawExec {
 		t.Error("no executable file found")
+	}
+}
+
+func TestIsSafeEntryName(t *testing.T) {
+	for name, want := range map[string]bool{"a": true, "a.b": true, "": false, ".": false, "..": false,
+		"a/b": false, `a\b`: false, `\`: false} {
+		if got := isSafeEntryName(name); got != want {
+			t.Errorf("isSafeEntryName(%q) = %v, want %v", name, got, want)
+		}
 	}
 }

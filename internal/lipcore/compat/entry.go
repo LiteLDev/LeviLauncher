@@ -32,7 +32,7 @@ var (
 // .NET runtime identifier without wildcards.
 func IsRuntime(value string) bool { return runtimeRegex.MatchString(value) }
 
-// checkPath is PackageFileParser.ReadPath: a path of lip.schema.yaml.
+// checkPath is PackageFileParser.ReadPath: a path of lip.schema.toml.
 func checkPath(value string) error {
 	var reason string
 	switch {
@@ -91,7 +91,7 @@ func checkPlacement(src, dest string) error {
 }
 
 // IsValidPlacement is PackageFileParser.IsValidPlacement: whether a member of
-// place is valid (lip.schema.yaml "place").
+// place is valid (lip.schema.toml "place").
 func IsValidPlacement(src, dest string) bool { return checkPlacement(src, dest) == nil }
 
 func stringList(v any) []string {

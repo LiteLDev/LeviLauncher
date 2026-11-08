@@ -17,14 +17,15 @@ import (
 
 var lipIdentifierPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$`)
 
-// leviLaminaPackageID is LeviLamina's package id. The launcher requests the
-// bare repository: on the client platform lip maps the "client" label of a
-// tooth.json to the variant "".
+// leviLaminaPackageID is LeviLamina's package id.
 const leviLaminaPackageID = "github.com/LiteLDev/LeviLamina"
 
-// lipClientVariant is the variant lip v0.x used for client packages. Requests
-// for it are made without a variant; installed packages recorded with it (in
-// workspaces migrated from tooth_lock.json) are matched by package id.
+// lipClientVariant is the variant that holds the client build of a package:
+// the label "client" of a tooth.json, and the variant lip migrate gives a
+// package for the client. A request that names no variant asks for it, and
+// falls back to the variant "" when lip finds no package for it (a package
+// whose variant "" has entries for both platforms). Installed packages are
+// matched by package id, whatever their variant.
 const lipClientVariant = "client"
 
 const lipPackageQueryTimeout = 10 * time.Second
@@ -41,6 +42,9 @@ var (
 type lipPackageIdentifierParts struct {
 	base    string
 	variant string
+	// bare is set for an identifier ending in "#" without a variant, which
+	// names the variant "".
+	bare bool
 }
 
 // lipPackageRequest is what the launcher asks lip for a frontend identifier
@@ -53,9 +57,14 @@ type lipPackageRequest struct {
 	packageID string
 	// variant is the requested variant other than client, or "".
 	variant string
-	// requestRef is the source of a new install: the package id, with
-	// "#variant" for a variant other than client.
+	// requestRef is the source of a new install: the package id with
+	// "#variant", or with "#client" when the identifier names no other
+	// variant.
 	requestRef string
+	// fallbackRef is the source a new install falls back to when lip finds
+	// no package for requestRef: the bare package id for a request of the
+	// client variant, otherwise "".
+	fallbackRef string
 }
 
 type lipPackageInstallStateRequest struct {
@@ -76,7 +85,9 @@ func canonicalizeLIPPackageIdentifier(identifier string) lipPackageIdentifierPar
 	}
 
 	variant := ""
+	marker := false
 	if idx := strings.Index(normalized, "#"); idx >= 0 {
+		marker = true
 		variant = strings.TrimSpace(normalized[idx+1:])
 		normalized = strings.TrimSpace(normalized[:idx])
 	}
@@ -86,6 +97,7 @@ func canonicalizeLIPPackageIdentifier(identifier string) lipPackageIdentifierPar
 	} else if idx := strings.Index(normalized, "@"); idx >= 0 {
 		normalized = strings.TrimSpace(normalized[:idx])
 	}
+	bare := marker && variant == ""
 	lowerNormalized := strings.ToLower(normalized)
 	if strings.HasPrefix(lowerNormalized, "https://") {
 		normalized = normalized[len("https://"):]
@@ -99,17 +111,19 @@ func canonicalizeLIPPackageIdentifier(identifier string) lipPackageIdentifierPar
 
 	parts := strings.FieldsFunc(normalized, func(r rune) bool { return r == '/' })
 	if len(parts) == 2 {
-		return lipPackageIdentifierParts{base: strings.Join(parts, "/"), variant: variant}
+		return lipPackageIdentifierParts{base: strings.Join(parts, "/"), variant: variant, bare: bare}
 	}
 	if len(parts) == 3 && strings.EqualFold(parts[0], "github.com") {
-		return lipPackageIdentifierParts{base: fmt.Sprintf("%s/%s", parts[1], parts[2]), variant: variant}
+		return lipPackageIdentifierParts{base: fmt.Sprintf("%s/%s", parts[1], parts[2]), variant: variant, bare: bare}
 	}
 
 	return lipPackageIdentifierParts{}
 }
 
 // buildLIPPackageRequest maps a frontend identifier to the lip package it
-// names. The variant "client" (or none) requests the bare repository.
+// names. The variant "client" (or none) requests the client variant, falling
+// back to the bare repository; an identifier ending in "#" requests the bare
+// repository.
 func buildLIPPackageRequest(identifier string) (lipPackageRequest, bool) {
 	parts := canonicalizeLIPPackageIdentifier(identifier)
 	if !lipIdentifierPattern.MatchString(parts.base) {
@@ -119,11 +133,17 @@ func buildLIPPackageRequest(identifier string) (lipPackageRequest, bool) {
 		identifier: parts.base,
 		packageID:  "github.com/" + parts.base,
 	}
-	req.requestRef = req.packageID
+	req.requestRef = req.packageID + "#" + lipClientVariant
+	req.fallbackRef = req.packageID
+	if parts.bare {
+		req.requestRef = req.packageID
+		req.fallbackRef = ""
+	}
 	if parts.variant != "" && !strings.EqualFold(parts.variant, lipClientVariant) {
 		req.variant = parts.variant
 		req.identifier += "#" + parts.variant
-		req.requestRef += "#" + parts.variant
+		req.requestRef = req.packageID + "#" + parts.variant
+		req.fallbackRef = ""
 	}
 	return req, true
 }
@@ -152,8 +172,8 @@ func lipInstalledFor(states map[string]lip.PackageInstallState, packageID, varia
 
 // lipOperationRef is the package argument for an operation on packageID with
 // variant: the identity the workspace records when lipInstalledFor finds an
-// installed package (so a "#client" package migrated from tooth_lock.json is
-// changed in place), otherwise requestRef.
+// installed package (so an installed package is changed in place, whatever
+// its variant), otherwise requestRef.
 func lipOperationRef(states map[string]lip.PackageInstallState, packageID, variant, requestRef string) string {
 	if state, ok := lipInstalledFor(states, packageID, variant); ok && strings.TrimSpace(state.Identity) != "" {
 		return state.Identity
@@ -163,6 +183,13 @@ func lipOperationRef(states map[string]lip.PackageInstallState, packageID, varia
 
 func withLIPVersion(packageRef, version string) string {
 	return fmt.Sprintf("%s@%s", packageRef, version)
+}
+
+// isLipNoPackageFoundFor reports whether err is lip's failure to find a
+// package for the package argument arg.
+func isLipNoPackageFoundFor(err error, arg string) bool {
+	return lip.IsNoPackageFound(err) &&
+		strings.Contains(strings.ToLower(lip.ErrorMessage(err)), "'"+strings.ToLower(arg)+"'")
 }
 
 func resolveLIPTargetDir(targetName string) (string, string) {
@@ -338,7 +365,16 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 		return ""
 	}
 
-	if err := lipInstallPackages(ctx, targetDir, installPkgs); err != nil {
+	err := lipInstallPackages(ctx, targetDir, installPkgs)
+	if err != nil && req.fallbackRef != "" && isLipNoPackageFoundFor(err, pkg) {
+		// No client variant: the variant "" holds the client build.
+		log.Printf("InstallLIPPackage: no package for %s, trying %s", pkg, req.fallbackRef)
+		pkg = withLIPVersion(req.fallbackRef, normalizedVersion)
+		installPkgs[0] = pkg
+		targetOnlyPkgs = []string{pkg}
+		err = lipInstallPackages(ctx, targetDir, installPkgs)
+	}
+	if err != nil {
 		// If the pinned LeviLamina package is already installed and blocks install,
 		// retry with target package only.
 		if hasPinnedLL && isLipAlreadyExplicitlyInstalledFor(err, leviLaminaPackageID) {

@@ -70,7 +70,7 @@ func readArchive(a *archiveHandle) (*packageDocument, error) {
 	var d *packageDocument
 	if fileName == pkgmodel.PackageFileName {
 		var doc *pkgmodel.Document
-		doc, err = pkgfile.ParseYAML(data)
+		doc, err = pkgfile.ParseTOML(data)
 		if err == nil {
 			var v semver.Version
 			if v, err = semver.ParseStrict(doc.Version); err == nil {

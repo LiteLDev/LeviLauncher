@@ -58,13 +58,10 @@ func (e ExactVersion) Contains(v semver.Version) bool { return e.Version.Compare
 func (e ExactVersion) String() string                 { return "=" + e.Version.String() }
 func (e ExactVersion) Key() string                    { return "exact:" + e.Version.String() }
 
-// Dependency is PackageDependency: a source, a range, and whether the source
-// is the key of a dependency of an entry derived from a tooth.json
-// (clientCompat).
+// Dependency is PackageDependency: a source and a range.
 type Dependency struct {
-	Source       Ref
-	Range        Constraint
-	ClientCompat bool
+	Source Ref
+	Range  Constraint
 }
 
 // Request is PackageRequest.
@@ -89,8 +86,6 @@ type Candidate interface {
 	ArchiveKey() string
 	// Source is the ref it was resolved for.
 	Source() Ref
-	// Derived: its entry was derived from a tooth.json.
-	Derived() bool
 	Dependencies() []Dependency
 	// ModName is the mod name of a mod ("" for a package that is not a mod),
 	// obtaining its asset of type mcmod. An error is McmodInstallException (a
@@ -118,8 +113,7 @@ type Sequence interface {
 // protocol/package.md §4, producing candidates lazily and reporting a
 // diagnostic for every path that produced none.
 type Resolver interface {
-	ResolveLazy(ctx context.Context, source Ref, rng Constraint, clientCompat bool,
-		onDiagnostic func(Diagnostic)) Sequence
+	ResolveLazy(ctx context.Context, source Ref, rng Constraint, onDiagnostic func(Diagnostic)) Sequence
 }
 
 // SliceSequence is a Sequence over a slice.

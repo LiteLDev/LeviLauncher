@@ -96,14 +96,14 @@ func TestNetRemoteLeviLamina(t *testing.T) {
 	}
 	keys := src.Keys()
 	manifest := ""
-	for _, k := range []string{"tooth.json", "lip.yaml"} {
+	for _, k := range []string{"tooth.json", "lip.toml"} {
 		if slices.Contains(keys, k) {
 			manifest = k
 			break
 		}
 	}
 	if manifest == "" {
-		t.Fatalf("no tooth.json or lip.yaml among %d files", len(keys))
+		t.Fatalf("no tooth.json or lip.toml among %d files", len(keys))
 	}
 	rc, err := src.Open(manifest)
 	if err != nil {
@@ -132,7 +132,7 @@ func TestNetRemoteLeviLamina(t *testing.T) {
 			t.Fatalf("tooth.json without format_version: %s", data)
 		}
 	} else if !strings.Contains(string(data), "format") {
-		t.Fatalf("lip.yaml: %s", data)
+		t.Fatalf("lip.toml: %s", data)
 	}
 	t.Logf("%s: %d files, %s of %d bytes", newest.Name, len(keys), manifest, len(data))
 

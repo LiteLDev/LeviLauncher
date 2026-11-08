@@ -4,7 +4,7 @@
 // folders. It is the Go port of the window's buildBackupLipPackagesFromSnapshot
 // (frontend/src/hooks/useInstanceSettings.ts), with one difference: a
 // package's folders come from the files its workspace records (lip 0.38's
-// .lip/workspace.yaml), which is exact and needs no network, and only fall
+// .lip/state.json), which is exact and needs no network, and only fall
 // back to name matching when no files are recorded. The window matched mods
 // to packages through the online LIP index instead.
 package backupmods
@@ -306,7 +306,7 @@ func InstalledPackages(ctx context.Context, instanceDir string) ([]Package, erro
 	return out, nil
 }
 
-// modFolderOf returns <folder> of a workspace file "mods/<folder>/...".
+// modFolderOf returns <folder> of a state file "mods/<folder>/...".
 func modFolderOf(file string) (string, bool) {
 	f := strings.ReplaceAll(strings.TrimSpace(file), `\`, "/")
 	parts := strings.Split(f, "/")

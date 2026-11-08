@@ -33,7 +33,7 @@ var tsBlobs = func() map[string]string {
 }()
 
 var tsTree = []TreeEntry{
-	{"lip.yaml", 100644, tsOid("{}")},
+	{"lip.toml", 100644, tsOid("{}")},
 	{"a.dll", 100644, tsOid("a")},
 	{"sub/b.txt", 100644, tsOid("b")},
 	{"sub/c.txt", 100644, tsOid("c")},
@@ -102,7 +102,7 @@ func TestTreeSourceKeysModes100644And100755Only(t *testing.T) {
 	src := newTreeSource(&fakeTreeClient{}, context.Background(), tsRepoURL, tsCommit)
 	// The symlink (120000) and the group-writable file (100664) are not
 	// part of a git archive (protocol/package.md §1).
-	if keys := src.Keys(); !reflect.DeepEqual(keys, []string{"lip.yaml", "a.dll", "sub/b.txt", "sub/c.txt", "run.sh"}) {
+	if keys := src.Keys(); !reflect.DeepEqual(keys, []string{"lip.toml", "a.dll", "sub/b.txt", "sub/c.txt", "run.sh"}) {
 		t.Fatalf("keys %v", keys)
 	}
 }
@@ -164,11 +164,11 @@ func TestTreeSourceAnotherInstanceFetchesAgain(t *testing.T) {
 	f := &fakeTreeClient{}
 	ctx := context.Background()
 	first := newTreeSource(f, ctx, tsRepoURL, tsCommit)
-	if err := first.Prefetch(ctx, []string{"lip.yaml"}); err != nil {
+	if err := first.Prefetch(ctx, []string{"lip.toml"}); err != nil {
 		t.Fatal(err)
 	}
 	second := newTreeSource(f, ctx, tsRepoURL, tsCommit)
-	if got := mustRead(t)(second.Open("lip.yaml")); got != "{}" || len(f.fetchCalls) != 2 {
+	if got := mustRead(t)(second.Open("lip.toml")); got != "{}" || len(f.fetchCalls) != 2 {
 		t.Fatalf("%q, %d fetches", got, len(f.fetchCalls))
 	}
 }
@@ -197,7 +197,7 @@ func TestTreeSourcePrefetchMultipleKeysSingleCall(t *testing.T) {
 	if n, ok := src.Size("run.sh"); !ok || n != 3 {
 		t.Fatalf("size %d %v", n, ok)
 	}
-	if _, ok := src.Size("lip.yaml"); ok {
+	if _, ok := src.Size("lip.toml"); ok {
 		t.Fatal("size of a blob not prefetched")
 	}
 }

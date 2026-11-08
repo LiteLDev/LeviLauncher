@@ -478,7 +478,7 @@ func isSafeEntryName(name string) bool {
 	case "", ".", "..":
 		return false
 	}
-	return !strings.Contains(name, "/")
+	return !strings.ContainsAny(name, "/\\")
 }
 
 // HashObject returns the hex SHA-1 of "<type> <len>\x00<data>".

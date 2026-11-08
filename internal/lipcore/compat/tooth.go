@@ -11,9 +11,6 @@ import (
 )
 
 const (
-	// ClientLabel is the label whose variant is the variant "" on the client
-	// platform (ToothCompat.ClientLabel).
-	ClientLabel = "client"
 	// ToothFileName is the file at the root of an archive of lip v0.x that
 	// makes it a package (ToothCompat.ToothFileName).
 	ToothFileName = "tooth.json"

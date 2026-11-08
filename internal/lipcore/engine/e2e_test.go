@@ -25,7 +25,7 @@ import (
 // runs lip in one workspace and the engine (server platform, runtime
 // win-x64) in another, step by step; after every step the file trees (paths,
 // contents, hidden attributes; .lip excluded), the bytes of
-// .lip/workspace.yaml, the list output and the success of the step must be
+// .lip/state.json, the list output and the success of the step must be
 // the same.
 //
 //	LIP_E2E=1 LIP_REF=C:\...\lip.exe go test ./internal/lipcore/engine -run E2E -v -timeout 30m
@@ -45,7 +45,7 @@ type e2eStep struct {
 
 type e2eFixture struct {
 	name  string
-	yaml  string
+	json  string
 	files []string // path, content pairs
 }
 
@@ -61,39 +61,39 @@ const (
 	e2eLLAsset = "https://github.com/LiteLDev/LeviLamina/releases/download/v26.60.4/levilamina-v26.60.4-server-release-windows-x64.zip"
 )
 
-func e2eYAML(id, version, members string) string {
-	return fmt.Sprintf("format: 4\nid: %s\nversion: %q\nvariants:\n  \"\":\n    - { \"platform\": \"server\", \"runtime\": \"win-x64\"%s }\n",
-		id, version, members)
+func e2eJSON(id, version, members string) string {
+	return fmt.Sprintf(`{ "format": 4, "id": %q, "version": %q, "variants": { "": [ { "platform": "server",`+
+		` "runtime": "win-x64"%s } ] } }`, id, version, members)
 }
 
 func e2eScenarios() []e2eScenario {
 	fixA := func(version, content string) e2eFixture {
-		return e2eFixture{name: "a", yaml: e2eYAML("example.com/e2e/a", version, `, "assets": [ { "type": "self", "place": [
+		return e2eFixture{name: "a", json: e2eJSON("example.com/e2e/a", version, `, "assets": [ { "type": "self", "place": [
 		  { "src": "a.txt", "dest": "a/a.txt" }, { "src": "dir/", "dest": "d/" }, { "src": "*.cfg", "dest": "cfg/" } ] } ],
 		  "preserve": [ "cfg/keep.cfg" ], "purge": [ "a/cache/", "*.log" ],
 		  "hooks": { "post_install": [ "echo installed> hook-a.txt" ], "pre_uninstall": [ "echo removing> hook-a-un.txt" ] }`),
 			files: []string{"a.txt", content, "dir/x.txt", "x", "dir/sub/y.txt", "y", "keep.cfg", "default", "other.cfg", "o"}}
 	}
-	fixB := e2eFixture{name: "b", yaml: e2eYAML("example.com/e2e/b", "1.0.0",
+	fixB := e2eFixture{name: "b", json: e2eJSON("example.com/e2e/b", "1.0.0",
 		`, "assets": [ { "type": "self", "place": [ { "src": "b.txt", "dest": "b/b.txt" } ] } ]`),
 		files: []string{"b.txt", "b"}}
-	fixConflict := e2eFixture{name: "conflict", yaml: e2eYAML("example.com/e2e/conflict", "1.0.0",
+	fixConflict := e2eFixture{name: "conflict", json: e2eJSON("example.com/e2e/conflict", "1.0.0",
 		`, "assets": [ { "type": "self", "place": [ { "src": "c.txt", "dest": "a/a.txt" } ] } ]`),
 		files: []string{"c.txt", "c"}}
-	fixFail := e2eFixture{name: "fail", yaml: e2eYAML("example.com/e2e/fail", "1.0.0",
+	fixFail := e2eFixture{name: "fail", json: e2eJSON("example.com/e2e/fail", "1.0.0",
 		`, "assets": [ { "type": "self", "place": [ { "src": "f.txt", "dest": "f/f.txt" } ] } ],
 		  "hooks": { "post_install": [ "exit 1" ] }`),
 		files: []string{"f.txt", "f"}}
-	fixVariants := e2eFixture{name: "v", yaml: "format: 4\nid: example.com/e2e/v\nversion: \"2.0.0\"\nvariants:\n" +
-		"  \"\":\n    - { \"platform\": \"server\", \"runtime\": \"win-x64\", \"assets\": [ { \"type\": \"self\", \"place\": [ { \"src\": \"v.txt\", \"dest\": \"v/default.txt\" } ] } ] }\n" +
-		"  extra:\n    - { \"platform\": \"server\", \"runtime\": \"win-x64\", \"assets\": [ { \"type\": \"self\", \"place\": [ { \"src\": \"v.txt\", \"dest\": \"v/extra.txt\" } ] } ] }\n" +
-		"    - { \"platform\": \"server\", \"runtime\": \"linux-x64\" }\n",
+	fixVariants := e2eFixture{name: "v", json: `{ "format": 4, "id": "example.com/e2e/v", "version": "2.0.0", "variants": {
+		  "": [ { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "v.txt", "dest": "v/default.txt" } ] } ] } ],
+		  "extra": [ { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "v.txt", "dest": "v/extra.txt" } ] } ] },
+		    { "platform": "server", "runtime": "linux-x64" } ] } }`,
 		files: []string{"v.txt", "v"}}
-	fixZip := e2eFixture{name: "zipasset", yaml: e2eYAML("example.com/e2e/zipasset", "1.0.0",
+	fixZip := e2eFixture{name: "zipasset", json: e2eJSON("example.com/e2e/zipasset", "1.0.0",
 		`, "assets": [ { "type": "self", "place": [ { "src": "s.txt", "dest": "z/s.txt" } ] },
 		  { "type": "zip", "urls": [ "`+e2eLLAsset+`" ], "place": [ { "src": "LeviLamina/", "dest": "z/ll/" } ] } ]`),
 		files: []string{"s.txt", "s"}}
-	fixTooth := e2eFixture{name: "tooth", yaml: "", files: []string{"tooth.json", `{
+	fixTooth := e2eFixture{name: "tooth", json: "", files: []string{"tooth.json", `{
 	  "format_version": 2, "tooth": "example.com/e2e/tooth", "version": "0.1.0",
 	  "files": { "place": [ { "src": "t/*", "dest": "tt" } ], "preserve": [ "tt/keep.txt" ] } }`,
 		"t/one.txt", "1", "t/keep.txt", "k"}}
@@ -126,7 +126,7 @@ func e2eScenarios() []e2eScenario {
 	return []e2eScenario{
 		{name: "lifecycle", fixtures: []e2eFixture{fixA("1.0.0", "a1")}, steps: []e2eStep{
 			add("cfg/keep.cfg", "mine"), in("@a"), list, up(), up("@a"),
-			{op: "mutate", args: []string{"a"}, files: append([]string{"lip.yaml", a2.yaml}, a2.files...)},
+			{op: "mutate", args: []string{"a"}, files: append([]string{"lip.toml", a2.json}, a2.files...)},
 			up(), list, add("a/cache/tmp", "t", "x.log", "l"), un("example.com/e2e/a"), list,
 		}},
 		{name: "dryrun", fixtures: []e2eFixture{fixA("1.0.0", "a1"), fixB}, steps: []e2eStep{
@@ -180,8 +180,8 @@ func e2eScenarios() []e2eScenario {
 func writeE2EFixture(t *testing.T, dir string, f e2eFixture) {
 	t.Helper()
 	path := filepath.Join(dir, f.name)
-	if f.yaml != "" {
-		writePairsTo(t, path, []string{"lip.yaml", f.yaml})
+	if f.json != "" {
+		writePairsTo(t, path, []string{"lip.toml", f.json})
 	}
 	writePairsTo(t, path, f.files)
 }
@@ -193,7 +193,7 @@ func writePairsTo(t *testing.T, root string, pairs []string) {
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(p, []byte(pairs[i+1]), 0o644); err != nil {
+		if err := os.WriteFile(p, []byte(tomlFixture(pairs[i], pairs[i+1])), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -299,7 +299,7 @@ func readOrNone(p string) string {
 func TestE2EDifferentialAgainstLip(t *testing.T) {
 	refLip := os.Getenv("LIP_REF")
 	if os.Getenv("LIP_E2E") != "1" || refLip == "" {
-		t.Skip("set LIP_E2E=1 and LIP_REF to the lip 0.38 executable")
+		t.Skip("set LIP_E2E=1 and LIP_REF to the lip executable")
 	}
 	cfg, _, err := config.Load()
 	if err != nil {
@@ -419,10 +419,10 @@ func TestE2EDifferentialAgainstLip(t *testing.T) {
 				if a, b := e2eTree(t, wsA), e2eTree(t, wsB); !reflect.DeepEqual(a, b) {
 					t.Errorf("%s: trees differ\n%s\nlip output:\n%s", label, diffTrees(a, b), refOut)
 				}
-				wa := readOrNone(filepath.Join(wsA, ".lip", "workspace.yaml"))
-				wb := readOrNone(filepath.Join(wsB, ".lip", "workspace.yaml"))
+				wa := readOrNone(filepath.Join(wsA, ".lip", "state.json"))
+				wb := readOrNone(filepath.Join(wsB, ".lip", "state.json"))
 				if wa != wb {
-					t.Errorf("%s: workspace.yaml differs\nlip:\n%s\nours:\n%s", label, wa, wb)
+					t.Errorf("%s: state.json differs\nlip:\n%s\nours:\n%s", label, wa, wb)
 				}
 				if testing.Verbose() {
 					t.Logf("%s: lip ok=%v, ours err=%v", label, refOK, ourErr)

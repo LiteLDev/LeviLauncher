@@ -29,8 +29,8 @@ func Derive(tooth []byte, platform, runtime string, version *semver.Version) (*p
 // read as for the environment (platform "server" or "client", runtime a .NET
 // runtime identifier), with version as the version of the package (its tag
 // version), or, when nil, the version of the tooth.json. Its Raw is the
-// derived document (a *doc.Object), and its entries are Derived, with Raw the
-// entry within it.
+// derived document (a *doc.Object), and the Raw of each entry is the entry
+// within it.
 //
 // It fails with a *FormatError when the variants of a label cannot be merged
 // (lip v0.37.0 failed on them too), or when a derived entry is not valid in a
@@ -84,14 +84,6 @@ func (t *Tooth) Derive(platform, runtime string, version *semver.Version) (*pkgm
 		derived.Set(label, nilIfNone(entry))
 	}
 
-	if platform == pkgmodel.PlatformClient && seen[ClientLabel] {
-		var entry any
-		if client, ok := derived.Get(ClientLabel); ok && client != nil {
-			entry = client.(*doc.Object).Clone()
-		}
-		derived.Set("", entry)
-	}
-
 	variants := doc.NewObject()
 	for _, label := range derived.Keys() {
 		if e, _ := derived.Get(label); e != nil {
@@ -128,7 +120,6 @@ func (t *Tooth) Derive(platform, runtime string, version *semver.Version) (*pkgm
 				" %s to %s with 'lip migrate'.", ToothFileName, t.ID, version, runtime, label,
 				pkgmodel.PackageFileName, ToothFileName, pkgmodel.PackageFileName)
 		}
-		entry.Derived = true
 		result.Variants = append(result.Variants,
 			pkgmodel.VariantEntries{Name: label, Entries: []pkgmodel.Entry{*entry}})
 	}

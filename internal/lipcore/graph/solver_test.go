@@ -36,14 +36,14 @@ func TestSolve_LeviLaminaWithManyVersionsAndTenMods_PicksNewestCommonVersion(t *
 	for i := range 10 {
 		spec := fmt.Sprintf("github.com/mods/mod%d", i)
 		r.add(pkg(spec, "2.0.0", pkgOpts{deps: []Dependency{
-			dep(leviLamina, fmt.Sprintf(">=1.%d.0 <2.%d.0", i*5, i*5+50), false)}}))
-		r.add(pkg(spec, "1.0.0", pkgOpts{deps: []Dependency{dep(leviLamina, "*", false)}}))
+			dep(leviLamina, fmt.Sprintf(">=1.%d.0 <2.%d.0", i*5, i*5+50))}}))
+		r.add(pkg(spec, "1.0.0", pkgOpts{deps: []Dependency{dep(leviLamina, "*")}}))
 		requests = append(requests, request(spec))
 	}
 	// The newest Old needs an ancient LeviLamina, so Old must fall back to 1.0.0.
-	r.add(pkg("github.com/mods/old", "2.0.0", pkgOpts{deps: []Dependency{dep(leviLamina, "<1.0.0", false)}}))
+	r.add(pkg("github.com/mods/old", "2.0.0", pkgOpts{deps: []Dependency{dep(leviLamina, "<1.0.0")}}))
 	r.add(pkg("github.com/mods/old", "1.0.0", pkgOpts{deps: []Dependency{
-		dep(leviLamina, ">=2.0.0 <3.0.0", false)}}))
+		dep(leviLamina, ">=2.0.0 <3.0.0")}}))
 	requests = append(requests, request("github.com/mods/old"))
 
 	got := names(solve(t, r, requests).Order)
@@ -66,25 +66,10 @@ func TestSolve_LeviLaminaWithManyVersionsAndTenMods_PicksNewestCommonVersion(t *
 	}
 }
 
-func TestSolve_DependencyOfLegacyEntry_IsResolvedWithClientCompat(t *testing.T) {
-	r := newResolver()
-	r.add(pkg("github.com/legacy/pkg", "1.0.0", pkgOpts{legacy: true,
-		deps: []Dependency{dep("github.com/new/lib#client", "*", true)}}))
-	r.add(pkg("github.com/new/lib", "4.0.0", pkgOpts{source: "github.com/new/lib#client"}))
-
-	got := solve(t, r, []Request{request("github.com/legacy/pkg")}).Order
-
-	equal(t, []string{"github.com/new/lib@4.0.0", "github.com/legacy/pkg@1.0.0"}, names(got))
-	if !slices.Contains(r.calls, resolveCall{"github.com/new/lib#client", "*", true}) ||
-		!slices.Contains(r.calls, resolveCall{"github.com/legacy/pkg", "", false}) {
-		t.Fatal(r.calls)
-	}
-}
-
 func TestSolve_DefaultVariantDependsOnItsVariants_SolvesThreeIdentities(t *testing.T) {
 	r := newResolver()
 	r.add(pkg("github.com/t/t", "1.0.0", pkgOpts{deps: []Dependency{
-		dep("github.com/t/t#b", "*", false), dep("github.com/t/t#a", "*", false)}}))
+		dep("github.com/t/t#b", "*"), dep("github.com/t/t#a", "*")}}))
 	r.add(pkg("github.com/t/t", "1.0.0", pkgOpts{variant: "a"}))
 	r.add(pkg("github.com/t/t", "1.0.0", pkgOpts{variant: "b"}))
 
@@ -97,9 +82,9 @@ func TestSolve_DefaultVariantDependsOnItsVariants_SolvesThreeIdentities(t *testi
 func TestSolve_TwoVariantsRequested_SolvesBothWithSharedDependency(t *testing.T) {
 	r := newResolver()
 	r.add(pkg("github.com/t/t", "1.0.0", pkgOpts{variant: "a",
-		deps: []Dependency{dep("github.com/l/l", "*", false)}}))
+		deps: []Dependency{dep("github.com/l/l", "*")}}))
 	r.add(pkg("github.com/t/t", "1.0.0", pkgOpts{variant: "b",
-		deps: []Dependency{dep("github.com/l/l", "*", false)}}))
+		deps: []Dependency{dep("github.com/l/l", "*")}}))
 	r.addVersions("github.com/l/l", "1.0.0")
 
 	g := solve(t, r, []Request{request("github.com/t/t#a"), request("github.com/t/t#b")})
@@ -132,7 +117,7 @@ func TestSolve_TwoSourcesOfSameIdentity_Fails(t *testing.T) {
 func TestSolve_SameIdentityClash_BacktracksToOtherVersion(t *testing.T) {
 	r := newResolver()
 	r.add(pkg("github.com/a/a", "2.0.0", pkgOpts{deps: []Dependency{
-		dep("https://example.com/b.zip", "*", false)}}))
+		dep("https://example.com/b.zip", "*")}}))
 	r.add(pkg("github.com/a/a", "1.0.0", pkgOpts{}))
 	r.add(pkg("github.com/b/b", "1.0.0", pkgOpts{source: "https://example.com/b.zip"}))
 	r.addVersions("github.com/b/b", "2.0.0")
@@ -155,7 +140,7 @@ func TestSolve_ModNameClash_BacktracksToOlderVersion(t *testing.T) {
 
 func TestSolve_ModNameClashDeepInGraph_BacktracksEarlierChoice(t *testing.T) {
 	r := newResolver()
-	r.add(pkg("github.com/x/x", "2.0.0", pkgOpts{deps: []Dependency{dep("github.com/y/y", "*", false)}}))
+	r.add(pkg("github.com/x/x", "2.0.0", pkgOpts{deps: []Dependency{dep("github.com/y/y", "*")}}))
 	r.add(pkg("github.com/x/x", "1.0.0", pkgOpts{}))
 	r.add(pkg("github.com/y/y", "1.0.0", pkgOpts{mod: "Z"}))
 	r.add(pkg("github.com/z/z", "1.0.0", pkgOpts{mod: "z"}))
@@ -295,7 +280,7 @@ func TestSolve_InstalledSamePackage_SatisfiesRequestAndInstalledDependencies(t *
 	r.addVersions("github.com/dep/dep", "1.0.0")
 	installedX := pkg("github.com/x/x", "1.0.0", pkgOpts{})
 	installedP := pkg("github.com/p/p", "1.0.0", pkgOpts{deps: []Dependency{
-		dep("github.com/dep/dep", "*", false)}})
+		dep("github.com/dep/dep", "*")}})
 
 	got := solve(t, r, []Request{request("github.com/x/x")}, installedX, installedP).Order
 
@@ -310,7 +295,7 @@ func TestSolve_SamePackageSatisfiesSeveralDependencies_AddsItOnce(t *testing.T) 
 	r := newResolver()
 	lower := strings.ToLower(leviLamina)
 	r.add(pkg("github.com/a/a", "1.0.0", pkgOpts{deps: []Dependency{
-		dep(leviLamina, "*", false), dep(lower, "*", false)}}))
+		dep(leviLamina, "*"), dep(lower, "*")}}))
 	r.addVersions(leviLamina, "1.0.0")
 	r.add(pkg(leviLamina, "1.0.0", pkgOpts{source: lower}))
 
@@ -324,9 +309,9 @@ func TestSolve_DependencyWithoutRefBeforeRef_PackageOfRefSatisfiesBoth(t *testin
 	r.addVersions("github.com/s/s", "2.0.0", "1.0.0")
 	r.add(pkg("github.com/s/s", "2.5.0", pkgOpts{source: "github.com/s/s@branch:main"}))
 	r.add(pkg("github.com/a/a", "1.0.0", pkgOpts{deps: []Dependency{
-		dep("github.com/s/s", "*", false), dep("github.com/b/b", "*", false)}}))
+		dep("github.com/s/s", "*"), dep("github.com/b/b", "*")}}))
 	r.add(pkg("github.com/b/b", "1.0.0", pkgOpts{deps: []Dependency{
-		dep("github.com/s/s@branch:main", "*", false)}}))
+		dep("github.com/s/s@branch:main", "*")}}))
 
 	g := solve(t, r, []Request{request("github.com/a/a")})
 
@@ -363,9 +348,9 @@ func TestSolve_DependencyWithoutRefOutsideVersionOfRef_Fails(t *testing.T) {
 	r.addVersions("github.com/s/s", "2.0.0", "1.0.0")
 	r.add(pkg("github.com/s/s", "2.5.0", pkgOpts{source: "github.com/s/s@branch:main"}))
 	r.add(pkg("github.com/a/a", "1.0.0", pkgOpts{deps: []Dependency{
-		dep("github.com/s/s", "<2.0.0", false), dep("github.com/b/b", "*", false)}}))
+		dep("github.com/s/s", "<2.0.0"), dep("github.com/b/b", "*")}}))
 	r.add(pkg("github.com/b/b", "1.0.0", pkgOpts{deps: []Dependency{
-		dep("github.com/s/s@branch:main", "*", false)}}))
+		dep("github.com/s/s@branch:main", "*")}}))
 
 	solveFails(t, r, []Request{request("github.com/a/a")})
 }
@@ -389,23 +374,11 @@ func TestSolve_PackageOfRef_DoesNotStandInForOtherVariant(t *testing.T) {
 	equal(t, []string{"github.com/s/s@2.5.0", "github.com/s/s#lua@2.0.0"}, names(got))
 }
 
-func TestSolve_InstalledPackageOfRef_StandsInForClientCompatDependency(t *testing.T) {
-	r := newResolver()
-	r.add(pkg("github.com/t/t", "1.0.0", pkgOpts{source: "github.com/t/t#client"}))
-	r.add(pkg("github.com/r/r", "1.0.0", pkgOpts{legacy: true, deps: []Dependency{
-		dep("github.com/t/t#client", "*", true)}}))
-	installed := pkg("github.com/t/t", "2.5.0", pkgOpts{source: "github.com/t/t@branch:main"})
-
-	got := solve(t, r, []Request{request("github.com/r/r")}, installed).Order
-
-	equal(t, []string{"github.com/t/t@2.5.0", "github.com/r/r@1.0.0"}, names(got))
-}
-
-func TestSolve_InstalledPackageOfRef_DoesNotStandInForClientVariantWithoutCompat(t *testing.T) {
+func TestSolve_InstalledPackageOfRef_DoesNotStandInForAnotherVariant(t *testing.T) {
 	r := newResolver()
 	r.add(pkg("github.com/t/t", "1.0.0", pkgOpts{variant: "client"}))
 	r.add(pkg("github.com/r/r", "1.0.0", pkgOpts{deps: []Dependency{
-		dep("github.com/t/t#client", "*", false)}}))
+		dep("github.com/t/t#client", "*")}}))
 	installed := pkg("github.com/t/t", "2.5.0", pkgOpts{source: "github.com/t/t@branch:main"})
 
 	got := solve(t, r, []Request{request("github.com/r/r")}, installed).Order
@@ -418,7 +391,7 @@ func TestSolve_Unsatisfiable_FailsWithFailingDependency(t *testing.T) {
 	r := newResolver()
 	r.addVersions(leviLamina, "1.2.0", "1.1.0")
 	r.add(pkg("github.com/mods/mod", "1.0.0", pkgOpts{deps: []Dependency{
-		dep(leviLamina, ">=99.0.0", false)}}))
+		dep(leviLamina, ">=99.0.0")}}))
 
 	msg := solveFails(t, r, []Request{request("github.com/mods/mod")})
 
@@ -432,7 +405,7 @@ func TestSolve_Unsatisfiable_FailsWithFailingDependency(t *testing.T) {
 
 type diagnosingResolver struct{ count int }
 
-func (r *diagnosingResolver) ResolveLazy(_ context.Context, source Ref, _ Constraint, _ bool,
+func (r *diagnosingResolver) ResolveLazy(_ context.Context, source Ref, _ Constraint,
 	onDiagnostic func(Diagnostic)) Sequence {
 	for i := range r.count {
 		onDiagnostic(Diagnostic{Message: fmt.Sprintf("reason %d", i), Cause: fmt.Errorf("cause %d", i)})
@@ -478,7 +451,7 @@ func TestSolve_ManyPackagesAndVersions_CompletesQuickly(t *testing.T) {
 		for v := 99; v >= 0; v-- {
 			var deps []Dependency
 			for j := i + 1; j <= min(i+2, 49); j++ {
-				deps = append(deps, dep(fmt.Sprintf("github.com/p/p%d", j), "<90.0.0", false))
+				deps = append(deps, dep(fmt.Sprintf("github.com/p/p%d", j), "<90.0.0"))
 			}
 			r.add(pkg(spec, fmt.Sprintf("%d.0.0", v), pkgOpts{deps: deps}))
 		}
@@ -504,7 +477,7 @@ func TestSolve_DeepUnsatisfiableChain_FailsQuickly(t *testing.T) {
 			if i == 49 {
 				next = "github.com/missing/missing"
 			}
-			r.add(pkg(spec, fmt.Sprintf("%d.0.0", v), pkgOpts{deps: []Dependency{dep(next, "*", false)}}))
+			r.add(pkg(spec, fmt.Sprintf("%d.0.0", v), pkgOpts{deps: []Dependency{dep(next, "*")}}))
 		}
 	}
 	start := time.Now()
@@ -526,7 +499,7 @@ func TestSolve_LongDependencyChain_DoesNotOverflowStack(t *testing.T) {
 	for i := range length {
 		var deps []Dependency
 		if i+1 < length {
-			deps = []Dependency{dep(fmt.Sprintf("github.com/c/c%d", i+1), "*", false)}
+			deps = []Dependency{dep(fmt.Sprintf("github.com/c/c%d", i+1), "*")}
 		}
 		r.add(pkg(fmt.Sprintf("github.com/c/c%d", i), "1.0.0", pkgOpts{deps: deps}))
 	}
@@ -544,7 +517,7 @@ func TestSolve_Cancelled_StopsSearch(t *testing.T) {
 	r := newResolver()
 	for i := range length {
 		r.add(pkg(fmt.Sprintf("github.com/c/c%d", i), "1.0.0", pkgOpts{deps: []Dependency{
-			dep(fmt.Sprintf("github.com/c/c%d", i+1), "*", false)}}))
+			dep(fmt.Sprintf("github.com/c/c%d", i+1), "*")}}))
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
@@ -558,10 +531,10 @@ func TestSolve_Cancelled_StopsSearch(t *testing.T) {
 
 func TestSolve_DependencyCycle_OrdersCycleByLowercaseIdentity(t *testing.T) {
 	r := newResolver()
-	r.add(pkg("example.com/Zed", "1.0.0", pkgOpts{deps: []Dependency{dep("example.com/beta", "*", false)}}))
-	r.add(pkg("example.com/beta", "1.0.0", pkgOpts{deps: []Dependency{dep("example.com/Alpha", "*", false)}}))
+	r.add(pkg("example.com/Zed", "1.0.0", pkgOpts{deps: []Dependency{dep("example.com/beta", "*")}}))
+	r.add(pkg("example.com/beta", "1.0.0", pkgOpts{deps: []Dependency{dep("example.com/Alpha", "*")}}))
 	r.add(pkg("example.com/Alpha", "1.0.0", pkgOpts{deps: []Dependency{
-		dep("example.com/beta", "*", false), dep("example.com/Base", "*", false)}}))
+		dep("example.com/beta", "*"), dep("example.com/Base", "*")}}))
 	r.add(pkg("example.com/Base", "1.0.0", pkgOpts{}))
 
 	got := solve(t, r, []Request{request("example.com/Zed")}).Order
@@ -663,7 +636,7 @@ func TestSolve_RequestWithManyVersions_ProducesOnlyTheFirstCandidate(t *testing.
 func TestSolve_DependencySatisfiedByInstalledMember_DoesNotEnumerateOtherVersions(t *testing.T) {
 	r := newResolver()
 	addCount(r, base, 300, nil, nil)
-	addCount(r, "github.com/mod/mod", 1, []Dependency{dep(base, "*", false)}, nil)
+	addCount(r, "github.com/mod/mod", 1, []Dependency{dep(base, "*")}, nil)
 	installed := pkg(base, "5.0.0", pkgOpts{})
 
 	got := solve(t, r, []Request{request("github.com/mod/mod")}, installed).Order

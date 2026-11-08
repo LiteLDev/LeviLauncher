@@ -126,7 +126,7 @@ func TestParseArgumentAbsoluteLocalFileOutsideWorkspace(t *testing.T) {
 }
 
 func TestParseArgumentDirectory(t *testing.T) {
-	ws := newWorkspace(t, "pkg/lip.yaml")
+	ws := newWorkspace(t, "pkg/lip.toml")
 	for _, tc := range []struct{ arg, dir, variant string }{
 		{"./pkg", "pkg", ""},
 		{"./pkg/", "pkg", ""},

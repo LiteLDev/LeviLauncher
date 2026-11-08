@@ -9,12 +9,12 @@ import (
 const (
 	// PackageFileName is the package file at the root of an archive
 	// (protocol/package.md §1).
-	PackageFileName = "lip.yaml"
+	PackageFileName = "lip.toml"
 	// ToothFileName is the legacy package file (protocol/compatibility.md §2).
 	ToothFileName = "tooth.json"
 )
 
-// NotPackageError is an archive without lip.yaml or tooth.json at its root
+// NotPackageError is an archive without lip.toml or tooth.json at its root
 // (ArchiveReader.cs). It is an *UnavailableError through errors.As.
 type NotPackageError struct {
 	// Archive names the archive as the user knows it: the path of a local
@@ -48,7 +48,7 @@ func (e *NotPackageError) As(target any) bool {
 }
 
 // ReadPackageFile reads the file that makes an archive a package
-// (protocol/package.md §1): lip.yaml at its root, or, when there is none,
+// (protocol/package.md §1): lip.toml at its root, or, when there is none,
 // tooth.json (protocol/compatibility.md §2). The archive is called "The
 // archive" in errors; ReadPackageFileOf names it ("" is "the archive").
 func ReadPackageFile(src Source) (name string, data []byte, err error) {

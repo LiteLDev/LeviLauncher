@@ -26,10 +26,10 @@ type RecoverOptions struct {
 	FS FS
 	// CommitLock makes the result of a committed operation durable; it must
 	// do nothing when that was already done. Default: moves
-	// .lip/workspace.yaml.tmp onto .lip/workspace.yaml when present.
+	// .lip/state.json.tmp onto .lip/state.json when present.
 	CommitLock func() error
 	// DiscardLock throws the result of an uncommitted operation away.
-	// Default: deletes .lip/workspace.yaml.tmp when present.
+	// Default: deletes .lip/state.json.tmp when present.
 	DiscardLock func() error
 	// Now is the clock of the Begin record of a rewritten journal.
 	Now func() time.Time
@@ -130,8 +130,8 @@ func RecoverWith(root string, opts RecoverOptions) (*RecoveryResult, error) {
 }
 
 // CommitStaged is LockStore.CommitStaged without its tooth_lock.json
-// migration: moves the staged workspace file <root>/.lip/workspace.yaml.tmp
-// onto <root>/.lip/workspace.yaml in one rename, if it exists. root is a
+// migration: moves the staged state file <root>/.lip/state.json.tmp
+// onto <root>/.lip/state.json in one rename, if it exists. root is a
 // full path (LockStore.NormalizeRoot). The error is a *Error.
 func CommitStaged(fsys FS, root string) error {
 	path := filepath.Join(root, LipDirectory, WorkspaceFile)
@@ -140,14 +140,14 @@ func CommitStaged(fsys FS, root string) error {
 		return nil
 	}
 	if err := fsys.Rename(temp, path); err != nil {
-		return wrap(err, fmt.Sprintf("Cannot replace the workspace file '%s' with the new one '%s'.",
+		return wrap(err, fmt.Sprintf("Cannot replace the state file '%s' with the new one '%s'.",
 			path, temp))
 	}
 	return nil
 }
 
 // DiscardStaged is LockStore.DiscardStaged: deletes the staged workspace
-// file <root>/.lip/workspace.yaml.tmp, if it exists. root is a full path.
+// file <root>/.lip/state.json.tmp, if it exists. root is a full path.
 // The error is a *Error.
 func DiscardStaged(fsys FS, root string) error {
 	temp := filepath.Join(root, LipDirectory, StagedFile)
@@ -156,7 +156,7 @@ func DiscardStaged(fsys FS, root string) error {
 	}
 	// File.Delete does nothing for a missing file.
 	if err := fsys.Remove(temp); err != nil && !notFound(err) {
-		return wrap(err, fmt.Sprintf("Cannot delete the unused new workspace file '%s'.", temp))
+		return wrap(err, fmt.Sprintf("Cannot delete the unused new state file '%s'.", temp))
 	}
 	return nil
 }

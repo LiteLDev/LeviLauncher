@@ -508,7 +508,7 @@ func TestLockWaitHonorsContext(t *testing.T) {
 	}
 }
 
-// List only reads the workspace file; as with lip (one process per call) it
+// List only reads the state file; as with lip (one process per call) it
 // must not wait for an install running on the same instance.
 func TestListDoesNotWaitForRunningInstall(t *testing.T) {
 	recordEvents(t)

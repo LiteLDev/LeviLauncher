@@ -10,11 +10,11 @@ import (
 
 // The journal and recovery parts of McmodServiceAtomicityTests.cs, at the
 // level of the transaction: every failure point of an operation leaves the
-// workspace and its workspace file as they were, whether the operation rolls
+// workspace and its state file as they were, whether the operation rolls
 // back itself or is killed and recovered by the next one.
 
 // operation replaces, creates and deletes files, then commits a new
-// workspace file. Returns the error of the first step that failed.
+// state file. Returns the error of the first step that failed.
 func operation(f *fixture, tx *Transaction) error {
 	steps := []func() error{
 		func() error { return tx.WriteFile("replace.txt", strings.NewReader("new")) },
@@ -30,14 +30,14 @@ func operation(f *fixture, tx *Transaction) error {
 		}
 	}
 	_, err := tx.Commit(func() error {
-		return os.WriteFile(f.full(".lip/workspace.yaml.tmp"), []byte("new"), 0o666)
+		return os.WriteFile(f.full(".lip/state.json.tmp"), []byte("new"), 0o666)
 	})
 	return err
 }
 
 func newOperationFixture(t *testing.T) (*fixture, map[string]string) {
 	f := newFixture(t)
-	f.addFile(".lip/workspace.yaml", "old")
+	f.addFile(".lip/state.json", "old")
 	return f, f.snapshot()
 }
 
@@ -51,7 +51,7 @@ func TestOperation_EveryFileOperationFailing_LeavesWorkspaceAndWorkspaceFileUnch
 		err := operation(f, tx)
 
 		if err == nil {
-			if got := f.read(".lip/workspace.yaml"); got != "new" {
+			if got := f.read(".lip/state.json"); got != "new" {
 				t.Fatal(got)
 			}
 			break
@@ -69,14 +69,14 @@ func TestOperation_EveryFileOperationFailing_LeavesWorkspaceAndWorkspaceFileUnch
 			}
 		}
 		assertSnapshot(t, before, f.snapshot())
-		if got := f.read(".lip/workspace.yaml"); got != "old" {
-			t.Fatalf("call %d: workspace file %q", n, got)
+		if got := f.read(".lip/state.json"); got != "old" {
+			t.Fatalf("call %d: state file %q", n, got)
 		}
-		if f.exists(".lip/journal") || f.exists(".lip/workspace.yaml.tmp") {
+		if f.exists(".lip/journal") || f.exists(".lip/state.json.tmp") {
 			t.Fatalf("call %d: journal or staged file left", n)
 		}
 	}
-	// Three files created, three backups and the workspace file moved.
+	// Three files created, three backups and the state file moved.
 	if n-1 != 7 {
 		t.Fatalf("%d failure points", n-1)
 	}
@@ -119,19 +119,19 @@ func TestOperation_KilledAtEveryFailurePoint_RecoveryRestoresOrFinishes(t *testi
 			t.Fatalf("call %d: %v", n, r.Errors)
 		}
 		if r != nil && r.Committed {
-			if got := f.read(".lip/workspace.yaml"); got != "new" {
-				t.Fatalf("call %d: workspace file %q", n, got)
+			if got := f.read(".lip/state.json"); got != "new" {
+				t.Fatalf("call %d: state file %q", n, got)
 			}
 			if f.exists("dir") || f.exists(".replace.txt.bak") {
 				t.Fatalf("call %d: not finished", n)
 			}
 		} else {
 			assertSnapshot(t, before, f.snapshot())
-			if got := f.read(".lip/workspace.yaml"); got != "old" {
-				t.Fatalf("call %d: workspace file %q", n, got)
+			if got := f.read(".lip/state.json"); got != "old" {
+				t.Fatalf("call %d: state file %q", n, got)
 			}
 		}
-		if f.exists(".lip/journal") || f.exists(".lip/workspace.yaml.tmp") {
+		if f.exists(".lip/journal") || f.exists(".lip/state.json.tmp") {
 			t.Fatalf("call %d: journal or staged file left", n)
 		}
 	}
@@ -141,7 +141,7 @@ func TestOperation_KilledAfterCommitBeforeMove_RecoveryMovesWorkspaceFile(t *tes
 	f, _ := newOperationFixture(t)
 	tx := f.begin(Options{})
 	change(t, tx)
-	must(t, os.WriteFile(f.full(".lip/workspace.yaml.tmp"), []byte("new"), 0o666))
+	must(t, os.WriteFile(f.full(".lip/state.json.tmp"), []byte("new"), 0o666))
 	must(t, tx.MarkCommitted())
 	tx.Close()
 
@@ -151,10 +151,10 @@ func TestOperation_KilledAfterCommitBeforeMove_RecoveryMovesWorkspaceFile(t *tes
 	if !r.Committed || len(r.Errors) != 0 {
 		t.Fatalf("%+v", r)
 	}
-	if got := f.read(".lip/workspace.yaml"); got != "new" {
+	if got := f.read(".lip/state.json"); got != "new" {
 		t.Fatal(got)
 	}
-	if f.exists(".lip/workspace.yaml.tmp") || f.exists(".lip/journal") || f.exists("dir") {
+	if f.exists(".lip/state.json.tmp") || f.exists(".lip/journal") || f.exists("dir") {
 		t.Fatal("left over")
 	}
 }
@@ -163,7 +163,7 @@ func TestOperation_KilledBeforeCommit_RecoveryDiscardsStagedFile(t *testing.T) {
 	f, before := newOperationFixture(t)
 	tx := f.begin(Options{})
 	change(t, tx)
-	must(t, os.WriteFile(f.full(".lip/workspace.yaml.tmp"), []byte("new"), 0o666))
+	must(t, os.WriteFile(f.full(".lip/state.json.tmp"), []byte("new"), 0o666))
 	tx.Close()
 	// A cut-off last line, as when lip is killed while writing it.
 	jf, err := os.OpenFile(f.journal(), os.O_APPEND|os.O_WRONLY, 0)
@@ -178,10 +178,10 @@ func TestOperation_KilledBeforeCommit_RecoveryDiscardsStagedFile(t *testing.T) {
 		t.Fatalf("%+v", r)
 	}
 	assertSnapshot(t, before, f.snapshot())
-	if got := f.read(".lip/workspace.yaml"); got != "old" {
+	if got := f.read(".lip/state.json"); got != "old" {
 		t.Fatal(got)
 	}
-	if f.exists(".lip/workspace.yaml.tmp") || f.exists(".lip/journal") {
+	if f.exists(".lip/state.json.tmp") || f.exists(".lip/journal") {
 		t.Fatal("left over")
 	}
 	if HasJournal(f.root) {

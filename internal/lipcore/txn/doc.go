@@ -31,7 +31,7 @@
 //	(*Transaction).CreateDirectory(rel), WriteFile(rel, r), DeleteFile(rel),
 //	  DeleteDirectoryOnCommit(rel), Reserve(rel)
 //	(*Transaction).Commit(writeStaged) ([]error, error)
-//	                                   stage .lip/workspace.yaml.tmp, record
+//	                                   stage .lip/state.json.tmp, record
 //	                                   Commit, move it into place, complete;
 //	                                   rolls back and returns *RollbackError
 //	                                   on failure

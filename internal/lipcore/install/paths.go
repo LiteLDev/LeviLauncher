@@ -133,7 +133,7 @@ func normalizeRelative(path string) string {
 }
 
 // isSafeRelativePath is McmodInstaller.IsSafeRelativePath: a non-empty
-// '/'-separated relative path as lip.schema.yaml #/definitions/path allows
+// '/'-separated relative path as lip.schema.toml #/definitions/path allows
 // it: without empty or ".." segments, backslashes, or a leading ASCII letter
 // and ':'.
 func isSafeRelativePath(path string) bool {

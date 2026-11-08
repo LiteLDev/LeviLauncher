@@ -29,13 +29,13 @@ func eq[T any](t *testing.T, what string, got, want T) {
 func TestInstallFileFormWritesOnlyThePlacedFile(t *testing.T) {
 	h := newHarness(t)
 	p := h.pkg(pkgmodel.Entry{Assets: selfAsset(place("PeEditor.exe", "PeEditor.exe"))},
-		src("lip.yaml", "{}", "PeEditor.exe", "exe", "README.md", "readme"))
+		src("lip.toml", "{}", "PeEditor.exe", "exe", "README.md", "readme"))
 
 	owned := h.mustInstall(p, h.opts())
 
 	eq(t, "owned", owned, []string{"PeEditor.exe"})
 	eq(t, "PeEditor.exe", h.read("PeEditor.exe"), "exe")
-	eq(t, "lip.yaml exists", h.fileExists("lip.yaml"), false)
+	eq(t, "lip.toml exists", h.fileExists("lip.toml"), false)
 	eq(t, "README.md exists", h.fileExists("README.md"), false)
 }
 
@@ -53,17 +53,17 @@ func TestInstallFileFormNestedWritesAtDest(t *testing.T) {
 func TestInstallDirectoryFormWritesFilesAtTheirPathRelativeToSrc(t *testing.T) {
 	h := newHarness(t)
 	p := h.pkg(pkgmodel.Entry{Assets: selfAsset(place("assets/", "resource_packs/pack/"), place("", "copy/"))},
-		src("lip.yaml", "{}", "assets/a.txt", "a", "assets/sub/b.txt", "b", "assets/lip.yaml", "nested"))
+		src("lip.toml", "{}", "assets/a.txt", "a", "assets/sub/b.txt", "b", "assets/lip.toml", "nested"))
 
 	owned := h.mustInstall(p, h.opts())
 
 	eq(t, "a", h.read("resource_packs/pack/a.txt"), "a")
 	eq(t, "b", h.read("resource_packs/pack/sub/b.txt"), "b")
-	eq(t, "nested", h.read("resource_packs/pack/lip.yaml"), "nested")
+	eq(t, "nested", h.read("resource_packs/pack/lip.toml"), "nested")
 	eq(t, "copy a", h.read("copy/assets/a.txt"), "a")
-	eq(t, "copy nested", h.read("copy/assets/lip.yaml"), "nested")
+	eq(t, "copy nested", h.read("copy/assets/lip.toml"), "nested")
 	// The package file of the package is never written (protocol/workspace.md §4 step 2).
-	eq(t, "copy/lip.yaml exists", h.fileExists("copy/lip.yaml"), false)
+	eq(t, "copy/lip.toml exists", h.fileExists("copy/lip.toml"), false)
 	eq(t, "owned count", len(owned), 6)
 }
 
@@ -109,16 +109,16 @@ func TestInstallGlobFormMatchingNothingWritesNothing(t *testing.T) {
 
 func TestInstallGlobFormMatchingPackageFileNeverWritesIt(t *testing.T) {
 	h := newHarness(t)
-	p := h.pkg(pkgmodel.Entry{Assets: selfAsset(place("*.yaml", "cfg/"))}, src("lip.yaml", "{}", "a.yaml", "a"))
+	p := h.pkg(pkgmodel.Entry{Assets: selfAsset(place("*.yaml", "cfg/"))}, src("lip.toml", "{}", "a.yaml", "a"))
 
 	eq(t, "owned", h.mustInstall(p, h.opts()), []string{"cfg/a.yaml"})
-	eq(t, "cfg/lip.yaml exists", h.fileExists("cfg/lip.yaml"), false)
+	eq(t, "cfg/lip.toml exists", h.fileExists("cfg/lip.toml"), false)
 }
 
 func TestInstallToothJsonBesidePackageFileIsWritten(t *testing.T) {
 	h := newHarness(t)
 	p := h.pkg(pkgmodel.Entry{Assets: selfAsset(place("*.json", "cfg/"))},
-		src("lip.yaml", "{}", "tooth.json", "{}", "a.json", "a"))
+		src("lip.toml", "{}", "tooth.json", "{}", "a.json", "a"))
 
 	eq(t, "owned", sorted(h.mustInstall(p, h.opts())), []string{"cfg/a.json", "cfg/tooth.json"})
 }
@@ -189,20 +189,20 @@ func TestInstallLaterWriteSameTargetOtherCaseWinsOnWindows(t *testing.T) {
 func TestInstallZipAssetPlacesFilesOfTheDownloadedArchive(t *testing.T) {
 	h := newHarness(t)
 	h.assets["https://example.com/bds.zip"] = src("bedrock_server.exe", "bds", "worlds/a.mcworld", "w",
-		"lip.yaml", "zip's")
+		"lip.toml", "zip's")
 	p := h.pkg(pkgmodel.Entry{Assets: []pkgmodel.Asset{
 		{Type: pkgmodel.AssetZip, URLs: []string{"https://mirror.invalid/bds.zip", "https://example.com/bds.zip"},
 			Place: []pkgmodel.Placement{place("", "")}},
 		{Type: pkgmodel.AssetSelf, Place: []pkgmodel.Placement{place("defaults/", "")}},
-	}}, src("lip.yaml", "{}", "defaults/server.properties", "props"))
+	}}, src("lip.toml", "{}", "defaults/server.properties", "props"))
 
 	owned := h.mustInstall(p, h.opts())
 
-	eq(t, "owned", sorted(owned), []string{"bedrock_server.exe", "lip.yaml", "server.properties", "worlds/a.mcworld"})
+	eq(t, "owned", sorted(owned), []string{"bedrock_server.exe", "lip.toml", "server.properties", "worlds/a.mcworld"})
 	eq(t, "bds", h.read("bedrock_server.exe"), "bds")
 	eq(t, "props", h.read("server.properties"), "props")
 	// Only the package file of the package itself is never written.
-	eq(t, "lip.yaml", h.read("lip.yaml"), "zip's")
+	eq(t, "lip.toml", h.read("lip.toml"), "zip's")
 	eq(t, "opened", h.opened, [][]string{{"https://mirror.invalid/bds.zip", "https://example.com/bds.zip"}})
 }
 
@@ -389,7 +389,7 @@ func TestInstallAliasingDestOnWindowsThrows(t *testing.T) {
 }
 
 func TestInstallDestNamedLikeLipOrGitFileWrites(t *testing.T) {
-	for _, dest := range []string{"lip_lock.json", "tooth_lock.json", "tooth.json", "lip.yaml", ".git/hooks/pre-commit"} {
+	for _, dest := range []string{"lip_lock.json", "tooth_lock.json", "tooth.json", "lip.toml", ".git/hooks/pre-commit"} {
 		t.Run(dest, func(t *testing.T) {
 			h := newHarness(t)
 			p := h.pkg(pkgmodel.Entry{Assets: selfAsset(place("a.txt", dest))}, src("a.txt", "a"))
@@ -885,11 +885,14 @@ func TestUninstallPurgeRelativeToWorkspaceRoot(t *testing.T) {
 }
 
 func TestUninstallPurgeNamingLayoutDirectoriesRemovesNothingThroughThem(t *testing.T) {
-	for _, pattern := range []string{"mods/", "plugins/", "*/", "plugins", "MODS/"} {
+	// A path below mods does not match only because mods does
+	// (protocol/workspace.md §4).
+	for _, pattern := range []string{"mods/", "plugins/", "*/", "plugins", "MODS/", "**/mods/", "**/mods"} {
 		t.Run(pattern, func(t *testing.T) {
 			h := newHarness(t)
 			p := h.pkg(pkgmodel.Entry{Purge: []string{pattern}}, nil)
 			h.addFile("mods/Other/other.dll", "dll")
+			h.addFile("mods/readme.txt", "text")
 			l := locked(p, nil)
 
 			h.mustUninstall(&l, p.Entry, h.opts())
@@ -898,9 +901,26 @@ func TestUninstallPurgeNamingLayoutDirectoriesRemovesNothingThroughThem(t *testi
 				return
 			}
 			eq(t, "other.dll", h.fileExists("mods/Other/other.dll"), true)
+			eq(t, "readme.txt", h.fileExists("mods/readme.txt"), true)
 			eq(t, "mods", h.dirExists("mods"), true)
 		})
 	}
+}
+
+func TestUninstallPurgeOfEveryDirectoryRemovesBelowModsOnlyWhatMatchesItself(t *testing.T) {
+	// "**/*/" matches mods/Other/ itself, but mods/readme.txt only through
+	// mods (protocol/workspace.md §4).
+	h := newHarness(t)
+	p := h.pkg(pkgmodel.Entry{Purge: []string{"**/*/"}}, nil)
+	h.addFile("mods/Other/other.dll", "dll")
+	h.addFile("mods/readme.txt", "text")
+	l := locked(p, nil)
+
+	h.mustUninstall(&l, p.Entry, h.opts())
+
+	eq(t, "other.dll", h.fileExists("mods/Other/other.dll"), false)
+	eq(t, "readme.txt", h.fileExists("mods/readme.txt"), true)
+	eq(t, "mods", h.dirExists("mods"), true)
 }
 
 func TestUninstallPurgeAliasingOnWindowsMatchesNothing(t *testing.T) {

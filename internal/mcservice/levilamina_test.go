@@ -86,14 +86,14 @@ func TestInstallLeviLaminaInstallsExactMatchedVersion(t *testing.T) {
 	if installedWorkDir != targetDir {
 		t.Fatalf("unexpected work dir: got %q want %q", installedWorkDir, targetDir)
 	}
-	wantPackages := []string{"github.com/LiteLDev/LeviLamina@0.13.1"}
+	wantPackages := []string{"github.com/LiteLDev/LeviLamina#client@0.13.1"}
 	if !reflect.DeepEqual(installedPackages, wantPackages) {
 		t.Fatalf("unexpected install packages: got %v want %v", installedPackages, wantPackages)
 	}
 }
 
-// An instance migrated from tooth_lock.json records LeviLamina as
-// "#client"; it is updated and uninstalled under that identity.
+// An installed LeviLamina is updated and uninstalled under the identity
+// the workspace records.
 func TestLeviLaminaUsesMigratedClientIdentity(t *testing.T) {
 	restoreLeviLaminaTestDeps(t)
 	versionsDir := setupLeviLaminaTestVersionsDir(t)
@@ -144,7 +144,34 @@ func TestInstallLeviLaminaSwitchesToUpdateWhenAlreadyExplicit(t *testing.T) {
 		t.Fatalf("unexpected error code: %q", got)
 	}
 	ws.expect(t, []string{"install", "update"}, [][]string{
-		{"github.com/LiteLDev/LeviLamina@0.13.1"},
+		{"github.com/LiteLDev/LeviLamina#client@0.13.1"},
+		{"github.com/LiteLDev/LeviLamina#client@0.13.1"},
+	})
+}
+
+// A LeviLamina without a client variant (its variant "" has the client
+// entries) is installed from its variant "".
+func TestInstallLeviLaminaFallsBackToBareRepositoryWithoutClientVariant(t *testing.T) {
+	restoreLeviLaminaTestDeps(t)
+	versionsDir := setupLeviLaminaTestVersionsDir(t)
+	if err := os.MkdirAll(filepath.Join(versionsDir, "Demo"), 0o755); err != nil {
+		t.Fatalf("mkdir target dir: %v", err)
+	}
+	fetchLeviLaminaVersionDB = func() (map[string][]string, error) {
+		return map[string][]string{"1.21.80.03": {"0.13.1"}}, nil
+	}
+	ws := &fakeLipWorkspace{
+		states:     map[string]lip.PackageInstallState{},
+		installErr: []error{wrapNoPackageFound("github.com/LiteLDev/LeviLamina#client@0.13.1")},
+	}
+	useFakeLipWorkspace(t, ws)
+	lipResolveTargetDir = resolveLIPTargetDir
+
+	if got := InstallLeviLamina(context.Background(), "1.21.80.03", "Demo", ""); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"install", "install"}, [][]string{
+		{"github.com/LiteLDev/LeviLamina#client@0.13.1"},
 		{"github.com/LiteLDev/LeviLamina@0.13.1"},
 	})
 }

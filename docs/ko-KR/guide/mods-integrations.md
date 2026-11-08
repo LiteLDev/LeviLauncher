@@ -45,7 +45,7 @@ LeviLauncher는 "기본 런처" 범위를 넘어서는 모드 관련 작업 흐�
 
 ## lip 및 LeviLamina <Badge platform="windows" />
 
-LeviLauncher에는 [lip](https://github.com/LiteLDev/lip)와 호환되는 패키지 관리자가 내장되어 있으므로 lip이나 .NET 런타임을 따로 설치할 필요가 없습니다. lip 0.38을 따르므로 각 버전은 패키지를 `.lip/workspace.yaml`에 기록하고, 패키지는 `lip.yaml`에서 읽습니다(`tooth.json`만 있는 이전 패키지도 계속 사용할 수 있습니다). 이전 런처로 LeviLamina나 LIP 패키지를 설치한 버전(`tooth_lock.json`)은 첫 패키지 작업 때 자동으로 마이그레이션됩니다. **미러 소스 사용**이 켜져 있으면 GitHub에서 패키지를 다운로드할 때 [설정](./settings-personalization)의 **GitHub 프록시**를 거칩니다. 꺼져 있으면 GitHub에 직접 연결합니다(시스템 프록시가 설정되어 있으면 이를 거칩니다). 이전에 저장한 GitHub 프록시나 lip의 `config.yaml`(`%APPDATA%\lip` 안, 예: `lip config set github_proxy <URL>`)에 설정한 `github_proxy`는 두 경우 모두 적용됩니다. **캐시 지우기**로 다운로드한 패키지 파일을 삭제할 수 있습니다.
+LeviLauncher에는 [lip](https://github.com/LiteLDev/lip)와 호환되는 패키지 관리자가 내장되어 있으므로 lip이나 .NET 런타임을 따로 설치할 필요가 없습니다. lip을 따르므로 각 버전은 패키지를 `.lip/state.json`에 기록하고, 패키지는 `lip.toml`에서 읽습니다(`tooth.json`만 있는 이전 패키지도 계속 사용할 수 있습니다). 이전 런처로 LeviLamina나 LIP 패키지를 설치한 버전(`tooth_lock.json`)은 첫 패키지 작업 때 자동으로 마이그레이션됩니다. **미러 소스 사용**이 켜져 있으면 GitHub에서 패키지를 다운로드할 때 [설정](./settings-personalization)의 **GitHub 프록시**를 거칩니다. 꺼져 있으면 GitHub에 직접 연결합니다(시스템 프록시가 설정되어 있으면 이를 거칩니다). 이전에 저장한 GitHub 프록시나 lip의 `config.toml`(`%APPDATA%\lip` 안, 예: `lip config set github_proxy <URL>`)에 설정한 `github_proxy`는 두 경우 모두 적용됩니다. **캐시 지우기**로 다운로드한 패키지 파일을 삭제할 수 있습니다.
 
 이러한 통합은 패키지 기반 또는 로더 기반 작업 흐름을 사용하려는 고급 사용자에게 더 적합합니다.
 

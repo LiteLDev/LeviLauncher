@@ -13,7 +13,7 @@ import (
 )
 
 // Ports of tests/Lip.Core.Tests/Mcmod/Compat/ToothCompatTests.cs
-// (v0.38.0-beta.1).
+// (lip main).
 
 const uuid3 = "289f771f-2c9a-4d73-9f3f-8492495a924d"
 
@@ -87,7 +87,13 @@ func eq[T comparable](t *testing.T, what string, got, want []T) {
 	}
 }
 
-func yamlOf(v any) string { return string(doc.MarshalYAML(v)) }
+func tomlOf(v any) string {
+	b, err := doc.MarshalTOML(v)
+	if err != nil {
+		return "error: " + err.Error()
+	}
+	return string(b)
+}
 
 func TestDerivePlatformPatternMergesMatchingVariantsOfEachLabel(t *testing.T) {
 	d := derive(t, multiPlatformV3, "server", "win-x64")
@@ -96,7 +102,7 @@ func TestDerivePlatformPatternMergesMatchingVariantsOfEachLabel(t *testing.T) {
 	}
 	eq(t, "variants", variantNames(d), []string{"", "client"})
 	e := single(t, d, "")
-	if !e.Derived || e.Platform != "server" || e.Runtime != "win-x64" {
+	if e.Platform != "server" || e.Runtime != "win-x64" {
 		t.Errorf("entry = %+v", e)
 	}
 	eq(t, "deps", depKeys(e), []string{"github.com/user/common", "github.com/user/windows#client"})
@@ -154,32 +160,27 @@ func TestDeriveNoVariantMatchesRuntimeHasNoVariants(t *testing.T) {
 		t.Errorf("variants = %v", variantNames(d))
 	}
 	if v, _ := d.Raw.(*doc.Object).Get("variants"); v.(*doc.Object).Len() != 0 {
-		t.Errorf("raw variants = %s", yamlOf(v))
+		t.Errorf("raw variants = %s", tomlOf(v))
 	}
 }
 
-func TestDeriveClientPlatformVariantEmptyIsTheClientLabel(t *testing.T) {
+func TestDeriveClientPlatformKeepsVariantEmptyAndClientLabel(t *testing.T) {
+	// The label "client" no longer stands for the variant "" on the client
+	// (lip 26d8295): each label is its own variant, for the client platform.
 	d := derive(t, multiPlatformV3, "client", "win-x64")
+	eq(t, "variants", variantNames(d), []string{"", "client"})
 	e := single(t, d, "")
 	if e.Platform != "client" || e.Runtime != "win-x64" {
 		t.Errorf("entry = %+v", e)
 	}
-	eq(t, "deps", depKeys(e), []string{"github.com/user/clientdep"})
-	eq(t, "client deps", depKeys(single(t, d, "client")), []string{"github.com/user/clientdep"})
-	variants, _ := d.Raw.(*doc.Object).Get("variants")
-	c, _ := variants.(*doc.Object).Get("client")
-	empty, _ := variants.(*doc.Object).Get("")
-	if yamlOf(c) != yamlOf(empty) {
-		t.Errorf("client %s != %s", yamlOf(c), yamlOf(empty))
+	eq(t, "deps", depKeys(e), []string{"github.com/user/common", "github.com/user/windows#client"})
+	c := single(t, d, "client")
+	if c.Platform != "client" {
+		t.Errorf("client entry = %+v", c)
 	}
-	if d.SelectEntry("", "client", "win-x64") != e {
+	eq(t, "client deps", depKeys(c), []string{"github.com/user/clientdep"})
+	if d.SelectEntry("", "client", "win-x64") != e || d.SelectEntry("client", "client", "win-x64") != c {
 		t.Error("SelectEntry")
-	}
-}
-
-func TestDeriveClientPlatformWithoutClientVariantForRuntimeHasNoVariantEmpty(t *testing.T) {
-	if d := derive(t, multiPlatformV3, "client", "linux-x64"); len(d.Variants) != 0 {
-		t.Errorf("variants = %v", variantNames(d))
 	}
 }
 
@@ -205,40 +206,41 @@ func TestDeriveServerPlatformKeepsVariantEmptyAndClientLabel(t *testing.T) {
 
 func TestDeriveDerivedDocumentIsFormat4WithEntriesForTheEnvironment(t *testing.T) {
 	d := derive(t, multiPlatformV3, "server", "win-x64")
-	want := `format: 4
-id: github.com/user/repo
-version: 1.2.3
-info:
-  name: Repo
-  description: d
-  tags:
-  - a
-variants:
-  "":
-  - platform: server
-    runtime: win-x64
-    deps:
-      github.com/user/common: '>=1.0.0'
-      github.com/user/windows#client: 1.*
-    assets:
-    - type: self
-      place:
-      - src: a.dll
-        dest: plugins/a/a.dll
-    preserve:
-    - config/*.json
-    hooks:
-      post_install:
-      - echo win
-  client:
-  - platform: server
-    runtime: win-x64
-    deps:
-      github.com/user/clientdep: 2.*
+	want := `format = 4
+id = "github.com/user/repo"
+version = "1.2.3"
+
+[info]
+name = "Repo"
+description = "d"
+tags = ["a"]
+
+[[variants.""]]
+platform = "server"
+runtime = "win-x64"
+preserve = ["config/*.json"]
+
+[variants."".deps]
+"github.com/user/common" = ">=1.0.0"
+"github.com/user/windows#client" = "1.*"
+
+[variants."".hooks]
+post_install = ["echo win"]
+
+[[variants."".assets]]
+type = "self"
+place = [{ src = "a.dll", dest = "plugins/a/a.dll" }]
+
+[[variants.client]]
+platform = "server"
+runtime = "win-x64"
+
+[variants.client.deps]
+"github.com/user/clientdep" = "2.*"
 `
-	// The YAML lip v0.38 writes for it (the dependency ranges are written as
+	// The TOML lip writes for it (the dependency ranges are written as
 	// SemVersionRange.ToString() writes them: "^2.0.0" as "2.*").
-	if got := yamlOf(d.Raw); got != want {
+	if got := tomlOf(d.Raw); got != want {
 		t.Errorf("document:\n%s\nwant:\n%s", got, want)
 	}
 	e := single(t, d, "")
@@ -366,9 +368,7 @@ func TestDeriveAssetOfTypeWithoutFormat4EquivalentMakesTheVariantAbsent(t *testi
 		    "assets": [ { "type": "` + typ + `", "urls": ["https://example.com/b"],
 		      "placements": [ { "type": "file", "src": "", "dest": "b.exe" } ] } ] } ]`)
 		eq(t, "server win", variantNames(derive(t, tooth, "server", "win-x64")), []string{""})
-		if d := derive(t, tooth, "client", "win-x64"); len(d.Variants) != 0 {
-			t.Errorf("client win variants = %v", variantNames(d))
-		}
+		eq(t, "client win", variantNames(derive(t, tooth, "client", "win-x64")), []string{""})
 		eq(t, "client linux", variantNames(derive(t, tooth, "client", "linux-x64")), []string{"", "client"})
 	}
 }
@@ -549,8 +549,7 @@ func TestDeriveDerivedEntryReparses(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		e.Derived = true
-		if yamlOf(e.Raw) != yamlOf(v.Entries[0].Raw) || !slices.Equal(e.Preserve, v.Entries[0].Preserve) {
+		if tomlOf(e.Raw) != tomlOf(v.Entries[0].Raw) || !slices.Equal(e.Preserve, v.Entries[0].Preserve) {
 			t.Errorf("%s: reparsed entry differs", v.Name)
 		}
 	}

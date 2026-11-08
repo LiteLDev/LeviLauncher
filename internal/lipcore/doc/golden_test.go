@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"os"
 	"strconv"
 	"strings"
@@ -13,9 +12,10 @@ import (
 )
 
 // The testdata/*.jsonl files hold lip's own results for a corpus of inputs,
-// produced by running lip 0.38.0-beta.1's C# code (YamlJson.Serialize,
-// YamlJson.Parse, PackageFileParser.ParseJson / IntegerMember and
-// JsonNode.ToJsonString) over it.
+// produced by running lip's C# code (TomlJson.Serialize, TomlJson.Parse,
+// JsonFile.Parse / SerializeToUtf8Bytes of lip main; PackageFileParser.
+// ParseJson / IntegerMember and JsonNode.ToJsonString of lip 0.38.0-beta.1)
+// over it (diffgen_test.go).
 
 func readGolden(t *testing.T, name string) []map[string]string {
 	t.Helper()
@@ -53,55 +53,100 @@ func unb64(t *testing.T, s string) []byte {
 	return b
 }
 
-func TestGoldenSerialize(t *testing.T) {
-	for _, r := range readGolden(t, "serialize.jsonl") {
+func TestGoldenSerializeTOML(t *testing.T) {
+	fails := 0
+	for _, r := range readGolden(t, "tomlserialize.jsonl") {
 		v, err := ParseJSON([]byte(r["in"]), "in.json")
 		if err != nil {
 			t.Fatalf("ParseJSON(%q): %v", r["in"], err)
 		}
-		if got := string(MarshalYAML(v)); got != r["out"] {
-			t.Errorf("MarshalYAML(%s)\n got: %q\nwant: %q", r["in"], got, r["out"])
+		out, err := MarshalTOML(v)
+		var got, want string
+		if err != nil {
+			got = "error"
+		} else {
+			got = string(out)
 		}
-	}
-}
-
-func TestGoldenParseYAML(t *testing.T) {
-	fails := 0
-	for _, r := range readGolden(t, "parse.jsonl") {
-		in := unb64(t, r["in"])
-		v, err := ParseYAML(in, "x.yaml")
-		var got string
-		switch r["kind"] {
-		case "OK":
-			if err != nil {
-				got = "error: " + err.Error()
-			} else {
-				got = string(MarshalJSONCompact(v))
-			}
-		case "ERR":
-			var ye *YAMLError
-			if errors.As(err, &ye) {
-				got = ye.Message
-			} else {
-				got = "no error: " + string(MarshalJSONCompact(v))
-			}
-		case "CRASH":
-			// lip throws an exception it does not catch; any error will do,
-			// but not one from a bug in the port.
-			if err != nil && !strings.HasPrefix(err.Error(), "x.yaml: internal error") {
-				continue
-			}
-			got = "no error: " + string(MarshalJSONCompact(v))
+		if r["kind"] == "OK" {
+			want = r["out"]
+		} else {
+			want = "error"
 		}
-		if got != r["out"] {
+		if got != want {
 			fails++
 			if fails <= 40 {
-				t.Errorf("ParseYAML(%q) [%s]\n got: %s\nwant: %s", in, r["kind"], got, r["out"])
+				t.Errorf("MarshalTOML(%s)\n got: %q\nwant: %q", r["in"], got, want)
 			}
 		}
 	}
 	if fails > 0 {
 		t.Errorf("%d mismatches", fails)
+	}
+}
+
+func TestGoldenParseTOML(t *testing.T) {
+	fails := 0
+	for _, r := range readGolden(t, "tomlparse.jsonl") {
+		in := unb64(t, r["in"])
+		v, err := ParseTOML(in)
+		var got, want string
+		switch {
+		case err == nil:
+			got = string(MarshalJSONCompact(v))
+		case strings.HasPrefix(err.Error(), "The file is not valid TOML: "):
+			// Tomlyn's own messages are not reproduced; only that it fails.
+			got = "syntax error"
+		default:
+			got = "error: " + err.Error()
+		}
+		switch {
+		case r["kind"] == "OK":
+			want = r["out"]
+		case r["kind"] == "ERR" && strings.HasPrefix(r["out"], "TomlFormatException: The file is not valid TOML: "):
+			want = "syntax error"
+		case r["kind"] == "ERR" && strings.HasPrefix(r["out"], "TomlFormatException: "):
+			want = "error: " + strings.TrimSpace(strings.TrimPrefix(r["out"], "TomlFormatException: "))
+		default:
+			// lip fails with an exception it does not catch; any error will do.
+			if err != nil {
+				continue
+			}
+			want = "an error: " + r["out"]
+		}
+		if got != want {
+			fails++
+			if fails <= 40 {
+				t.Errorf("ParseTOML(%q)\n got: %s\nwant: %s", in, got, want)
+			}
+		}
+	}
+	if fails > 0 {
+		t.Errorf("%d mismatches", fails)
+	}
+}
+
+func TestGoldenJSONFile(t *testing.T) {
+	for _, r := range readGolden(t, "jsonfile.jsonl") {
+		in := unb64(t, r["in"])
+		v, err := ParseJSONFile(in)
+		if r["kind"] != "OK" {
+			// JsonFile.Parse accepts an unpaired surrogate escape in a string;
+			// only the harness's writing of it failed.
+			if strings.Contains(strings.ToLower(string(in)), `\ud`) {
+				continue
+			}
+			if err == nil {
+				t.Errorf("ParseJSONFile(%q) succeeded; lip: %s", in, r["out"])
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("ParseJSONFile(%q): %v", in, err)
+			continue
+		}
+		if got := string(MarshalJSONFile(v)); got != r["out"] {
+			t.Errorf("MarshalJSONFile(%q)\n got: %q\nwant: %q", in, got, r["out"])
+		}
 	}
 }
 

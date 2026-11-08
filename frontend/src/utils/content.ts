@@ -516,7 +516,7 @@ const parsePackageVersionsRecord = (
           dependencyMap[normalizedKey] = normalizedRange;
 
           // LeviLamina with any variant ("#client" in tooth.json, none in
-          // lip.yaml).
+          // lip.toml).
           if (isLeviLaminaIdentifier(normalizedKey)) {
             llRangeSet.add(normalizedRange);
             packageRangeSet.add(normalizedRange);

@@ -1,4 +1,4 @@
-// Package pathglob implements the path patterns of lip 0.38 (lip.schema.yaml
+// Package pathglob implements the path patterns of lip 0.38 (lip.schema.toml
 // "globs" and "place", protocol/workspace.md §4). It is a direct port of
 // src/Lip.Core/Mcmod/PathGlob.cs at lip v0.38.0-beta.1.
 //
@@ -178,7 +178,7 @@ func (g *Glob) String() string { return g.pattern }
 func (g *Glob) MatchesDirectories() bool { return g.matchesDirectories }
 
 // HasMeta reports whether s contains '*', '?' or '[', which make it a pattern
-// (lip.schema.yaml "place").
+// (lip.schema.toml "place").
 func HasMeta(s string) bool { return strings.ContainsAny(s, "*?[") }
 
 // FixedPrefix returns the leading segments of a pattern that contain no
@@ -196,7 +196,13 @@ func FixedPrefix(pattern string) string {
 
 // IsMatch reports whether path is matched. A directory path must end with
 // '/'.
-func (g *Glob) IsMatch(path string) bool {
+func (g *Glob) IsMatch(path string) bool { return g.IsMatchBelow(path, 0) }
+
+// IsMatchBelow is IsMatch(path, minSegments): a directory pattern matches a
+// path below a directory only through a directory of at least minSegments
+// segments (e.g. 2 for a path below mods, which a pattern matching mods alone
+// does not reach).
+func (g *Glob) IsMatchBelow(path string, minSegments int) bool {
 	isDirectory := strings.HasSuffix(path, "/")
 	body := path
 	if isDirectory {
@@ -216,7 +222,7 @@ func (g *Glob) IsMatch(path string) bool {
 	if isDirectory {
 		maxPrefix = len(m.path)
 	}
-	for length := 0; length <= maxPrefix; length++ {
+	for length := minSegments; length <= maxPrefix; length++ {
 		if m.matchEnd(length) {
 			return true
 		}

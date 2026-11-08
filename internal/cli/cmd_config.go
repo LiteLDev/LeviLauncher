@@ -19,7 +19,7 @@ const (
 	cfgSourceSet     = "set"     // saved in the launcher settings
 	cfgSourceDefault = "default" // the built-in default
 	cfgSourceAuto    = "auto"    // detected (mirror: region; GitHub proxy: mirrors on)
-	cfgSourceLip     = "lip"     // github_proxy of lip's own config.yaml
+	cfgSourceLip     = "lip"     // github_proxy of lip's own config.toml
 	cfgSourcePath    = "path"    // a read-only folder or file of the launcher
 )
 
@@ -60,7 +60,7 @@ func (k *cfgKey) readOnly() bool { return k.set == nil }
 var (
 	cfgGUIRunning  = GUIRunning
 	cfgCanWriteDir = utils.CanWriteDir
-	// cfgEffectiveProxy reads lip's own config.yaml too.
+	// cfgEffectiveProxy reads lip's own config.toml too.
 	cfgEffectiveProxy = lip.EffectiveGithubProxy
 )
 
@@ -256,7 +256,7 @@ func cfgLoad() config.AppConfig {
 const cfgDefaultGithubProxy = "https://github.bibk.top"
 
 // cfgIsDefaultProxy reports whether the effective proxy is the built-in
-// default rather than one from lip's config.yaml.
+// default rather than one from lip's config.toml.
 func cfgIsDefaultProxy(effective string) bool {
 	return strings.EqualFold(strings.TrimRight(effective, "/"), cfgDefaultGithubProxy)
 }

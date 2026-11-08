@@ -117,7 +117,7 @@ func TestValidateZip_InvalidEntry_IsRejected(t *testing.T) {
 		{"fifo", 0x11A40000, "is neither a regular file nor a directory (e.g. a symbolic link)"},
 	}
 	for _, tt := range tests {
-		b := makeZip(t, file("lip.yaml", "{}"), zipEntrySpec{name: tt.name, data: "x", attrs: tt.attrs})
+		b := makeZip(t, file("lip.toml", "{}"), zipEntrySpec{name: tt.name, data: "x", attrs: tt.attrs})
 		err := ValidateZipReader(bytes.NewReader(b), int64(len(b)), "The local file p.zip")
 		want := "The local file p.zip is not a valid archive: its entry '" + tt.name + "' " + tt.reason +
 			", which lip does not install for safety. Ask the package author to create the archive with" +
@@ -134,7 +134,7 @@ func TestValidateZip_InvalidEntry_IsRejected(t *testing.T) {
 func TestValidateZip_OnlyProtocolForbiddenPaths_AreRejected(t *testing.T) {
 	// protocol/package.md §1 forbids only a leading '/', '..' segments and '\'.
 	for _, name := range []string{"C:x", "./a", "a//b", ".", "a/./b", "...", "..a"} {
-		b := makeZip(t, file("lip.yaml", "{}"), file(name, "x"))
+		b := makeZip(t, file("lip.toml", "{}"), file(name, "x"))
 		if err := ValidateZipReader(bytes.NewReader(b), int64(len(b)), "x"); err != nil {
 			t.Errorf("%q: %v", name, err)
 		}
@@ -142,24 +142,24 @@ func TestValidateZip_OnlyProtocolForbiddenPaths_AreRejected(t *testing.T) {
 }
 
 func TestOpenZip_DriveLetterEntry_KeysInEntryOrder(t *testing.T) {
-	s, err := OpenZipBytes(makeZip(t, file("lip.yaml", "{}"), file("C:x", "x")))
+	s, err := OpenZipBytes(makeZip(t, file("lip.toml", "{}"), file("C:x", "x")))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := s.Keys(); !slices.Equal(got, []string{"lip.yaml", "C:x"}) {
+	if got := s.Keys(); !slices.Equal(got, []string{"lip.toml", "C:x"}) {
 		t.Fatalf("keys %q", got)
 	}
 }
 
 func TestOpenZip_UnixRegularFilesAndDirectories_Succeed(t *testing.T) {
 	b := makeZip(t,
-		zipEntrySpec{name: "lip.yaml", data: "{}", attrs: 0x81A40000},
+		zipEntrySpec{name: "lip.toml", data: "{}", attrs: 0x81A40000},
 		zipEntrySpec{name: "dir/", attrs: 0x41ED0000, dir: true})
 	s, err := OpenZipBytes(b)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := s.Keys(); !slices.Equal(got, []string{"lip.yaml"}) {
+	if got := s.Keys(); !slices.Equal(got, []string{"lip.toml"}) {
 		t.Fatalf("keys %q", got)
 	}
 }
@@ -287,7 +287,7 @@ func TestZipSource_CorruptDeflate_IsDamagedWhenRead(t *testing.T) {
 func TestOpenZipFile_ReadsAndValidates(t *testing.T) {
 	dir := t.TempDir()
 	good := filepath.Join(dir, "pkg.bin")
-	writeFile(t, good, makeZip(t, file("lip.yaml", "local"), file("sub/a.txt", "sub")))
+	writeFile(t, good, makeZip(t, file("lip.toml", "local"), file("sub/a.txt", "sub")))
 	s, err := OpenZipFile(good)
 	if err != nil {
 		t.Fatal(err)
@@ -328,14 +328,14 @@ func TestNewZipFileSource_DamagedCachedFile_AdvisesCacheClean(t *testing.T) {
 func TestOpenLocalZip(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "pkg.zip")
-	writeFile(t, path, makeZip(t, file("lip.yaml", "local"), file("sub/a.txt", "sub")))
+	writeFile(t, path, makeZip(t, file("lip.toml", "local"), file("sub/a.txt", "sub")))
 	s, err := OpenLocalZip(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// The bytes were read once: changing the file does not change the source.
 	writeFile(t, path, []byte("changed"))
-	if got := readKey(t, s, "lip.yaml"); got != "local" {
+	if got := readKey(t, s, "lip.toml"); got != "local" {
 		t.Fatalf("got %q", got)
 	}
 
@@ -355,7 +355,7 @@ func TestOpenLocalZip(t *testing.T) {
 
 	for _, e := range []zipEntrySpec{{name: "../evil.txt"}, {name: `a\b.txt`}, {name: "link", attrs: 0xA1FF0000}} {
 		invalid := filepath.Join(dir, "invalid.zip")
-		writeFile(t, invalid, makeZip(t, file("lip.yaml", "{}"), e))
+		writeFile(t, invalid, makeZip(t, file("lip.toml", "{}"), e))
 		if _, err := OpenLocalZip(invalid); !errors.As(err, &ue) || !strings.Contains(err.Error(), "not a valid archive") {
 			t.Fatalf("%q: got %v", e.name, err)
 		}
@@ -366,7 +366,7 @@ func TestOpenLocalZip(t *testing.T) {
 
 func TestDirectorySource_KeysOrdinalAndReadWhereItIs(t *testing.T) {
 	dir := t.TempDir()
-	writeFile(t, filepath.Join(dir, "lip.yaml"), []byte("v1"))
+	writeFile(t, filepath.Join(dir, "lip.toml"), []byte("v1"))
 	writeFile(t, filepath.Join(dir, "lib", "a.dll"), []byte("a"))
 	writeFile(t, filepath.Join(dir, "B.txt"), []byte("b"))
 	writeFile(t, filepath.Join(dir, "lib", "deep", ".hidden"), []byte("h"))
@@ -377,14 +377,14 @@ func TestDirectorySource_KeysOrdinalAndReadWhereItIs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := s.Keys(), []string{"B.txt", "lib/a.dll", "lib/deep/.hidden", "lip.yaml"}; !slices.Equal(got, want) {
+	if got, want := s.Keys(), []string{"B.txt", "lib/a.dll", "lib/deep/.hidden", "lip.toml"}; !slices.Equal(got, want) {
 		t.Fatalf("keys %q, want %q", got, want)
 	}
 	if n, ok := s.Size("lib/a.dll"); !ok || n != 1 {
 		t.Fatalf("Size = %d, %v", n, ok)
 	}
-	writeFile(t, filepath.Join(dir, "lip.yaml"), []byte("v2"))
-	if got := readKey(t, s, "lip.yaml"); got != "v2" {
+	writeFile(t, filepath.Join(dir, "lip.toml"), []byte("v2"))
+	if got := readKey(t, s, "lip.toml"); got != "v2" {
 		t.Fatalf("got %q", got)
 	}
 	if _, err := s.Open("lib"); !errors.Is(err, ErrNoFile) {
@@ -523,17 +523,17 @@ func TestReadPackageFile(t *testing.T) {
 		name     string
 		errorMsg string
 	}{
-		{[]string{"lip.yaml", "manifest.json"}, "lip.yaml", ""},
-		{[]string{"tooth.json", "lip.yaml"}, "lip.yaml", ""},
+		{[]string{"lip.toml", "manifest.json"}, "lip.toml", ""},
+		{[]string{"tooth.json", "lip.toml"}, "lip.toml", ""},
 		{[]string{"tooth.json"}, "tooth.json", ""},
-		{[]string{"manifest.json"}, "", "pkg is not a lip package: it has no lip.yaml at its root."},
-		{[]string{"a/b/lip.yaml"}, "", "pkg is not a lip package: it has no lip.yaml at its root."},
-		{[]string{"a/b/lip.yaml", "sub/lip.yaml"}, "", "pkg is not a lip package: it has no lip.yaml at its root." +
-			" There is one at 'sub/lip.yaml': the files of a package must be at the root of the archive, not in a folder."},
-		{[]string{"repo-main/tooth.json", "x/lip.yaml"}, "", "pkg is not a lip package: it has no lip.yaml at its root." +
+		{[]string{"manifest.json"}, "", "pkg is not a lip package: it has no lip.toml at its root."},
+		{[]string{"a/b/lip.toml"}, "", "pkg is not a lip package: it has no lip.toml at its root."},
+		{[]string{"a/b/lip.toml", "sub/lip.toml"}, "", "pkg is not a lip package: it has no lip.toml at its root." +
+			" There is one at 'sub/lip.toml': the files of a package must be at the root of the archive, not in a folder."},
+		{[]string{"repo-main/tooth.json", "x/lip.toml"}, "", "pkg is not a lip package: it has no lip.toml at its root." +
 			" There is one at 'repo-main/tooth.json': the files of a package must be at the root of the archive, not in a folder."},
-		{[]string{"sub/lip.yamlx", "/lip.yaml"}, "", "pkg is not a lip package: it has no lip.yaml at its root." +
-			" There is one at '/lip.yaml': the files of a package must be at the root of the archive, not in a folder."},
+		{[]string{"sub/lip.tomlx", "/lip.toml"}, "", "pkg is not a lip package: it has no lip.toml at its root." +
+			" There is one at '/lip.toml': the files of a package must be at the root of the archive, not in a folder."},
 	}
 	for _, tt := range tests {
 		name, data, err := ReadPackageFileOf(fakeSource{tt.keys}, "pkg")
@@ -550,7 +550,7 @@ func TestReadPackageFile(t *testing.T) {
 		}
 	}
 	if _, _, err := ReadPackageFile(fakeSource{nil}); err == nil ||
-		err.Error() != "The archive is not a lip package: it has no lip.yaml at its root." {
+		err.Error() != "The archive is not a lip package: it has no lip.toml at its root." {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -706,7 +706,7 @@ func (unavailableSource) Open(string) (io.ReadCloser, error) {
 }
 
 func TestReadPackageFile_UnavailableErrorPassesThrough(t *testing.T) {
-	_, _, err := ReadPackageFileOf(unavailableSource{fakeSource{[]string{"lip.yaml"}}}, "pkg")
+	_, _, err := ReadPackageFileOf(unavailableSource{fakeSource{[]string{"lip.toml"}}}, "pkg")
 	if err == nil || err.Error() != "specific" {
 		t.Fatalf("got %v", err)
 	}

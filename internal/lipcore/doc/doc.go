@@ -1,6 +1,7 @@
-// Package doc holds the JSON value model lip 0.38 works on and the file
-// formats that carry it: strict JSON (PackageFileParser.ParseJson), YAML files
-// (protocol/README.md "YAML file", src/Lip.Core/Json/YamlJson.cs) and the
+// Package doc holds the JSON value model lip works on and the file formats
+// that carry it: strict JSON (PackageFileParser.ParseJson), TOML files
+// (protocol/README.md "TOML file", src/Lip.Core/Json/TomlJson.cs), JSON files
+// (protocol/README.md "JSON file", src/Lip.Core/Json/JsonFile.cs) and the
 // System.Text.Json text lip writes for journal records
 // (Mcmod/Install/WorkspaceTransaction.cs, JsonObject.ToJsonString).
 //
@@ -13,12 +14,10 @@
 //	[]any        a JSON array
 //	*Object      a JSON object, which keeps its members in insertion order
 //
-// The YAML reader is a port of the YamlDotNet 16.3.0 scanner and parser (the
-// library lip uses) rather than a wrapper of gopkg.in/yaml.v3: yaml.v3's
-// public API drops the non-specific tag "!" (so "! 5" would read as a number),
-// rejects the surrogate pair escapes YamlDotNet accepts (a \u escape of a high
-// surrogate followed by one of a low surrogate) and reports syntax errors
-// without a column, so it cannot match lip.
+// The TOML reader is its own parser rather than a wrapper of a Go TOML
+// library, so that it keeps the order of keys and reads files as Tomlyn
+// 2.10.2 (the library lip uses) does, quirks included; testdata holds lip's
+// own results for a corpus of inputs (diffgen_test.go).
 package doc
 
 import (

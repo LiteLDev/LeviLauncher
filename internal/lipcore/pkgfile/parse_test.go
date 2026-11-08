@@ -11,7 +11,9 @@ import (
 )
 
 // Ported from tests/Lip.Core.Tests/Mcmod/Parsing/PackageFileParserTests.cs
-// (v0.38.0-beta.1). The documents are written as JSON, which is YAML too.
+// (lip main). Documents written as JSON are parsed as the JSON value they
+// are (PackageFileParser.Parse(JsonElement)); the others are TOML files
+// (PackageFileParser.Parse(byte[])).
 
 const validDoc = `{"format":4,"id":"example.com/owner/tool","version":"1.2.3",` +
 	`"variants":{"":[{"platform":"server","runtime":"win-x64"}]}}`
@@ -46,11 +48,20 @@ func setRoot(key, v string) string {
 	return "{" + strings.Join(parts, ",") + "}"
 }
 
+// parseText parses a document written as JSON as that JSON value, and any
+// other as a TOML file.
+func parseText(text string) (*pkgmodel.Document, error) {
+	if v, err := doc.ParseJSON([]byte(text), "x.json"); err == nil {
+		return Parse(v)
+	}
+	return ParseTOML([]byte(text))
+}
+
 func mustParse(t *testing.T, text string) *pkgmodel.Document {
 	t.Helper()
-	d, err := ParseYAML([]byte(text))
+	d, err := parseText(text)
 	if err != nil {
-		t.Fatalf("ParseYAML(%s): %v", text, err)
+		t.Fatalf("parse(%s): %v", text, err)
 	}
 	return d
 }
@@ -69,13 +80,13 @@ func singleEntry(t *testing.T, text string) pkgmodel.Entry {
 // path, and returns the error.
 func assertInvalid(t *testing.T, text, path string) *FormatError {
 	t.Helper()
-	_, err := ParseYAML([]byte(text))
+	_, err := parseText(text)
 	var fe *FormatError
 	if !errors.As(err, &fe) {
-		t.Fatalf("ParseYAML(%s) = %v, want a *FormatError", text, err)
+		t.Fatalf("parse(%s) = %v, want a *FormatError", text, err)
 	}
 	if !strings.Contains(fe.Message, "at "+path) {
-		t.Fatalf("ParseYAML(%s): %q does not name %s", text, fe.Message, path)
+		t.Fatalf("parse(%s): %q does not name %s", text, fe.Message, path)
 	}
 	return fe
 }
@@ -90,7 +101,7 @@ func TestParseMinimalDocumentReadsMembers(t *testing.T) {
 	}
 	e := d.Variants[0].Entries[0]
 	if e.Platform != "server" || e.Runtime != "win-x64" || len(e.Deps) != 0 || len(e.Assets) != 0 ||
-		len(e.Preserve) != 0 || len(e.Purge) != 0 || e.Derived || e.McmodAsset() != -1 {
+		len(e.Preserve) != 0 || len(e.Purge) != 0 || e.McmodAsset() != -1 {
 		t.Fatalf("entry %+v", e)
 	}
 	if e.Deps == nil || e.Assets == nil || e.Hooks.PreInstall == nil {
@@ -108,11 +119,10 @@ func TestParseMinimalDocumentReadsMembers(t *testing.T) {
 	}
 }
 
-func TestParseBlockYAMLReadsMembers(t *testing.T) {
-	d := mustParse(t, "# lip.yaml\nformat: 4\nid: example.com/owner/tool\nversion: 1.0.0\ninfo:\n"+
-		"  name: 'true'\n  tags: ['null', \"~\"]\nvariants:\n  \"\":\n    - platform: server\n"+
-		"      runtime: win-x64\n      deps:\n        example.com/a: ^1.0.0\n      hooks:\n"+
-		"        post_install:\n          - echo yes\n")
+func TestParseTOMLReadsMembers(t *testing.T) {
+	d := mustParse(t, "# lip.toml\nformat = 4\nid = \"example.com/owner/tool\"\nversion = '1.0.0'\n\n"+
+		"[info]\nname = \"true\"\ntags = [\"null\", \"~\"]\n\n[[variants.\"\"]]\nplatform = \"server\"\n"+
+		"runtime = \"win-x64\"\ndeps = { \"example.com/a\" = \"^1.0.0\" }\nhooks.post_install = [\"echo yes\"]\n")
 	if d.Version != "1.0.0" || d.Info.Name != "true" || !reflect.DeepEqual(d.Info.Tags, []string{"null", "~"}) {
 		t.Fatalf("got %+v %+v", d, d.Info)
 	}
@@ -123,16 +133,17 @@ func TestParseBlockYAMLReadsMembers(t *testing.T) {
 	}
 }
 
-func TestParsePlainScalarOfOtherTypeThrows(t *testing.T) {
-	base := "format: 4\nid: example.com/owner/tool\nversion: 1.2.3\nvariants: { \"\": [ { platform: server, runtime: win-x64 } ] }"
+func TestParseTOMLValueOfOtherTypeThrows(t *testing.T) {
+	base := "format = 4\nid = \"example.com/owner/tool\"\nversion = \"1.2.3\"\n" +
+		"variants = { \"\" = [ { platform = \"server\", runtime = \"win-x64\" } ] }"
 	for _, c := range []struct{ line, path string }{
-		{"version: 1.0", "$.version"}, {"version: true", "$.version"}, {"version: null", "$.version"},
-		{"version:", "$.version"}, {"format: \"4\"", "$.format"}, {"format: 4.5", "$.format"},
+		{"version = 1.0", "$.version"}, {"version = true", "$.version"}, {"version = [\"1.2.3\"]", "$.version"},
+		{"format = \"4\"", "$.format"}, {"format = 4.5", "$.format"},
 	} {
-		key := c.line[:strings.Index(c.line, ":")]
+		key := c.line[:strings.Index(c.line, " =")]
 		var lines []string
 		for _, l := range strings.Split(base, "\n") {
-			if strings.HasPrefix(l, key+":") {
+			if strings.HasPrefix(l, key+" =") {
 				l = c.line
 			}
 			lines = append(lines, l)
@@ -199,7 +210,7 @@ func TestParseRootRules(t *testing.T) {
 	for _, v := range []string{"4.0", "4e0", "40e-1"} {
 		mustParse(t, setRoot("format", v))
 	}
-	_, err := ParseYAML([]byte(setRoot("format", "5")))
+	_, err := parseText(setRoot("format", "5"))
 	var fe *FormatError
 	if !errors.As(err, &fe) || !fe.Newer || fe.Message != `The package file has "format": 5, a format this lip`+
 		` does not know (it knows format 4). The package needs a newer lip: update lip.` {
@@ -542,28 +553,31 @@ func TestParseUnknownKeysAreIgnored(t *testing.T) {
 	}
 }
 
-func TestParseYAMLErrors(t *testing.T) {
+func TestParseTOMLErrors(t *testing.T) {
+	valid := "format = 4\nid = \"example.com/owner/tool\"\nversion = \"1.2.3\"\n" +
+		"[[variants.\"\"]]\nplatform = \"server\"\nruntime = \"win-x64\"\n"
 	for _, c := range []struct{ text, inner string }{
-		{validDoc[:len(validDoc)-1], "not valid YAML"},
-		{validDoc + "\n---\n" + validDoc, "more than one YAML document"},
-		{validDoc[:len(validDoc)-1] + `,"version":"1.2.3"}`, "appears twice"},
-		{strings.Replace(withMembers(`"hooks":{}`), `"hooks":{}`, `"hooks":{},"hooks":{}`, 1), "appears twice"},
-		{validDoc[:len(validDoc)-1] + ",\"x\":\"\xc3\x28\"}", "UTF-8"},
-		{strings.Replace(validDoc, `"1.2.3"`, `"\uD800"`, 1), ""},
+		{validDoc, "not valid TOML"},
+		{strings.Replace(valid, "version", "id = \"x\"\nversion", 1), "not valid TOML"},
+		{"version = \"1.2.3\"\n" + valid, "not valid TOML"},
+		{valid + "hooks = {}\nhooks = {}\n", "not valid TOML"},
+		{valid + "x = \"\xc3\x28\"\n", "UTF-8"},
+		{valid + "x = 1979-05-27\n", "The value of 'variants.[0].x' is a date or a time"},
+		{valid + "x = nan\n", "inf or nan"},
 	} {
-		_, err := ParseYAML([]byte(c.text))
+		_, err := ParseTOML([]byte(c.text))
 		var fe *FormatError
-		if !errors.As(err, &fe) || fe.Message != "The lip.yaml is not a valid YAML file of the kind lip reads." {
+		if !errors.As(err, &fe) || fe.Message != "The lip.toml is not a valid TOML file of the kind lip reads." {
 			t.Errorf("%q: %v", c.text, err)
 			continue
 		}
-		var ye *doc.YAMLError
-		if !errors.As(err, &ye) || !strings.Contains(fe.Err.Error(), c.inner) || strings.Contains(fe.Err.Error(), "lip.yaml") {
+		var te *doc.TOMLError
+		if !errors.As(err, &te) || !strings.Contains(fe.Err.Error(), c.inner) || strings.Contains(fe.Err.Error(), "lip.toml") {
 			t.Errorf("%q: inner %v", c.text, fe.Err)
 		}
 	}
-	mustParse(t, "# comment\n"+validDoc)
-	mustParse(t, "\xef\xbb\xbf"+validDoc)
+	mustParse(t, "# comment\n"+valid)
+	mustParse(t, "\xef\xbb\xbf"+valid)
 }
 
 func TestFormat(t *testing.T) {
@@ -587,7 +601,7 @@ func TestParseEntry(t *testing.T) {
 	valid, _ := doc.ParseJSON([]byte(`{"platform":"client","runtime":"linux-x64",`+
 		`"assets":[{"type":"zip","urls":["https://a.example/x.zip"]}]}`), "x")
 	e, err := ParseEntry(valid)
-	if err != nil || e.Platform != "client" || e.Runtime != "linux-x64" || e.Derived || len(e.Assets) != 1 ||
+	if err != nil || e.Platform != "client" || e.Runtime != "linux-x64" || len(e.Assets) != 1 ||
 		e.Assets[0].Type != pkgmodel.AssetZip {
 		t.Fatalf("%+v %v", e, err)
 	}

@@ -1,9 +1,9 @@
 // Package pkgfile ports lip 0.38's package file parser
 // (src/Lip.Core/Mcmod/Parsing/PackageFileParser.cs), the mod manifest reader
 // (Candidate.GetModManifest of src/Lip.Core/Mcmod/Contracts.cs) and the
-// workspace file store (src/Lip.Core/Mcmod/Lock/LockStore.cs), as of lip
+// state file store (src/Lip.Core/Mcmod/Lock/LockStore.cs), as of lip
 // v0.38.0-beta.1 (protocol/package.md §3-4, protocol/workspace.md §7.1,
-// protocol/compatibility.md §3, lip.schema.yaml, workspace.schema.yaml).
+// protocol/compatibility.md §3, lip.schema.toml, state.schema.json).
 //
 // Documents are the JSON values of package doc (*doc.Object and friends);
 // the results are the plain types of package pkgmodel.
@@ -59,7 +59,7 @@ func IsRuntime(value string) bool { return runtimeRegex.MatchString(value) }
 func IsPlatform(s string) bool { return s == pkgmodel.PlatformServer || s == pkgmodel.PlatformClient }
 
 // Format is PackageFileParser.Format: the "format" of a package file or of
-// the workspace file when it is an integer (see doc.IntegerMember).
+// the state file when it is an integer (see doc.IntegerMember).
 func Format(root any) (int64, bool) { return IntegerMember(root, pkgmodel.FormatKey) }
 
 // IntegerMember is PackageFileParser.IntegerMember: member key of an object
@@ -76,16 +76,16 @@ func IntegerMember(root any, key string) (int64, bool) {
 	return doc.IntegerMember(v)
 }
 
-// ParseYAML is PackageFileParser.Parse(byte[]): reads lip.yaml, a YAML file
+// ParseTOML is PackageFileParser.Parse(byte[]): reads lip.toml, a TOML file
 // (protocol/README.md), and parses it as a package file. A file that is not a
-// YAML file of the kind lip reads is a *FormatError whose Err is the
-// *doc.YAMLError (whose Error() is lip's message, the file name not being
+// TOML file of the kind lip reads is a *FormatError whose Err is the
+// *doc.TOMLError (whose Error() is lip's message, the file name not being
 // part of it).
-func ParseYAML(data []byte) (*pkgmodel.Document, error) {
-	root, err := doc.ParseYAML(data, "")
+func ParseTOML(data []byte) (*pkgmodel.Document, error) {
+	root, err := doc.ParseTOML(data)
 	if err != nil {
 		return nil, &FormatError{
-			Message: "The " + pkgmodel.PackageFileName + " is not a valid YAML file of the kind lip reads.",
+			Message: "The " + pkgmodel.PackageFileName + " is not a valid TOML file of the kind lip reads.",
 			Err:     err,
 		}
 	}
@@ -103,7 +103,7 @@ func ParseYAML(data []byte) (*pkgmodel.Document, error) {
 }
 
 // Parse is PackageFileParser.Parse(JsonElement): parses and validates a
-// package file (lip.schema.yaml, protocol/package.md §3), checking in lip's
+// package file (lip.schema.toml, protocol/package.md §3), checking in lip's
 // order and failing with lip's message. Keys the schema does not describe are
 // ignored. The errors are *FormatError.
 func Parse(root any) (*pkgmodel.Document, error) {
@@ -174,7 +174,7 @@ func Parse(root any) (*pkgmodel.Document, error) {
 func ParseEntry(element any) (pkgmodel.Entry, error) { return parseEntryAt(element, "$") }
 
 // IsValidPlacement is PackageFileParser.IsValidPlacement: whether a member of
-// place is valid (lip.schema.yaml "place").
+// place is valid (lip.schema.toml "place").
 func IsValidPlacement(src, dest string) bool {
 	o := doc.NewObject()
 	o.Set("src", src)
@@ -407,7 +407,7 @@ func readPlacement(element any, path string) (pkgmodel.Placement, error) {
 	return p, nil
 }
 
-// readPath reads a path (lip.schema.yaml "path").
+// readPath reads a path (lip.schema.toml "path").
 func readPath(element any, path string) (string, error) {
 	value, err := readString(element, path)
 	if err != nil {
@@ -480,7 +480,8 @@ func readSemVersion(element any, path string) (string, error) {
 
 // readString reads a string. (lip also rejects a string holding an escaped
 // lone surrogate, "is not a valid Unicode string"; package doc never yields
-// one: YAML files with one are rejected while reading.)
+// one from a TOML file, which cannot hold one, and reads one of a JSON
+// file as U+FFFD.)
 func readString(element any, path string) (string, error) {
 	s, ok := element.(string)
 	if !ok {

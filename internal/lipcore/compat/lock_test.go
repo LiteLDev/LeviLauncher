@@ -15,7 +15,7 @@ import (
 
 // Ports of tests/Lip.Core.Tests/Mcmod/Compat/ToothLockMigrationTests.cs
 // (v0.38.0-beta.1), for what this package does: reading tooth_lock.json and
-// deriving the workspace file (the install/uninstall pipeline is the
+// deriving the state file (the install/uninstall pipeline is the
 // engine's).
 
 const (

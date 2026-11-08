@@ -61,7 +61,7 @@ func e2eCases() []e2eCase {
 		files: []string{"a.txt", "a", "bin/x.dll", "x", "README.md", "readme"}}
 	dir := &e2ePkg{name: "dir", version: "1.0.0",
 		entry: pkgmodel.Entry{Assets: self(place("assets/", "rp/pack/"), place("", "copy/"), place("defaults/", ""))},
-		files: []string{"assets/a.txt", "a", "assets/sub/b.txt", "b", "assets/lip.yaml", "nested",
+		files: []string{"assets/a.txt", "a", "assets/sub/b.txt", "b", "assets/lip.toml", "nested",
 			"defaults/server.properties", "props"}}
 	glob := &e2ePkg{name: "glob", version: "1.0.0",
 		entry: pkgmodel.Entry{Assets: self(place("bin/**/*.dll", "tools/pack/"), place("*.json", "cfg/"),
@@ -97,7 +97,7 @@ func e2eCases() []e2eCase {
 		entry: pkgmodel.Entry{Assets: self(place("x.txt", "new.txt"), place("x.txt", "x.TXT"), place("x.txt", "X.TXT"))},
 		files: []string{"x.txt", "intruder"}}
 	dots := &e2ePkg{name: "dots", version: "1.0.0",
-		entry: pkgmodel.Entry{Assets: self(place("a.txt", "x/./a.txt"), place("a.txt", "lip.yaml"),
+		entry: pkgmodel.Entry{Assets: self(place("a.txt", "x/./a.txt"), place("a.txt", "lip.toml"),
 			place("a.txt", "tooth.json"))},
 		files: []string{"a.txt", "a"}}
 	overwrite := &e2ePkg{name: "overwrite", version: "1.0.0",
@@ -195,7 +195,7 @@ func writeFixture(t *testing.T, dir string, p *e2ePkg) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(path, "lip.yaml"), data, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(path, "lip.toml"), data, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	writePairs(t, path, p.files)
@@ -250,7 +250,7 @@ func e2eTree(t *testing.T, root string) map[string]string {
 }
 
 // e2eDriver installs and uninstalls with this package as McmodService
-// does, keeping the workspace file in memory.
+// does, keeping the state file in memory.
 type e2eDriver struct {
 	root      string
 	installed []pkgmodel.LockedPackage
@@ -293,7 +293,7 @@ func (d *e2eDriver) operation(t *testing.T, plan func(view *View) (*Plan, error)
 		return err
 	}
 	_, err = tx.Commit(func() error {
-		return os.WriteFile(filepath.Join(d.root, ".lip", "workspace.yaml.tmp"),
+		return os.WriteFile(filepath.Join(d.root, ".lip", "state.json.tmp"),
 			[]byte("format: 4\nplatform: server\nruntime: win-x64\npackages: []\n"), 0o644)
 	})
 	return err

@@ -41,11 +41,11 @@ type Options struct {
 	// platform of LeviLauncher's workspaces.
 	Platform string
 	// Runtime overrides the runtime of the environment (lip's --rid); ""
-	// is the runtime the workspace file records, else CurrentRID().
+	// is the runtime the state file records, else CurrentRID().
 	Runtime string
 }
 
-// InstalledPackage is a package of the workspace file.
+// InstalledPackage is a package of the state file.
 type InstalledPackage struct {
 	// Identity is the package id, then '#' and the variant when not "".
 	Identity string
@@ -384,7 +384,7 @@ func (e *Engine) Update(ctx context.Context, packages []string, dryRun, ignoreSc
 	return e.execute(ctx, ws, op, e.changes(ws, op, p))
 }
 
-// List returns the packages of the workspace file as "<identity>@<version>",
+// List returns the packages of the state file as "<identity>@<version>",
 // in installation order, explicitly installed packages and dependency
 // packages apart (protocol/cli.md §5.4; LipClient.List).
 func (e *Engine) List(ctx context.Context) (explicit, implicit []string, err error) {
@@ -406,8 +406,8 @@ func (e *Engine) List(ctx context.Context) (explicit, implicit []string, err err
 	return explicit, implicit, nil
 }
 
-// Packages is McmodService.List: the packages of the workspace file. The
-// workspace file derived from a tooth_lock.json is only read, for the
+// Packages is McmodService.List: the packages of the state file. The
+// state file derived from a tooth_lock.json is only read, for the
 // environment a workspace operation would give it, without the commits it
 // would record.
 func (e *Engine) Packages(ctx context.Context) ([]InstalledPackage, error) {
@@ -482,7 +482,7 @@ func (e *Engine) openWorkspace(ctx context.Context) (*workspace, error) {
 			return nil, err
 		}
 	}
-	// A workspace without a workspace file gets the environment of its first
+	// A workspace without a state file gets the environment of its first
 	// operation.
 	lf := recorded
 	if lf == nil {
@@ -501,9 +501,9 @@ func (e *Engine) openWorkspace(ctx context.Context) (*workspace, error) {
 	return &workspace{root: root, lock: lf, env: env, provider: p, resolver: res}, nil
 }
 
-// readToothLock is ReadToothLock: the workspace file
+// readToothLock is ReadToothLock: the state file
 // protocol/compatibility.md §3 derives from the tooth_lock.json of a
-// workspace without a workspace file, for its environment; nil when it has
+// workspace without a state file, for its environment; nil when it has
 // none that Section 3 reads. With resolveCommits, the commit of each package
 // is that of the tag "v<version>" of its remote repository, and it fails
 // when that cannot be obtained.
@@ -515,7 +515,7 @@ func (e *Engine) readToothLock(ctx context.Context, root string, env environment
 	}
 	var commitOf compat.CommitOf
 	if resolveCommits {
-		e.info("Migrating " + compat.ToothLockFileName + " of lip v0.x to the workspace file.")
+		e.info("Migrating " + compat.ToothLockFileName + " of lip v0.x to the state file.")
 		commitOf = func(repo, tag string) (string, error) {
 			g, _, ok := ref.TryParseGitRef(strings.TrimPrefix(tag, "v"))
 			if !ok {
@@ -607,23 +607,23 @@ func (e *Engine) recoverInterrupted(root string, op operation) error {
 	}
 
 	e.warning(fmt.Sprintf("A lip operation on this workspace was interrupted%s; undid its %d changes."+
-		" The workspace and its workspace file are as they were before it.", started, result.Changes))
+		" The workspace and its state file are as they were before it.", started, result.Changes))
 	return nil
 }
 
 // determineEnvironment is DetermineEnvironment (protocol/cli.md §4): the
-// platform of the engine, which a workspace file must record when it has
-// one; the runtime is the override, then the workspace file's, then the RID
+// platform of the engine, which a state file must record when it has
+// one; the runtime is the override, then the state file's, then the RID
 // the engine runs on.
 func (e *Engine) determineEnvironment(lf *pkgmodel.LockFile) (environment, error) {
 	if lf != nil && lf.Platform != e.platform {
 		var msg string
 		if e.platform == pkgmodel.PlatformServer {
-			msg = fmt.Sprintf("The workspace file %s records the platform \"%s\" in its \"platform\" field,"+
+			msg = fmt.Sprintf("The state file %s records the platform \"%s\" in its \"platform\" field,"+
 				" but lip manages server workspaces only (\"%s\"). Client workspaces are managed by"+
 				" launchers such as LeviLauncher.", pkgmodel.WorkspaceFile, lf.Platform, e.platform)
 		} else {
-			msg = fmt.Sprintf("The workspace file %s records the platform \"%s\" in its \"platform\" field,"+
+			msg = fmt.Sprintf("The state file %s records the platform \"%s\" in its \"platform\" field,"+
 				" but LeviLauncher manages %s workspaces only (\"%s\"). Server workspaces are managed"+
 				" by lip.", pkgmodel.WorkspaceFile, lf.Platform, e.platform, e.platform)
 		}
@@ -692,7 +692,7 @@ func (e *Engine) requestedCandidates(ctx context.Context, ws *workspace, request
 func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (*candidate, error) {
 	e.info("Resolving " + r.arg + "...")
 	var diagnostics []graph.Diagnostic
-	seq := ws.resolver.resolve(r.source, nil, false, func(d graph.Diagnostic) {
+	seq := ws.resolver.resolve(r.source, nil, func(d graph.Diagnostic) {
 		diagnostics = append(diagnostics, d)
 	})
 	c, err := seq.nextCandidate(ctx)
@@ -738,9 +738,10 @@ func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (
 		if notFound {
 			message += "\nCheck the spelling of the package and the version you asked for."
 		}
-		return nil, &Error{Msg: message}
+		return nil, &Error{Msg: message, kind: ErrNoPackageFound}
 	}
-	return nil, &Error{Msg: message, Err: &fetch.AggregateError{Message: summary, Errs: causes}}
+	return nil, &Error{Msg: message, Err: &fetch.AggregateError{Message: summary, Errs: causes},
+		kind: ErrNoPackageFound}
 }
 
 // plan is McmodService.Plan: the new package set in installation order, and
@@ -863,7 +864,7 @@ const (
 )
 
 // change is a Change: uninstalling or marking an installed package (origin,
-// its index in the workspace file), or installing a candidate.
+// its index in the state file), or installing a candidate.
 type change struct {
 	kind      changeKind
 	origin    int
@@ -872,7 +873,7 @@ type change struct {
 }
 
 // changeSet is ChangeSet: what an operation changes, in order, and how the
-// workspace file entries left at the end are ordered and marked (finish;
+// state file entries left at the end are ordered and marked (finish;
 // nil keeps them as they are).
 type changeSet struct {
 	changes []change
@@ -912,7 +913,7 @@ func (e *Engine) changes(ws *workspace, op operation, p *plan) changeSet {
 	}
 
 	finish := func(remaining []pkgmodel.LockedPackage) []pkgmodel.LockedPackage {
-		// The workspace file lists the members of the new set in installation
+		// The state file lists the members of the new set in installation
 		// order.
 		var final []pkgmodel.LockedPackage
 		for _, c := range p.members {
@@ -981,8 +982,8 @@ func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, 
 	return e.execute(ctx, ws, op, changeSet{changes: changes})
 }
 
-// remainingPackage is an entry of the workspace file as the planned changes
-// leave it: origin is its index in the workspace file, or -1 for a package
+// remainingPackage is an entry of the state file as the planned changes
+// leave it: origin is its index in the state file, or -1 for a package
 // the operation installs.
 type remainingPackage struct {
 	pkg    pkgmodel.LockedPackage
@@ -999,8 +1000,8 @@ type plannedChange struct {
 // execute is Execute: plans every change against a view of the workspace as
 // the earlier changes leave it, so that every check and every fetch happens
 // before anything changes; then applies the plans in one transaction and
-// writes the workspace file last. A failure while applying (or
-// cancellation) undoes every change and leaves the workspace file as it was
+// writes the state file last. A failure while applying (or
+// cancellation) undoes every change and leaves the state file as it was
 // (protocol/workspace.md §6). In a dry run, reports the plans instead.
 func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs changeSet) error {
 	var layout *install.LayoutPlan
@@ -1146,7 +1147,7 @@ func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs ch
 			return err
 		}
 		// The commit point: the journal records the commit, then the
-		// workspace file moves into place.
+		// state file moves into place.
 		if err := pkgfile.StageWorkspace(ws.root, final); err != nil {
 			return err
 		}
@@ -1162,7 +1163,7 @@ func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs ch
 			e.warning("The operation failed; undoing its changes to the workspace.")
 		}
 		errs := tx.Rollback(func() error {
-			// A staged workspace file is never read, and the next save
+			// A staged state file is never read, and the next save
 			// replaces it.
 			_ = pkgfile.DiscardStaged(ws.root)
 			return nil
@@ -1183,7 +1184,7 @@ func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs ch
 	return nil
 }
 
-// locked is the workspace file entry of an installed candidate.
+// locked is the state file entry of an installed candidate.
 func locked(c *candidate, explicit bool, files []string) pkgmodel.LockedPackage {
 	return pkgmodel.LockedPackage{
 		Manifest: c.manifest,
@@ -1195,7 +1196,7 @@ func locked(c *candidate, explicit bool, files []string) pkgmodel.LockedPackage 
 	}
 }
 
-// lockWith is LockWith: the workspace file with the given packages and the
+// lockWith is LockWith: the state file with the given packages and the
 // environment.
 func lockWith(ws *workspace, packages []pkgmodel.LockedPackage) *pkgmodel.LockFile {
 	if packages == nil {
@@ -1214,7 +1215,7 @@ func lockWith(ws *workspace, packages []pkgmodel.LockedPackage) *pkgmodel.LockFi
 // #region Installed packages
 
 // pinnedCandidate is PinnedCandidate: rebuilds an installed package from the
-// workspace file (protocol/workspace.md §5, "Reinstalling"), with the
+// state file (protocol/workspace.md §5, "Reinstalling"), with the
 // package file it records, and the archive of the commit it records for a
 // remote repository, otherwise the archive its source names now, opened when
 // first needed.
@@ -1276,7 +1277,7 @@ func (e *Engine) pinnedCandidate(ctx context.Context, ws *workspace, p *pkgmodel
 	case errors.As(err, &lfe) && err == error(lfe):
 		extra = ""
 	}
-	return nil, &Error{Msg: fmt.Sprintf("Cannot use the installed package '%s' as the workspace file %s"+
+	return nil, &Error{Msg: fmt.Sprintf("Cannot use the installed package '%s' as the state file %s"+
 		" records it, in the environment (%s, %s).%s", install.LockedIdentity(p), pkgmodel.WorkspaceFile,
 		ws.env.Platform, ws.env.Runtime, extra), Err: err}
 }
@@ -1287,8 +1288,8 @@ func lockedEntry(p *pkgmodel.LockedPackage, env environment) (*pkgmodel.Entry, e
 	identity, version := install.LockedIdentity(p), install.LockedVersion(p)
 	doc, err := pkgfile.Parse(p.Manifest)
 	if err != nil {
-		return nil, &install.Error{Msg: fmt.Sprintf("The package file that the workspace file (%s) records"+
-			" for %s %s is invalid. If you edited the workspace file by hand, undo the change.",
+		return nil, &install.Error{Msg: fmt.Sprintf("The package file that the state file (%s) records"+
+			" for %s %s is invalid. If you edited the state file by hand, undo the change.",
 			pkgmodel.WorkspaceFile, identity, version), Err: err}
 	}
 	variant := "the default variant"
@@ -1297,7 +1298,7 @@ func lockedEntry(p *pkgmodel.LockedPackage, env environment) (*pkgmodel.Entry, e
 	}
 	entry := doc.SelectEntry(p.Variant, env.Platform, env.Runtime)
 	if entry == nil {
-		return nil, &install.Error{Msg: fmt.Sprintf("The package file that the workspace file (%s) records"+
+		return nil, &install.Error{Msg: fmt.Sprintf("The package file that the state file (%s) records"+
 			" for %s %s has no entry of %s for the platform %s and the runtime %s. If you passed --rid,"+
 			" pass the runtime the workspace was installed for instead.",
 			pkgmodel.WorkspaceFile, identity, version, variant, env.Platform, env.Runtime)}
@@ -1306,11 +1307,11 @@ func lockedEntry(p *pkgmodel.LockedPackage, env environment) (*pkgmodel.Entry, e
 }
 
 // parseRecordedSource is ParseRecordedSource: the source an entry of the
-// workspace file records.
+// state file records.
 func parseRecordedSource(p *pkgmodel.LockedPackage) (ref.Ref, error) {
 	source, err := ref.Parse(p.Ref, true)
 	if err != nil {
-		return ref.Ref{}, &pkgfile.LockFormatError{Message: fmt.Sprintf("The workspace file %s records \"%s\""+
+		return ref.Ref{}, &pkgfile.LockFormatError{Message: fmt.Sprintf("The state file %s records \"%s\""+
 			" in the \"ref\" field of package '%s', which is not a valid package source. If the file was"+
 			" edited by hand, undo the edit.", pkgmodel.WorkspaceFile, p.Ref, install.LockedIdentity(p)), Err: err}
 	}

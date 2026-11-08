@@ -97,10 +97,10 @@ func TestBuildLIPPackageRequest(t *testing.T) {
 		want lipPackageRequest
 		ok   bool
 	}{
-		{in: "LiteLDev/Foo", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo"}, ok: true},
-		{in: " LiteLDev/Foo#client ", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo"}, ok: true},
-		{in: "github.com/LiteLDev/Foo#client", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo"}, ok: true},
-		{in: "https://github.com/LiteLDev/Foo/", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo"}, ok: true},
+		{in: "LiteLDev/Foo", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo#client", fallbackRef: "github.com/LiteLDev/Foo"}, ok: true},
+		{in: " LiteLDev/Foo#client ", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo#client", fallbackRef: "github.com/LiteLDev/Foo"}, ok: true},
+		{in: "github.com/LiteLDev/Foo#client", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo#client", fallbackRef: "github.com/LiteLDev/Foo"}, ok: true},
+		{in: "https://github.com/LiteLDev/Foo/", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo#client", fallbackRef: "github.com/LiteLDev/Foo"}, ok: true},
 		{in: "LiteLDev/Foo#", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo"}, ok: true},
 		{in: "LiteLDev/Foo#server@1.0.0", want: lipPackageRequest{identifier: "LiteLDev/Foo#server", packageID: "github.com/LiteLDev/Foo", variant: "server", requestRef: "github.com/LiteLDev/Foo#server"}, ok: true},
 		{in: "foo", ok: false},
@@ -115,14 +115,61 @@ func TestBuildLIPPackageRequest(t *testing.T) {
 	}
 }
 
-func TestInstallLIPPackageRequestsBareRepository(t *testing.T) {
+func TestInstallLIPPackageRequestsClientVariant(t *testing.T) {
+	for _, identifier := range []string{"LiteLDev/Foo", "LiteLDev/Foo#client"} {
+		ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{}}
+		useFakeLipWorkspace(t, ws)
+
+		if got := InstallLIPPackage(context.Background(), "Demo", identifier, "1.0.0"); got != "" {
+			t.Fatalf("unexpected error code: %q", got)
+		}
+		ws.expect(t, []string{"install"}, [][]string{{"github.com/LiteLDev/Foo#client@1.0.0"}})
+	}
+}
+
+func TestInstallLIPPackageRequestsBareRepositoryForEmptyVariant(t *testing.T) {
 	ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{}}
 	useFakeLipWorkspace(t, ws)
 
-	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo#client", "1.0.0"); got != "" {
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo#", "1.0.0"); got != "" {
 		t.Fatalf("unexpected error code: %q", got)
 	}
 	ws.expect(t, []string{"install"}, [][]string{{"github.com/LiteLDev/Foo@1.0.0"}})
+}
+
+func wrapNoPackageFound(arg string) error {
+	return fmt.Errorf("No package found for '%s' that can be installed in this workspace (client, win-x64). %w",
+		arg, engine.ErrNoPackageFound)
+}
+
+// A package without a client variant (its variant "" has entries for both
+// platforms) is installed from its variant "".
+func TestInstallLIPPackageFallsBackToBareRepositoryWithoutClientVariant(t *testing.T) {
+	ws := &fakeLipWorkspace{
+		states:     map[string]lip.PackageInstallState{},
+		installErr: []error{wrapNoPackageFound("github.com/LiteLDev/Foo#client@1.0.0")},
+	}
+	useFakeLipWorkspace(t, ws)
+
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"install", "install"}, [][]string{
+		{"github.com/LiteLDev/Foo#client@1.0.0"}, {"github.com/LiteLDev/Foo@1.0.0"}})
+}
+
+// A failure to find another package (a pinned dependency) is not retried.
+func TestInstallLIPPackageDoesNotFallBackForAnotherPackage(t *testing.T) {
+	ws := &fakeLipWorkspace{
+		states:     map[string]lip.PackageInstallState{},
+		installErr: []error{wrapNoPackageFound("github.com/LiteLDev/Bar@1.0.0")},
+	}
+	useFakeLipWorkspace(t, ws)
+
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "ERR_LIP_PACKAGE_INSTALL_FAILED" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"install"}, [][]string{{"github.com/LiteLDev/Foo#client@1.0.0"}})
 }
 
 // A request for another variant than the installed one installs that
@@ -208,8 +255,8 @@ func TestInstallLIPPackageRetriesWithoutPinnedLeviLamina(t *testing.T) {
 		t.Fatalf("unexpected error code: %q", got)
 	}
 	ws.expect(t, []string{"install", "install"}, [][]string{
-		{"github.com/LiteLDev/Foo@1.0.0", "github.com/LiteLDev/LeviLamina@1.2.3"},
-		{"github.com/LiteLDev/Foo@1.0.0"},
+		{"github.com/LiteLDev/Foo#client@1.0.0", "github.com/LiteLDev/LeviLamina@1.2.3"},
+		{"github.com/LiteLDev/Foo#client@1.0.0"},
 	})
 }
 
@@ -223,7 +270,7 @@ func TestInstallLIPPackageFallsBackToUpdateWhenAlreadyExplicit(t *testing.T) {
 	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "" {
 		t.Fatalf("unexpected error code: %q", got)
 	}
-	ws.expect(t, []string{"install", "update"}, [][]string{{"github.com/LiteLDev/Foo@1.0.0"}, {"github.com/LiteLDev/Foo@1.0.0"}})
+	ws.expect(t, []string{"install", "update"}, [][]string{{"github.com/LiteLDev/Foo#client@1.0.0"}, {"github.com/LiteLDev/Foo#client@1.0.0"}})
 }
 
 func TestInstallLIPPackageFailure(t *testing.T) {
@@ -300,7 +347,7 @@ func TestGetLIPPackageInstallStatesMatchesAnyVariant(t *testing.T) {
 	if entries[1].IdentifierKey != "liteldev/levilamina#client" || entries[1].State.Identifier != "liteldev/levilamina" {
 		t.Fatalf("unexpected entry: %+v", entries[1])
 	}
-	if other := entries[2].State; other.Installed || other.PackageRef != "github.com/LiteLDev/Other" {
+	if other := entries[2].State; other.Installed || other.PackageRef != "github.com/LiteLDev/Other#client" {
 		t.Fatalf("unexpected state: %+v", other)
 	}
 }

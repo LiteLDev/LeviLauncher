@@ -10,13 +10,13 @@ import (
 )
 
 // This file ports the part of LockStore.Parse that deserializes the
-// workspace file: root.Deserialize<LockFile>(new JsonSerializerOptions {
+// state file: root.Deserialize<LockFile>(new JsonSerializerOptions {
 // RespectNullableAnnotations = true, RespectRequiredConstructorParameters =
 // true }) of System.Text.Json, with the members of LockFile and LockedPackage
 // (src/Lip.Core/Mcmod/Contracts.cs). The JsonExceptions it throws are
 // reproduced with their messages: their positions are byte offsets in the
-// compact JSON text YamlJson.Parse gives the document (doc.MarshalJSONCompact),
-// which has a single line.
+// compact JSON text of the document (doc.MarshalJSONCompact), which has a
+// single line.
 
 const (
 	lockFileType     = "Lip.Core.Mcmod.LockFile"

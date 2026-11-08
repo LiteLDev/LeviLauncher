@@ -4,13 +4,36 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/doc"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/pkgmodel"
 )
 
-func TestParseYAMLRendersTemplates(t *testing.T) {
+// parseTOMLOfJSON parses the lip.toml of the value a JSON text writes.
+func parseTOMLOfJSON(t *testing.T, text string) error {
+	t.Helper()
+	_, err := parseTOMLOf(t, text)
+	return err
+}
+
+func parseTOMLOf(t *testing.T, text string) (*pkgmodel.Document, error) {
+	t.Helper()
+	v, err := doc.ParseJSON([]byte(text), "x.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	toml, err := doc.MarshalTOML(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ParseTOML(toml)
+}
+
+func TestParseTOMLRendersTemplates(t *testing.T) {
 	text := `{"format":4,"id":"example.com/owner/tool","version":"1.2.3","tag":"v{{version}}",` +
 		`"info":{"name":"Tool"},"variants":{"":[{"platform":"server","runtime":"win-x64",` +
 		`"assets":[{"type":"zip","urls":["https://example.com/{{id}}/{{tag}}/{{info.name}}-{{version}}.zip"]}]}]}}`
-	d, err := ParseYAML([]byte(text))
+	d, err := parseTOMLOf(t, text)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,9 +44,9 @@ func TestParseYAMLRendersTemplates(t *testing.T) {
 	}
 }
 
-func TestParseYAMLUndefinedVariableIsEmpty(t *testing.T) {
+func TestParseTOMLUndefinedVariableIsEmpty(t *testing.T) {
 	text := strings.Replace(validDoc, `"id":"example.com/owner/tool"`, `"id":"example.com/owner/tool{{nope}}"`, 1)
-	d, err := ParseYAML([]byte(text))
+	d, err := parseTOMLOf(t, text)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,10 +55,10 @@ func TestParseYAMLUndefinedVariableIsEmpty(t *testing.T) {
 	}
 }
 
-func TestParseYAMLBadTemplateIsFormatError(t *testing.T) {
+func TestParseTOMLBadTemplateIsFormatError(t *testing.T) {
 	for _, tpl := range []string{"{{ if }}", "{{ version | string.upcase }}"} {
 		text := strings.Replace(validDoc, `"version":"1.2.3"`, `"version":"1.2.3","x":"`+tpl+`"`, 1)
-		_, err := ParseYAML([]byte(text))
+		err := parseTOMLOfJSON(t, text)
 		var fe *FormatError
 		if !errors.As(err, &fe) {
 			t.Errorf("%q: err = %v, want *FormatError", tpl, err)

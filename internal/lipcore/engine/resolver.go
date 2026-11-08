@@ -57,7 +57,7 @@ type candidate struct {
 	variant  string
 	version  semver.Version
 	entry    *pkgmodel.Entry
-	manifest any // the package file the workspace file records
+	manifest any // the package file the state file records
 	archive  *archiveHandle
 	source   ref.Ref
 	gsource  graph.Ref
@@ -75,7 +75,6 @@ func (c *candidate) Variant() string                  { return c.variant }
 func (c *candidate) Commit() string                   { return c.archive.Commit }
 func (c *candidate) ArchiveKey() string               { return c.archive.Key }
 func (c *candidate) Source() graph.Ref                { return c.gsource }
-func (c *candidate) Derived() bool                    { return c.entry.Derived }
 func (c *candidate) Dependencies() []graph.Dependency { return c.deps }
 
 // ModName is GetModManifest: the mod name of a mod, read from the
@@ -152,7 +151,7 @@ func (r *resolver) newCandidate(id, variant string, version semver.Version, entr
 			continue
 		}
 		c.deps = append(c.deps, graph.Dependency{
-			Source: r.graphRef(dep), Range: versionRange{rng}, ClientCompat: entry.Derived})
+			Source: r.graphRef(dep), Range: versionRange{rng}})
 	}
 	return c
 }
@@ -225,13 +224,13 @@ func (r *resolver) PinCommit(source ref.Ref, commit string) {
 }
 
 // ResolveLazy implements graph.Resolver.
-func (r *resolver) ResolveLazy(ctx context.Context, source graph.Ref, rng graph.Constraint, clientCompat bool,
+func (r *resolver) ResolveLazy(ctx context.Context, source graph.Ref, rng graph.Constraint,
 	onDiagnostic func(graph.Diagnostic)) graph.Sequence {
 	s, err := r.sourceOf(source)
 	if err != nil {
 		return &errSequence{err}
 	}
-	return r.resolve(s, rng, clientCompat, onDiagnostic)
+	return r.resolve(s, rng, onDiagnostic)
 }
 
 type errSequence struct{ err error }
@@ -240,10 +239,9 @@ func (e *errSequence) Next(context.Context) (graph.Candidate, bool, error) { ret
 
 // walk holds the parameters shared by a whole Resolve call.
 type walk struct {
-	source       ref.Ref
-	rng          graph.Constraint
-	clientCompat bool
-	sink         func(graph.Diagnostic)
+	source ref.Ref
+	rng    graph.Constraint
+	sink   func(graph.Diagnostic)
 }
 
 func (w *walk) report(archiveName, reason string, cause error) {
@@ -254,9 +252,8 @@ func (w *walk) report(archiveName, reason string, cause error) {
 
 // resolve is ResolveLazyWithCauses: the candidate sequence of a source,
 // produced lazily; every path that produces no candidate is reported.
-func (r *resolver) resolve(source ref.Ref, rng graph.Constraint, clientCompat bool,
-	onDiagnostic func(graph.Diagnostic)) *sequence {
-	return &sequence{r: r, w: walk{source: source, rng: rng, clientCompat: clientCompat, sink: onDiagnostic}}
+func (r *resolver) resolve(source ref.Ref, rng graph.Constraint, onDiagnostic func(graph.Diagnostic)) *sequence {
+	return &sequence{r: r, w: walk{source: source, rng: rng, sink: onDiagnostic}}
 }
 
 // sequence is the lazily produced candidate sequence of one Resolve call.
@@ -470,14 +467,7 @@ func (r *resolver) resolveArchive(w *walk, a *archiveHandle, tagVersion *semver.
 		return nil, nil
 	}
 
-	// protocol/compatibility.md §2: a dependency of a tooth.json on the
-	// variant "client" of a package that has a package file names its
-	// variant "".
 	variant := source.Variant
-	if w.clientCompat && variant == compat.ClientLabel && !d.isLegacy() {
-		variant = ""
-	}
-
 	entry := pf.SelectEntry(variant, r.env.Platform, r.env.Runtime)
 	if entry == nil {
 		r.reportNoEntry(w, a, pf, fileName, variant)

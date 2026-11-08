@@ -42,7 +42,7 @@ func (h *harness) addInstalledLibAndApp() (libCommit, appCommit string) {
 	h.addFile("tooth_lock.json", `{ "format_version": 3, "format_uuid": "289f771f-2c9a-4d73-9f3f-8492495a924d", "packages": [ `+
 		member(tooth(appID, "1.0.0", "app/app.dll", appDeps, ""), true, h.path("app/app.dll"))+", "+
 		member(tooth(libID, "1.0.0", "lib/lib.dll", "", ""), false, "lib/lib.dll", "../x.dll", "")+` ] }`)
-	h.addTag(otherID, "1.0.0", "lip.yaml", lipYAML(otherID, "1.0.0", selfAsset("o.txt", "o.txt")), "o.txt", "o")
+	h.addTag(otherID, "1.0.0", "lip.toml", lipJSON(otherID, "1.0.0", selfAsset("o.txt", "o.txt")), "o.txt", "o")
 	return libCommit, appCommit
 }
 
@@ -75,7 +75,7 @@ func TestInstallToothLockWritesDerivedWorkspaceFileAndDeletesToothLock(t *testin
 		otherID + " true " + otherID + " " + lf.Packages[2].Commit})
 	equal(t, lf.Packages[0].Files, []string{"lib/lib.dll"})
 	equal(t, lf.Packages[1].Files, []string{"app/app.dll"})
-	if !h.rec.hasInfo("Migrating tooth_lock.json of lip v0.x to the workspace file.") {
+	if !h.rec.hasInfo("Migrating tooth_lock.json of lip v0.x to the state file.") {
 		t.Fatal(h.rec.infos)
 	}
 
@@ -108,7 +108,9 @@ func TestInstallToothLockDryRunWritesNothing(t *testing.T) {
 	equalMaps(t, h.snapshot(), before)
 }
 
-func TestUninstallClientEnvironmentUsesEntryDerivedFromClientLabel(t *testing.T) {
+// On the client, a tooth.json's label "client" is the variant "client" and
+// its label "" the variant "" (lip 26d8295).
+func TestClientEnvironmentInstallsTheLabelOfTheVariant(t *testing.T) {
 	h := newHarness(t)
 	h.platform = ""
 	h.restart()
@@ -117,13 +119,17 @@ func TestUninstallClientEnvironmentUsesEntryDerivedFromClientLabel(t *testing.T)
 	    { "label": "", "assets": [ { "type": "self", "placements": [ { "type": "file", "src": "s.dll", "dest": "server.dll" } ] } ] },
 	    { "label": "client", "assets": [ { "type": "self", "placements": [ { "type": "file", "src": "c.dll", "dest": "client.dll" } ] } ] } ] }`,
 		"s.dll", "s", "c.dll", "c")
-	h.must(h.install(libID))
+	h.must(h.install(libID + "#client"))
 	if !h.exists("client.dll") || h.exists("server.dll") {
 		t.Fatal(h.snapshot())
 	}
-	h.must(h.uninstall(libID))
+	h.must(h.uninstall(libID + "#client"))
 	if h.exists("client.dll") {
 		t.Fatal("kept")
+	}
+	h.must(h.install(libID))
+	if !h.exists("server.dll") || h.exists("client.dll") {
+		t.Fatal(h.snapshot())
 	}
 }
 
@@ -173,7 +179,7 @@ func groupByID(ps []report.Progress) map[string][]report.Progress {
 
 func TestDownloadProgressAndCacheClean(t *testing.T) {
 	h := newHarness(t)
-	h.addZip("x.zip", "lip.yaml", lipYAML("example.com/x", "1.0.0",
+	h.addZip("x.zip", "lip.toml", lipJSON("example.com/x", "1.0.0",
 		`"assets": [ { "type": "zip", "urls": [ "https://example.com/a.zip" ], "place": [ { "src": "a", "dest": "a" } ] } ]`))
 	h.addDownload("https://example.com/a.zip", zipOf("a", "content"))
 	h.must(h.install("x.zip"))
@@ -277,8 +283,15 @@ func TestFirstCandidateFailureMessage(t *testing.T) {
 		" place lip looked failed:\n  - " + libID + ": the repository has no version tags (tags named like 'v1.2.3')," +
 		" so it has no version to install; a branch, tag or commit can be named with '@branch:<name>'," +
 		" '@tag:<name>' or '@rev:<commit>'\nCheck the spelling of the package and the version you asked for."
-	if err == nil || err.Error() != want {
+	if err == nil || err.Error() != want || !errors.Is(err, ErrNoPackageFound) {
 		t.Fatalf("err = %q", err)
+	}
+	if err := h.install(appID); !errors.Is(err, ErrNoPackageFound) {
+		t.Fatalf("err = %v", err)
+	}
+	h.addLib("1.0.0", false)
+	if err := h.install(libID); errors.Is(err, ErrNoPackageFound) {
+		t.Fatalf("err = %v", err)
 	}
 }
 

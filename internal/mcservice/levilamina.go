@@ -184,14 +184,14 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 	}
 
 	// Change an installed LeviLamina in place, whatever variant it was
-	// installed with (a workspace migrated from tooth_lock.json records
-	// "#client"); otherwise request the bare repository.
+	// installed with; otherwise request its client variant.
 	states, listErr := queryLIPPackageStates(ctx, targetDir)
 	if listErr != nil {
 		log.Printf("InstallLeviLamina: lip list failed, fallback to install-first strategy: %v", listErr)
 	}
 	state, _ := lipInstalledFor(states, leviLaminaPackageID, "")
-	pkg := withLIPVersion(lipOperationRef(states, leviLaminaPackageID, "", leviLaminaPackageID), llVersion)
+	pkg := withLIPVersion(lipOperationRef(states, leviLaminaPackageID, "", leviLaminaPackageID+"#"+lipClientVariant),
+		llVersion)
 
 	if state.ExplicitInstalled {
 		log.Printf("Updating LeviLamina %s for %s using LIP", llVersion, targetName)
@@ -203,7 +203,14 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 	}
 
 	log.Printf("Installing LeviLamina %s for %s using LIP", llVersion, targetName)
-	if err := lipInstallPackages(ctx, targetDir, []string{pkg}); err != nil {
+	err = lipInstallPackages(ctx, targetDir, []string{pkg})
+	if bare := withLIPVersion(leviLaminaPackageID, llVersion); err != nil && pkg != bare && isLipNoPackageFoundFor(err, pkg) {
+		// No client variant: the variant "" holds the client build.
+		log.Printf("InstallLeviLamina: no package for %s, trying %s", pkg, bare)
+		pkg = bare
+		err = lipInstallPackages(ctx, targetDir, []string{pkg})
+	}
+	if err != nil {
 		if !isLipAlreadyExplicitlyInstalledFor(err, leviLaminaPackageID) {
 			log.Printf("InstallLeviLamina: lip install failed: %s", lip.ErrorMessage(err))
 			return "ERR_LIP_INSTALL_FAILED"

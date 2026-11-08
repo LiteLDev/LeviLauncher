@@ -5,9 +5,9 @@
 // The resolver plugs in through small interfaces mirroring what lip's
 // Resolver supplies:
 //
-//	Resolver.ResolveLazy(ctx, source, range, clientCompat, onDiagnostic) Sequence
+//	Resolver.ResolveLazy(ctx, source, range, onDiagnostic) Sequence
 //	Candidate  identity, version, variant, commit, archive key, source Ref,
-//	           derived (tooth.json) flag, dependencies, ModName (may download)
+//	           dependencies, ModName (may download)
 //	Ref        text, remote repository (Spec), with a git ref (Pinned),
 //	           repository (Target), variant
 //	Constraint nil (any version), Range (VersionRange) or ExactVersion; the

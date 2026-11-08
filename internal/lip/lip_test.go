@@ -22,13 +22,13 @@ func setProxyConfig(t *testing.T, override string, mirror bool) {
 }
 
 // setLipConfig points lip's configuration directory at a temp directory
-// holding config.yaml and liprc.json with the given contents (none when
+// holding config.toml and liprc.json with the given contents (none when
 // empty). The real %APPDATA%\lip is never touched.
-func setLipConfig(t *testing.T, configYAML, liprc string) string {
+func setLipConfig(t *testing.T, configTOML, liprc string) string {
 	t.Helper()
 	dir := t.TempDir()
-	if configYAML != "" {
-		if err := os.WriteFile(filepath.Join(dir, "config.yaml"), []byte(configYAML), 0o644); err != nil {
+	if configTOML != "" {
+		if err := os.WriteFile(filepath.Join(dir, "config.toml"), []byte(configTOML), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -43,7 +43,7 @@ func setLipConfig(t *testing.T, configYAML, liprc string) string {
 	return dir
 }
 
-const lipConfigWithProxy = "format: 4\ngithub_proxy: https://myproxy.example\n"
+const lipConfigWithProxy = "format = 4\ngithub_proxy = \"https://myproxy.example\"\n"
 
 func TestProxyFromLipConfig(t *testing.T) {
 	tests := []struct {
@@ -78,13 +78,13 @@ func TestLipConfigGithubProxyFollowsLipParsing(t *testing.T) {
 		want   string
 	}{
 		{name: "valid", config: lipConfigWithProxy, want: "https://myproxy.example"},
-		{name: "trimmed", config: "format: 4\ngithub_proxy: '  https://myproxy.example  '\n", want: "https://myproxy.example"},
-		{name: "no proxy", config: "format: 4\n"},
-		{name: "empty proxy", config: "format: 4\ngithub_proxy: ''\n"},
-		{name: "missing format", config: "github_proxy: https://myproxy.example\n"},
-		{name: "wrong format", config: "format: 3\ngithub_proxy: https://myproxy.example\n"},
-		{name: "not a string", config: "format: 4\ngithub_proxy: [1]\n"},
-		{name: "not a mapping", config: "- 1\n"},
+		{name: "trimmed", config: "format = 4\ngithub_proxy = '  https://myproxy.example  '\n", want: "https://myproxy.example"},
+		{name: "no proxy", config: "format = 4\n"},
+		{name: "empty proxy", config: "format = 4\ngithub_proxy = ''\n"},
+		{name: "missing format", config: "github_proxy = \"https://myproxy.example\"\n"},
+		{name: "wrong format", config: "format = 3\ngithub_proxy = \"https://myproxy.example\"\n"},
+		{name: "not a string", config: "format = 4\ngithub_proxy = [1]\n"},
+		{name: "not TOML", config: "format: 4\ngithub_proxy: https://myproxy.example\n"},
 		{name: "missing file"},
 	}
 	for _, tt := range tests {
@@ -103,8 +103,8 @@ const lipRCWithProxy = `{
   "github_proxy": "https://legacy.example"
 }`
 
-// A lip v0.x liprc.json is migrated to config.yaml on first read, as lip
-// 0.38 does.
+// A lip v0.x liprc.json is migrated to config.toml on first read, as lip
+// does.
 func TestLipConfigMigratesLipRC(t *testing.T) {
 	dir := setLipConfig(t, "", lipRCWithProxy)
 	if got := lipConfigGithubProxy(); got != "https://legacy.example" {
@@ -113,18 +113,18 @@ func TestLipConfigMigratesLipRC(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "liprc.json")); !os.IsNotExist(err) {
 		t.Fatalf("liprc.json should be removed after migration: %v", err)
 	}
-	data, err := os.ReadFile(filepath.Join(dir, "config.yaml"))
+	data, err := os.ReadFile(filepath.Join(dir, "config.toml"))
 	if err != nil || !strings.Contains(string(data), "https://legacy.example") {
-		t.Fatalf("config.yaml = %q, %v", data, err)
+		t.Fatalf("config.toml = %q, %v", data, err)
 	}
 	if got := lipConfigGithubProxy(); got != "https://legacy.example" {
 		t.Fatalf("after migration lipConfigGithubProxy() = %q", got)
 	}
 }
 
-// config.yaml wins over a leftover liprc.json, which is then kept.
+// config.toml wins over a leftover liprc.json, which is then kept.
 func TestLipConfigIgnoresLipRCBesideConfig(t *testing.T) {
-	dir := setLipConfig(t, "format: 4\n", lipRCWithProxy)
+	dir := setLipConfig(t, "format = 4\n", lipRCWithProxy)
 	if got := lipConfigGithubProxy(); got != "" {
 		t.Fatalf("lipConfigGithubProxy() = %q", got)
 	}
@@ -138,8 +138,8 @@ func TestLipConfigKeepsInvalidLipRC(t *testing.T) {
 	if got := lipConfigGithubProxy(); got != "" {
 		t.Fatalf("lipConfigGithubProxy() = %q", got)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "config.yaml")); !os.IsNotExist(err) {
-		t.Fatalf("config.yaml should not be written: %v", err)
+	if _, err := os.Stat(filepath.Join(dir, "config.toml")); !os.IsNotExist(err) {
+		t.Fatalf("config.toml should not be written: %v", err)
 	}
 }
 

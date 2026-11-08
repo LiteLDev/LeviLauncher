@@ -445,7 +445,7 @@ func TestInstallAndUninstallRealCommandRunnerRunsHooksInWorkspaceRoot(t *testing
 		t.Fatal(err)
 	}
 	h.assets[legacyMoneyURL] = z
-	self, err := archive.NewZipBytesSource(zipBytes(t, "lip.yaml", "{}"), "self.zip")
+	self, err := archive.NewZipBytesSource(zipBytes(t, "lip.toml", "{}"), "self.zip")
 	if err != nil {
 		t.Fatal(err)
 	}

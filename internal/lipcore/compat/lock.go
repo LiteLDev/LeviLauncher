@@ -110,7 +110,7 @@ func toothLockMembers(root any) (*ToothLock, bool) {
 // to the commit): repo is the package id, tag "v<version>".
 type CommitOf func(repo, tag string) (string, error)
 
-// DeriveWorkspace is ToothLockMigration.Derive: the workspace file
+// DeriveWorkspace is ToothLockMigration.Derive: the state file
 // protocol/compatibility.md §3 derives from the members of a tooth_lock.json
 // at the root of the workspace root for an environment: for each member whose
 // manifest Section 2 reads, for the environment, with a variant "variant", in

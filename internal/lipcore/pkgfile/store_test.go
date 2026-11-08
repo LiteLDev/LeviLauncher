@@ -54,7 +54,7 @@ func lockOf(packages ...pkgmodel.LockedPackage) *pkgmodel.LockFile {
 	return &pkgmodel.LockFile{Format: 4, Platform: "server", Runtime: "win-x64", Packages: packages}
 }
 
-func lipPath(root string) string { return filepath.Join(root, ".lip", "workspace.yaml") }
+func lipPath(root string) string { return filepath.Join(root, ".lip", "state.json") }
 
 func writeFile(t *testing.T, path, text string) {
 	t.Helper()
@@ -135,12 +135,12 @@ func TestSaveThenLoadRoundTrips(t *testing.T) {
 	if d := describePackage(loaded.Packages[1].Manifest, loaded.Packages[1].Variant); d != "github.com/a/git#lua/client 1.0.0" {
 		t.Errorf("%q", d)
 	}
-	// .lip is created hidden, and holds nothing but the workspace file.
+	// .lip is created hidden, and holds nothing but the state file.
 	if hidden, err := txn.OS.Hidden(filepath.Join(root, ".lip")); err != nil || !hidden {
 		t.Errorf(".lip hidden: %v %v", hidden, err)
 	}
 	ents, _ := os.ReadDir(filepath.Join(root, ".lip"))
-	if len(ents) != 1 || ents[0].Name() != "workspace.yaml" {
+	if len(ents) != 1 || ents[0].Name() != "state.json" {
 		t.Errorf(".lip holds %v", ents)
 	}
 }
@@ -152,13 +152,58 @@ func TestSaveWritesExactlyTheMembersOfTheSchemaInOrder(t *testing.T) {
 	if err := SaveWorkspace(root, lf); err != nil {
 		t.Fatal(err)
 	}
-	want := "format: 4\nplatform: server\nruntime: win-x64\npackages:\n" +
-		"- manifest:\n    format: 4\n    id: github.com/a/zip\n    version: 1.0.0\n    variants:\n      \"\":\n" +
-		"      - platform: server\n        runtime: win-x64\n  variant: \"\"\n  explicit: true\n" +
-		"  ref: https://example.com/z.zip\n  files:\n  - mods/zip/a.dll\n" +
-		"- manifest:\n    format: 4\n    id: github.com/LiteLDev/A\n    version: 1.0.0\n    variants:\n      \"\":\n" +
-		"      - platform: server\n        runtime: win-x64\n  variant: \"\"\n  explicit: true\n" +
-		"  ref: github.com/LiteLDev/A\n  commit: " + commit40 + "\n  files:\n  - mods/A/a.dll\n"
+	// As JsonFile writes it: indented by two spaces, "\n", a line break at the end.
+	want := `{
+  "format": 4,
+  "platform": "server",
+  "runtime": "win-x64",
+  "packages": [
+    {
+      "manifest": {
+        "format": 4,
+        "id": "github.com/a/zip",
+        "version": "1.0.0",
+        "variants": {
+          "": [
+            {
+              "platform": "server",
+              "runtime": "win-x64"
+            }
+          ]
+        }
+      },
+      "variant": "",
+      "explicit": true,
+      "ref": "https://example.com/z.zip",
+      "files": [
+        "mods/zip/a.dll"
+      ]
+    },
+    {
+      "manifest": {
+        "format": 4,
+        "id": "github.com/LiteLDev/A",
+        "version": "1.0.0",
+        "variants": {
+          "": [
+            {
+              "platform": "server",
+              "runtime": "win-x64"
+            }
+          ]
+        }
+      },
+      "variant": "",
+      "explicit": true,
+      "ref": "github.com/LiteLDev/A",
+      "commit": "` + commit40 + `",
+      "files": [
+        "mods/A/a.dll"
+      ]
+    }
+  ]
+}
+`
 	if got := readFile(t, lipPath(root)); got != want {
 		t.Fatalf("got\n%s\nwant\n%s", got, want)
 	}
@@ -189,12 +234,12 @@ func TestStageCommitAndDiscard(t *testing.T) {
 	if err := SaveWorkspace(root, other); err != nil {
 		t.Fatal(err)
 	}
-	staged := filepath.Join(root, ".lip", "workspace.yaml.tmp")
+	staged := filepath.Join(root, ".lip", "state.json.tmp")
 	if err := StageWorkspace(root, lockOf()); err != nil {
 		t.Fatal(err)
 	}
 	if !exists(staged) || mustLoad(t, root).Runtime != "linux-x64" {
-		t.Fatal("staging changed the workspace file")
+		t.Fatal("staging changed the state file")
 	}
 	if err := CommitStaged(root); err != nil {
 		t.Fatal(err)
@@ -224,7 +269,7 @@ func TestStageCommitAndDiscard(t *testing.T) {
 }
 
 func TestCommitStagedToothLock(t *testing.T) {
-	// The first workspace file beside a tooth_lock.json §3 reads replaces it.
+	// The first state file beside a tooth_lock.json §3 reads replaces it.
 	root := t.TempDir()
 	toothLock := filepath.Join(root, ToothLockFile)
 	writeFile(t, toothLock, toothLockJSON)
@@ -239,7 +284,7 @@ func TestCommitStagedToothLock(t *testing.T) {
 	}
 	mustLoad(t, root)
 
-	// It is kept when there already is a workspace file.
+	// It is kept when there already is a state file.
 	writeFile(t, toothLock, toothLockJSON)
 	if err := SaveWorkspace(root, lockOf()); err != nil {
 		t.Fatal(err)
@@ -300,7 +345,7 @@ func TestRecoverHooksCommitTheStagedFileAndDeleteToothLock(t *testing.T) {
 	if err != nil || res == nil || !res.Committed {
 		t.Fatalf("%+v %v", res, err)
 	}
-	if exists(toothLock) || exists(filepath.Join(root, ".lip", "workspace.yaml.tmp")) {
+	if exists(toothLock) || exists(filepath.Join(root, ".lip", "state.json.tmp")) {
 		t.Fatal("recovery did not finish CommitStaged")
 	}
 	mustLoad(t, root)
@@ -321,10 +366,9 @@ func TestLoadHandWrittenWorkspaceFiles(t *testing.T) {
 		stringMember(p.Manifest, "version") != "1.2.3" {
 		t.Fatalf("%+v", p)
 	}
-	writeFile(t, lipPath(root), "format: 4\nplatform: server\nruntime: win-x64\npackages:\n  - manifest:\n"+
-		"      format: 4\n      id: github.com/a/b\n      version: 1.2.3\n      variants:\n        \"\":\n"+
-		"          - platform: server\n            runtime: win-x64\n    variant: \"\"\n    explicit: true\n"+
-		"    ref: github.com/a/b\n    commit: "+commit40+"\n    files: [a.txt, \"1.0\"]\n")
+	writeFile(t, lipPath(root), "\xef\xbb\xbf"+`{"format":4,"platform":"server","runtime":"win-x64","packages":[`+
+		`{"manifest":`+manifestJSON("github.com/a/b", "1.2.3", "", serverEntry)+`,"variant":"","explicit":true,`+
+		`"ref":"github.com/a/b","commit":"`+commit40+`","files":["a.txt","1.0"]}]}`)
 	p = mustLoad(t, root).Packages[0]
 	if !reflect.DeepEqual(p.Files, []string{"a.txt", "1.0"}) || !p.Explicit {
 		t.Fatalf("%+v", p)
@@ -345,9 +389,12 @@ func TestLoadInvalidWorkspaceFiles(t *testing.T) {
 			`"format" is missing or not a number, but this version of lip reads only 4. If another version of lip` +
 				` wrote the file, use that version.`},
 		{`{ "format": 5, "packages": [] }`, other, `"format" is 5, but this version of lip reads only 4.`},
-		{"format: '4'\nplatform: server\nruntime: win-x64\npackages: []\n", invalid, `"format" is missing`},
-		{"", invalid, "The file holds no YAML document: it is empty or holds only comments."},
-		{"[]", invalid, "The file is not a YAML mapping of keys to values."},
+		{`{ "format": "4", "platform": "server", "runtime": "win-x64", "packages": [] }`, invalid, `"format" is missing`},
+		{"", invalid, "The file is not valid JSON"},
+		{"format = 4\n", invalid, "The file is not valid JSON"},
+		{`{ "format": 4, "format": 4 }`, invalid, "The file is not valid JSON"},
+		{"[]", invalid, "The file is not a JSON object."},
+		{"null", invalid, "The file is not a JSON object."},
 		{`{ ` + head + `, "packages": null }`, invalid, "The property or field 'packages' on type" +
 			" 'Lip.Core.Mcmod.LockFile' doesn't allow setting null values. Consider updating its nullability" +
 			" annotation. Path: $.packages | LineNumber: 0 | BytePositionInLine: 67."},
@@ -392,7 +439,7 @@ func TestLoadInvalidWorkspaceFiles(t *testing.T) {
 			t.Errorf("%s: %v", c.text, err)
 			continue
 		}
-		if le.Message != "The workspace file '"+lipPath(root)+c.outer || le.OtherFormat != (c.outer == other) {
+		if le.Message != "The state file '"+lipPath(root)+c.outer || le.OtherFormat != (c.outer == other) {
 			t.Errorf("%s: %q", c.text, le.Message)
 		}
 		if le.Err == nil || !strings.Contains(le.Err.Error(), c.cause) {
@@ -423,7 +470,7 @@ func TestStageInvalidLockWritesNothing(t *testing.T) {
 		lf := lockOf(gitPackage(t, "github.com/LiteLDev/A"))
 		m(lf)
 		err := SaveWorkspace(root, lf)
-		if !errors.Is(err, ErrInvalidWorkspace) || err.Error() != "lip was about to write an invalid workspace"+
+		if !errors.Is(err, ErrInvalidWorkspace) || err.Error() != "lip was about to write an invalid state"+
 			" file, and did not write it. This is a bug in lip. (Parameter 'lockFile')" {
 			t.Errorf("%d: %v", i, err)
 		}

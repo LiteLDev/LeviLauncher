@@ -284,7 +284,7 @@ func (d *e2eDriver) operation(t *testing.T, plan func(view *View) (*Plan, error)
 	}
 	defer tx.Close()
 	if err = ApplyLayout(tx, layout); err == nil {
-		err = d.inst.Apply(ctx, tx, p)
+		_, err = d.inst.Apply(ctx, tx, p, d.inst.Owners(d.root, nil))
 	}
 	if err != nil {
 		if undo := tx.Rollback(nil); len(undo) > 0 {

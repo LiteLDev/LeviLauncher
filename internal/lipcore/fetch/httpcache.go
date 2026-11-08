@@ -273,8 +273,12 @@ func (c *HTTPCache) DownloadZipURLNamed(ctx context.Context, rawURL, proxy strin
 	rawURL, _, _ = strings.Cut(rawURL, "#")
 	if p, ok := c.TryGet(HTTPKey(rawURL)); ok {
 		err := validate(p, fmt.Sprintf("The cached download of %s (%s)", rawURL, p))
-		if err == nil {
+		switch {
+		case err == nil:
 			return p, nil
+		case errors.Is(err, fs.ErrNotExist):
+			// Deleted meanwhile: download it again.
+			return c.download(ctx, rawURL, proxy, client, validate)
 		}
 		if isFileError(err) {
 			return "", unavailable(fmt.Sprintf(

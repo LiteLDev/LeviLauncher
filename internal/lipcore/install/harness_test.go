@@ -117,6 +117,10 @@ type harness struct {
 	rep    *recReporter
 	inst   *Installer
 	faults *faultyFS
+	// installed are the packages whose files are owned when apply runs
+	// (Installer.Owners); owned are the files each applied plan owns.
+	installed []pkgmodel.LockedPackage
+	owned     [][]string
 }
 
 type hookCall struct {
@@ -327,11 +331,15 @@ func (h *harness) apply(ctx context.Context, layout *LayoutPlan, plans ...*Plan)
 	}
 	defer tx.Close()
 	err = ApplyLayout(tx, layout)
+	owners := h.inst.Owners(h.root, h.installed)
+	h.owned = nil
 	for _, p := range plans {
 		if err != nil {
 			break
 		}
-		err = h.inst.Apply(ctx, tx, p)
+		var owned []string
+		owned, err = h.inst.Apply(ctx, tx, p, owners)
+		h.owned = append(h.owned, owned)
 	}
 	if err != nil {
 		if undo := tx.Rollback(func() error { return nil }); len(undo) > 0 {
@@ -352,12 +360,15 @@ func (h *harness) install(p *Package, opts Options) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !opts.DryRun {
-		if err := h.apply(context.Background(), nil, plan); err != nil {
-			return nil, err
-		}
+	if opts.DryRun {
+		return plan.OwnedFiles, nil
 	}
-	return plan.OwnedFiles, nil
+	h.installed = opts.Installed
+	defer func() { h.installed = nil }()
+	if err := h.apply(context.Background(), nil, plan); err != nil {
+		return nil, err
+	}
+	return h.owned[0], nil
 }
 
 func (h *harness) mustInstall(p *Package, opts Options) []string {
@@ -379,6 +390,8 @@ func (h *harness) uninstall(p *pkgmodel.LockedPackage, entry *pkgmodel.Entry, op
 	if opts.DryRun {
 		return nil
 	}
+	h.installed = opts.Installed
+	defer func() { h.installed = nil }()
 	return h.apply(context.Background(), nil, plan)
 }
 

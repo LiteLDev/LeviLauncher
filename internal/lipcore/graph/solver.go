@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/semver"
 )
 
 const (
@@ -29,8 +31,12 @@ type Problem struct {
 	Requests []Request
 	// Pinned are installed packages to keep: members of the set as they are,
 	// whose dependencies must be satisfied too.
-	Pinned   []Candidate
-	Resolver Resolver
+	Pinned []Candidate
+	// Preferred are installed packages that may change version: each is tried
+	// first for a requirement it satisfies, before the requirement's own
+	// candidates.
+	Preferred []Candidate
+	Resolver  Resolver
 	// Trace, when set, receives the trace lines of RunTrace.Write("resolve").
 	Trace func(message string)
 }
@@ -78,10 +84,33 @@ func (e *ResolutionError) Unwrap() []error { return e.Causes }
 // the requirement is deferred to the end of the agenda, where that package
 // may satisfy it.
 func Solve(ctx context.Context, p Problem) (*Solution, error) {
-	s := &search{
+	return newSearch(ctx, p.Resolver, p.Trace, p.Preferred).run(p.Requests, p.Pinned)
+}
+
+// RequestCandidate is GraphSolver.RequestCandidate: how a package satisfies a
+// request (protocol/workspace.md §3 rule 1): the candidate of the request
+// with its identity, version and commit, or else the package itself when it
+// stands in for a candidate; nil when it does neither.
+func RequestCandidate(ctx context.Context, resolver Resolver, request Request, pkg Candidate) (Candidate, error) {
+	s := newSearch(ctx, resolver, nil, nil)
+	r := requestRequirement(request)
+	c, err := s.candidateWithKey(r, KeyOf(pkg), pkg.Version())
+	if err != nil || c != nil {
+		return c, err
+	}
+	stands, err := s.isPinnedSatisfier(r, s.getChoices(r), pkg)
+	if err != nil || !stands {
+		return nil, err
+	}
+	return pkg, nil
+}
+
+func newSearch(ctx context.Context, resolver Resolver, trace func(string), preferred []Candidate) *search {
+	return &search{
 		ctx:           ctx,
-		resolver:      p.Resolver,
-		trace:         p.Trace,
+		resolver:      resolver,
+		trace:         trace,
+		preferred:     preferred,
 		resolved:      map[resolveKey]*lazySequence{},
 		choices:       map[resolveKey]*choices{},
 		members:       newMemberMap(),
@@ -89,7 +118,16 @@ func Solve(ctx context.Context, p Problem) (*Solution, error) {
 		pinnedClashes: map[int]bool{},
 		reported:      map[string]bool{},
 	}
-	return s.run(p.Requests, p.Pinned)
+}
+
+func requestRequirement(r Request) *requirement {
+	return &requirement{
+		key:         keyOf(r.Source, r.Range),
+		description: "You requested " + showRequirement(r.Source, r.Range),
+		ownerLevel:  -1,
+		ref:         r.Source,
+		rng:         r.Range,
+	}
 }
 
 // resolveKey identifies a candidate sequence by what determines it: the
@@ -266,6 +304,7 @@ type search struct {
 	resolver    Resolver
 	trace       func(string)
 	tracedSteps int
+	preferred   []Candidate
 
 	resolved map[resolveKey]*lazySequence
 	choices  map[resolveKey]*choices
@@ -302,13 +341,7 @@ func (s *search) run(requests []Request, pinned []Candidate) (*Solution, error) 
 	s.traceLine(fmt.Sprintf("Solving %d requests with %d installed packages kept",
 		len(requests), len(pinned)))
 	for _, r := range requests {
-		s.agenda = append(s.agenda, &requirement{
-			key:         keyOf(r.Source, r.Range),
-			description: "You requested " + showRequirement(r.Source, r.Range),
-			ownerLevel:  -1,
-			ref:         r.Source,
-			rng:         r.Range,
-		})
+		s.agenda = append(s.agenda, requestRequirement(r))
 	}
 
 	for _, c := range pinned {
@@ -484,16 +517,40 @@ func (s *search) solve(index, level int) (nogood, error) {
 	var blocked []string
 	failedDeeper := 0
 	delete(s.pinnedClashes, level)
-	for i := 0; !ch.unsatisfiable; i++ {
-		ok, err := ch.has(s.ctx, i)
-		if err != nil {
+	// A preferred candidate is tried first (as index -1), and not again in
+	// its place.
+	var first Candidate
+	var firstKey PackageKey
+	start := 0
+	if !ch.unsatisfiable {
+		var err error
+		if first, err = s.preferredCandidate(r, ch); err != nil {
 			return nil, err
 		}
-		if !ok {
-			break
+		if first != nil {
+			firstKey = KeyOf(first)
+			start = -1
 		}
-		candidate := ch.candidates[i]
-		key := ch.candidateKeys[i]
+	}
+	for i := start; !ch.unsatisfiable; i++ {
+		var candidate Candidate
+		var key PackageKey
+		if i < 0 {
+			candidate, key = first, firstKey
+		} else {
+			ok, err := ch.has(s.ctx, i)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				break
+			}
+			candidate = ch.candidates[i]
+			key = ch.candidateKeys[i]
+			if first != nil && key == firstKey {
+				continue
+			}
+		}
 		if existing := s.members.get(key.Identity); existing != nil && existing.key == key {
 			// A member the shortcut of satisfyingMember missed. Nothing is decided here,
 			// so no nogood of the rest contains this level.
@@ -658,7 +715,11 @@ func (s *search) satisfyingMember(r *requirement, ch *choices) (Candidate, error
 	}
 	if r.ref.specWithoutRef() {
 		for _, m := range s.members.values() {
-			if isPinnedSatisfier(r, m.candidate) {
+			stands, err := s.isPinnedSatisfier(r, ch, m.candidate)
+			if err != nil {
+				return nil, err
+			}
+			if stands {
 				return m.candidate, nil
 			}
 		}
@@ -741,28 +802,81 @@ func isPinned(c Candidate) bool {
 	return src.Spec && src.Pinned
 }
 
+// preferredCandidate is PreferredCandidate: the first preferred candidate
+// that satisfies a requirement: one of its candidates, or one that stands in
+// for one. Like satisfyingMember, only preferred candidates named like a
+// loaded candidate are looked up.
+func (s *search) preferredCandidate(r *requirement, ch *choices) (Candidate, error) {
+	if len(s.preferred) == 0 {
+		return nil, nil
+	}
+	for _, c := range s.preferred {
+		stands, err := s.isPinnedSatisfier(r, ch, c)
+		if err != nil {
+			return nil, err
+		}
+		if stands {
+			return c, nil
+		}
+	}
+	if ok, err := ch.has(s.ctx, 0); err != nil || !ok {
+		return nil, err
+	}
+	identities := map[string]bool{}
+	for _, k := range ch.candidateKeys {
+		identities[k.Identity] = true
+	}
+	for _, c := range s.preferred {
+		key := KeyOf(c)
+		if !identities[key.Identity] {
+			continue
+		}
+		found, err := s.candidateWithKey(r, key, c.Version())
+		if err != nil {
+			return nil, err
+		}
+		if found != nil {
+			return c, nil
+		}
+	}
+	return nil, nil
+}
+
 // isPinnedSatisfier: whether a candidate resolved from a remote repository
 // with a ref stands in for a requirement without a ref (protocol/workspace.md
-// §3): same repository (ignoring ASCII case) and variant, and a version in
-// the requirement's range.
-func isPinnedSatisfier(r *requirement, c Candidate) bool {
+// §3): same repository (ignoring ASCII case) and variant, a version in the
+// requirement's range, and a candidate of the requirement to stand in for,
+// of which only the first is loaded. A package of a ref thus stands in for
+// the tag versions of its repository, while a requirement with a ref still
+// needs exactly its own candidates.
+func (s *search) isPinnedSatisfier(r *requirement, ch *choices, c Candidate) (bool, error) {
 	pinned := c.Source()
 	if !pinned.Spec || !pinned.Pinned || !r.ref.specWithoutRef() {
-		return false
+		return false, nil
 	}
 	if r.rng != nil && !r.rng.Contains(c.Version()) {
-		return false
+		return false, nil
 	}
 	wanted := r.ref
-	return namesEqual(wanted.Target, pinned.Target) && wanted.Variant == c.Variant()
+	if !namesEqual(wanted.Target, pinned.Target) || wanted.Variant != c.Variant() {
+		return false, nil
+	}
+	return ch.has(s.ctx, 0)
 }
 
 // isCandidate: whether a member is one of the candidates of a requirement,
 // without enumerating the candidates of other versions.
 func (s *search) isCandidate(r *requirement, m *member) (bool, error) {
-	version := m.candidate.Version()
+	c, err := s.candidateWithKey(r, m.key, m.candidate.Version())
+	return c != nil, err
+}
+
+// candidateWithKey is CandidateWithKey: the candidate of a requirement with
+// the identity, version and commit of key (whose version is version), or nil,
+// without enumerating the candidates of other versions.
+func (s *search) candidateWithKey(r *requirement, key PackageKey, version semver.Version) (Candidate, error) {
 	if r.rng != nil && !r.rng.Contains(version) {
-		return false, nil
+		return nil, nil
 	}
 	rng := r.rng
 	if r.ref.Spec {
@@ -772,10 +886,10 @@ func (s *search) isCandidate(r *requirement, m *member) (bool, error) {
 	for i := 0; ; i++ {
 		ok, err := seq.has(s.ctx, i)
 		if err != nil || !ok {
-			return false, err
+			return nil, err
 		}
-		if m.key == KeyOf(seq.items[i]) {
-			return true, nil
+		if key == KeyOf(seq.items[i]) {
+			return seq.items[i], nil
 		}
 	}
 }

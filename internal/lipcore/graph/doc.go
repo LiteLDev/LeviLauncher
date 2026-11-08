@@ -1,4 +1,4 @@
-// Package graph ports lip 0.38's GraphSolver
+// Package graph ports lip's GraphSolver
 // (src/Lip.Core/Mcmod/Resolution/GraphSolver.cs): it finds the package set S
 // of protocol/workspace.md §3 and orders it for installation (§5).
 //

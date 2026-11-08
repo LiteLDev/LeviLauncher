@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/archive"
@@ -28,12 +29,25 @@ import (
 // mods/<mod name>/, manifest.json included, as it is.
 //
 // Ownership: a file is owned by a package when the package wrote it. A file
-// that already exists and matches preserve is kept and not written, so it is
-// not owned by the package.
+// that exists when it would be written and matches preserve is kept and not
+// written, so it is not owned by the package; whether it exists is decided
+// then, after the hook commands that ran before it.
+//
+// The write rules are checked twice: when planning, against the workspace as
+// the earlier changes of the operation are planned to leave it, so that a
+// failure changes nothing (protocol/workspace.md §6 rule 1); and at each
+// write, against the workspace and the owners as they are then (FileOwners),
+// which decides.
 //
 // The mods directory is never deleted, and purge never matches it (so a
 // directory pattern naming it removes nothing). .lip, where lip keeps the
-// state file, is never written, deleted or matched.
+// state file, is never written, deleted or matched. On Windows, these checks
+// and ownership see a path by its long names (longName), so that an 8.3
+// short name such as "LIP~1" cannot name .lip or a file of another package.
+// Elsewhere, on a file system that ignores case (as macOS does by default),
+// they see each name that exists as the file system spells it, so that
+// ".LIP" or "MODS" cannot name .lip or mods, nor "Mods/a.dll" a file
+// "mods/a.dll" of another package.
 //
 // An Installer may be used for several operations, one at a time.
 type Installer struct {
@@ -44,6 +58,9 @@ type Installer struct {
 	RunCommand CommandRunner
 
 	barSeq atomic.Int64
+	// caseInsensitive caches whether the file system of each workspace root
+	// ignores case (ignoresCase), once known.
+	caseInsensitive sync.Map
 }
 
 // Options is what InstallContext carries besides the environment.
@@ -246,17 +263,15 @@ func (in *Installer) PlanInstall(ctx context.Context, view *View, opts Options, 
 	if err != nil {
 		return nil, err
 	}
-	var writes []plannedWrite
-	var kept []string
 	for _, w := range plan {
-		if w.keep {
-			kept = append(kept, w.target)
-		} else {
-			writes = append(writes, w)
-		}
-	}
-	for _, w := range writes {
 		view.AddFile(w.fullPath)
+	}
+	// Whether a file matching preserve is kept is decided when it is
+	// written, after the hook commands before it (protocol/workspace.md §4);
+	// the plan expects the workspace as it is.
+	preserve, err := compileAll(entry.Preserve)
+	if err != nil {
+		return nil, err
 	}
 
 	if opts.DryRun {
@@ -268,10 +283,12 @@ func (in *Installer) PlanInstall(ctx context.Context, view *View, opts Options, 
 			}
 		}
 	} else {
-		// Fetch content now, so that a fetch failure changes nothing.
+		// Fetch content now, so that a fetch failure changes nothing. A file
+		// expected to be kept is fetched too: it is written when a hook
+		// command deleted it.
 		var keys []string
 		seen := map[string]bool{}
-		for _, w := range writes {
+		for _, w := range plan {
 			k := strconv.Itoa(w.source) + "/" + w.key
 			if !seen[k] {
 				seen[k] = true
@@ -292,18 +309,20 @@ func (in *Installer) PlanInstall(ctx context.Context, view *View, opts Options, 
 	if !opts.IgnoreScripts && len(entry.Hooks.PreInstall) > 0 {
 		steps = append(steps, &ScriptStep{Stage: "pre_install", Commands: entry.Hooks.PreInstall})
 	}
-	owned := make([]string, 0, len(writes))
-	for _, w := range writes {
+	owned := []string{}
+	for _, w := range plan {
 		steps = append(steps, &WriteStep{Target: w.target, FullPath: w.fullPath,
-			Source: m.mount, Key: strconv.Itoa(w.source) + "/" + w.key})
-		owned = append(owned, w.target)
+			Source: m.mount, Key: strconv.Itoa(w.source) + "/" + w.key, Preserve: preserve,
+			PlannedKeep: w.keep})
+		if !w.keep {
+			owned = append(owned, w.target)
+		}
 	}
 	if !opts.IgnoreScripts && len(entry.Hooks.PostInstall) > 0 {
 		steps = append(steps, &ScriptStep{Stage: "post_install", Commands: entry.Hooks.PostInstall})
 	}
 
-	return &Plan{Name: name, Version: pkg.Version, Root: root, OwnedFiles: owned, Kept: kept,
-		Steps: steps}, nil
+	return &Plan{Name: name, Version: pkg.Version, Root: root, OwnedFiles: owned, Steps: steps}, nil
 }
 
 // plan is McmodInstaller.Plan: the writes of step 2 of installing a package
@@ -360,7 +379,12 @@ func (in *Installer) plan(ctx context.Context, pkg *Package, m *mounted, root st
 				" '%s', which is not a valid path on Windows (a name in it ends with '.' or a"+
 				" space, or contains ':'). Report this to the author of the package.", lbl, target)}
 		}
-		target = strings.Join(segments, "/")
+		long, ok := in.longName(root, strings.Join(segments, "/"))
+		if !ok {
+			return &Error{Msg: fmt.Sprintf("Cannot install %s: lip cannot tell which file '%s' names, as"+
+				" it cannot read the long name of a short name in it.", lbl, target)}
+		}
+		target = long
 		if IsLipPath(target) {
 			return &Error{Msg: fmt.Sprintf("Cannot install %s: its package file places a file at '%s',"+
 				" inside %s, which is reserved for lip. Report this to the author of the package.",
@@ -435,8 +459,12 @@ func (in *Installer) plan(ctx context.Context, pkg *Package, m *mounted, root st
 		if ref.NamesEqual(lockedIdentity, identity) {
 			continue
 		}
-		for _, file := range locked.Files {
-			k := pathKey(normalizeRelative(file))
+		for _, recorded := range locked.Files {
+			file := normalizeRelative(recorded)
+			if long, ok := in.longName(root, file); ok {
+				file = long
+			}
+			k := pathKey(file)
 			if _, ok := owners[k]; !ok {
 				owners[k] = lockedIdentity
 			}
@@ -563,8 +591,10 @@ func (in *Installer) PlanUninstall(ctx context.Context, view *View, opts Options
 		return nil, err
 	}
 
-	// The paths to delete are those of the workspace before pre_uninstall
-	// runs.
+	// The paths to delete are planned against the workspace before
+	// pre_uninstall runs; a DeleteMatchesStep deletes what matches only after
+	// hook commands ran. Each deletion is checked again against the owners
+	// when it is carried out (Apply).
 	ownedByOthers := map[string]bool{}
 	for idx := range opts.Installed {
 		other := &opts.Installed[idx]
@@ -572,15 +602,25 @@ func (in *Installer) PlanUninstall(ctx context.Context, view *View, opts Options
 			continue
 		}
 		for _, f := range other.Files {
-			ownedByOthers[pathKey(normalizeRelative(f))] = true
+			file := normalizeRelative(f)
+			if long, ok := in.longName(root, file); ok {
+				file = long
+			}
+			ownedByOthers[pathKey(file)] = true
 		}
 	}
 
 	// 2. Owned files not matching preserve.
 	var files []string
 	fileSet := map[string]bool{}
+	ownedToDelete := []string{}
 	for _, recorded := range pkg.Files {
-		file := normalizeRelative(recorded)
+		// A path whose long name cannot be read is not deleted: it might name
+		// .lip.
+		file, ok := in.longName(root, normalizeRelative(recorded))
+		if !ok {
+			file = ""
+		}
 		if !isSafeRelativePath(file) || aliasesOnWindows(file) || IsLipPath(file) ||
 			ownedByOthers[pathKey(file)] {
 			continue
@@ -588,6 +628,7 @@ func (in *Installer) PlanUninstall(ctx context.Context, view *View, opts Options
 		if matchesAny(preserve, file) {
 			continue
 		}
+		ownedToDelete = append(ownedToDelete, file)
 		if view.FileExists(fullPath(root, file)) && !fileSet[pathKey(file)] {
 			fileSet[pathKey(file)] = true
 			files = append(files, file)
@@ -598,7 +639,7 @@ func (in *Installer) PlanUninstall(ctx context.Context, view *View, opts Options
 	var directories []string
 	directorySet := map[string]bool{}
 	for _, glob := range purge {
-		matches, err := enumerateMatches(ctx, root, glob, view)
+		matches, err := in.enumerateMatches(ctx, root, glob, view)
 		if err != nil {
 			return nil, err
 		}
@@ -675,6 +716,12 @@ func (in *Installer) PlanUninstall(ctx context.Context, view *View, opts Options
 		}
 	}
 
+	// Without hook commands, the workspace is as planned when the deletions
+	// run.
+	if !opts.IgnoreScripts {
+		steps = append(steps, &DeleteMatchesStep{OwnedFiles: ownedToDelete, Purge: purge})
+	}
+
 	if !opts.IgnoreScripts && len(entry.Hooks.PostUninstall) > 0 {
 		steps = append(steps, &ScriptStep{Stage: "post_uninstall", Commands: entry.Hooks.PostUninstall})
 	}
@@ -693,7 +740,7 @@ type match struct {
 // below a matched directory is included. Only the glob's literal leading
 // directory is walked, only as deep as the pattern can reach, and never
 // through links.
-func enumerateMatches(ctx context.Context, root string, glob *pathglob.Glob, view *View) ([]match, error) {
+func (in *Installer) enumerateMatches(ctx context.Context, root string, glob *pathglob.Glob, view *View) ([]match, error) {
 	pattern := glob.Pattern()
 	segments := strings.Split(strings.TrimRight(pattern, "/"), "/")
 	for _, s := range segments {
@@ -717,18 +764,27 @@ func enumerateMatches(ctx context.Context, root string, glob *pathglob.Glob, vie
 
 	if literal == len(segments) && !glob.MatchesDirectories() {
 		// A literal file path.
-		if !IsLipPath(pattern) && view.FileExists(fullPath(root, pattern)) {
-			return []match{{pattern, false}}, nil
+		if file, ok := in.longName(root, pattern); ok && !IsLipPath(file) &&
+			view.FileExists(fullPath(root, file)) {
+			return []match{{file, false}}, nil
 		}
 		return nil, nil
 	}
 
+	// The walk starts at the long name of the literal leading directory, so
+	// that the paths it finds are checked by their long names; the glob is
+	// matched against them as it spells that directory.
 	var start string
 	for _, s := range segments[:literal] {
 		start += s + "/"
 	}
-	startFull := fullPath(root, start)
-	if (start != "" && !isInside(root, startFull)) || !view.DirectoryExists(startFull) || IsLipPath(start) {
+	longStart, ok := in.longName(root, start)
+	if !ok {
+		return nil, nil
+	}
+	startFull := fullPath(root, longStart)
+	if (start != "" && !isInside(root, startFull)) || !view.DirectoryExists(startFull) ||
+		IsLipPath(longStart) {
 		return nil, nil
 	}
 
@@ -754,6 +810,14 @@ func enumerateMatches(ctx context.Context, root string, glob *pathglob.Glob, vie
 			if IsLipPath(path) {
 				continue
 			}
+			// A path below the long name of the start is matched as the glob
+			// spells the start. A path that the start as spelled does not lead
+			// to, as when Windows drops the trailing dots of a name in it, is
+			// matched as it is.
+			spelled := path
+			if longStart != start && hasPathPrefix(path, longStart) {
+				spelled = start + path[len(longStart):]
+			}
 			suffix := ""
 			if e.IsDirectory {
 				suffix = "/"
@@ -764,7 +828,7 @@ func enumerateMatches(ctx context.Context, root string, glob *pathglob.Glob, vie
 			if slash := strings.IndexByte(path, '/'); slash >= 0 && IsModsDirectory(path[:slash]) {
 				minSegments = 2
 			}
-			matched := all || (!(e.IsDirectory && IsModsDirectory(path)) && glob.IsMatchBelow(path+suffix, minSegments))
+			matched := all || (!(e.IsDirectory && IsModsDirectory(path)) && glob.IsMatchBelow(spelled+suffix, minSegments))
 			if matched {
 				result = append(result, match{path, e.IsDirectory})
 			}
@@ -780,10 +844,10 @@ func enumerateMatches(ctx context.Context, root string, glob *pathglob.Glob, vie
 	if literal == len(segments) {
 		// A literal directory path. mods is never matched, so a pattern
 		// naming it removes nothing below it either.
-		if IsModsDirectory(start) {
+		if IsModsDirectory(longStart) {
 			return nil, nil
 		}
-		result = append(result, match{strings.TrimRight(start, "/"), true})
+		result = append(result, match{strings.TrimRight(longStart, "/"), true})
 		if err := walk(startFull, true, 1); err != nil {
 			return nil, err
 		}
@@ -797,12 +861,19 @@ func enumerateMatches(ctx context.Context, root string, glob *pathglob.Glob, vie
 }
 
 // Apply is McmodInstaller.Apply: runs the steps of a plan, making every
-// file change through the transaction. It fails with *Error when a step
-// fails, or with the context's error when ctx is cancelled; the caller then
-// rolls the transaction back. The plan's WrittenPaths should be among the
-// transaction's reserved paths from the start (txn.Options.Reserved) with
-// those of every other plan of the operation; Apply reserves them too.
-func (in *Installer) Apply(ctx context.Context, tx *txn.Transaction, plan *Plan) error {
+// file change through the transaction, and returns the files the package
+// owns afterwards (workspace-relative, '/'-separated; none for an
+// uninstall). Each write is checked against the write rules as the
+// workspace and owners are then (protocol/workspace.md §4), and adds the
+// file it writes to owners; a file that another package owns then is not
+// deleted. It fails with *Error when a step fails, or with the context's
+// error when ctx is cancelled; the caller then rolls the transaction back.
+// The plan's WrittenPaths should be among the transaction's reserved paths
+// from the start (txn.Options.Reserved) with those of every other plan of
+// the operation; Apply reserves them too.
+func (in *Installer) Apply(ctx context.Context, tx *txn.Transaction, plan *Plan, owners *FileOwners) ([]string, error) {
+	owned := []string{}
+	ownedSet := map[string]bool{}
 	for _, p := range plan.WrittenPaths() {
 		tx.Reserve(p)
 	}
@@ -832,19 +903,47 @@ func (in *Installer) Apply(ctx context.Context, tx *txn.Transaction, plan *Plan)
 
 	for _, step := range plan.Steps {
 		if err := ctx.Err(); err != nil {
-			return err
+			return nil, err
 		}
 		switch s := step.(type) {
 		case *ScriptStep:
 			closeBars()
+			if len(s.Commands) > 0 {
+				// A hook command runs only once the journal exists
+				// (protocol/workspace.md §7.4).
+				if err := tx.Begin(); err != nil {
+					return nil, err
+				}
+			}
 			if err := in.runScripts(ctx, pkg, plan.Name, s.Stage, s.Commands, plan.Root); err != nil {
-				return err
+				return nil, err
 			}
 
 		case *WriteStep:
 			if place == nil {
 				place, counter = in.openPlaceBar(pkg, plan)
 			}
+			// The write rules see the target by its long names as the
+			// workspace is now: a directory that an earlier write or a hook
+			// command created can give a short name in it a meaning it did not
+			// have when the plan was made (protocol/workspace.md §4).
+			target, ok := in.longName(plan.Root, s.Target)
+			if !ok {
+				return nil, &Error{Msg: fmt.Sprintf("Cannot install %s: lip cannot tell which file '%s'"+
+					" names, as it cannot read the long name of a short name in it, so it does not"+
+					" write it.", plan.Name, s.Target)}
+			}
+			if IsLipPath(target) {
+				return nil, &Error{Msg: fmt.Sprintf("Cannot install %s: it writes '%s', inside %s, which"+
+					" is reserved for lip. Report this to the author of the package.", plan.Name, target,
+					pkgmodel.LipDir)}
+			}
+			if owner, ok := owners.OwnerOf(target); ok && !ref.NamesEqual(owner, plan.Name) {
+				return nil, &Error{Msg: fmt.Sprintf("Cannot install %s: it writes '%s', which belongs to"+
+					" %s. Uninstall one of the packages first, or ask the authors of the packages to"+
+					" resolve the conflict.", plan.Name, target, owner)}
+			}
+
 			var count func(int64)
 			if counter != nil {
 				counter.startFile(s.Target)
@@ -852,27 +951,41 @@ func (in *Installer) Apply(ctx context.Context, tx *txn.Transaction, plan *Plan)
 			} else {
 				place.update(int64(placed), s.Target)
 			}
-			if err := writeFile(ctx, tx, s, count); err != nil {
+
+			// An existing file matching preserve is kept, as it is now.
+			full := fullPath(plan.Root, target)
+			if matchesAny(s.Preserve, target) && fileExists(full) {
+				placed++
+				continue
+			}
+
+			if err := writeFile(ctx, tx, s, full, count); err != nil {
 				if isCancel(err) {
-					return err
+					return nil, err
 				}
-				return &Error{Msg: fmt.Sprintf("Cannot install %s: lip cannot write '%s'.",
-					plan.Name, s.Target), Err: err}
+				return nil, &Error{Msg: fmt.Sprintf("Cannot install %s: lip cannot write '%s'.",
+					plan.Name, target), Err: err}
 			}
 			placed++
+			owners.Add(target, plan.Name)
+			if !ownedSet[pathKey(target)] {
+				ownedSet[pathKey(target)] = true
+				owned = append(owned, target)
+			}
 
 		case *DeleteFileStep:
 			if remove == nil {
 				remove = in.openRemoveBar(pkg, plan)
 			}
 			remove.update(int64(removed), show(plan.Root, s.FullPath))
-			// A hook command may have deleted it.
-			if fileExists(s.FullPath) {
+			// An earlier package of the operation may own it now, and a hook
+			// command may have deleted it.
+			if !in.ownedByAnother(plan, owners, s.FullPath) && fileExists(s.FullPath) {
 				if err := tx.DeleteFile(s.FullPath); err != nil {
 					if errors.Is(err, txn.ErrBug) {
-						return err
+						return nil, err
 					}
-					return &Error{Msg: fmt.Sprintf("Cannot uninstall %s: lip cannot delete '%s'.",
+					return nil, &Error{Msg: fmt.Sprintf("Cannot uninstall %s: lip cannot delete '%s'.",
 						plan.Name, show(plan.Root, s.FullPath)), Err: err}
 				}
 			}
@@ -885,30 +998,127 @@ func (in *Installer) Apply(ctx context.Context, tx *txn.Transaction, plan *Plan)
 			remove.update(int64(removed), show(plan.Root, s.FullPath))
 			if err := tx.DeleteDirectoryOnCommit(s.FullPath); err != nil {
 				if errors.Is(err, txn.ErrBug) {
-					return err
+					return nil, err
 				}
-				return &Error{Msg: fmt.Sprintf("Cannot uninstall %s: lip cannot record that it deletes"+
+				return nil, &Error{Msg: fmt.Sprintf("Cannot uninstall %s: lip cannot record that it deletes"+
 					" the directory '%s'.", plan.Name, show(plan.Root, s.FullPath)), Err: err}
 			}
 			removed++
 
+		case *DeleteMatchesStep:
+			if err := in.deleteMatches(ctx, plan, s, tx, owners); err != nil {
+				return nil, err
+			}
+
 		default:
-			return fmt.Errorf("lip planned a step it does not know (%T). This is a bug in lip.", step)
+			return nil, fmt.Errorf("lip planned a step it does not know (%T). This is a bug in lip.", step)
+		}
+	}
+	return owned, nil
+}
+
+// deleteMatches is McmodInstaller.DeleteMatches: deletes what uninstallation
+// steps 2-4 match in the workspace as it is now (protocol/workspace.md §6
+// rule 4), beyond what the plan already deleted. A file that another package
+// owns now is kept, and so is a matched directory holding it.
+func (in *Installer) deleteMatches(ctx context.Context, plan *Plan, step *DeleteMatchesStep,
+	tx *txn.Transaction, owners *FileOwners) error {
+	now := NewView(nil)
+	files := append([]string(nil), step.OwnedFiles...)
+	var directories []string
+	for _, glob := range step.Purge {
+		matches, err := in.enumerateMatches(ctx, plan.Root, glob, now)
+		if err != nil {
+			return err
+		}
+		for _, m := range matches {
+			if m.isDirectory {
+				if !IsModsDirectory(m.path) {
+					directories = append(directories, m.path)
+				}
+			} else {
+				files = append(files, m.path)
+			}
+		}
+	}
+
+	var deleted []string
+	distinct := map[string]bool{}
+	for _, file := range files {
+		if distinct[pathKey(file)] {
+			continue
+		}
+		distinct[pathKey(file)] = true
+		full := fullPath(plan.Root, file)
+		if !fileExists(full) || in.ownedByAnother(plan, owners, full) {
+			continue
+		}
+		if err := tx.DeleteFile(full); err != nil {
+			if errors.Is(err, txn.ErrBug) {
+				return err
+			}
+			return &Error{Msg: fmt.Sprintf("Cannot uninstall %s: lip cannot delete '%s'.",
+				plan.Name, show(plan.Root, full)), Err: err}
+		}
+		deleted = append(deleted, file)
+	}
+
+	// Matched directories, and the directories these deletions leave empty,
+	// are deleted when the operation commits if they are empty then.
+	scheduled := map[string]bool{}
+	schedule := func(full string) error {
+		if scheduled[pathKey(full)] {
+			return nil
+		}
+		scheduled[pathKey(full)] = true
+		if !dirExists(full) {
+			return nil
+		}
+		if err := tx.DeleteDirectoryOnCommit(full); err != nil {
+			if errors.Is(err, txn.ErrBug) {
+				return err
+			}
+			return &Error{Msg: fmt.Sprintf("Cannot uninstall %s: lip cannot record that it deletes the"+
+				" directory '%s'.", plan.Name, show(plan.Root, full)), Err: err}
+		}
+		return nil
+	}
+	for _, d := range directories {
+		if err := schedule(fullPath(plan.Root, d)); err != nil {
+			return err
+		}
+	}
+	for _, path := range append(deleted, directories...) {
+		for dir, ok := parentDir(fullPath(plan.Root, path)); ok && isInside(plan.Root, dir); dir, ok = parentDir(dir) {
+			if IsModsDirectory(relativePath(plan.Root, dir)) {
+				break
+			}
+			if err := schedule(dir); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
+// ownedByAnother is McmodInstaller.OwnedByAnother: whether a package other
+// than the one of the plan owns the file now, so that uninstalling the
+// package keeps it (protocol/workspace.md §4).
+func (in *Installer) ownedByAnother(plan *Plan, owners *FileOwners, full string) bool {
+	owner, ok := owners.OwnerOf(relativePath(plan.Root, full))
+	return ok && !ref.NamesEqual(owner, plan.Name)
+}
+
 // writeFile writes the file of a write step through the transaction,
 // counting the bytes read from the source; the copy also stops when ctx is
 // cancelled (the transaction's own context aside).
-func writeFile(ctx context.Context, tx *txn.Transaction, s *WriteStep, count func(int64)) error {
+func writeFile(ctx context.Context, tx *txn.Transaction, s *WriteStep, full string, count func(int64)) error {
 	r, err := s.Source.Open(s.Key)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
-	return tx.WriteFile(s.FullPath, &countingReader{ctx: ctx, r: r, add: count})
+	return tx.WriteFile(full, &countingReader{ctx: ctx, r: r, add: count})
 }
 
 // openPlaceBar opens the StagePlace bar of the writes of a plan: bytes when

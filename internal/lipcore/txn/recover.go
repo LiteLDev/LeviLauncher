@@ -3,7 +3,6 @@ package txn
 import (
 	"fmt"
 	"path/filepath"
-	"time"
 )
 
 // RecoveryResult is what the journal of an interrupted operation held, and
@@ -31,8 +30,6 @@ type RecoverOptions struct {
 	// DiscardLock throws the result of an uncommitted operation away.
 	// Default: deletes .lip/state.json.tmp when present.
 	DiscardLock func() error
-	// Now is the clock of the Begin record of a rewritten journal.
-	Now func() time.Time
 }
 
 // Recover finishes or undoes the operation the journal of root left behind
@@ -57,9 +54,6 @@ func RecoverWith(root string, opts RecoverOptions) (*RecoveryResult, error) {
 	}
 	if opts.DiscardLock == nil {
 		opts.DiscardLock = func() error { return DiscardStaged(fsys, root) }
-	}
-	if opts.Now == nil {
-		opts.Now = time.Now
 	}
 	journalPath := filepath.Join(root, LipDirectory, JournalFile)
 	if !fileExists(fsys, journalPath) {
@@ -111,7 +105,11 @@ func RecoverWith(root string, opts RecoverOptions) (*RecoveryResult, error) {
 	if len(left) == 0 {
 		err = fsys.Remove(journalPath)
 	} else {
-		err = writeJournal(fsys, journalPath, root, left, result.Committed, opts.Now())
+		var started *string
+		if startedKnown {
+			started = &result.Started
+		}
+		err = writeJournal(fsys, journalPath, root, left, result.Committed, started)
 	}
 	if err != nil {
 		done, what := "undone", "updated"

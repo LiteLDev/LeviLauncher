@@ -83,14 +83,17 @@ func (r Ref) Equal(o Ref) bool {
 	return *r.GitRef == *o.GitRef
 }
 
-// LocalPath is, for a file ref, the absolute local path (new
-// Uri(Target).LocalPath). It fails for other kinds, and, like .NET, for the
-// rare target that does not parse again as a file URI.
+// LocalPath is, for a file ref, the absolute local path its file: URI names
+// (Ref.LocalPath). It fails for other kinds.
 func (r Ref) LocalPath() (string, error) {
 	if r.Kind != KindFile {
 		return "", fmt.Errorf("The source '%s' is not a local path, so it has no local file path.", r)
 	}
-	return fileURILocalPath(r.Target)
+	path, ok := fileURIToPath(r.Target)
+	if !ok {
+		return "", fmt.Errorf("'%s' is not an absolute file: URI.", r.Target)
+	}
+	return path, nil
 }
 
 // hasFileScheme is s.StartsWith("file:", StringComparison.OrdinalIgnoreCase),
@@ -128,27 +131,13 @@ func (r Ref) WithVariant(variant string) (Ref, error) {
 	return r, nil
 }
 
-// uriSchemeRegex matches a URI scheme that is no DOS drive letter.
-var uriSchemeRegex = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9+.-]+:`)
-
-// FromFile returns the file ref of an absolute local path (new
-// Uri(absolutePath, UriKind.Absolute), which also takes a file: URI).
+// FromFile returns the file ref of an absolute local path (Ref.FromFile):
+// its file: URI [RFC8089], with every octet a path segment does not allow as
+// it is percent-encoded.
 func FromFile(absolutePath, variant string) (Ref, error) {
-	var uri string
-	switch s := trimLeadingLWS(absolutePath); {
-	case hasFileScheme(s):
-		u, err := parseFileURI(s)
-		if err != nil {
-			return Ref{}, err
-		}
-		uri = u.absoluteURI()
-	case uriSchemeRegex.MatchString(s):
+	uri, ok := pathToFileURI(absolutePath)
+	if !ok {
 		return Ref{}, fmt.Errorf("'%s' is not an absolute local path.", absolutePath)
-	default:
-		var err error
-		if uri, err = implicitFileURI(absolutePath); err != nil {
-			return Ref{}, err
-		}
 	}
 	return Ref{Kind: KindFile, Target: uri}.WithVariant(variant)
 }
@@ -222,11 +211,15 @@ func TryParse(s string, allowFile bool) (Ref, string, bool) {
 			return Ref{}, "local paths are only allowed in package arguments on the command line," +
 				" not as dependencies", false
 		}
-		abs, ok := fileURIAbsolute(target)
+		path, ok := fileURIToPath(target)
+		var uri string
+		if ok {
+			uri, ok = pathToFileURI(path)
+		}
 		if !ok {
 			return Ref{}, fmt.Sprintf("'%s' is not an absolute file: URI", target), false
 		}
-		return Ref{Kind: KindFile, Target: abs, Variant: variant}, "", true
+		return Ref{Kind: KindFile, Target: uri, Variant: variant}, "", true
 	default:
 		if err := CheckModulePath(target); err != nil {
 			// The reason alone; the outer message names the path again.

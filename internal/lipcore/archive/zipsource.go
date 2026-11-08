@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"io/fs"
@@ -32,6 +33,8 @@ type ZipSource struct {
 	stamp   zipStamp
 	keys    []string
 	entries map[string]*zipEntry
+	// prefetched are the files extracted by Prefetch, by key.
+	prefetched map[string][]byte
 }
 
 // zipOpener opens the archive: its content, size, identity and a closer.
@@ -99,6 +102,44 @@ func NewZipFileSource(path, description string) (*ZipSource, error) {
 // it, e.g. one extracted from another archive.
 func NewZipBytesSource(content []byte, description string) (*ZipSource, error) {
 	return newZipSource(bytesOpener(content), description, false, "")
+}
+
+// NewCachedZipSource opens a download of the lip cache read into memory and
+// validated there (ArchiveProvider.CachedZipSource), so that what is
+// installed is exactly what was validated, even if another process deletes
+// or replaces the cache entry meanwhile. Its errors advise 'lip cache clean'.
+func NewCachedZipSource(content []byte, description string) (*ZipSource, error) {
+	return newZipSource(bytesOpener(content), description, true, "")
+}
+
+// Prefetch is ZipSource.Prefetch: extracts the given files now, so that a
+// damaged file or one compressed with a method lip does not support fails
+// here rather than when it is read.
+func (s *ZipSource) Prefetch(_ context.Context, keys []string) error {
+	for _, key := range keys {
+		s.mu.Lock()
+		_, done := s.prefetched[key]
+		s.mu.Unlock()
+		if done {
+			continue
+		}
+		r, err := s.open1(key)
+		if err != nil {
+			return err
+		}
+		content, err := io.ReadAll(r)
+		r.Close()
+		if err != nil {
+			return err
+		}
+		s.mu.Lock()
+		if s.prefetched == nil {
+			s.prefetched = map[string][]byte{}
+		}
+		s.prefetched[key] = content
+		s.mu.Unlock()
+	}
+	return nil
 }
 
 func fileOpener(path string) zipOpener {
@@ -232,7 +273,19 @@ func (s *ZipSource) Size(key string) (int64, bool) {
 
 // Open opens a file for reading. A damaged entry fails with *DamagedError,
 // at Open or while reading; a failure to read the archive with *FileError.
+// A file extracted by Prefetch is served as extracted.
 func (s *ZipSource) Open(key string) (io.ReadCloser, error) {
+	s.mu.Lock()
+	content, ok := s.prefetched[key]
+	s.mu.Unlock()
+	if ok {
+		return io.NopCloser(bytes.NewReader(content)), nil
+	}
+	return s.open1(key)
+}
+
+// open1 opens a file of the archive for reading.
+func (s *ZipSource) open1(key string) (io.ReadCloser, error) {
 	r, size, stamp, c, err := s.open()
 	if err != nil {
 		return nil, s.openError(err)

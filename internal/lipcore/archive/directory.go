@@ -122,6 +122,11 @@ func listFiles(root string) ([]listedFile, error) {
 				}
 				continue
 			}
+			// Special files (FIFOs, sockets, device nodes) are no files of an
+			// archive; reading a FIFO would wait for a writer forever.
+			if !info.Mode().IsRegular() && isSpecialFile(path) {
+				continue
+			}
 			files = append(files, listedFile{key: prefix + e.Name(), path: path, size: info.Size()})
 		}
 		return nil

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Brought the built-in lip in line with lip's latest package-engine fixes: package scripts are passed to `cmd.exe` as written, so quoted paths work; whether a preserved file is kept, and what uninstalling removes, is decided after the package's scripts run; installed dependencies keep their versions when they still fit; updating without arguments handles sources that now give another package; the `mods` folder is only created when an operation changes files; and local paths with `%`, `#` or non-ASCII characters are recorded correctly
+
 ## [1.1.0-beta.1] - 2026-11-08
 
 ### Added

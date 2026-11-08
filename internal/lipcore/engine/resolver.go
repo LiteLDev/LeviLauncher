@@ -63,10 +63,25 @@ type candidate struct {
 	gsource  graph.Ref
 	assets   []*assetHandle
 	deps     []graph.Dependency
+	// mod is the mod name, read once and shared by the copies of the
+	// candidate (withSource), as Candidate.GetModManifest is by records
+	// copied with "with".
+	mod *modState
+}
 
-	modOnce sync.Once
-	modName string
-	modErr  error
+type modState struct {
+	once sync.Once
+	name string
+	err  error
+}
+
+// withSource is `candidate with { Source = source }`: the candidate as
+// resolved for another source.
+func (c *candidate) withSource(r *resolver, source ref.Ref) *candidate {
+	copied := &candidate{id: c.id, variant: c.variant, version: c.version, entry: c.entry,
+		manifest: c.manifest, archive: c.archive, source: source, gsource: r.graphRef(source),
+		assets: c.assets, deps: c.deps, mod: c.mod}
+	return copied
 }
 
 func (c *candidate) Identity() string                 { return ref.Identity(c.id, c.variant) }
@@ -85,21 +100,22 @@ func (c *candidate) ModName(ctx context.Context) (string, error) {
 	if index < 0 {
 		return "", nil
 	}
-	c.modOnce.Do(func() {
+	m := c.mod
+	m.once.Do(func() {
 		label := c.Identity() + " " + c.version.String()
 		src, err := c.assets[index].Open()
 		if err != nil {
 			if isContextError(err) {
-				c.modErr = err
+				m.err = err
 				return
 			}
-			c.modErr = &install.Error{Msg: fmt.Sprintf("Cannot install %s: lip could not read the %s of"+
+			m.err = &install.Error{Msg: fmt.Sprintf("Cannot install %s: lip could not read the %s of"+
 				" its asset of type \"mcmod\" to tell the mod name.", label, pkgmodel.ModManifestFileName), Err: err}
 			return
 		}
-		c.modName, c.modErr = install.ReadModName(src, label)
+		m.name, m.err = install.ReadModName(src, label)
 	})
-	return c.modName, c.modErr
+	return m.name, m.err
 }
 
 // installPackage is the candidate as the installer takes it.
@@ -128,7 +144,7 @@ func (r *resolver) newCandidate(id, variant string, version semver.Version, entr
 	manifest any, a *archiveHandle, source ref.Ref) *candidate {
 	c := &candidate{
 		id: id, variant: variant, version: version, entry: entry, manifest: manifest,
-		archive: a, source: source, gsource: r.graphRef(source),
+		archive: a, source: source, gsource: r.graphRef(source), mod: &modState{},
 	}
 	for _, asset := range entry.Assets {
 		h := &assetHandle{urls: asset.URLs}

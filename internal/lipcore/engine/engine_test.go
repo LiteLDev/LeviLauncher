@@ -278,9 +278,6 @@ func TestInstallInstalledDependencyTooOldReplacesIt(t *testing.T) {
 	if h.read("lib/lib.dll") != "lib 1.1.0" {
 		t.Fatal(h.read("lib/lib.dll"))
 	}
-	if !h.rec.hasInfo("The installed dependency packages do not fit the request") {
-		t.Fatalf("infos = %v", h.rec.infos)
-	}
 }
 
 func TestInstallNoDependenciesInstallsOnlyTheRequest(t *testing.T) {
@@ -317,7 +314,9 @@ func TestInstallNoDependenciesOtherVersionReplacesInstalledPackageOnly(t *testin
 	h.addLibAndApp(true, false)
 	h.must(h.install(appID+"@1.0.0", libID+"@1.0.0"))
 	h.must(h.e.Install(context.Background(), []string{libID + "@1.1.0"}, false, false, true))
-	equal(t, h.summary(), []string{appID + "@1.0.0 explicit", libID + "@1.1.0 explicit"})
+	// lib still satisfies the dependency of app, so it comes first
+	// (protocol/workspace.md §5, §7.1).
+	equal(t, h.summary(), []string{libID + "@1.1.0 explicit", appID + "@1.0.0 explicit"})
 	if h.read("lib/lib.dll") != "lib 1.1.0" {
 		t.Fatal(h.read("lib/lib.dll"))
 	}
@@ -778,14 +777,19 @@ func TestUpdateDependencyBecomesExplicitlyInstalled(t *testing.T) {
 	}
 }
 
-func TestUpdateTwoArgumentsOfOneIdentityUpdatesItByTheFirst(t *testing.T) {
+func TestUpdateTwoArgumentsOfOneIdentitySatisfiesBoth(t *testing.T) {
 	h := newHarness(t)
 	h.addLibAndApp(true, false)
-	h.must(h.install(libID + "@1.0.0"))
+	h.must(h.install(libID))
+	// lib 1.0.0 of lib@1.0.0 stands in for the request of lib
+	// (protocol/workspace.md §3).
 	h.must(h.update(libID, libID+"@1.0.0"))
 	p := single(t, h.lock())
-	if stringMember(p.Manifest, "version") != "1.1.0" || p.Ref != libID {
+	if stringMember(p.Manifest, "version") != "1.0.0" || p.Ref != libID+"@1.0.0" {
 		t.Fatalf("p = %+v", p)
+	}
+	if h.read("lib/lib.dll") != "lib 1.0.0" {
+		t.Fatal(h.read("lib/lib.dll"))
 	}
 }
 

@@ -15,11 +15,13 @@ import (
 )
 
 // Pack writes a ZIP archive of a directory to output, replacing it (lip pack,
-// protocol/cli.md §5.11; Packer.cs): every file below dir at its path
-// relative to it, except output itself and everything below .git/ and .lip/
-// at its root. Files are written in ordinal order of their paths; links are
-// not followed, and an inaccessible directory fails rather than being left
-// out.
+// protocol/cli.md §5.11; Packer.cs): every regular file below dir at its
+// path relative to it, except output itself (whatever path reaches it) and
+// everything below .git/ and .lip/ at its root. Files are written in ordinal
+// order of their paths; links are not followed, special files (FIFOs,
+// sockets, device nodes) are left out, and an inaccessible directory, or a
+// '\' in the name of a packed file or of a directory above it, fails before
+// output is touched.
 func Pack(dir, output string) error {
 	root, err := filepath.Abs(dir)
 	if err != nil {
@@ -46,11 +48,47 @@ func Pack(dir, output string) error {
 			Err: err,
 		}
 	}
+	// The same file can be reached by other paths (links, junctions, case,
+	// 8.3 short names), and packing output would read it while it is being
+	// written.
+	outputIdentity, hasOutputIdentity := identityOf(outputPath)
+	// Whether the entry is below the directory name at the root, also when it
+	// is spelled in another case on a file system that ignores case: then
+	// both name the same directory.
+	isBelow := func(key, name string) bool {
+		first := ""
+		if slash := strings.IndexByte(key, '/'); slash >= 0 {
+			first = key[:slash]
+		}
+		if first == name {
+			return true
+		}
+		if !strings.EqualFold(first, name) {
+			return false
+		}
+		a, ok := identityOf(filepath.Join(root, name))
+		if !ok {
+			return false
+		}
+		b, ok := identityOf(filepath.Join(root, first))
+		return ok && a == b
+	}
 	var files []listedFile
 	for _, f := range listed {
-		if samePath(f.path, outputPath) ||
-			strings.HasPrefix(f.key, ".git/") || strings.HasPrefix(f.key, ".lip/") {
+		if samePath(f.path, outputPath) || isBelow(f.key, ".git") || isBelow(f.key, ".lip") {
 			continue
+		}
+		if hasOutputIdentity {
+			if id, ok := identityOf(f.path); ok && id == outputIdentity {
+				continue
+			}
+		}
+		// Outside Windows '\' is not a separator, so a name may contain it; a
+		// ZIP entry cannot (protocol/package.md §1), so the file cannot be
+		// packed at its own path.
+		if strings.ContainsRune(f.key, '\\') {
+			return errors.New("Cannot pack " + root + ": '" + f.path + `' has a '\' in its path, which a ZIP` +
+				" archive cannot hold. Rename it.")
 		}
 		files = append(files, f)
 	}

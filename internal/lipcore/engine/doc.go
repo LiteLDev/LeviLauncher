@@ -1,7 +1,8 @@
-// Package engine carries out lip 0.38's workspace operations
+// Package engine carries out lip's workspace operations
 // (src/Lip.Core/Mcmod/McmodService.cs, Resolution/Resolver.cs,
-// Archives/ArchiveProvider.cs, ArchiveReader.cs and PublicApi/LipClient.cs at
-// v0.38.0-beta.1; protocol/workspace.md §3-§7, protocol/package.md §4,
+// Archives/ArchiveProvider.cs, ArchiveReader.cs and PublicApi/LipClient.cs,
+// from v0.38.0-beta.1 with the fixes of lip main; protocol/workspace.md
+// §3-§7, protocol/package.md §4,
 // protocol/cli.md §3-§5.4, protocol/compatibility.md) on top of the other
 // lipcore packages:
 //

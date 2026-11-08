@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -705,5 +706,93 @@ func TestParse_RoundTripsSerializedRecords(t *testing.T) {
 		if !ok || got != e {
 			t.Errorf("%s: %+v", serialize(e), got)
 		}
+	}
+}
+
+func TestJournal_BackupOfNameStartingWithDot_IsNotHidden(t *testing.T) {
+	// "hidden" is the Windows hidden attribute (protocol/workspace.md §7.3),
+	// though off Windows .NET reports every name starting with '.' as hidden.
+	f := newFixture(t)
+	f.addFile(".env", "env")
+	tx := f.begin(Options{})
+
+	// Closed without commit or rollback, as by a killed process.
+	must(t, tx.DeleteFile(".env"))
+	tx.Close()
+
+	want := `{"op":"Backup","path":".env","to":"..env.bak","hidden":false}` + "\n"
+	if journal := f.read(".lip/journal"); !strings.Contains(journal, want) {
+		t.Fatalf("journal:\n%s", journal)
+	}
+}
+
+func TestRecover_NameWithBackslashOffWindows_RestoresIt(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip(`Windows names cannot contain '\'.`)
+	}
+	// Off Windows '\' is a character of a name, not a separator
+	// (protocol/workspace.md §7.3: the paths of the journal are
+	// '/'-separated).
+	f := newFixture(t)
+	f.addFile(`logs/a\b.txt`, "log")
+	tx := f.begin(Options{})
+	must(t, tx.DeleteFile(`logs/a\b.txt`))
+	tx.Close()
+
+	journal := f.read(".lip/journal")
+	f.recover(nil, nil)
+
+	if !strings.Contains(journal, `"path":"logs/a\\b.txt","to":"logs/.a\\b.txt.bak"`) {
+		t.Fatalf("journal:\n%s", journal)
+	}
+	if got := f.read(`logs/a\b.txt`); got != "log" {
+		t.Fatal(got)
+	}
+	if f.exists(`logs/.a\b.txt.bak`) {
+		t.Fatal("backup kept")
+	}
+}
+
+func TestRecover_ChangeCannotBeUndone_KeepsTheStartTime(t *testing.T) {
+	// The created file cannot be deleted, so the first recovery rewrites the
+	// journal.
+	f := newFixture(t)
+	clock := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	tx := f.begin(Options{Now: func() time.Time { clock = clock.Add(time.Second); return clock }})
+	change(t, tx)
+	tx.Close()
+	begin := strings.SplitN(f.read(".lip/journal"), "\n", 2)[0]
+	created := f.full("new/deep/created.txt")
+	f.fs.failOther = func(op, path string) bool { return op == "remove" && path == created }
+
+	first := f.recover(nil, nil)
+
+	// "to" of "Begin" is when the operation started, not when the journal
+	// was rewritten.
+	if len(first.Errors) == 0 {
+		t.Fatal("no errors")
+	}
+	if got := strings.SplitN(f.read(".lip/journal"), "\n", 2)[0]; got != begin {
+		t.Fatalf("%s, want %s", got, begin)
+	}
+	f.fs.failOther = nil
+}
+
+func TestRollback_AfterCommitOfOnlyHookCommands_DeletesTheJournal(t *testing.T) {
+	// An operation of only hook commands has a journal with no change
+	// (§7.4); then the state file cannot be renamed into place (step 9).
+	f := newFixture(t)
+	tx := f.begin(Options{})
+	must(t, tx.Begin())
+	must(t, tx.MarkCommitted())
+
+	errs := tx.Rollback(func() error { return nil })
+
+	// Every record was undone, so the journal is deleted (§7.5).
+	if len(errs) != 0 {
+		t.Fatal(errs)
+	}
+	if fileExists(OS, f.journal()) {
+		t.Fatal("journal kept")
 	}
 }

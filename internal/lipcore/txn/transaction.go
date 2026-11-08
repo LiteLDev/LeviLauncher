@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -58,8 +59,11 @@ type Transaction struct {
 	opts        Options
 	entries     []entry
 	journal     io.WriteCloser
-	committed   bool
-	closed      bool
+	// started is the start time of the "Begin" record, once the journal
+	// exists (WorkspaceTransaction._started).
+	started   *string
+	committed bool
+	closed    bool
 }
 
 // Begin starts a transaction on the workspace root. Nothing is written until
@@ -196,9 +200,14 @@ func (t *Transaction) Reserve(rel string) {
 
 func (t *Transaction) backup(path string) error {
 	backup := t.backupPath(path)
-	wasHidden, err := t.fs.Hidden(path)
-	if err != nil {
-		return err
+	// "hidden" is the Windows hidden attribute (protocol/workspace.md §7.3);
+	// elsewhere .NET reports every name starting with '.' as hidden.
+	wasHidden := false
+	if runtime.GOOS == "windows" {
+		var err error
+		if wasHidden, err = t.fs.Hidden(path); err != nil {
+			return err
+		}
 	}
 	if err := t.record(entry{op: opBackup, path: path, to: backup, hasTo: true,
 		hidden: wasHidden}); err != nil {
@@ -313,7 +322,7 @@ func (t *Transaction) Rollback(discardLock func() error) []error {
 	if t.committed && t.journal != nil {
 		t.journal.Close()
 		t.journal = nil
-		if err := writeJournal(t.fs, t.journalPath, t.root, t.entries, false, t.opts.Now()); err != nil {
+		if err := writeJournal(t.fs, t.journalPath, t.root, t.entries, false, t.started); err != nil {
 			// The journal still commits the operation, and the staged state file is kept,
 			// so that the next operation completes it rather than finding it partly undone.
 			return append(errs, wrap(err, fmt.Sprintf("Could not undo the operation, because the"+
@@ -348,12 +357,26 @@ func (t *Transaction) Close() error {
 }
 
 func (t *Transaction) record(e entry) error {
+	if err := t.Begin(); err != nil {
+		return err
+	}
+	if err := t.append(e); err != nil {
+		return err
+	}
+	t.entries = append(t.entries, e)
+	return nil
+}
+
+// Begin is WorkspaceTransaction.Begin: creates the journal with its "Begin"
+// record unless it exists, before the first change or hook command of the
+// operation (protocol/workspace.md §7.4 step 5).
+func (t *Transaction) Begin() error {
 	if t.committed {
 		return bug("lip tried to change the workspace after committing the operation. This is a" +
 			" bug in lip.")
 	}
 	if t.journal == nil {
-		if len(t.entries) > 0 {
+		if len(t.entries) > 0 || t.started != nil {
 			return bug("lip tried to change the workspace after the operation ended. This is a bug" +
 				" in lip.")
 		}
@@ -369,14 +392,12 @@ func (t *Transaction) record(e entry) error {
 				" changes so that they can be undone; lip changed no files.",
 				show(t.root, t.journalPath)))
 		}
-		if err := t.append(beginEntry(t.opts.Now())); err != nil {
+		started := startTime(t.opts.Now())
+		t.started = &started
+		if err := t.append(entry{op: opBegin, to: started, hasTo: true}); err != nil {
 			return err
 		}
 	}
-	if err := t.append(e); err != nil {
-		return err
-	}
-	t.entries = append(t.entries, e)
 	return nil
 }
 
@@ -394,7 +415,9 @@ func (t *Transaction) append(e entry) error {
 // left, else replaces it with what is left. A failure is added to errs: the
 // journal only matters after a crash.
 func (t *Transaction) closeJournal(left []entry, committed bool, errs *[]error) {
-	written := t.journal != nil || len(t.entries) > 0
+	// Begin sets started when it creates the journal, which an operation of
+	// only hook commands has too, though it records no change.
+	written := t.started != nil || t.journal != nil || len(t.entries) > 0
 	if t.journal != nil {
 		t.journal.Close()
 		t.journal = nil
@@ -408,7 +431,7 @@ func (t *Transaction) closeJournal(left []entry, committed bool, errs *[]error) 
 			err = t.fs.Remove(t.journalPath)
 		}
 	} else {
-		err = writeJournal(t.fs, t.journalPath, t.root, left, committed, t.opts.Now())
+		err = writeJournal(t.fs, t.journalPath, t.root, left, committed, t.started)
 	}
 	if err != nil {
 		*errs = append(*errs, wrap(err, fmt.Sprintf("Could not update the journal '%s': %s The next"+
@@ -417,11 +440,16 @@ func (t *Transaction) closeJournal(left []entry, committed bool, errs *[]error) 
 	}
 }
 
-// writeJournal replaces the journal, through journal.tmp, with a fresh
-// Begin, the entries and, when committed, Commit.
-func writeJournal(fsys FS, path, root string, entries []entry, committed bool, now time.Time) error {
+// writeJournal replaces the journal, through journal.tmp, with a Begin, the
+// entries and, when committed, Commit. started is the time the operation
+// started, as its "Begin" record gave it, or nil when unknown.
+func writeJournal(fsys FS, path, root string, entries []entry, committed bool, started *string) error {
 	var b strings.Builder
-	all := append([]entry{beginEntry(now)}, entries...)
+	begin := entry{op: opBegin}
+	if started != nil {
+		begin.to, begin.hasTo = *started, true
+	}
+	all := append([]entry{begin}, entries...)
 	if committed {
 		all = append(all, entry{op: opCommit})
 	}

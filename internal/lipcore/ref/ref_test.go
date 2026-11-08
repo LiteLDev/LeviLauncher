@@ -244,9 +244,9 @@ func TestNames(t *testing.T) {
 	}
 }
 
-// TestDotnetGolden checks results recorded from lip 0.38's C# (Ref.TryParse,
-// Ref.Parse, GitRef.TryParse, Module.CheckPath and Ref.FromFile, run on .NET
-// 10 on Windows) over a corpus aimed at System.Uri's corners.
+// TestDotnetGolden checks results recorded from lip main's C# (Ref.TryParse,
+// GitRef.TryParse, Module.CheckPath and Ref.FromFile, run on .NET 10 on
+// Windows) over a corpus aimed at the corners of URLs and file: URIs.
 func TestDotnetGolden(t *testing.T) {
 	data, err := os.ReadFile("testdata/dotnet_golden.json")
 	if err != nil {
@@ -268,6 +268,12 @@ func TestDotnetGolden(t *testing.T) {
 		got := map[string]any{}
 		switch mode {
 		case "ref", "reff":
+			// A file: URI names a Windows path on Windows and a Unix path
+			// elsewhere; the corpus was recorded on Windows (fileuri_test.go
+			// covers the others).
+			if mode == "reff" && !windows && hasFileScheme(in) {
+				continue
+			}
 			r, reason, rok := TryParse(in, mode == "reff")
 			got["ok"] = rok
 			if rok {

@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"unicode/utf16"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/archive"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/compat"
@@ -60,7 +61,7 @@ type InstalledPackage struct {
 }
 
 // Engine is McmodService (src/Lip.Core/Mcmod/McmodService.cs,
-// v0.38.0-beta.1) for one workspace: install, update, uninstall and list
+// with the fixes of lip main) for one workspace: install, update, uninstall and list
 // (protocol/workspace.md §3-§7, protocol/cli.md §5).
 type Engine struct {
 	// Dir is the absolute workspace root.
@@ -165,6 +166,40 @@ type workspace struct {
 	env      environment
 	provider archiveProvider
 	resolver *resolver
+	// asInstalled maps the candidates the solver sees (AsInstalled).
+	asInstalled func(ctx context.Context, c *candidate) (*candidate, error)
+}
+
+// solverResolver is the resolver of the graph solver
+// (InstalledPackageResolver): the resolver of the workspace with every
+// candidate that is an installed package replaced by that package
+// (asInstalled). Diagnostics, with their causes, pass through.
+func (ws *workspace) solverResolver() graph.Resolver {
+	return &installedPackageResolver{ws: ws}
+}
+
+type installedPackageResolver struct{ ws *workspace }
+
+func (r *installedPackageResolver) ResolveLazy(ctx context.Context, source graph.Ref, rng graph.Constraint,
+	onDiagnostic func(graph.Diagnostic)) graph.Sequence {
+	return &mappedSequence{inner: r.ws.resolver.ResolveLazy(ctx, source, rng, onDiagnostic), ws: r.ws}
+}
+
+type mappedSequence struct {
+	inner graph.Sequence
+	ws    *workspace
+}
+
+func (s *mappedSequence) Next(ctx context.Context) (graph.Candidate, bool, error) {
+	c, ok, err := s.inner.Next(ctx)
+	if err != nil || !ok {
+		return c, ok, err
+	}
+	mapped, err := s.ws.asInstalled(ctx, c.(*candidate))
+	if err != nil {
+		return nil, false, err
+	}
+	return mapped, true, nil
 }
 
 // newProvider returns the archive provider of one operation.
@@ -210,11 +245,40 @@ func (e *Engine) Install(ctx context.Context, packages []string, dryRun, ignoreS
 		}
 	}
 
-	unpinned := make([]string, len(candidates))
+	// A requested dependency package keeps its version when it satisfies its
+	// request (protocol/cli.md §5.1), recording the source of the request when
+	// it is one of the request's candidates; otherwise it is chosen again.
+	requested := map[string]*candidate{}
+	var unpinned []string
 	for i, c := range candidates {
-		unpinned[i] = c.Identity()
+		identity := c.Identity()
+		var dependency *pkgmodel.LockedPackage
+		for j := range ws.lock.Packages {
+			if ref.NamesEqual(install.LockedIdentity(&ws.lock.Packages[j]), identity) {
+				dependency = &ws.lock.Packages[j]
+				break
+			}
+		}
+		if dependency == nil {
+			continue
+		}
+		installed, err := e.pinnedCandidate(ctx, ws, dependency)
+		if err != nil {
+			return err
+		}
+		satisfier, err := graph.RequestCandidate(ctx, ws.solverResolver(),
+			graph.Request{Source: ws.resolver.graphRef(requests[i].source)}, installed)
+		if err != nil {
+			return err
+		}
+		if satisfier != nil {
+			requested[ref.Fold(identity)] = installed.withSource(ws.resolver, satisfier.(*candidate).source)
+		} else {
+			unpinned = append(unpinned, identity)
+		}
 	}
-	p, err := e.makePlan(ctx, ws, requests, unpinned, explicitIdentities(ws.lock))
+
+	p, err := e.makePlan(ctx, ws, requests, unpinned, explicitIdentities(ws.lock), requested, false)
 	if err != nil {
 		return err
 	}
@@ -269,7 +333,12 @@ func (e *Engine) Uninstall(ctx context.Context, packages []string, dryRun, ignor
 				changes = append(changes, change{kind: uninstallChange, origin: i})
 			}
 		}
-		return e.execute(ctx, ws, op, changeSet{changes: changes})
+		// Without a package of a cycle, the others may need another order
+		// (protocol/workspace.md §5, §7.1).
+		return e.execute(ctx, ws, op, changeSet{changes: changes,
+			finish: func(remaining []pkgmodel.LockedPackage) []pkgmodel.LockedPackage {
+				return inInstallationOrder(remaining, ws.env)
+			}})
 	}
 
 	removed := map[string]bool{}
@@ -282,7 +351,7 @@ func (e *Engine) Uninstall(ctx context.Context, packages []string, dryRun, ignor
 			explicit = append(explicit, id)
 		}
 	}
-	p, err := e.makePlan(ctx, ws, nil, nil, explicit)
+	p, err := e.makePlan(ctx, ws, nil, nil, explicit, nil, false)
 	if err != nil {
 		return err
 	}
@@ -309,6 +378,10 @@ func (e *Engine) Update(ctx context.Context, packages []string, dryRun, ignoreSc
 	}
 
 	var requests []request
+	// Without arguments, the identities of the packages kept as they are,
+	// which stay pinned even when another request gives a package of their
+	// identity (protocol/cli.md §5.3).
+	var keptAsIs []string
 	if len(packages) == 0 {
 		// Every explicitly installed package, requested again by its source: a
 		// remote repository at its newest version, a branch at its head, a tag
@@ -331,6 +404,7 @@ func (e *Engine) Update(ctx context.Context, packages []string, dryRun, ignoreSc
 				if _, err := os.Stat(path); err != nil {
 					e.warning(fmt.Sprintf("Keeping package '%s' as it is: %s, which it was installed from,"+
 						" does not exist any more.", install.LockedIdentity(p), path))
+					keptAsIs = append(keptAsIs, install.LockedIdentity(p))
 					continue
 				}
 			}
@@ -357,30 +431,74 @@ func (e *Engine) Update(ctx context.Context, packages []string, dryRun, ignoreSc
 	}
 	var identities []string
 	var requested []request
+	// Without arguments, the identities of the packages whose source now
+	// gives a package of another identity, which replaces them
+	// (protocol/workspace.md §5 "Updating").
+	var replaced []string
 	for i, c := range candidates {
 		identity := c.Identity()
-		installed := false
-		for j := range ws.lock.Packages {
-			if ref.NamesEqual(install.LockedIdentity(&ws.lock.Packages[j]), identity) {
-				installed = true
-				break
+		if len(packages) == 0 {
+			if !ref.NamesEqual(requests[i].arg, identity) {
+				replaced = append(replaced, requests[i].arg)
 			}
-		}
-		if !installed {
+		} else if installedPackage(ws.lock, identity) == nil {
 			return &Error{Msg: fmt.Sprintf("Cannot update '%s': package '%s' is not installed in this"+
 				" workspace. To install it, run 'lip install %s'.", requests[i].arg, identity, requests[i].arg)}
 		}
-		if containsIdentity(identities, identity) {
-			continue
+		// Every request goes to the solver, which fails when no one package
+		// satisfies all the requests giving an identity (protocol/workspace.md
+		// §3).
+		if !containsIdentity(identities, identity) && !containsIdentity(keptAsIs, identity) {
+			identities = append(identities, identity)
 		}
-		identities = append(identities, identity)
 		requested = append(requested, requests[i])
 	}
 
-	p, err := e.makePlan(ctx, ws, requested, identities, explicitIdentities(ws.lock))
+	var explicit []string
+	for _, id := range explicitIdentities(ws.lock) {
+		if !containsIdentity(replaced, id) {
+			explicit = append(explicit, id)
+		}
+	}
+	// A requested package gets its earliest candidate that Section 3 allows,
+	// so the installed dependency packages keep their versions only where
+	// they fit it (protocol/workspace.md §5 "Updating", protocol/cli.md
+	// §5.3).
+	p, err := e.makePlan(ctx, ws, requested, append(identities, replaced...), explicit, nil, true)
 	if err != nil {
 		return err
 	}
+
+	// The source a requested package is recorded with: an installed package
+	// that its recorded source gives again is not replaced, so it keeps that
+	// source even when another request gives the same package
+	// (protocol/workspace.md §5); but a request with a ref that gives it
+	// wins, since only its own candidates satisfy it (protocol/workspace.md
+	// §3).
+	members := slices.Clone(p.members)
+	for _, byRecordedSource := range []bool{true, false} {
+		for _, c := range candidates {
+			member := slices.IndexFunc(members, func(m *candidate) bool {
+				return ref.NamesEqual(m.Identity(), c.Identity())
+			})
+			if member < 0 || !isSameCandidate(c, members[member]) {
+				continue
+			}
+			var matches bool
+			if byRecordedSource {
+				installed := installedPackage(ws.lock, c.Identity())
+				matches = installed != nil && installed.Ref == c.source.String() && isSamePackage(installed, c)
+			} else {
+				matches = c.source.Kind == ref.KindSpec && c.source.GitRef != nil
+			}
+			if matches {
+				// The planned package keeps its package file, which may be the
+				// installed one's.
+				members[member] = members[member].withSource(ws.resolver, c.source)
+			}
+		}
+	}
+	p.members = members
 	return e.execute(ctx, ws, op, e.changes(ws, op, p))
 }
 
@@ -498,7 +616,29 @@ func (e *Engine) openWorkspace(ctx context.Context) (*workspace, error) {
 			res.PinCommit(source, pkg.Commit)
 		}
 	}
-	return &workspace{root: root, lock: lf, env: env, provider: p, resolver: res}, nil
+	ws := &workspace{root: root, lock: lf, env: env, provider: p, resolver: res}
+	ws.asInstalled = func(ctx context.Context, c *candidate) (*candidate, error) {
+		return e.asInstalled(ctx, ws, c)
+	}
+	return ws, nil
+}
+
+// asInstalled is AsInstalled: the installed package with the identity,
+// version and commit of a candidate, with the source of the candidate;
+// otherwise the candidate. Such a package is not replaced
+// (protocol/workspace.md §5), so it is planned with the package file the
+// state file records, whatever the package file of the candidate says.
+func (e *Engine) asInstalled(ctx context.Context, ws *workspace, c *candidate) (*candidate, error) {
+	for i := range ws.lock.Packages {
+		if isSamePackage(&ws.lock.Packages[i], c) {
+			installed, err := e.pinnedCandidate(ctx, ws, &ws.lock.Packages[i])
+			if err != nil {
+				return nil, err
+			}
+			return installed.withSource(ws.resolver, c.source), nil
+		}
+	}
+	return c, nil
 }
 
 // readToothLock is ReadToothLock: the state file
@@ -751,15 +891,28 @@ type plan struct {
 	explicit map[string]bool
 }
 
-// makePlan is MakePlan.
-func (e *Engine) makePlan(ctx context.Context, ws *workspace, requests []request, unpinned, explicitIdentities []string) (*plan, error) {
+// makePlan is MakePlan: solves the requests with the installed packages
+// pinned, except the unpinned identities; pinnedAs gives, by folded
+// identity, the candidate an installed package is pinned as. When that
+// fails, solves them again with only the explicitly installed packages
+// pinned, trying the installed versions of the dependency packages first.
+// With preferDependencyPackages, the dependency packages are only tried
+// first from the start, so that they give way to the requested packages'
+// earlier candidates.
+func (e *Engine) makePlan(ctx context.Context, ws *workspace, requests []request, unpinned,
+	explicitIdentities []string, pinnedAs map[string]*candidate, preferDependencyPackages bool) (*plan, error) {
 	unpinnedSet := foldSet(unpinned)
 	explicitSet := foldSet(explicitIdentities)
 
 	var pinnedAll []graph.Candidate
 	for i := range ws.lock.Packages {
 		p := &ws.lock.Packages[i]
-		if unpinnedSet[ref.Fold(install.LockedIdentity(p))] {
+		key := ref.Fold(install.LockedIdentity(p))
+		if unpinnedSet[key] {
+			continue
+		}
+		if c, ok := pinnedAs[key]; ok {
+			pinnedAll = append(pinnedAll, c)
 			continue
 		}
 		c, err := e.pinnedCandidate(ctx, ws, p)
@@ -768,20 +921,28 @@ func (e *Engine) makePlan(ctx context.Context, ws *workspace, requests []request
 		}
 		pinnedAll = append(pinnedAll, c)
 	}
+	var pinnedExplicit, preferred []graph.Candidate
+	for _, c := range pinnedAll {
+		if explicitSet[ref.Fold(c.Identity())] {
+			pinnedExplicit = append(pinnedExplicit, c)
+		} else {
+			preferred = append(preferred, c)
+		}
+	}
 	greqs := make([]graph.Request, len(requests))
 	for i, r := range requests {
 		greqs[i] = graph.Request{Source: ws.resolver.graphRef(r.source)}
 	}
 
-	solution, err := e.solve(ctx, ws, greqs, pinnedAll)
+	var solution *graph.Solution
+	var err error
+	if preferDependencyPackages {
+		solution, err = e.solve(ctx, ws, greqs, pinnedExplicit, preferred)
+	} else {
+		solution, err = e.solve(ctx, ws, greqs, pinnedAll, nil)
+	}
 	if withInstalled, ok := err.(*graph.ResolutionError); ok {
-		var pinnedExplicit []graph.Candidate
-		for _, c := range pinnedAll {
-			if explicitSet[ref.Fold(c.Identity())] {
-				pinnedExplicit = append(pinnedExplicit, c)
-			}
-		}
-		if len(pinnedExplicit) == len(pinnedAll) {
+		if preferDependencyPackages || len(preferred) == 0 {
 			return nil, err
 		}
 		lines := strings.Split(withInstalled.Message, "\n")
@@ -791,7 +952,7 @@ func (e *Engine) makePlan(ctx context.Context, ws *workspace, requests []request
 		}
 		e.info(fmt.Sprintf("The installed dependency packages do not fit the request (%s); choosing their"+
 			" versions again.", reason))
-		solution, err = e.solve(ctx, ws, greqs, pinnedExplicit)
+		solution, err = e.solve(ctx, ws, greqs, pinnedExplicit, preferred)
 	}
 	if err != nil {
 		return nil, err
@@ -839,7 +1000,8 @@ func (e *Engine) makePlan(ctx context.Context, ws *workspace, requests []request
 
 // solve runs the graph solver under an indeterminate resolve bar counting
 // the package files read.
-func (e *Engine) solve(ctx context.Context, ws *workspace, requests []graph.Request, pinned []graph.Candidate) (*graph.Solution, error) {
+func (e *Engine) solve(ctx context.Context, ws *workspace, requests []graph.Request, pinned,
+	preferred []graph.Candidate) (*graph.Solution, error) {
 	bar := e.newBar(report.StageResolve, report.UnitPackages, "Resolving dependencies", 0)
 	defer bar.done()
 	read := int64(0)
@@ -848,7 +1010,8 @@ func (e *Engine) solve(ctx context.Context, ws *workspace, requests []graph.Requ
 		bar.update(read, key)
 	}
 	defer func() { ws.resolver.onRead = nil }()
-	return graph.Solve(ctx, graph.Problem{Requests: requests, Pinned: pinned, Resolver: ws.resolver})
+	return graph.Solve(ctx, graph.Problem{Requests: requests, Pinned: pinned, Preferred: preferred,
+		Resolver: ws.solverResolver()})
 }
 
 // #endregion
@@ -957,9 +1120,32 @@ func (e *Engine) changes(ws *workspace, op operation, p *plan) changeSet {
 // §5.1 with --no-dependencies).
 func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, requests []request, op operation) error {
 	e.warning("--no-dependencies is enabled. This operation may result in a broken workspace.")
-	candidates, err := e.requestedCandidates(ctx, ws, requests, false)
+	requested, err := e.requestedCandidates(ctx, ws, requests, false)
 	if err != nil {
 		return err
+	}
+	// In installation order (protocol/workspace.md §5), as the state file
+	// afterwards records it: the order of the requested packages among every
+	// package installed then, so that a cycle through an installed package
+	// counts too.
+	var nodes []orderNode
+	for i := range ws.lock.Packages {
+		p := &ws.lock.Packages[i]
+		if !slices.ContainsFunc(requested, func(c *candidate) bool {
+			return ref.NamesEqual(c.Identity(), install.LockedIdentity(p))
+		}) {
+			nodes = append(nodes, lockedOrderNode(p, ws.env))
+		}
+	}
+	for _, c := range requested {
+		nodes = append(nodes, orderNode{identity: c.Identity(), version: &c.version,
+			dependencies: c.entry.Deps, candidate: c})
+	}
+	var candidates []*candidate
+	for _, n := range installationOrder(nodes) {
+		if n.candidate != nil {
+			candidates = append(candidates, n.candidate)
+		}
 	}
 	var changes []change
 	for _, c := range candidates {
@@ -979,7 +1165,87 @@ func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, 
 		}
 		changes = append(changes, change{kind: installChange, candidate: c, explicit: true})
 	}
-	return e.execute(ctx, ws, op, changeSet{changes: changes})
+	return e.execute(ctx, ws, op, changeSet{changes: changes,
+		finish: func(remaining []pkgmodel.LockedPackage) []pkgmodel.LockedPackage {
+			return inInstallationOrder(remaining, ws.env)
+		}})
+}
+
+// inInstallationOrder is InInstallationOrder: the installed packages in
+// installation order (protocol/workspace.md §5, §7.1): a package after the
+// packages that satisfy its dependencies, and a cycle in ascending order of
+// identities with A-Z replaced by a-z. A package without an entry for the
+// environment has no dependencies here.
+func inInstallationOrder(packages []pkgmodel.LockedPackage, env environment) []pkgmodel.LockedPackage {
+	nodes := make([]orderNode, len(packages))
+	for i := range packages {
+		nodes[i] = lockedOrderNode(&packages[i], env)
+	}
+	out := make([]pkgmodel.LockedPackage, 0, len(packages))
+	for _, n := range installationOrder(nodes) {
+		out = append(out, *n.locked)
+	}
+	return out
+}
+
+// orderNode is OrderNode: a package to put in installation order: installed
+// (locked) or to install (candidate).
+type orderNode struct {
+	identity     string
+	version      *semver.Version
+	dependencies []pkgmodel.Dep
+	candidate    *candidate
+	locked       *pkgmodel.LockedPackage
+}
+
+// lockedOrderNode is OrderNode.Of: an installed package; one without an
+// entry for the environment has no dependencies here.
+func lockedOrderNode(p *pkgmodel.LockedPackage, env environment) orderNode {
+	n := orderNode{identity: install.LockedIdentity(p), locked: p}
+	if entry, err := lockedEntry(p, env); err == nil {
+		n.dependencies = entry.Deps
+	}
+	if v, err := semver.ParseStrict(install.LockedVersion(p)); err == nil {
+		n.version = &v
+	}
+	return n
+}
+
+// installationOrder is InstallationOrder: nodes in installation order
+// (protocol/workspace.md §5): a package after the packages that satisfy its
+// dependencies, and a cycle in ascending order of identities with A-Z
+// replaced by a-z.
+func installationOrder(nodes []orderNode) []orderNode {
+	sorted := slices.Clone(nodes)
+	slices.SortStableFunc(sorted, func(a, b orderNode) int {
+		return compareOrdinal(ref.Fold(a.identity), ref.Fold(b.identity))
+	})
+	order := graph.InstallOrderIndices(len(sorted), func(i int) []int {
+		var deps []int
+		for _, d := range sorted[i].dependencies {
+			source, err := ref.Parse(d.Key, false)
+			if err != nil {
+				continue
+			}
+			rng, err := semver.ParseVersionRange(d.Range)
+			if err != nil {
+				continue
+			}
+			identity := ref.Identity(source.Target, source.Variant)
+			for j := range sorted {
+				if ref.NamesEqual(sorted[j].identity, identity) && sorted[j].version != nil &&
+					rng.Contains(*sorted[j].version) {
+					deps = append(deps, j)
+				}
+			}
+		}
+		return deps
+	})
+	out := make([]orderNode, len(order))
+	for k, i := range order {
+		out[k] = sorted[i]
+	}
+	return out
 }
 
 // remainingPackage is an entry of the state file as the planned changes
@@ -1004,22 +1270,13 @@ type plannedChange struct {
 // cancellation) undoes every change and leaves the state file as it was
 // (protocol/workspace.md §6). In a dry run, reports the plans instead.
 func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs changeSet) error {
-	var layout *install.LayoutPlan
-	for _, c := range cs.changes {
-		if c.kind != markExplicitChange {
-			var err error
-			if layout, err = install.PlanLayout(ws.root); err != nil {
-				return err
-			}
-			if op.dryRun {
-				for _, m := range layout.DryRunMessages() {
-					e.info(m)
-				}
-			}
-			break
-		}
+	// The changes are planned against the layout an operation that changes
+	// the workspace makes first; it is checked and made only when the
+	// operation may change the workspace (protocol/workspace.md §2).
+	layout, err := install.PlanLayout(ws.root)
+	if err != nil {
+		return err
 	}
-
 	view := install.NewView(layout)
 	remaining := make([]remainingPackage, len(ws.lock.Packages))
 	for i, p := range ws.lock.Packages {
@@ -1038,6 +1295,7 @@ func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs ch
 	}
 
 	var plans []plannedChange
+	installs := map[*install.Plan]bool{}
 	for _, c := range cs.changes {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -1077,6 +1335,7 @@ func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs ch
 			}
 			plans = append(plans, plannedChange{message: "Installing" + what,
 				pkg: cand.Identity() + "@" + cand.version.String(), plan: pl})
+			installs[pl] = true
 			remaining = append(remaining, remainingPackage{pkg: locked(cand, c.explicit, pl.OwnedFiles), origin: -1})
 		case markExplicitChange:
 			pkg := ws.lock.Packages[c.origin]
@@ -1093,6 +1352,19 @@ func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs ch
 					remaining[i].pkg.Explicit = true
 					break
 				}
+			}
+		}
+	}
+
+	hooksRun := slices.ContainsFunc(plans, func(p plannedChange) bool { return p.plan.RunsHooks() })
+	changesWorkspace := slices.ContainsFunc(plans, func(p plannedChange) bool { return p.plan.MayChange(hooksRun) })
+	if changesWorkspace {
+		if err := install.CheckLayout(layout); err != nil {
+			return err
+		}
+		if op.dryRun {
+			for _, m := range layout.DryRunMessages() {
+				e.info(m)
 			}
 		}
 	}
@@ -1129,20 +1401,40 @@ func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs ch
 	applied := int64(0)
 	defer func() { bar.doneAt(applied) }()
 	err = func() error {
-		if layout != nil {
+		if changesWorkspace {
 			if err := install.ApplyLayout(tx, layout); err != nil {
 				return err
 			}
 		}
+		// The files each package installed owns as its writes happened: hook
+		// commands may have changed which files matching preserve were kept
+		// (protocol/workspace.md §4). Each write is checked against the
+		// owners as they are then.
+		owners := e.inst.Owners(ws.root, ws.lock.Packages)
+		owned := map[string][]string{}
 		for _, p := range plans {
 			e.info(p.message)
 			bar.step(applied, p.pkg, p.message)
-			if err := e.inst.Apply(ctx, tx, p.plan); err != nil {
+			files, err := e.inst.Apply(ctx, tx, p.plan, owners)
+			if err != nil {
 				return err
+			}
+			if installs[p.plan] {
+				owned[ref.Fold(p.plan.Name)] = files
+			} else {
+				owners.Release(p.plan.Name)
 			}
 			applied++
 			bar.update(applied, "")
 		}
+		packages := make([]pkgmodel.LockedPackage, len(final.Packages))
+		for i, p := range final.Packages {
+			if files, ok := owned[ref.Fold(install.LockedIdentity(&p))]; ok {
+				p.Files = append([]string{}, files...)
+			}
+			packages[i] = p
+		}
+		final.Packages = packages
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -1373,6 +1665,30 @@ func isSamePackage(p *pkgmodel.LockedPackage, c *candidate) bool {
 	return ref.NamesEqual(install.LockedIdentity(p), c.Identity()) &&
 		install.LockedVersion(p) == c.version.String() &&
 		strings.EqualFold(p.Commit, commitOf(c))
+}
+
+// isSameCandidate is IsSameCandidate: whether two candidates are the same
+// package: same identity, version and commit.
+func isSameCandidate(a, b *candidate) bool {
+	return ref.NamesEqual(a.Identity(), b.Identity()) && a.version.String() == b.version.String() &&
+		strings.EqualFold(commitOf(a), commitOf(b))
+}
+
+// installedPackage is the first installed package of the identity, or nil.
+func installedPackage(lf *pkgmodel.LockFile, identity string) *pkgmodel.LockedPackage {
+	for i := range lf.Packages {
+		if ref.NamesEqual(install.LockedIdentity(&lf.Packages[i]), identity) {
+			return &lf.Packages[i]
+		}
+	}
+	return nil
+}
+
+// compareOrdinal compares strings by UTF-16 code units
+// (StringComparer.Ordinal).
+func compareOrdinal(a, b string) int {
+	ua, ub := utf16.Encode([]rune(a)), utf16.Encode([]rune(b))
+	return slices.Compare(ua, ub)
 }
 
 // commitOf is the commit of a candidate from a remote repository (lowercase

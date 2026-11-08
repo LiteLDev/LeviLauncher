@@ -570,8 +570,10 @@ func TestInstallPreservedExistingFileKeepsItAndDoesNotOwnIt(t *testing.T) {
 	eq(t, "other", h.read("mods/LegacyMoney/config/other.json"), "default")
 	eq(t, "owned", owned, []string{"mods/LegacyMoney/manifest.json", "mods/LegacyMoney/LegacyMoney.dll",
 		"mods/LegacyMoney/config/other.json"})
-	if slices.Contains(source.prefetched, "config/config.json") {
-		t.Error("kept file prefetched")
+	// A file expected to be kept is fetched too: a hook command may delete it
+	// before it would be written.
+	if !slices.Contains(source.prefetched, "config/config.json") {
+		t.Error("kept file not prefetched")
 	}
 }
 

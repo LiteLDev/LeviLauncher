@@ -49,10 +49,6 @@ func startTime(now time.Time) string {
 	return now.UTC().Format("2006-01-02T15:04:05.0000000") + "+00:00"
 }
 
-func beginEntry(now time.Time) entry {
-	return entry{op: opBegin, to: startTime(now), hasTo: true}
-}
-
 // toJournal is WorkspaceTransaction.ToJournal.
 func toJournal(root string, e entry) entry {
 	if !hasPaths(e.op) {
@@ -77,13 +73,14 @@ func fromJournal(root string, e entry) entry {
 	return e
 }
 
-// relativePath is Path.GetRelativePath(root, path) with '/' separators.
+// relativePath is Path.GetRelativePath(root, path) with '/' separators. Only
+// the separator becomes '/': outside Windows '\' is a character of a name.
 func relativePath(root, path string) string {
 	rel, err := filepath.Rel(root, path)
 	if err != nil {
 		rel = path
 	}
-	return strings.ReplaceAll(rel, `\`, "/")
+	return filepath.ToSlash(rel)
 }
 
 // absolutePath is Path.GetFullPath(Path.Combine(root, path)).

@@ -1,4 +1,4 @@
-// Package txn ports lip 0.38's workspace transaction, journal and lock
+// Package txn ports lip's workspace transaction, journal and lock
 // (src/Lip.Core/Mcmod/Install/WorkspaceTransaction.cs,
 // src/Lip.Core/Mcmod/Lock/WorkspaceMutex.cs and the .lip helpers of
 // LockStore.cs; protocol/workspace.md §6, §7).

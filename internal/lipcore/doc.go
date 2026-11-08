@@ -1,6 +1,7 @@
 // Package lipcore is a native Go reimplementation of the parts of lip
 // (https://github.com/LiteLDev/lip, ported from v0.38.0-beta.1 and kept in
-// step with the protocol of lip main) that LeviLauncher uses: installing,
+// step with the protocol and the engine fixes of lip main) that LeviLauncher
+// uses: installing,
 // updating, uninstalling and listing packages inside an instance directory,
 // and cleaning lip's download cache.
 //

@@ -24,7 +24,7 @@ func startTree(t *testing.T, command string) (*exec.Cmd, *processTree) {
 		t.Fatal(err)
 	}
 	cmd := exec.Command(path, "/c", command)
-	tree, err := newProcessTree(cmd, `"`+path+`" /c `+escapeArgument(command))
+	tree, err := newProcessTree(cmd, `"`+path+`" /s /c "`+command+`"`)
 	if err != nil {
 		t.Fatal(err)
 	}

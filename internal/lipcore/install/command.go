@@ -30,12 +30,15 @@ type CommandRunner func(ctx context.Context, dir, command string, output io.Writ
 
 // DefaultCommandRunner runs commands like lip's CommandRunner
 // (src/Lip.Core/Infrastructure/CommandRunner.cs), which uses CliWrap:
-// Cli.Wrap("cmd.exe").WithArguments(["/c", command]) on Windows ("sh",
-// ["-c", command] elsewhere), stdin from the null device, the working
-// directory dir, the inherited environment with nothing added, and stdout
-// and stderr merged into one target (lip writes it to its own stderr). On
-// Windows the process command line is built exactly like .NET's Process does
-// for CliWrap: `"<resolved cmd.exe path>" /c <command escaped by CliWrap>`.
+// Cli.Wrap("cmd.exe").WithArguments("/s /c \"" + command + "\"") on Windows
+// (Cli.Wrap("sh").WithArguments(["-c", command]) elsewhere), stdin from the
+// null device, the working directory dir, the inherited environment with
+// nothing added, and stdout and stderr merged into one target (lip writes it
+// to its own stderr). cmd.exe does not parse its command line with the
+// MSVCRT rules CliWrap escapes with, so on Windows the command goes verbatim
+// (lip 67ba662); /s makes cmd strip only the outer quotes added here. The
+// process command line is built exactly like .NET's Process does:
+// `"<resolved cmd.exe path>" /s /c "<command>"`.
 //
 // Like CliWrap (CreateNoWindow) the process gets no console window, and
 // like CliWrap it returns once the script has exited and its output pipes
@@ -81,6 +84,9 @@ func DefaultCommandRunner(ctx context.Context, dir, command string, output io.Wr
 	}
 	defer out.close()
 	arguments := flag + " " + escapeArgument(command)
+	if runtime.GOOS == "windows" {
+		arguments = `/s /c "` + command + `"`
+	}
 	tree, err := newProcessTree(cmd, `"`+path+`" `+arguments)
 	if err != nil {
 		return startFailed(err)

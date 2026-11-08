@@ -28,6 +28,9 @@ func (h *harness) operation(ctx context.Context, uninstall []pkgmodel.LockedPack
 	uninstallEntries []*pkgmodel.Entry, install []*Package, installed []pkgmodel.LockedPackage) error {
 	h.t.Helper()
 	layout, err := PlanLayout(h.root)
+	if err == nil {
+		err = CheckLayout(layout)
+	}
 	if err != nil {
 		return err
 	}
@@ -89,7 +92,11 @@ func TestLayoutModsIsALinkThrowsWithoutChanges(t *testing.T) {
 	}
 	before := h.snapshot()
 
-	_, err := PlanLayout(h.root)
+	layout, err := PlanLayout(h.root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = CheckLayout(layout)
 
 	var le *LayoutError
 	if !errors.As(err, &le) {

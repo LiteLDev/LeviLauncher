@@ -20,32 +20,42 @@ func (e *LayoutError) Error() string { return e.Msg }
 func (e *LayoutError) Unwrap() error { return e.Err }
 
 // LayoutPlan is WorkspaceLayout.LayoutPlan: what making the layout right
-// takes. Mods is absolute.
+// takes. Mods is absolute; LinkTarget is where mods links to when it is a
+// link (IsLink).
 type LayoutPlan struct {
 	Mods       string
 	CreateMods bool
+	IsLink     bool
+	LinkTarget string
 }
 
-// PlanLayout is WorkspaceLayout.Plan (protocol/workspace.md §2): checks the
-// layout before a mutating operation and returns what makes it right,
-// without changing anything: mods is created when missing; a mods that is a
-// link is an error.
+// PlanLayout is WorkspaceLayout.Plan (protocol/workspace.md §2): reads what
+// making the layout right takes, without changing anything: mods is created
+// when missing. Whether the layout is right is checked (CheckLayout) only
+// when the operation changes the workspace.
 func PlanLayout(workspaceRoot string) (*LayoutPlan, error) {
 	root, err := filepath.Abs(workspaceRoot)
 	if err != nil {
 		return nil, err
 	}
 	mods := filepath.Join(root, pkgmodel.ModsDir)
-
-	// A mods link would let writes under mods/ land outside the workspace.
 	if target, err := os.Readlink(mods); err == nil {
-		return nil, &LayoutError{Msg: fmt.Sprintf(
+		return &LayoutPlan{Mods: mods, IsLink: true, LinkTarget: target}, nil
+	}
+	return &LayoutPlan{Mods: mods, CreateMods: !dirExists(mods)}, nil
+}
+
+// CheckLayout is WorkspaceLayout.Check: checks the layout before an
+// operation changes the workspace: a mods that is a link is an error.
+func CheckLayout(plan *LayoutPlan) error {
+	// A mods link would let writes under mods/ land outside the workspace.
+	if plan != nil && plan.IsLink {
+		return &LayoutError{Msg: fmt.Sprintf(
 			"The mods directory '%s' is a link to '%s', but lip only installs into a"+
 				" real directory, so that it never writes outside the workspace. Replace the link"+
-				" with a directory (move the mods into it), then try again.", mods, target)}
+				" with a directory (move the mods into it), then try again.", plan.Mods, plan.LinkTarget)}
 	}
-
-	return &LayoutPlan{Mods: mods, CreateMods: !dirExists(mods)}, nil
+	return nil
 }
 
 // DryRunMessages is WorkspaceLayout.ReportDryRun: what applying the plan

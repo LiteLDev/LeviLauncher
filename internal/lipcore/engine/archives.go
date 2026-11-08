@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -191,7 +192,8 @@ func (p *provider) Forget(url string) error { return p.cache.Forget(url) }
 
 func (p *provider) OpenAsset(ctx context.Context, urls []string) (archive.Source, error) {
 	var opened string
-	path, err := p.cache.DownloadZipNamed(ctx, urls, p.proxy, p.client, validateZip)
+	validate, content := readValidatedZip()
+	path, err := p.cache.DownloadZipNamed(ctx, urls, p.proxy, p.client, validate)
 	if err != nil {
 		return nil, archiveError(err)
 	}
@@ -202,23 +204,42 @@ func (p *provider) OpenAsset(ctx context.Context, urls []string) (archive.Source
 			break
 		}
 	}
-	return archive.NewZipFileSource(path, fmt.Sprintf("the download of %s (%s)", opened, path))
+	return archive.NewCachedZipSource(*content, fmt.Sprintf("the download of %s (%s)", opened, path))
 }
 
 func (p *provider) openURL(ctx context.Context, url string) (*archiveHandle, error) {
-	path, err := p.cache.DownloadZipURLNamed(ctx, url, p.proxy, p.client, validateZip)
+	validate, content := readValidatedZip()
+	path, err := p.cache.DownloadZipURLNamed(ctx, url, p.proxy, p.client, validate)
 	if err != nil {
 		return nil, archiveError(err)
 	}
-	src, err := archive.NewZipFileSource(path, fmt.Sprintf("the download of %s (%s)", url, path))
+	src, err := archive.NewCachedZipSource(*content, fmt.Sprintf("the download of %s (%s)", url, path))
 	if err != nil {
 		return nil, err
 	}
 	return &archiveHandle{Key: url, Source: src}, nil
 }
 
-// validateZip is ZipValidator.Validate of a file of the cache.
-func validateZip(path, subject string) error { return archive.ValidateZipFile(path, subject) }
+// readValidatedZip is ArchiveProvider.DownloadZip's validation: a download
+// is read into memory once and validated there (ZipValidator.Validate), so
+// that what is installed is exactly what was validated, even if another
+// process deletes or replaces the cache entry meanwhile. content is the
+// last content validated, which is the content of the path returned.
+func readValidatedZip() (validate fetch.ValidateFunc, content *[]byte) {
+	content = new([]byte)
+	validate = func(path, subject string) error {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if err := archive.ValidateZipReader(bytes.NewReader(b), int64(len(b)), subject); err != nil {
+			return err
+		}
+		*content = b
+		return nil
+	}
+	return validate, content
+}
 
 // openDirectory opens a local directory.
 func openDirectory(key, path string) (*archiveHandle, error) {

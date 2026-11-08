@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -661,5 +662,126 @@ func TestSolve_NewestVersionsClash_ProducesCandidatesOnlyUntilOneFits(t *testing
 
 	if got[0].Version().String() != "294.0.0" || r.produced != 6 {
 		t.Fatal(names(got), r.produced)
+	}
+}
+
+// Preferred candidates and RequestCandidate (lip b46fb4d, 8d287f7).
+
+func solvePreferred(r Resolver, requests []Request, pinned, preferred []Candidate) (*Solution, error) {
+	return Solve(context.Background(), Problem{Requests: requests, Pinned: pinned, Preferred: preferred,
+		Resolver: r})
+}
+
+func TestSolve_Preferred_IsTriedFirstWhereItFits(t *testing.T) {
+	// a needs d >=1 and e >=1; b needs e ^2. d 1.0.0 and e 1.0.0 are
+	// preferred.
+	r := newResolver()
+	r.addVersions("github.com/d/d", "2.0.0", "1.0.0")
+	r.addVersions("github.com/e/e", "2.0.0", "1.0.0")
+	r.add(pkg("github.com/a/a", "1.0.0", pkgOpts{deps: []Dependency{
+		dep("github.com/d/d", ">=1.0.0"), dep("github.com/e/e", ">=1.0.0")}}))
+	r.add(pkg("github.com/b/b", "1.0.0", pkgOpts{deps: []Dependency{dep("github.com/e/e", "^2.0.0")}}))
+	preferredD := pkg("github.com/d/d", "1.0.0", pkgOpts{})
+	preferredE := pkg("github.com/e/e", "1.0.0", pkgOpts{})
+
+	s, err := solvePreferred(r, []Request{request("github.com/a/a"), request("github.com/b/b")}, nil,
+		[]Candidate{preferredE, preferredD})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// d keeps its version; e cannot.
+	equal(t, []string{"github.com/d/d@1.0.0", "github.com/e/e@2.0.0", "github.com/a/a@1.0.0",
+		"github.com/b/b@1.0.0"}, names(s.Order))
+	if s.Order[0] != Candidate(preferredD) {
+		t.Fatal("not the preferred candidate")
+	}
+}
+
+func TestRequestCandidate_SamePackage_ReturnsTheCandidateOfTheRequest(t *testing.T) {
+	r := newResolver()
+	r.addVersions("github.com/x/x", "2.0.0", "1.0.0")
+	installed := pkg("github.com/x/x", "1.0.0", pkgOpts{})
+	ofRef := pkg("github.com/x/x", "1.0.0", pkgOpts{source: "github.com/x/x@branch:main"})
+	ctx := context.Background()
+
+	got, err := RequestCandidate(ctx, r, request("github.com/x/x"), installed)
+	if err != nil || got == nil || got.Source().Text != "github.com/x/x" {
+		t.Fatalf("%v %v", got, err)
+	}
+	if got, err := RequestCandidate(ctx, r, request("github.com/x/x"), ofRef); err != nil ||
+		got != Candidate(ofRef) {
+		t.Fatalf("%v %v", got, err)
+	}
+	if got, err := RequestCandidate(ctx, r, Request{Source: parseRef("github.com/x/x"),
+		Range: mustRange(">=2.0.0")}, installed); err != nil || got != nil {
+		t.Fatalf("%v %v", got, err)
+	}
+}
+
+func TestSolve_InstalledPackageOfRefWithoutVersionInRange_DoesNotStandIn(t *testing.T) {
+	// The package at the branch is in the range of A's dependency, but no
+	// version tag of the repository (if any) is, so there is no candidate for
+	// it to stand in for.
+	for _, tag := range []string{"1.0.0", ""} {
+		t.Run(tag, func(t *testing.T) {
+			r := newResolver()
+			if tag != "" {
+				r.addVersions("github.com/x/b", tag)
+			}
+			r.add(pkg("github.com/a/a", "1.0.0", pkgOpts{deps: []Dependency{dep("github.com/x/b", ">=1.1.0")}}))
+			installed := pkg("github.com/x/b", "1.2.0", pkgOpts{source: "github.com/x/b@branch:main"})
+
+			solveFails(t, r, []Request{request("github.com/a/a")}, installed)
+			_, err := solvePreferred(r, []Request{request("github.com/a/a")}, nil, []Candidate{installed})
+			var re *ResolutionError
+			if !errors.As(err, &re) {
+				t.Fatalf("want ResolutionError, got %v", err)
+			}
+		})
+	}
+}
+
+func TestSolve_InstalledPackageOfRefWithVersionInRange_StandsIn(t *testing.T) {
+	// A version of the repository is in the range, so the package at the
+	// branch stands in for it.
+	r := newResolver()
+	r.addVersions("github.com/x/b", "1.1.0", "1.0.0")
+	r.add(pkg("github.com/a/a", "1.0.0", pkgOpts{deps: []Dependency{dep("github.com/x/b", ">=1.1.0")}}))
+	installed := pkg("github.com/x/b", "1.2.0", pkgOpts{source: "github.com/x/b@branch:main"})
+
+	kept := solve(t, r, []Request{request("github.com/a/a")}, installed).Order
+	preferred, err := solvePreferred(r, []Request{request("github.com/a/a")}, nil, []Candidate{installed})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if kept[0] != Candidate(installed) || preferred.Order[0] != Candidate(installed) {
+		t.Fatalf("%v %v", names(kept), names(preferred.Order))
+	}
+}
+
+func TestRequestCandidate_PackageOfRef_StandsInOnlyWithVersionInRange(t *testing.T) {
+	for _, tc := range []struct {
+		tag      string
+		standsIn bool
+	}{{"1.0.0", false}, {"", false}, {"1.1.0", true}} {
+		t.Run(tc.tag, func(t *testing.T) {
+			r := newResolver()
+			if tc.tag != "" {
+				r.addVersions("github.com/x/b", tc.tag)
+			}
+			ofRef := pkg("github.com/x/b", "1.2.0", pkgOpts{source: "github.com/x/b@branch:main"})
+
+			got, err := RequestCandidate(context.Background(), r, Request{Source: parseRef("github.com/x/b"),
+				Range: mustRange(">=1.1.0")}, ofRef)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tc.standsIn != (got == Candidate(ofRef)) || (!tc.standsIn && got != nil) {
+				t.Fatalf("got %v", got)
+			}
+		})
 	}
 }

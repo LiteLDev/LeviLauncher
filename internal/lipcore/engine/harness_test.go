@@ -46,6 +46,8 @@ type harness struct {
 	mu       sync.Mutex
 	commands []string
 	failing  map[string]bool
+	// onRun are called when a hook command of that text runs.
+	onRun    map[string]func()
 	platform string
 	runtime  string
 }
@@ -61,6 +63,7 @@ func newHarness(t *testing.T) *harness {
 		downloads: map[string][]byte{},
 		rec:       &recorder{},
 		failing:   map[string]bool{},
+		onRun:     map[string]func(){},
 		platform:  pkgmodel.PlatformServer,
 		runtime:   testRuntime,
 	}
@@ -97,6 +100,9 @@ func (h *harness) runCommand(_ context.Context, dir, command string, _ io.Writer
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.commands = append(h.commands, command)
+	if f := h.onRun[command]; f != nil {
+		f()
+	}
 	if h.failing[command] {
 		code := 1
 		return &install.CommandFailedError{Msg: "The command '" + command + "' failed.", Command: command,

@@ -387,6 +387,7 @@
         "title": "Serwer proxy GitHub",
         "desc": "Serwer proxy GitHuba używany podczas pobierania pakietów LIP. Pozostaw puste, aby przywrócić wartość domyślną.",
         "placeholder": "https://github.bibk.top",
+        "preset_custom": "Własny",
         "save_success": "Zapisano serwer proxy GitHub",
         "save_failed": "Nie udało się zapisać serwera proxy GitHub"
       }

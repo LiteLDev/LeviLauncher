@@ -387,6 +387,7 @@
         "title": "GitHub 代理",
         "desc": "下载 LIP 软件包时使用的 GitHub 代理，留空可恢复默认值。",
         "placeholder": "https://github.bibk.top",
+        "preset_custom": "自定义",
         "save_success": "GitHub 代理已保存",
         "save_failed": "保存 GitHub 代理失败"
       }

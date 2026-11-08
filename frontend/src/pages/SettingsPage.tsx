@@ -116,6 +116,17 @@ const AppearanceNumberField = ({ label, value, min, max, onChange }: {
 const APPEARANCE_SECTIONS = ["theme", "layout", "wallpaper", "material"] as const;
 type AppearanceSection = typeof APPEARANCE_SECTIONS[number];
 
+// Prefix-style GitHub proxies offered in the LIP GitHub proxy picker; any other
+// URL can still be typed in by hand.
+const LIP_GITHUB_PROXY_PRESETS = [
+  "https://github.bibk.top",
+  "https://gh-proxy.org",
+  "https://hk.gh-proxy.org",
+  "https://cdn.gh-proxy.org",
+  "https://edgeone.gh-proxy.org",
+  "https://ghproxy.vip",
+];
+
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const settings = useSettings(i18n);
@@ -376,14 +387,14 @@ export const SettingsPage: React.FC = () => {
     };
   }, []);
 
-  const saveLipGithubProxy = async () => {
+  const saveLipGithubProxy = async (override?: string) => {
     if (savingLipGithubProxy || typeof SetLipGithubProxy !== "function") {
       return;
     }
     setSavingLipGithubProxy(true);
     setLipGithubProxyError("");
     try {
-      const error = await SetLipGithubProxy(lipGithubProxyDraft.trim());
+      const error = await SetLipGithubProxy((override ?? lipGithubProxyDraft).trim());
       if (error) {
         setLipGithubProxyError(
           t(`errors.${error}`, {
@@ -2607,6 +2618,77 @@ export const SettingsPage: React.FC = () => {
                           </p>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <Select
+                            aria-label={t(
+                              "settings.lip.github_proxy.title",
+                            )}
+                            className="w-full sm:w-56 shrink-0"
+                            isDisabled={savingLipGithubProxy}
+                            value={
+                              LIP_GITHUB_PROXY_PRESETS.includes(
+                                lipGithubProxyDraft.trim().replace(/\/+$/, ""),
+                              )
+                                ? lipGithubProxyDraft.trim().replace(/\/+$/, "")
+                                : "custom"
+                            }
+                            onChange={(key) => {
+                              const val = key as string;
+                              if (!val) return;
+                              if (val === "custom") {
+                                // Clear the field so a URL can be typed in and
+                                // saved with the button.
+                                setLipGithubProxyDraft("");
+                                setLipGithubProxyError("");
+                                return;
+                              }
+                              setLipGithubProxyDraft(val);
+                              setLipGithubProxyError("");
+                              void saveLipGithubProxy(val);
+                            }}
+                          >
+                            <Select.Trigger
+                              className={cn(
+                                COMPONENT_STYLES.select.trigger,
+                                "min-h-8 text-sm",
+                              )}
+                            >
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover
+                              className={COMPONENT_STYLES.select.popoverContent}
+                            >
+                              <ListBox
+                                className={COMPONENT_STYLES.select.listbox}
+                              >
+                                {LIP_GITHUB_PROXY_PRESETS.map((url) => (
+                                  <ListBox.Item
+                                    key={url}
+                                    id={url}
+                                    textValue={url.replace(/^https?:\/\//, "")}
+                                  >
+                                    <Label>
+                                      {url.replace(/^https?:\/\//, "")}
+                                    </Label>
+                                    <ListBox.ItemIndicator />
+                                  </ListBox.Item>
+                                ))}
+                                <ListBox.Item
+                                  id="custom"
+                                  textValue={t(
+                                    "settings.lip.github_proxy.preset_custom",
+                                  )}
+                                >
+                                  <Label>
+                                    {t(
+                                      "settings.lip.github_proxy.preset_custom",
+                                    )}
+                                  </Label>
+                                  <ListBox.ItemIndicator />
+                                </ListBox.Item>
+                              </ListBox>
+                            </Select.Popover>
+                          </Select>
                           <TextField
                             className={cn(
                               "group flex-1 min-w-0",

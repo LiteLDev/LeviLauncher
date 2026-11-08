@@ -4,11 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added a preset picker next to the LIP GitHub proxy field in Settings; a custom proxy URL can still be typed in
+
 ### Changed
 
 - Kept the search, sort and filter bars of the resource pack, behavior pack, world, skin pack, server, screenshot and download task pages in place while only the list scrolls; scrolling dialogs (update changelog, process management, mirror selection, lip task console) likewise keep their headers and toolbars fixed
 - Renamed the close-to-tray setting to "Hide to tray on close" and clarified that the minimize button still minimizes to the taskbar
 - Closing the window from the taskbar or with Alt+F4 while an install or update is running now hides the launcher to the tray instead of quitting
+- The automatic theme now works out sunrise and sunset on the device from the system time zone, instead of looking up the location by IP through `ip-api.com` and `sunrise-sunset.org`
+- The default package icon and the RhyMC logo on the About page are bundled with the launcher instead of being loaded from GitHub and rhymc.com
 
 ### Fixed
 

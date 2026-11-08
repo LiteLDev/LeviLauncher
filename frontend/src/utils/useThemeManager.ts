@@ -7,7 +7,6 @@ export type ThemeMode = "light" | "dark" | "schedule" | "auto" | "system";
 export interface SunTimes {
   sunrise: string;
   sunset: string;
-  ip?: string;
 }
 
 export const useThemeManager = () => {
@@ -41,9 +40,8 @@ export const useThemeManager = () => {
     try {
       const sunrise = localStorage.getItem("app.sunrise");
       const sunset = localStorage.getItem("app.sunset");
-      const ip = localStorage.getItem("app.sunIP") || undefined;
       if (sunrise && sunset) {
-        return { sunrise, sunset, ip };
+        return { sunrise, sunset };
       }
     } catch {}
     return null;
@@ -51,27 +49,20 @@ export const useThemeManager = () => {
 
   const [isThemeOverridden, setIsThemeOverridden] = useState(false);
 
-  const fetchSunTimes = useCallback(
-    async (isRetry = false) => {
-      if (themeMode !== "auto") return;
-      try {
-        const res = await (minecraft as any).GetSunTimes();
-        if (res) {
-          if (res.sunrise === "06:00" && res.sunset === "18:00" && !isRetry) {
-            setTimeout(() => fetchSunTimes(true), 5000);
-          }
-          setSunTimes(res);
-          localStorage.setItem("app.sunrise", res.sunrise);
-          localStorage.setItem("app.sunset", res.sunset);
-          if (res.ip) localStorage.setItem("app.sunIP", res.ip);
-        }
-      } catch (err) {
-        console.error("Failed to fetch sun times:", err);
-        if (!isRetry) setTimeout(() => fetchSunTimes(true), 5000);
+  // Sunrise/sunset are computed locally by the backend (no network access).
+  const fetchSunTimes = useCallback(async () => {
+    if (themeMode !== "auto") return;
+    try {
+      const res = await (minecraft as any).GetSunTimes();
+      if (res) {
+        setSunTimes(res);
+        localStorage.setItem("app.sunrise", res.sunrise);
+        localStorage.setItem("app.sunset", res.sunset);
       }
-    },
-    [themeMode],
-  );
+    } catch (err) {
+      console.error("Failed to compute sun times:", err);
+    }
+  }, [themeMode]);
 
   const updateThemeMode = useCallback((mode: ThemeMode) => {
     setThemeMode(mode);
@@ -169,7 +160,6 @@ export const useThemeManager = () => {
           setSunTimes({
             sunrise: sr,
             sunset: ss,
-            ip: localStorage.getItem("app.sunIP") || undefined,
           });
       } catch {}
     };

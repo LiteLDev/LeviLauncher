@@ -1,3 +1,4 @@
+import DefaultAppIcon from "@/assets/images/appicon.png";
 import { resolveContentPath, isContentTransferTarget } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
@@ -1144,7 +1145,7 @@ export default function WorldsListPage() {
                             <img
                               src={
                                 item.icon ||
-                                "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                                DefaultAppIcon
                               }
                               alt="icon"
                               className="w-full h-full object-cover"

@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "Установить инстанс",
       "name_label": "Название инстанса",
+      "default_name": "Мой инстанс {{version}}",
       "placeholder_name": "Введите название инстанса",
       "enable_isolation": "Изоляция инстанса",
       "enable_isolation_desc": "Хранит игровые данные этого инстанса (миры, настройки, кэш) в отдельной папке, а не в общих данных Minecraft.",

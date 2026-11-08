@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "Instalar instancia",
       "name_label": "Nombre de la instancia",
+      "default_name": "Mi instancia {{version}}",
       "placeholder_name": "Escribe un nombre para la instancia",
       "enable_isolation": "Aislamiento de instancia",
       "enable_isolation_desc": "Guarda los datos de juego de esta instancia (mundos, ajustes y cachés) en su propia carpeta en lugar de compartir los datos de Minecraft del sistema.",

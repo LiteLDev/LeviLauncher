@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "Instalar instância",
       "name_label": "Nome da instância",
+      "default_name": "A minha instância {{version}}",
       "placeholder_name": "Introduz um nome para a instância",
       "enable_isolation": "Isolamento da instância",
       "enable_isolation_desc": "Guarda os dados de jogo desta instância (mundos, definições e caches) numa pasta própria, em vez de os partilhar com os dados do Minecraft do sistema.",

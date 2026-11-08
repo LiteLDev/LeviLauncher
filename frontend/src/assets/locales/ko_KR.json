@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "인스턴스 설치",
       "name_label": "인스턴스 이름",
+      "default_name": "내 {{version}} 인스턴스",
       "placeholder_name": "인스턴스 이름을 입력하세요",
       "enable_isolation": "인스턴스 격리",
       "enable_isolation_desc": "이 인스턴스의 게임 데이터(월드, 설정, 캐시 등)를 시스템 공용 Minecraft 데이터와 공유하지 않고 전용 폴더에 저장합니다.",

@@ -3094,6 +3094,10 @@ func restoreInstanceBackupMods(
 		errCode := instanceBackupInstallLIPPackage(ctx, targetName, instanceBackupLIPRestoreIdentifier(item), item.Version)
 		packageProgress.add(1, item.Identifier)
 		if errCode != "" {
+			// The Details line carries only the code; lip's full message is in the log.
+			if head, _, found := strings.Cut(errCode, ":"); found {
+				errCode = strings.TrimSpace(head)
+			}
 			failedInstalls = append(failedInstalls, fmt.Sprintf("%s@%s (%s)", item.Identifier, item.Version, errCode))
 			continue
 		}

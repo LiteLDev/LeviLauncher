@@ -224,3 +224,13 @@ func TestErrorCode(t *testing.T) {
 		}
 	}
 }
+
+func TestErrorResultCarriesTheEngineMessage(t *testing.T) {
+	if got := ErrorResult("ERR_X", nil); got != "ERR_X" {
+		t.Fatalf("nil error: got %q", got)
+	}
+	got := ErrorResult("ERR_X", errors.New("network down"))
+	if !strings.HasPrefix(got, "ERR_X: ") || !strings.Contains(got, "network down") {
+		t.Fatalf("got %q", got)
+	}
+}

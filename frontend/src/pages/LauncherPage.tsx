@@ -52,6 +52,8 @@ import { useLauncher } from "@/hooks/useLauncher";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { resolveInstallError } from "@/utils/installError";
+import { splitErrorResult } from "@/utils/errorDetail";
+import { ErrorDetail } from "@/components/ErrorDetail";
 
 const LAUNCH_TIP_KEYS = [
   "version_selector",
@@ -183,17 +185,23 @@ export const LauncherPage = (args: any) => {
   const worldsLabel = t("content.count.worlds") as string;
   const resourceLabel = t("content.count.resource_packs") as string;
   const behaviorLabel = t("content.count.behavior_packs") as string;
+  // The backend result is "ERR_X" or "ERR_X: <technical detail>": the code
+  // picks the message, the detail goes to the ErrorDetail block.
+  const { code: launchCode, detail: launchDetail } = useMemo(
+    () => splitErrorResult(launchErrorCode),
+    [launchErrorCode],
+  );
   const launchErrorMessage = useMemo(() => {
-    if (launchErrorCode.includes("ERR_UWP_")) return resolveInstallError(launchErrorCode, t);
-    const key = `errors.${launchErrorCode}`;
+    if (launchCode.includes("ERR_UWP_")) return resolveInstallError(launchCode, t);
+    const key = `errors.${launchCode}`;
     const translated = t(key) as unknown as string;
-    if (launchErrorCode && translated && translated !== key) return translated;
+    if (launchCode && translated && translated !== key) return translated;
 
     const fallback = t("errors.ERR_LAUNCH_GAME") as unknown as string;
     if (fallback && fallback !== "errors.ERR_LAUNCH_GAME") return fallback;
 
     return "Launch failed";
-  }, [launchErrorCode, t]);
+  }, [launchCode, t]);
 
   const versionMenuItems = useMemo(
     () => buildVersionMenuItems(t("common.empty") as string),
@@ -864,7 +872,7 @@ export const LauncherPage = (args: any) => {
           title={t("launcherpage.launch.failed.title")}
           footer={
             <>
-              {launchErrorCode === "ERR_GAME_ALREADY_RUNNING" && (
+              {launchCode === "ERR_GAME_ALREADY_RUNNING" && (
                 <ModalAction
                   isDisabled={currentVersionInfo?.packageType === "uwp"}
                   onPress={handleLaunchFailedForceRun}
@@ -889,14 +897,15 @@ export const LauncherPage = (args: any) => {
             <ModalDescription>
               {t("launcherpage.launch.failed.content") as unknown as string}
             </ModalDescription>
-            {launchErrorCode && (
+            <ErrorDetail code={launchCode} detail={launchDetail} alwaysShowLogs />
+            {launchCode && (
               <Chip
                 size="sm"
                 variant="soft"
                 color={"default"}
                 className={"font-mono tracking-wide"}
               >
-                <Chip.Label>{launchErrorCode}</Chip.Label>
+                <Chip.Label>{launchCode}</Chip.Label>
               </Chip>
             )}
           </div>
@@ -1234,13 +1243,14 @@ export const LauncherPage = (args: any) => {
           confirmText={t("common.close")}
           onConfirm={registerFailedDisclosure.close}
         >
+          <div className="flex flex-col gap-4">
           <ModalNotice tone="danger">
             <ModalDescription>
               {(() => {
-                if (launchErrorCode.includes("ERR_UWP_")) return resolveInstallError(launchErrorCode, t);
-                const key = `errors.${launchErrorCode}`;
+                if (launchCode.includes("ERR_UWP_")) return resolveInstallError(launchCode, t);
+                const key = `errors.${launchCode}`;
                 const translated = t(key) as unknown as string;
-                if (launchErrorCode && translated && translated !== key)
+                if (launchCode && translated && translated !== key)
                   return translated;
                 return t(
                   "launcherpage.register.failed.body",
@@ -1248,6 +1258,8 @@ export const LauncherPage = (args: any) => {
               })()}
             </ModalDescription>
           </ModalNotice>
+          <ErrorDetail code={launchCode} detail={launchDetail} alwaysShowLogs />
+          </div>
         </UnifiedModal>
       </PageContainer>
     </>

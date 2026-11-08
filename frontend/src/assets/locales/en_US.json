@@ -936,7 +936,40 @@
   "mirror": {
     "target": "Target Instance"
   },
+  "errorDetail": {
+    "causes_title": "What this probably means",
+    "technical_title": "Technical details",
+    "copy": "Copy details",
+    "copied": "Details copied",
+    "copy_failed": "Could not copy the details",
+    "open_logs": "Open logs folder",
+    "log_hint": "The full log is saved in the launcher logs folder."
+  },
   "errors": {
+    "explain": {
+      "game_exited_early": "The game process started but closed again right away. A broken mod, add-on or resource pack, or damaged game files are the usual cause.",
+      "game_no_window": "The game process is running but never opened a window. It may be stuck loading a mod, or waiting on a missing runtime or graphics driver.",
+      "loader_activation": "The mod loader could not be prepared for this instance. Check that the instance folder is complete and writable, then reinstall LeviLamina from the instance settings.",
+      "bad_executable": "The game executable does not match this system or is damaged. Reinstall the instance or pick a build for your platform.",
+      "access_denied": "Windows denied access to a file or folder. Close programs that may be using it (including antivirus), make sure the instance folder is writable, or run the launcher as administrator.",
+      "file_in_use": "A file is being used by another program, usually the game itself or an antivirus scanner. Close the game and any program touching the instance folder, then try again.",
+      "disk_full": "The disk does not have enough free space. Free some space or move the instance to another drive.",
+      "path_too_long": "A file path is too long for Windows. Move the instance to a shorter folder path, or shorten the instance name.",
+      "not_found": "A required file or folder is missing. The instance may have been moved, deleted or only partly installed; try repairing or reinstalling it.",
+      "developer_mode": "Windows needs Developer Mode turned on for this action. Enable it under Settings > System > For developers, then try again.",
+      "dns": "The server name could not be resolved. Check your internet connection, DNS or proxy settings.",
+      "tls": "A secure connection could not be set up. Check that your system date and time are correct and that no proxy or security software is intercepting the connection.",
+      "timeout": "The server took too long to answer. Check your connection, or try again later or with a mirror/proxy enabled in settings.",
+      "connection": "The connection to the server was refused or dropped. Check your network, firewall and proxy settings and try again.",
+      "http_403": "The server refused the request (HTTP 403). The service may block your network region; try enabling a mirror or proxy in settings.",
+      "http_404": "The file was not found on the server (HTTP 404). It may have been removed or renamed; refresh the list and try again.",
+      "http_429": "The server is limiting requests (HTTP 429). Wait a few minutes before trying again.",
+      "http_5xx": "The server reported an internal error. This is on the server side; try again later.",
+      "lip_no_package": "No package matches this version for your platform. The mod may not support this game version yet.",
+      "lip_already_installed": "This package is already installed. Use Update instead of Install.",
+      "lip_conflict": "The packages cannot be installed together because their version requirements conflict. Remove or update the conflicting mod and try again.",
+      "corrupt_download": "The downloaded file is damaged or incomplete. Clear the download cache in settings and try again."
+    },
     "ERR_GAME_ALREADY_RUNNING": "Detected the current instance of Minecraft is already running. Please close it before launching or switch to another instance.",
     "ERR_TARGET_DIR_NOT_SPECIFIED": "Target directory not specified",
     "ERR_CREATE_TARGET_DIR": "Failed to create target directory",

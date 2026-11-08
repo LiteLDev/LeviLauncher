@@ -360,7 +360,7 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	if state.ExplicitInstalled {
 		if err := lipUpdatePackages(ctx, targetDir, installPkgs); err != nil {
 			log.Printf("InstallLIPPackage: lip update failed for %s: %s", pkg, lip.ErrorMessage(err))
-			return "ERR_LIP_PACKAGE_INSTALL_FAILED"
+			return lip.ErrorResult("ERR_LIP_PACKAGE_INSTALL_FAILED", err)
 		}
 		return ""
 	}
@@ -390,13 +390,13 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 		if lip.IsAlreadyExplicitlyInstalled(err) {
 			if updateErr := lipUpdatePackages(ctx, targetDir, targetOnlyPkgs); updateErr != nil {
 				log.Printf("InstallLIPPackage: fallback update failed for %s: %s", pkg, lip.ErrorMessage(updateErr))
-				return "ERR_LIP_PACKAGE_INSTALL_FAILED"
+				return lip.ErrorResult("ERR_LIP_PACKAGE_INSTALL_FAILED", updateErr)
 			}
 			return ""
 		}
 
 		log.Printf("InstallLIPPackage: lip install failed for %s: %s", pkg, lip.ErrorMessage(err))
-		return "ERR_LIP_PACKAGE_INSTALL_FAILED"
+		return lip.ErrorResult("ERR_LIP_PACKAGE_INSTALL_FAILED", err)
 	}
 
 	return ""
@@ -419,7 +419,7 @@ func uninstallLIPPackageByID(ctx context.Context, caller, targetName, targetDir,
 
 	if err := lipUninstallPackages(ctx, targetDir, []string{packageRef}, false); err != nil {
 		log.Printf("%s: lip uninstall failed for %s: %s", caller, packageRef, lip.ErrorMessage(err))
-		return "ERR_LIP_PACKAGE_UNINSTALL_FAILED"
+		return lip.ErrorResult("ERR_LIP_PACKAGE_UNINSTALL_FAILED", err)
 	}
 
 	postStates, postQueryErr := queryLIPPackageStates(ctx, targetDir)

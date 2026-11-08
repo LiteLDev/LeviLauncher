@@ -208,7 +208,7 @@ func exitForCode(code string) int {
 	return ExitFailure
 }
 
-var codePattern = regexp.MustCompile(`^(ERR_[A-Z0-9_]+)\s*(?:::|:)?\s*(.*)$`)
+var codePattern = regexp.MustCompile(`(?s)^(ERR_[A-Z0-9_]+)\s*(?:::|:)?\s*(.*)$`)
 
 // SplitBackendCode splits "ERR_X", "ERR_X: detail" or "ERR_X::detail" into
 // code and detail. ok is false when s does not start with an ERR_ code.

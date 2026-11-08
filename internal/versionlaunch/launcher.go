@@ -92,7 +92,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		}
 		exe := filepath.Join(dir, manifest.Applications[0].Executable)
 		if !utils.FileExists(exe) {
-			return "ERR_NOT_FOUND_EXE"
+			return "ERR_NOT_FOUND_EXE: " + exe
 		}
 		// UWP re-registration and import editing require the process to exit,
 		// including when the caller asks to bypass the normal running check.
@@ -129,12 +129,12 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	}
 	exe := filepath.Join(dir, "Minecraft.Windows.exe")
 	if !utils.FileExists(exe) {
-		return "ERR_NOT_FOUND_EXE"
+		return "ERR_NOT_FOUND_EXE: " + exe
 	}
 	eventsink.From(ctx).Emit(launch.EventMcLaunchStart, struct{}{})
 	if _, err := leviloader.PatchAndActivate(ctx, dir); err != nil {
 		log.Printf("Failed to activate loader for %s: %v", exe, err)
-		return "ERR_LAUNCH_GAME"
+		return "ERR_LAUNCH_GAME: could not activate the mod loader: " + err.Error()
 	}
 
 	var args []string
@@ -179,7 +179,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 			}
 			if err := cmd.Start(); err != nil {
 				log.Printf("Launch protocol failed for %s: %v", name, err)
-				return "ERR_LAUNCH_GAME"
+				return "ERR_LAUNCH_GAME: could not start " + url + ": " + err.Error()
 			}
 			go launch.MonitorGameProcess(ctx, dir, 0)
 			return ""
@@ -212,7 +212,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	}
 	if err := cmd.Start(); err != nil {
 		log.Printf("Launch executable failed for %s: %v", name, err)
-		return "ERR_LAUNCH_GAME"
+		return "ERR_LAUNCH_GAME: could not start " + toRun + ": " + err.Error()
 	}
 	launchPID := 0
 	if cmd.Process != nil {

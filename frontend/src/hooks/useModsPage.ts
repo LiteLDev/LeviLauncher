@@ -39,6 +39,7 @@ import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { ROUTES, routeTo } from "@/constants/routes";
 import { getPathBaseName, normalizeDroppedFiles } from "@/utils/fs";
+import { explainErrorDetail, splitErrorResult } from "@/utils/errorDetail";
 
 const ERR_LL_MANAGED_IN_VERSION_SETTINGS = "ERR_LL_MANAGED_IN_VERSION_SETTINGS";
 const ERR_NO_UPDATE_SOURCE = "ERR_NO_UPDATE_SOURCE";
@@ -708,10 +709,16 @@ export const useModsPage = (
       return;
     }
 
+    // The backend appends the technical detail after the code; explain the
+    // likeliest cause in words so the toast says why, not only that it failed.
+    const { detail } = splitErrorResult(err);
+    const cause = explainErrorDetail(detail)[0];
+    const message = `${actionLabel}: ${resolveErrorText(t, err)}`;
     toast(t("common.error"), {
       variant: "danger",
-      description: `${actionLabel}: ${resolveErrorText(t, err)}`,
-      timeout: 2000,
+      description: cause ? `${message}
+${t(`errors.explain.${cause}`)}` : message,
+      timeout: cause ? 8000 : 2000,
     });
   };
 

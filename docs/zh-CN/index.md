@@ -6,7 +6,7 @@ hero:
   text: 面向 Windows 与 Android 的 Minecraft 基岩版启动器
   tagline: 在 Windows 电脑或 Android 设备上完成 Minecraft 基岩版的安装、管理、隔离、模组配置与启动。
   image:
-    src: /appicon.png
+    src: /logo.webp
     alt: LeviLauncher
   actions:
     - theme: brand

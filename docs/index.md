@@ -6,7 +6,7 @@ hero:
   text: Minecraft Bedrock launcher for Windows and Android
   tagline: Install, manage, isolate, mod, and launch Minecraft Bedrock Edition on your Windows PC or Android device.
   image:
-    src: /appicon.png
+    src: /logo.webp
     alt: LeviLauncher
   actions:
     - theme: brand

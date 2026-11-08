@@ -6,7 +6,7 @@ hero:
   text: 面向 Windows 與 Android 的 Minecraft Bedrock 啟動器
   tagline: 在 Windows 電腦或 Android 裝置上完成 Minecraft Bedrock 的安裝、管理、隔離、模組配置與啟動。
   image:
-    src: /appicon.png
+    src: /logo.webp
     alt: LeviLauncher
   actions:
     - theme: brand

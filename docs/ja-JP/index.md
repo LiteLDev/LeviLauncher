@@ -6,7 +6,7 @@ hero:
   text: Windows・Android 向け Minecraft Bedrock ランチャー
   tagline: Windows PC や Android デバイスで、Minecraft 統合版のインストール、管理、分離、Mod 導入、起動を行えます。
   image:
-    src: /appicon.png
+    src: /logo.webp
     alt: LeviLauncher
   actions:
     - theme: brand

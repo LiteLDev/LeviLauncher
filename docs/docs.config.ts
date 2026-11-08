@@ -7,7 +7,11 @@ import { defineDocsConfig, type NavEntry } from './kit/docs/node/config.ts';
 
 const repo = 'https://github.com/LiteLDev/LeviLauncher';
 
-// --- Sidebars -------------------------------------------------------------------------------------
+// --- Navigation -----------------------------------------------------------------------------------
+// The LeviMC navigation model (kit/README.md "Navigation model"): one section, the Guide (a header tab and its sidebar
+// tree), with the Help group (troubleshooting, FAQ, the Android privacy policy) last. The brand links the home page;
+// the Download page is in the Quick Start group and the header's resources slot (`header.links`), next to the
+// repository's GitHub icon (`repo`).
 
 interface SidebarLabels {
   quickStart: string;
@@ -29,40 +33,47 @@ interface SidebarLabels {
   privacy: string;
 }
 
-function buildSidebar(prefix: string, t: SidebarLabels): NavEntry[] {
+/** The sections of one locale; `prefix` is the locale's URL prefix ('/' or '/ja-JP/'). */
+function buildNav(prefix: string, t: SidebarLabels, n: NavLabels): NavEntry[] {
+  return [{ text: n.guide, items: buildGuide(`${prefix}guide/`, prefix, t, n) }];
+}
+
+function buildGuide(guide: string, prefix: string, t: SidebarLabels, n: NavLabels): NavEntry[] {
   return [
     {
       text: t.quickStart,
       items: [
-        { text: t.getStarted, link: `${prefix}quick-start` },
-        { text: t.requirements, link: `${prefix}requirements-installation` },
-        { text: t.firstLaunch, link: `${prefix}first-launch` },
+        { text: t.getStarted, link: `${guide}quick-start` },
+        // the Download page offers both versions and selects the visitor's (tabs named after the platforms)
+        { text: n.download, link: `${prefix}download` },
+        { text: t.requirements, link: `${guide}requirements-installation` },
+        { text: t.firstLaunch, link: `${guide}first-launch` },
       ],
     },
     {
       text: t.coreWorkflows,
       items: [
-        { text: t.versions, link: `${prefix}version-management` },
-        { text: t.downloads, link: `${prefix}downloads-mirrors` },
-        { text: t.content, link: `${prefix}content-management` },
-        { text: t.accounts, link: `${prefix}accounts-quick-launch` },
+        { text: t.versions, link: `${guide}version-management` },
+        { text: t.downloads, link: `${guide}downloads-mirrors` },
+        { text: t.content, link: `${guide}content-management` },
+        { text: t.accounts, link: `${guide}accounts-quick-launch` },
       ],
     },
     {
       text: t.advanced,
       items: [
-        { text: t.mods, link: `${prefix}mods-integrations` },
-        { text: t.worldTools, link: `${prefix}world-tools` },
-        { text: t.settings, link: `${prefix}settings-personalization` },
+        { text: t.mods, link: `${guide}mods-integrations` },
+        { text: t.worldTools, link: `${guide}world-tools` },
+        { text: t.settings, link: `${guide}settings-personalization` },
       ],
     },
     {
       text: t.help,
       items: [
-        { text: t.troubleshooting, link: `${prefix}update-troubleshooting` },
-        { text: t.faq, link: `${prefix}faq-community-feedback` },
-        // the Android app's privacy policy (English; one page at the site root)
-        { text: t.privacy, link: `${prefix.replace(/guide\/$/, '')}privacy-policy` },
+        { text: t.troubleshooting, link: `${guide}update-troubleshooting` },
+        { text: t.faq, link: `${guide}faq-community-feedback` },
+        // the Android app's privacy policy (English, outside guide/; every locale shows it through i18n.fallback)
+        { text: t.privacy, link: `${prefix}privacy-policy` },
       ],
     },
   ];
@@ -242,21 +253,10 @@ const SIDEBAR: Record<string, SidebarLabels> = {
   },
 };
 
-// --- Navbar ---------------------------------------------------------------------------------------
-
+// The section's name (the header tab and the sidebar title) and the Download page's title.
 interface NavLabels {
   guide: string;
   download: string;
-}
-
-function buildNav(prefix: string, t: NavLabels): NavEntry[] {
-  return [
-    { text: t.guide, link: `${prefix}guide/quick-start` },
-    // the Download page offers both versions and selects the visitor's (tabs named after the platforms)
-    { text: t.download, link: `${prefix}download` },
-    // GitHub and Community (Discord) are not docs tabs: the LeviMC bar already has a GitHub button (`repo`) and a
-    // Community tab, and the footer links the same Discord invite, so the docs row carries no duplicates.
-  ];
 }
 
 const NAV: Record<string, NavLabels> = {
@@ -273,11 +273,12 @@ const NAV: Record<string, NavLabels> = {
 
 // --- Locales & UI labels --------------------------------------------------------------------------
 
+// In the order of the LeviMC bar's language menu on every site; the codes are the URL prefixes and stay as they are.
 const LOCALES = [
-  { code: 'en-US', label: 'English', lang: 'en-US', prefix: '' },
-  { code: 'es-ES', label: 'Español', lang: 'es-ES', prefix: 'es-ES/' },
+  { code: 'en-US', label: 'English', lang: 'en', prefix: '' },
   { code: 'zh-CN', label: '简体中文', lang: 'zh-CN', prefix: 'zh-CN/' },
   { code: 'zh-HK', label: '繁體中文', lang: 'zh-HK', prefix: 'zh-HK/' },
+  { code: 'es-ES', label: 'Español', lang: 'es-ES', prefix: 'es-ES/' },
   { code: 'ru-RU', label: 'Русский', lang: 'ru-RU', prefix: 'ru-RU/' },
   { code: 'de-DE', label: 'Deutsch', lang: 'de-DE', prefix: 'de-DE/' },
   { code: 'ja-JP', label: '日本語', lang: 'ja-JP', prefix: 'ja-JP/' },
@@ -342,8 +343,10 @@ export default defineDocsConfig({
   title: 'LeviLauncher',
   description: 'User documentation for LeviLauncher, the Minecraft Bedrock Edition launcher for Windows (GDK / UWP) and Android.',
   project: 'LeviLauncher',
-  logo: { src: '/appicon.png', alt: 'LeviLauncher' },
-  favicon: '/appicon.png',
+  // the leaf mark of the app icon, without its tile (public/appicon.png, the full app icon, stays at its URL)
+  logo: { src: '/logo.webp', dark: '/logo-dark.webp', alt: 'LeviLauncher' },
+  favicon: '/logo.webp',
+  ogImage: '/appicon.png',
   contentDir: '.',
   repo,
   editLink: `${repo}/edit/main/docs/:path`,
@@ -358,9 +361,10 @@ export default defineDocsConfig({
   lastUpdated: true,
   hostname: 'https://docs.levimc.org',
   sitemap: { hostname: 'https://docs.levimc.org' },
-  nav: perLocale((code, prefix) => buildNav(prefix, NAV[code]!)),
-  sidebar: perLocale((code, prefix) => ({ [`${prefix}guide/`]: buildSidebar(`${prefix}guide/`, SIDEBAR[code]!) })),
-  social: [{ icon: 'github', link: repo, label: 'GitHub' }],
+  sidebar: 'tabs',
+  nav: perLocale((code, prefix) => buildNav(prefix, SIDEBAR[code]!, NAV[code]!)),
+  // the resources slot: Download (this site's page, in the visitor's locale), then the repository's GitHub icon
+  header: { links: [{ kind: 'download', link: 'download' }] },
   ui: UI,
   redirects: REDIRECTS,
 });

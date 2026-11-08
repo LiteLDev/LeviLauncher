@@ -49,6 +49,11 @@ jobs:
         run: |
           npm ci
 
+      # type-check docs.config.ts (and the kit) first: a config that does not parse fails the pull request clearly
+      - working-directory: docs
+        run: |
+          npm run typecheck
+
       - working-directory: docs
         run: |
           npm run build

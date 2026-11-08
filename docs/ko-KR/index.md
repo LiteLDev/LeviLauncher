@@ -6,7 +6,7 @@ hero:
   text: Windows 및 Android용 Minecraft Bedrock 런처
   tagline: Windows PC나 Android 기기에서 Minecraft Bedrock Edition을 설치, 관리, 격리, 모드 적용 및 실행하세요.
   image:
-    src: /appicon.png
+    src: /logo.webp
     alt: LeviLauncher
   actions:
     - theme: brand

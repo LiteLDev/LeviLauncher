@@ -286,7 +286,6 @@
       "version_label": "バージョン",
       "ll_version_label": "LeviLamina バージョン",
       "ll_version_placeholder": "LeviLamina バージョンを選択",
-      "hint": "この処理には時間がかかる場合があります。お待ちください…",
       "estimated_size": "インストールサイズ（概算）",
       "target": "インストール先",
       "success_title": "インストール完了",

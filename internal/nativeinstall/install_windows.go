@@ -148,8 +148,7 @@ func Install(ctx context.Context, sourcePath, outputPath string, options Options
 		beginLicenseAccount(ctx, "")
 		if !restoreContentKey() {
 			acquireUserTicket(ctx, xbox.GetStoreTicket)
-			ensureDevice()
-			ticket := ownDeviceTicket()
+			ticket := deviceTicket()
 			license(ticket, active.report.ContentID)
 		}
 	}
@@ -187,7 +186,7 @@ func emit(m map[string]any) {
 	// Keep diagnostics deliberately allowlisted: no raw server error messages,
 	// response bodies, account references, tokens, or secret material.
 	safe := map[string]any{}
-	for _, key := range []string{"response_status", "provider_error_code", "interop_available", "msa_provider_found", "device_binding_matches", "key_wrap_integrity_verified", "rst_http_status", "rst_response_signature_verified", "rst_body_decrypted", "own_device_wrapping_key_validated", "license_type", "online_content_id", "online_key_id", "hash_tree_validated", "metadata_pages_validated", "manifest_files", "verified_final_region_padding_bytes", "extraction_complete", "files", "bytes", "output_directory"} {
+	for _, key := range []string{"response_status", "provider_error_code", "interop_available", "msa_provider_found", "device_binding_matches", "key_wrap_integrity_verified", "rst_http_status", "rst_fault", "device_reprovisioned", "rst_response_signature_verified", "rst_body_decrypted", "own_device_wrapping_key_validated", "license_type", "online_content_id", "online_key_id", "hash_tree_validated", "metadata_pages_validated", "manifest_files", "verified_final_region_padding_bytes", "extraction_complete", "files", "bytes", "output_directory"} {
 		if v, ok := m[key]; ok {
 			safe[key] = v
 		}

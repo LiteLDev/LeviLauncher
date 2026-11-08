@@ -1019,6 +1019,7 @@
     "ERR_AUTH_DEVICE_CACHE": "Der Cache der Geräteautorisierung konnte nicht gelesen werden. Prüfe den aktuellen Windows-Benutzer und die Dateiberechtigungen.",
     "ERR_AUTH_DEVICE_BUSY": "Das Konto wird gerade von einem anderen Vorgang verwendet. Bitte versuche es später erneut.",
     "ERR_AUTH_DEVICE_PROVISION": "Die Geräteautorisierung ist fehlgeschlagen. Prüfe deine Verbindung und versuche es erneut.",
+    "ERR_AUTH_DEVICE_TOKEN": "Microsoft hat kein Geräte-Lizenztoken ausgestellt. Deaktiviere Proxys oder Netzwerkbeschleuniger, prüfe die Systemzeit und versuche es erneut.",
     "ERR_AUTH_ACCOUNT_CHANGED": "Das Microsoft-Konto hat sich geändert. Aktualisiere dein Konto über den Launcher-Avatar und versuche es erneut.",
     "ERR_AUTH_INTERACTION_REQUIRED": "Melde dich in Windows mit dem Microsoft-Konto an, dem dieses Spiel gehört. Aktualisiere dann dein Konto über den Launcher-Avatar und versuche es erneut.",
     "ERR_LICENSE_NOT_ENTITLED": "Dieses Konto besitzt diese Version nicht.",

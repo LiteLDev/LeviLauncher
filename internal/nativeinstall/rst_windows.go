@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 	"unsafe"
@@ -342,7 +343,14 @@ func makeRST(member, scope, ticket string, rkey *rsa.PrivateKey, secret []byte) 
 	return doc
 }
 func mustReadRandom(b []byte) { _, e := rand.Read(b); must(e) }
-func postRST(doc *etree.Document, secret []byte) *etree.Document {
+
+// rstResponse is a login.live.com RST2 reply and its HTTP status.
+type rstResponse struct {
+	doc    *etree.Document
+	status int
+}
+
+func postRST(doc *etree.Document, secret []byte) rstResponse {
 	b := canonical(doc.Root())
 	defer clear(b)
 	client := http.Client{Timeout: 35 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
@@ -351,21 +359,104 @@ func postRST(doc *etree.Document, secret []byte) *etree.Document {
 	req.Header.Set("Content-Type", "application/soap+xml")
 	req.Header.Set("User-Agent", "MSAWindows/55 (OS 10.0.26100.0.0 ge_release; IDK 10.0.26100.5074 ge_release; Cfg 16.000.29325.00; Test 0)")
 	res, e := client.Do(req)
-	must(e)
+	if e != nil {
+		checkCanceled()
+		panic(&Error{Code: "ERR_AUTH_DEVICE_TOKEN", Reason: "cannot reach login.live.com: " + e.Error(), cause: e})
+	}
 	defer res.Body.Close()
 	raw := boundedBody(res.Body, 2<<20)
 	defer clear(raw)
 	out := etree.NewDocument()
-	must(out.ReadFromBytes(raw))
+	if out.ReadFromBytes(raw) != nil || out.Root() == nil {
+		// Typically a proxy, captive portal or filter answering in place of Microsoft.
+		failCode("ERR_AUTH_DEVICE_TOKEN", fmt.Sprintf("login.live.com returned a response that is not SOAP (HTTP %d)", res.StatusCode))
+	}
 	emit(map[string]any{"rst_http_status": res.StatusCode, "rst_response_bytes": len(raw), "rst_fault_count": len(walk(out.Root(), "Fault")), "rst_requested_token_count": len(walk(out.Root(), "RequestedSecurityToken"))})
 	if len(secret) > 0 {
-		if len(walk(only(out.Root(), "Header"), "Signature")) == 1 {
+		if len(walk(out.Root(), "Header")) == 1 && len(walk(only(out.Root(), "Header"), "Signature")) == 1 {
 			decryptRST(out, secret)
 		} else if len(walk(out.Root(), "Fault")) == 0 {
 			fail("unsigned RST success response")
 		}
 	}
-	return out
+	return rstResponse{doc: out, status: res.StatusCode}
+}
+
+// rstFault is what of a login.live.com failure may be shown and logged: the
+// HTTP status, the SOAP fault subcode and the Passport HRESULTs. Free text
+// from the server is left out on purpose.
+type rstFault struct {
+	status                     int
+	subcode, hresult, internal string
+}
+
+var (
+	faultQName   = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_.-]{0,31}(:[A-Za-z][A-Za-z0-9_.-]{0,63})?$`)
+	faultHRESULT = regexp.MustCompile(`^0x[0-9A-Fa-f]{8}$`)
+)
+
+func firstText(e *etree.Element, path ...string) string {
+	for _, name := range path {
+		found := walk(e, name)
+		if len(found) == 0 {
+			return ""
+		}
+		e = found[0]
+	}
+	return strings.TrimSpace(e.Text())
+}
+
+func parseRSTFault(r rstResponse) rstFault {
+	f := rstFault{status: r.status}
+	root := r.doc.Root()
+	if faults := walk(root, "Fault"); len(faults) > 0 {
+		f.subcode = firstText(faults[0], "Subcode", "Value")
+		if f.subcode == "" {
+			f.subcode = firstText(faults[0], "faultcode") // SOAP 1.1
+		}
+		f.hresult = firstText(faults[0], "error", "value")
+		f.internal = firstText(faults[0], "internalerror", "code")
+	}
+	if f.hresult == "" {
+		f.hresult = firstText(root, "reqstatus")
+	}
+	if !faultQName.MatchString(f.subcode) {
+		f.subcode = ""
+	}
+	if !faultHRESULT.MatchString(f.hresult) || strings.EqualFold(f.hresult, "0x00000000") {
+		f.hresult = ""
+	}
+	if !faultHRESULT.MatchString(f.internal) {
+		f.internal = ""
+	}
+	return f
+}
+
+func (f rstFault) String() string {
+	parts := []string{fmt.Sprintf("HTTP %d", f.status)}
+	for _, v := range []string{f.subcode, f.hresult, f.internal} {
+		if v != "" {
+			parts = append(parts, v)
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// deviceRejected reports a fault that blames the device credential itself
+// (deleted, expired or never accepted by Microsoft), which a freshly
+// registered device can fix. Network, clock and service faults are not.
+func (f rstFault) deviceRejected() bool {
+	sub := f.subcode
+	if i := strings.LastIndexByte(sub, ':'); i >= 0 {
+		sub = sub[i+1:]
+	}
+	return sub == "FailedAuthentication" || sub == "InvalidSecurityToken" ||
+		strings.EqualFold(f.hresult, "0x80048821") // PPCRL_REQUEST_E_BAD_MEMBER_NAME_OR_PASSWORD
+}
+
+func failDeviceToken(step string, f rstFault) {
+	emit(map[string]any{"rst_fault": f.String()})
+	failCode("ERR_AUTH_DEVICE_TOKEN", "Microsoft did not issue a "+step+" ("+f.String()+")")
 }
 func decryptRST(doc *etree.Document, secret []byte) {
 	nonces := map[string][]byte{}
@@ -458,7 +549,41 @@ func allElements(e *etree.Element) []*etree.Element {
 	}
 	return out
 }
-func ownDeviceTicket() string {
+
+// deviceTicket returns the launcher device's www.microsoft.com ticket,
+// registering the device first if needed. A device credential Microsoft no
+// longer accepts is set aside and replaced by a new registration once;
+// otherwise every later install would fail the same way.
+func deviceTicket() string {
+	ensureDevice()
+	ticket, fault := ownDeviceTicket()
+	if fault == nil {
+		return ticket
+	}
+	if !fault.deviceRejected() {
+		failDeviceToken("device token", *fault)
+	}
+	emit(map[string]any{"rst_fault": fault.String(), "device_reprovisioned": true})
+	retireDevice()
+	ensureDevice()
+	ticket, fault = ownDeviceTicket()
+	if fault != nil {
+		failDeviceToken("device token for the newly registered device", *fault)
+	}
+	return ticket
+}
+
+// retireDevice keeps the rejected credential next to the cache for support
+// instead of deleting it, so ensureDevice registers a new one.
+func retireDevice() {
+	if e := os.Rename(cachePath(), cachePath()+".rejected"); e != nil && !os.IsNotExist(e) {
+		must(e)
+	}
+}
+
+// ownDeviceTicket returns the fault of the first RST instead of the ticket
+// when Microsoft refuses to issue the device token.
+func ownDeviceTicket() (string, *rstFault) {
 	var state ownDevice
 	must(loadProtected(cachePath(), &state))
 	blocks := parseSP(decode64(state.License))
@@ -480,15 +605,16 @@ func ownDeviceTicket() string {
 	defer clear(priv)
 	rsa := rsaKey(priv)
 	first := postRST(makeRST(state.Member, "http://Passport.NET/tb", "", rsa, nil), nil)
-	tokens := walk(first.Root(), "RequestedSecurityToken")
-	if len(tokens) != 1 || len(tokens[0].ChildElements()) != 1 {
-		fail("missing device STS")
+	tokens := walk(first.doc.Root(), "RequestedSecurityToken")
+	if len(tokens) != 1 || len(tokens[0].ChildElements()) != 1 || len(walk(first.doc.Root(), "BinarySecret")) != 1 {
+		f := parseRSTFault(first)
+		return "", &f
 	}
 	td := etree.NewDocument()
 	td.SetRoot(tokens[0].ChildElements()[0].Copy())
 	ticket, e := td.WriteToString()
 	must(e)
-	proof := only(first.Root(), "BinarySecret").Text()
+	proof := only(first.doc.Root(), "BinarySecret").Text()
 	secretData := clep(decode64(proof), 48)
 	defer clear(secretData)
 	secret := secretData[12:44]
@@ -496,7 +622,11 @@ func ownDeviceTicket() string {
 	clear(deviceProof)
 	deviceProof = append([]byte(nil), secret...)
 	second := postRST(makeRST("", "www.microsoft.com", ticket, nil, secret), secret)
-	token := only(only(second.Root(), "RequestedSecurityToken"), "BinarySecurityToken").Text()
+	issued := walk(second.doc.Root(), "RequestedSecurityToken")
+	if len(issued) != 1 || len(walk(issued[0], "BinarySecurityToken")) != 1 {
+		failDeviceToken("www.microsoft.com ticket for the device", parseRSTFault(second))
+	}
+	token := only(issued[0], "BinarySecurityToken").Text()
 	emit(map[string]any{"own_device_ms_ticket_chars": len(token), "own_device_wrapping_key_validated": true})
-	return token
+	return token, nil
 }

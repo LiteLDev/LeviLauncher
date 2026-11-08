@@ -1019,6 +1019,7 @@
     "ERR_AUTH_DEVICE_CACHE": "Nie udało się odczytać pamięci podręcznej autoryzacji urządzenia. Sprawdź użytkownika systemu Windows i uprawnienia do plików.",
     "ERR_AUTH_DEVICE_BUSY": "Konto jest używane przez inną operację. Spróbuj ponownie później.",
     "ERR_AUTH_DEVICE_PROVISION": "Autoryzacja urządzenia nie powiodła się. Sprawdź połączenie i spróbuj ponownie.",
+    "ERR_AUTH_DEVICE_TOKEN": "Microsoft nie wydał tokenu licencji urządzenia. Wyłącz serwer proxy lub akcelerator sieci, sprawdź zegar systemowy i spróbuj ponownie.",
     "ERR_AUTH_ACCOUNT_CHANGED": "Konto Microsoft zostało zmienione. Odśwież konto za pomocą awatara w launcherze, a następnie spróbuj ponownie.",
     "ERR_AUTH_INTERACTION_REQUIRED": "Zaloguj się kontem Microsoft, które posiada tę grę, używając awatara w launcherze, a następnie spróbuj ponownie.",
     "ERR_LICENSE_NOT_ENTITLED": "To konto nie posiada tej wersji.",

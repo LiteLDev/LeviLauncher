@@ -1052,6 +1052,7 @@
     "ERR_AUTH_DEVICE_CACHE": "The device authorization cache could not be read. Check the Windows user and file permissions.",
     "ERR_AUTH_DEVICE_BUSY": "The account is in use by another operation. Please try again later.",
     "ERR_AUTH_DEVICE_PROVISION": "Device authorization failed. Check your connection and try again.",
+    "ERR_AUTH_DEVICE_TOKEN": "Microsoft did not issue a device licence token. Turn off any proxy or network accelerator, make sure the system clock is correct, and try again.",
     "ERR_AUTH_ACCOUNT_CHANGED": "The Microsoft account has changed. Refresh your account using the launcher avatar, then retry.",
     "ERR_AUTH_INTERACTION_REQUIRED": "Sign in to the Microsoft account that owns this game using the launcher avatar, then retry.",
     "ERR_LICENSE_NOT_ENTITLED": "This account does not own this version.",

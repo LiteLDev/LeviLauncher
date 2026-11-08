@@ -1019,6 +1019,7 @@
     "ERR_AUTH_DEVICE_CACHE": "Impossible de lire le cache d'autorisation de l'appareil. Vérifie l'utilisateur Windows actuel et les autorisations de fichier.",
     "ERR_AUTH_DEVICE_BUSY": "Le compte est utilisé par une autre opération. Réessaie plus tard.",
     "ERR_AUTH_DEVICE_PROVISION": "Échec de l'autorisation de l'appareil. Vérifie ta connexion et réessaie.",
+    "ERR_AUTH_DEVICE_TOKEN": "Microsoft n'a pas délivré de jeton de licence pour l'appareil. Désactive tout proxy ou accélérateur réseau, vérifie l'heure du système et réessaie.",
     "ERR_AUTH_ACCOUNT_CHANGED": "Le compte Microsoft a changé. Actualisez votre compte depuis l’avatar du lanceur, puis réessayez.",
     "ERR_AUTH_INTERACTION_REQUIRED": "Connectez-vous à Windows avec le compte Microsoft qui possède ce jeu, puis actualisez votre compte depuis l’avatar du lanceur et réessayez.",
     "ERR_LICENSE_NOT_ENTITLED": "Ce compte ne possède pas cette version.",

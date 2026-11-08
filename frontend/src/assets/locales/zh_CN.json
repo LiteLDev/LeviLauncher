@@ -1052,6 +1052,7 @@
     "ERR_AUTH_DEVICE_CACHE": "无法读取设备授权缓存，请检查当前 Windows 用户和文件权限。",
     "ERR_AUTH_DEVICE_BUSY": "账户正在用于另一项操作，请稍后重试。",
     "ERR_AUTH_DEVICE_PROVISION": "设备授权失败，请检查网络后重试。",
+    "ERR_AUTH_DEVICE_TOKEN": "微软未签发设备许可令牌。请关闭代理或网络加速器，确认系统时间准确后重试。",
     "ERR_AUTH_ACCOUNT_CHANGED": "当前微软账户已变更。请通过启动器头像刷新账户，然后重试。",
     "ERR_AUTH_INTERACTION_REQUIRED": "请通过启动器头像登录拥有此游戏的微软账户，然后重试。",
     "ERR_LICENSE_NOT_ENTITLED": "当前账户没有此版本的授权。",

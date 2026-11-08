@@ -3,6 +3,7 @@ package mcservice
 import (
 	"context"
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,15 +70,21 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 		},
 	})
 	if err != nil {
-		code := "ERR_NATIVE_MSIXVC"
+		code, detail := "ERR_NATIVE_MSIXVC", ""
 		var failure *nativeinstall.Error
 		if errors.As(err, &failure) {
-			code = failure.Code
+			code, detail = failure.Code, failure.Reason
 		}
 		if errors.Is(err, context.Canceled) {
-			code = "ERR_CANCELED"
+			code, detail = "ERR_CANCELED", ""
 		}
 		eventsink.From(ctx).Emit(EventExtractError, code)
+		// The reason (e.g. which Microsoft step failed and its fault code) is
+		// what makes a report actionable; the GUI and CLI show it after the code.
+		if detail != "" {
+			log.Printf("install msixvc %s: %s", code, detail)
+			return code + ": " + detail
+		}
 		return code
 	}
 	eventsink.From(ctx).Emit(EventExtractDone, outDir)

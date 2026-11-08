@@ -1019,6 +1019,7 @@
     "ERR_AUTH_DEVICE_CACHE": "デバイス認証のキャッシュを読み取れませんでした。現在のWindowsユーザーとファイルのアクセス許可を確認してください。",
     "ERR_AUTH_DEVICE_BUSY": "このアカウントは別の処理で使用中です。しばらくしてからお試しください。",
     "ERR_AUTH_DEVICE_PROVISION": "デバイス認証に失敗しました。接続を確認してからもう一度お試しください。",
+    "ERR_AUTH_DEVICE_TOKEN": "Microsoft がデバイスのライセンストークンを発行しませんでした。プロキシやネットワークアクセラレーターを無効にし、システム時刻が正しいことを確認してからもう一度お試しください。",
     "ERR_AUTH_ACCOUNT_CHANGED": "Microsoft アカウントが変更されました。ランチャーのアバターからアカウントを更新して再試行してください。",
     "ERR_AUTH_INTERACTION_REQUIRED": "このゲームを所有する Microsoft アカウントで Windows にサインインし、ランチャーのアバターからアカウントを更新して再試行してください。",
     "ERR_LICENSE_NOT_ENTITLED": "このアカウントはこのバージョンを所有していません。",

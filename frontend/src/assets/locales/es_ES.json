@@ -1019,6 +1019,7 @@
     "ERR_AUTH_DEVICE_CACHE": "No se ha podido leer la caché de autorización del dispositivo. Comprueba el usuario de Windows y los permisos de archivo.",
     "ERR_AUTH_DEVICE_BUSY": "La cuenta se está usando en otra operación. Inténtalo más tarde.",
     "ERR_AUTH_DEVICE_PROVISION": "Error al autorizar el dispositivo. Comprueba tu conexión e inténtalo de nuevo.",
+    "ERR_AUTH_DEVICE_TOKEN": "Microsoft no emitió un token de licencia del dispositivo. Desactiva cualquier proxy o acelerador de red, comprueba que la hora del sistema sea correcta e inténtalo de nuevo.",
     "ERR_AUTH_ACCOUNT_CHANGED": "La cuenta de Microsoft ha cambiado. Actualízala desde el avatar del lanzador y vuelve a intentarlo.",
     "ERR_AUTH_INTERACTION_REQUIRED": "Inicia sesión en Windows con la cuenta de Microsoft que posee este juego. Después, actualiza la cuenta desde el avatar del lanzador y vuelve a intentarlo.",
     "ERR_LICENSE_NOT_ENTITLED": "Esta cuenta no posee esta versión.",

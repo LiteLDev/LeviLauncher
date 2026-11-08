@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/doc"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/migrate"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/pathglob"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/pkgmodel"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/ref"
@@ -85,6 +86,16 @@ func ParseYAML(data []byte) (*pkgmodel.Document, error) {
 	if err != nil {
 		return nil, &FormatError{
 			Message: "The " + pkgmodel.PackageFileName + " is not a valid YAML file of the kind lip reads.",
+			Err:     err,
+		}
+	}
+	// Every string is a Scriban template, rendered before the file is
+	// validated (protocol/package.md §3): a template that cannot be rendered
+	// makes the file not a package file.
+	root, err = migrate.RenderDocument(root)
+	if err != nil {
+		return nil, &FormatError{
+			Message: "The " + pkgmodel.PackageFileName + " has a template that cannot be rendered: " + err.Error(),
 			Err:     err,
 		}
 	}

@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- In GDK versions started by the launcher, in-game buttons that open a file dialog (choosing a skin, importing a world, exporting a structure) open the dialog again instead of freezing the game or doing nothing
+
 ## [1.1.0-beta.2] - 2026-11-09
 
 ### Added

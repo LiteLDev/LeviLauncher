@@ -2,6 +2,7 @@
 #include "../config/mod_loader.h"
 #include "../config/version_config.h"
 #include "../hook/folder_redirect.h"
+#include "../hook/winrt_activation.h"
 #include "../utils/windows_paths.h"
 #include "logger.h"
 #include <Windows.h>
@@ -90,6 +91,13 @@ bool attach(HMODULE module) noexcept {
                   patched.error);
         return false;
       }
+      // Without its package graph the game cannot activate Windows App SDK
+      // classes such as the file pickers. The game still runs without them.
+      const auto activation = levi::install_winrt_activation_fallback(executable.parent_path());
+      if (!activation.valid_image || activation.error != ERROR_SUCCESS)
+        levi::log(levi::LogLevel::warning,
+                  "Cannot install Windows App SDK activation (Windows error {})",
+                  activation.error);
     }
     HANDLE thread = CreateThread(nullptr, 0, load_mods, const_cast<Runtime *>(state), 0, nullptr);
     if (!thread) {

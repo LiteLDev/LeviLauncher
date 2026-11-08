@@ -17,7 +17,8 @@ option_end()
 local common_files = {
     "src/config/version_config.cpp", "src/config/mod_loader.cpp",
     "src/core/logger.cpp", "src/hook/iat_hook.cpp",
-    "src/hook/folder_redirect.cpp", "src/utils/windows_paths.cpp"
+    "src/hook/folder_redirect.cpp", "src/hook/winrt_activation.cpp",
+    "src/utils/windows_paths.cpp"
 }
 
 target("LeviLauncher")
@@ -41,6 +42,8 @@ target("native_fixture")
     set_kind("shared")
     set_default(false)
     add_files("tests/fixture.cpp")
+    add_defines("WIN32_LEAN_AND_MEAN", "NOMINMAX", "UNICODE", "_UNICODE")
+    add_syslinks("runtimeobject")
 
 target("native_smoke")
     set_kind("binary")

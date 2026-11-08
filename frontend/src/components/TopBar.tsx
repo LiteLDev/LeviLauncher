@@ -5,6 +5,7 @@ import React from "react";
 import { WindowControls } from "./WindowControls";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AdministratorBadge } from "@/components/AdministratorBadge";
+import { DownloadIndicator } from "@/components/DownloadIndicator";
 
 import { IoArrowBack, IoArrowForward, IoChevronForward } from "react-icons/io5";
 import { useLocation, Link } from "react-router-dom";
@@ -168,6 +169,9 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {!isOnboardingMode && (
+            <DownloadIndicator navLocked={navLocked} tryNavigate={tryNavigate} />
+          )}
           <AdministratorBadge />
           <div
             className={`hidden sm:block ${navLocked ? "pointer-events-none opacity-50" : ""}`}

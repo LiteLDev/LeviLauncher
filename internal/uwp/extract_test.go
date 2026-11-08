@@ -137,6 +137,34 @@ func TestInstallOmitsPackageSignature(t *testing.T) {
 	}
 }
 
+// Windows deploys percent-encoded part names decoded; the game opens e.g.
+// "accessibility@0.5x.icon-….png", not "accessibility%400.5x.icon-….png".
+func TestInstallDecodesPartNames(t *testing.T) {
+	archive := writeArchive(t, zipBytes(t, map[string]string{
+		"AppxManifest.xml":                      testManifest("neutral"),
+		"Minecraft.Windows.exe":                 "test-executable",
+		"data/recipes/wood_and%20stripped.json": "space",
+		"data/gui/icon%400.5x.png":              "at",
+		"data/plain.json":                       "plain",
+	}))
+	target := filepath.Join(t.TempDir(), "instance")
+	if _, err := Install(context.Background(), archive, target, Options{}); err != nil {
+		t.Fatal(err)
+	}
+	for name, want := range map[string]string{
+		"data/recipes/wood_and stripped.json": "space",
+		"data/gui/icon@0.5x.png":              "at",
+		"data/plain.json":                     "plain",
+	} {
+		if b, err := os.ReadFile(filepath.Join(target, filepath.FromSlash(name))); err != nil || string(b) != want {
+			t.Errorf("%s: %q, %v", name, b, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(target, "data", "gui", "icon%400.5x.png")); !os.IsNotExist(err) {
+		t.Error("encoded name was written")
+	}
+}
+
 func TestInstallRejectsUnsafeAndInvalidPackagesAtomically(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -147,6 +175,10 @@ func TestInstallRejectsUnsafeAndInvalidPackagesAtomically(t *testing.T) {
 		{"alternate stream", map[string]string{"AppxManifest.xml": testManifest("neutral"), "Minecraft.Windows.exe": "x", "foo:bar": "x"}, "ERR_UWP_UNSAFE_ARCHIVE"},
 		{"reserved path", map[string]string{"AppxManifest.xml": testManifest("neutral"), "Minecraft.Windows.exe": "x", "con.txt": "x"}, "ERR_UWP_UNSAFE_ARCHIVE"},
 		{"case collision", map[string]string{"AppxManifest.xml": testManifest("neutral"), "Minecraft.Windows.exe": "x", "DATA": "a", "data": "b"}, "ERR_UWP_UNSAFE_ARCHIVE"},
+		{"encoded traversal", map[string]string{"AppxManifest.xml": testManifest("neutral"), "Minecraft.Windows.exe": "x", "data/%2e%2e/%2e%2e/escape": "x"}, "ERR_UWP_UNSAFE_ARCHIVE"},
+		{"encoded separator", map[string]string{"AppxManifest.xml": testManifest("neutral"), "Minecraft.Windows.exe": "x", "%2e%2e%2fescape": "x"}, "ERR_UWP_UNSAFE_ARCHIVE"},
+		{"malformed escape", map[string]string{"AppxManifest.xml": testManifest("neutral"), "Minecraft.Windows.exe": "x", "data/bad%zz.json": "x"}, "ERR_UWP_UNSAFE_ARCHIVE"},
+		{"encoded collision", map[string]string{"AppxManifest.xml": testManifest("neutral"), "Minecraft.Windows.exe": "x", "a b.json": "a", "a%20b.json": "b"}, "ERR_UWP_UNSAFE_ARCHIVE"},
 		{"wrong identity", map[string]string{"AppxManifest.xml": strings.Replace(testManifest("neutral"), ReleasePackageName, "Other.Application", 1), "Minecraft.Windows.exe": "x"}, "ERR_UWP_NOT_MINECRAFT"},
 		{"missing executable", map[string]string{"AppxManifest.xml": testManifest("neutral")}, "ERR_NOT_FOUND_EXE"},
 	}

@@ -167,6 +167,21 @@
     "unknown_file": "未知文件",
     "actions": {
       "retry": "重试"
+    },
+    "queue": {
+      "added": "已加入下载队列",
+      "queued": "排队中",
+      "paused": "已暂停",
+      "pause": "暂停",
+      "resume": "继续"
+    },
+    "upgrade_prompt": {
+      "title": "下载完成",
+      "confirm": "升级实例",
+      "description": "{{version}} 已下载完成，现在把 {{name}} 升级到这个版本吗？"
+    },
+    "indicator": {
+      "tooltip": "下载：{{active}} 个进行中，{{queued}} 个排队，{{paused}} 个暂停"
     }
   },
   "updating": {
@@ -910,6 +925,45 @@
         "ll_remove_confirm_title": "确认移除 LeviLamina",
         "ll_remove_confirm_body": "将从当前实例中移除 LeviLamina。",
         "ll_remove_confirm_warning": "此操作不可撤销。"
+      },
+      "upgrade": {
+        "title": "更换游戏版本",
+        "hint": "把这个实例的游戏文件换成同一频道的其他版本。世界、资源包、模组和设置都会留在实例中。",
+        "section_body": "当前为 {{version}}。直接升级或降级，不必新建实例再重新设置。",
+        "button": "更换版本",
+        "modal_title": "更换 {{name}} 的版本",
+        "modal_body": "当前版本：{{version}}。选择要切换到的版本。尚未下载的版本会在后台下载，期间可以继续使用启动器。",
+        "search": "搜索版本",
+        "list_label": "可用版本",
+        "loading": "正在加载版本…",
+        "empty": "此频道没有其他可用版本。",
+        "downloaded": "已下载",
+        "downloading": "下载中",
+        "download": "后台下载",
+        "download_hint": "这个版本还没有下载。先在后台下载，完成后回到这里（或在完成提示中）进行升级。",
+        "newer": "较新",
+        "older": "较旧",
+        "confirm": "立即升级",
+        "confirm_downgrade": "立即降级",
+        "downgrade_warning": "这是较旧的版本。在新版本中打开过的世界，在旧版本中可能无法加载或损坏。请保持勾选备份。",
+        "leviLamina_warning": "此实例已安装 LeviLamina {{version}} 及其模组，升级不会改动它们，但可能与新游戏版本不兼容；之后请在「加载器」页更新。",
+        "backup_first": "先备份整个实例",
+        "backup_hint": "在任何改动前，把实例的隔离游戏数据和模组打包成 zip 保存到 Backups\\Instances。",
+        "progress_label": "正在升级",
+        "phase_backup": "正在备份实例…",
+        "phase_prepare": "正在准备…",
+        "phase_extract": "正在安装 {{version}}…",
+        "success_title": "版本已更换",
+        "success_body": "{{name}} 已从 {{from}} 换成 {{to}}，数据、模组和设置都已保留。",
+        "backup_saved": "备份：{{path}}",
+        "delta_confirm": "升级（只下载变动部分）",
+        "download_full": "下载完整安装包",
+        "delta_hint": "这个版本还没有下载。启动器可以用此实例现有的文件，只下载有变动的区块来组出新版本（通常只占完整安装包的一部分），并以微软的安装包签名校验。也可以改为在后台下载完整安装包。",
+        "delta_phase_verify": "正在校验 {{version}} 的安装包签名…",
+        "delta_phase_compare": "正在与实例现有文件比对…",
+        "delta_phase_download": "正在下载 {{version}} 的变动区块…",
+        "delta_phase_finish": "正在完成安装…",
+        "delta_detail": "沿用 {{reused}} / {{total}} · 已下载 {{downloaded}} / {{toDownload}}"
       }
     },
     "logo": {
@@ -1058,7 +1112,18 @@
     "ERR_UWP_INTEGRITY": "安装包完整性校验失败，请重新下载。",
     "ERR_UWP_NOT_REGISTERED": "此 UWP 实例尚未注册到系统。请先点击“注册”，成功后再启动。",
     "ERR_UWP_PREPARE": "无法为该实例准备系统注册，请检查实例目录权限后重试。",
-    "ERR_LIP_INVALID_GITHUB_PROXY": "请输入有效的 HTTP(S) URL"
+    "ERR_LIP_INVALID_GITHUB_PROXY": "请输入有效的 HTTP(S) URL",
+    "ERR_UPGRADE_IN_USE": "实例文件正在使用中。请关闭 Minecraft 以及打开实例文件夹的窗口或程序后重试。实例未作任何改动。",
+    "ERR_UPGRADE_SWAP_FAILED": "无法替换游戏文件，实例已还原为原来的版本。",
+    "ERR_UPGRADE_PACKAGE_MISMATCH": "这个安装包的类型（GDK/UWP）与实例不同。",
+    "ERR_UPGRADE_CHANNEL_MISMATCH": "这个安装包的频道（正式版/预览版）与实例不同。",
+    "ERR_UPGRADE_SAME_VERSION": "实例已经是这个版本。",
+    "ERR_UPGRADE_INSTANCE_NOT_FOUND": "找不到这个实例。",
+    "ERR_UPGRADE_INSTALLER_NOT_FOUND": "找不到已下载的安装包，请重新下载。",
+    "ERR_UPGRADE_INSTALLER_NOT_SPECIFIED": "未选择安装包。",
+    "ERR_NO_DOWNLOAD_URL": "这个版本没有可用的下载地址。",
+    "ERR_UWP_DELTA_UNAVAILABLE": "这个版本无法只下载变动部分来升级（服务器或安装包不支持），请改为下载完整安装包。",
+    "ERR_UWP_DELTA_DOWNLOAD": "下载变动区块失败。请检查网络后重试，实例未作任何改动。"
   },
   "filemanager": {
     "sort": {

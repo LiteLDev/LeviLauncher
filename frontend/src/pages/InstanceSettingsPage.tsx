@@ -31,8 +31,10 @@ import { formatBytes } from "@/utils/formatting";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
+import { InstanceUpgradeSection } from "@/components/InstanceUpgradeSection";
 import {
   GetVersionLogoDataUrl,
+  GetVersionMeta,
   RemoveVersionLogo,
   SaveVersionLogoFromPath,
   UnregisterVersionByName,
@@ -811,6 +813,27 @@ export default function InstanceSettingsPage() {
               )}
               {vs.selectedTab === "manage" && (
                 <div className="flex flex-col gap-6">
+                  <InstanceUpgradeSection
+                    targetName={vs.targetName}
+                    packageType={vs.packageType}
+                    versionType={vs.versionType}
+                    gameVersion={vs.gameVersion}
+                    leviLaminaVersion={vs.isUWP ? "" : vs.currentLLVersion}
+                    isDisabled={vs.loading}
+                    onUpgraded={async (newVersion) => {
+                      vs.setGameVersion(newVersion);
+                      try {
+                        const meta: any = await GetVersionMeta(vs.targetName);
+                        if (meta) {
+                          vs.setGameVersion(String(meta.gameVersion || newVersion));
+                          vs.setIsRegistered(!!meta.registered);
+                        }
+                      } catch {}
+                    }}
+                  />
+
+                  <Separator className="bg-surface-tertiary/50" />
+
                   <section className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1">
                       <div className="flex flex-wrap items-center gap-2">

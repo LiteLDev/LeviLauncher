@@ -167,6 +167,21 @@
     "unknown_file": "Unknown File",
     "actions": {
       "retry": "Retry"
+    },
+    "queue": {
+      "added": "Added to the download queue",
+      "queued": "Queued",
+      "paused": "Paused",
+      "pause": "Pause",
+      "resume": "Resume"
+    },
+    "upgrade_prompt": {
+      "title": "Download complete",
+      "confirm": "Upgrade instance",
+      "description": "{{version}} is downloaded. Upgrade {{name}} to it now?"
+    },
+    "indicator": {
+      "tooltip": "Downloads: {{active}} running, {{queued}} queued, {{paused}} paused"
     }
   },
   "updating": {
@@ -910,6 +925,45 @@
         "ll_remove_confirm_title": "Confirm Remove LeviLamina",
         "ll_remove_confirm_body": "LeviLamina will be removed from this instance.",
         "ll_remove_confirm_warning": "This action cannot be undone."
+      },
+      "upgrade": {
+        "title": "Change game version",
+        "hint": "Swap this instance's game files for another build of the same channel. Worlds, packs, mods and settings stay in the instance.",
+        "section_body": "Currently {{version}}. Pick a newer or older build instead of creating and setting up a new instance.",
+        "button": "Change version",
+        "modal_title": "Change version of {{name}}",
+        "modal_body": "Current version: {{version}}. Choose the build to switch to. Builds that are not downloaded yet download in the background; you can keep using the launcher meanwhile.",
+        "search": "Search versions",
+        "list_label": "Available versions",
+        "loading": "Loading versions…",
+        "empty": "No other versions of this channel are available.",
+        "downloaded": "Downloaded",
+        "downloading": "Downloading",
+        "download": "Download in background",
+        "download_hint": "This build is not downloaded yet. Download it in the background, then come back here (or use the prompt shown when it finishes) to upgrade.",
+        "newer": "Newer",
+        "older": "Older",
+        "confirm": "Upgrade now",
+        "confirm_downgrade": "Downgrade now",
+        "downgrade_warning": "This is an older version. Worlds opened in a newer version may fail to load or be damaged in an older one. Keep the backup option on.",
+        "leviLamina_warning": "LeviLamina {{version}} and its mods are installed in this instance. They are left unchanged and may not work with the new game version; update them from the Loader tab afterwards.",
+        "backup_first": "Back up the whole instance first",
+        "backup_hint": "Saves the instance's isolated game data and mods as a zip in Backups\\Instances before anything changes.",
+        "progress_label": "Upgrading",
+        "phase_backup": "Backing up the instance…",
+        "phase_prepare": "Preparing…",
+        "phase_extract": "Installing {{version}}…",
+        "success_title": "Version changed",
+        "success_body": "{{name}} now runs {{to}} (was {{from}}). Its data, mods and settings were kept.",
+        "backup_saved": "Backup: {{path}}",
+        "delta_confirm": "Upgrade, downloading only changes",
+        "download_full": "Download full package",
+        "delta_hint": "This build is not downloaded. The launcher can build it from this instance's current files and download only the blocks that changed (usually a fraction of the full package), verified against Microsoft's package signature. Or download the full package in the background.",
+        "delta_phase_verify": "Checking the package signature for {{version}}…",
+        "delta_phase_compare": "Comparing with the instance's current files…",
+        "delta_phase_download": "Downloading changed blocks of {{version}}…",
+        "delta_phase_finish": "Finishing installation…",
+        "delta_detail": "Reused {{reused}} of {{total}} · downloaded {{downloaded}} of {{toDownload}}"
       }
     },
     "logo": {
@@ -1058,7 +1112,18 @@
     "ERR_UWP_INTEGRITY": "The installer failed its integrity check. Download it again.",
     "ERR_UWP_NOT_REGISTERED": "This instance is not registered with Windows. Select Register first, then launch it once registration succeeds.",
     "ERR_UWP_PREPARE": "Could not prepare this instance for registration with Windows. Check the instance folder permissions, then try again.",
-    "ERR_LIP_INVALID_GITHUB_PROXY": "Enter a valid HTTP(S) URL"
+    "ERR_LIP_INVALID_GITHUB_PROXY": "Enter a valid HTTP(S) URL",
+    "ERR_UPGRADE_IN_USE": "The instance's files are in use. Close Minecraft and any window or program using the instance folder, then try again. Nothing was changed.",
+    "ERR_UPGRADE_SWAP_FAILED": "Could not swap the game files. The instance was restored to its previous version.",
+    "ERR_UPGRADE_PACKAGE_MISMATCH": "This installer is for a different package type (GDK/UWP) than the instance.",
+    "ERR_UPGRADE_CHANNEL_MISMATCH": "This installer is for a different channel (Release/Preview) than the instance.",
+    "ERR_UPGRADE_SAME_VERSION": "The instance already runs this version.",
+    "ERR_UPGRADE_INSTANCE_NOT_FOUND": "The instance could not be found.",
+    "ERR_UPGRADE_INSTALLER_NOT_FOUND": "The downloaded installer could not be found. Download it again.",
+    "ERR_UPGRADE_INSTALLER_NOT_SPECIFIED": "No installer was selected.",
+    "ERR_NO_DOWNLOAD_URL": "No download address is available for this version.",
+    "ERR_UWP_DELTA_UNAVAILABLE": "This version can't be upgraded by downloading only changes (the server or package does not support it). Download the full package instead.",
+    "ERR_UWP_DELTA_DOWNLOAD": "Downloading the changed blocks failed. Check your connection and try again; the instance was not changed."
   },
   "filemanager": {
     "sort": {

@@ -32,6 +32,8 @@ func StartMsixvcDownload(ctx context.Context, url string, md5sum string) (string
 func ResumeMsixvcDownload()                { msixvc.Resume() }
 func CancelMsixvcDownload()                { msixvc.Cancel() }
 func CancelMsixvcDownloadTask(dest string) { msixvc.CancelTask(dest) }
+func PauseMsixvcDownloadTask(dest string)  { msixvc.PauseTask(dest) }
+func ResumeMsixvcDownloadTask(dest string) { msixvc.ResumeTask(dest) }
 
 func InstallExtractMsixvc(ctx context.Context, name string, folderName string, isPreview bool) string {
 	n := strings.TrimSpace(name)

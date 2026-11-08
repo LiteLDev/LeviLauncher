@@ -4,8 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Added **Change version** under **Instance Settings → Manage**: an instance can be upgraded or downgraded in place to another build of its channel (GDK and UWP), keeping its worlds, packs, mods and settings instead of setting up a new instance; the whole instance can be backed up first, a failed upgrade restores the previous build, and installed LeviLamina is left as it is with a reminder
+- UWP instances can upgrade by downloading only what changed: the new build is assembled from the instance's unchanged files plus the changed 64 KiB blocks fetched from Windows Update, verified against Microsoft's package signature and block map (for example 57 MB instead of 930 MB from 1.21.113.1 to 1.21.114.1)
+- Downloads run in a queue of at most two at a time, can be paused and resumed from the task center, and show their progress from any page in the title bar
+
 ### Fixed
 
+- UWP packages are now installed with their real file names: percent-encoded part names such as `accessibility%400.5x.icon-….png` or `reducer_wood_block_and%20stripped_all.json` are written as `accessibility@0.5x.icon-….png` and `reducer_wood_block_and stripped_all.json`, the names the game opens; instances installed before keep the old names until they are upgraded or reinstalled
 - Brought the built-in lip in line with lip's latest package-engine fixes: package scripts are passed to `cmd.exe` as written, so quoted paths work; whether a preserved file is kept, and what uninstalling removes, is decided after the package's scripts run; installed dependencies keep their versions when they still fit; updating without arguments handles sources that now give another package; the `mods` folder is only created when an operation changes files; and local paths with `%`, `#` or non-ASCII characters are recorded correctly
 
 ## [1.1.0-beta.1] - 2026-11-08

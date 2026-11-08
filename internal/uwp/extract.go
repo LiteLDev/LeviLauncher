@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -63,6 +64,23 @@ func safeRelativePath(name string) (string, error) {
 		}
 	}
 	return filepath.FromSlash(path.Clean(normalized)), nil
+}
+
+// packagePath maps an Appx archive entry name to the file it installs.
+// Package part names are percent-encoded URIs (OPC): "a%20b.json" and
+// "icon%400.5x.png" are deployed by Windows as "a b.json" and
+// "icon@0.5x.png", which is what the game opens. The decoded name gets the
+// same safety checks as any other path, so an encoded "/" or ".." cannot
+// escape the instance.
+func packagePath(name string) (string, error) {
+	if strings.Contains(name, "%") {
+		decoded, err := url.PathUnescape(name)
+		if err != nil {
+			return "", fmt.Errorf("bad part name %q: %v", name, err)
+		}
+		name = decoded
+	}
+	return safeRelativePath(name)
 }
 
 func architectureRank(candidate, target string) int {
@@ -224,7 +242,14 @@ func Install(ctx context.Context, archivePath, targetDir string, opts Options) (
 	if err := extract(ctx, packageReader, stage, opts.Progress); err != nil {
 		return manifest, err
 	}
-	manifest, err = ReadManifest(stage)
+	return publishStage(ctx, stage, targetDir, opts)
+}
+
+// publishStage validates an extracted package in stage, prepares it and
+// renames it to targetDir. Install and InstallDelta share it, so both publish
+// exactly the same layout.
+func publishStage(ctx context.Context, stage, targetDir string, opts Options) (Manifest, error) {
+	manifest, err := ReadManifest(stage)
 	if err != nil {
 		return manifest, err
 	}
@@ -269,7 +294,7 @@ func extract(ctx context.Context, reader *zip.Reader, dir string, progress func(
 	var total, archiveBytes int64
 	seen := make(map[string]bool, len(reader.File))
 	for _, entry := range reader.File {
-		rel, err := safeRelativePath(entry.Name)
+		rel, err := packagePath(entry.Name)
 		if err != nil {
 			return failure("ERR_UWP_UNSAFE_ARCHIVE", err)
 		}
@@ -296,7 +321,7 @@ func extract(ctx context.Context, reader *zip.Reader, dir string, progress func(
 		if err := ctx.Err(); err != nil {
 			return failure("ERR_CANCELED", err)
 		}
-		rel, _ := safeRelativePath(entry.Name)
+		rel, _ := packagePath(entry.Name)
 		// Store signatures do not apply to the loose development layout. Skip
 		// them before creating a file, leaving the source archive untouched.
 		if strings.EqualFold(rel, "AppxSignature.p7x") {

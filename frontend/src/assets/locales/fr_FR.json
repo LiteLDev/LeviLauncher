@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "Installer l'instance",
       "name_label": "Nom de l'instance",
+      "default_name": "Mon instance {{version}}",
       "placeholder_name": "Saisis un nom d'instance",
       "enable_isolation": "Isolement de l'instance",
       "enable_isolation_desc": "Conserve les données de jeu de cette instance (mondes, paramètres, caches) dans son propre dossier au lieu de les partager avec les données Minecraft du système.",

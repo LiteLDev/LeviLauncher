@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "安装实例",
       "name_label": "实例名称",
+      "default_name": "我的{{version}}实例",
       "placeholder_name": "请输入实例名称",
       "enable_isolation": "实例隔离",
       "enable_isolation_desc": "将该实例的游戏数据（世界、设置、缓存等）保存在实例自己的目录中，而不是与系统中的其他 Minecraft 共用。",

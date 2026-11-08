@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "Zainstaluj instancję",
       "name_label": "Nazwa instancji",
+      "default_name": "Moja instancja {{version}}",
       "placeholder_name": "Wpisz nazwę instancji",
       "enable_isolation": "Izolacja instancji",
       "enable_isolation_desc": "Przechowuj dane gry tej instancji (światy, ustawienia i pamięci podręczne) w jej własnym folderze, zamiast we współdzielonych, ogólnosystemowych danych Minecrafta.",

@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "Installa istanza",
       "name_label": "Nome istanza",
+      "default_name": "La mia istanza {{version}}",
       "placeholder_name": "Inserisci un nome per l'istanza",
       "enable_isolation": "Isolamento istanza",
       "enable_isolation_desc": "Mantiene i dati di gioco di questa istanza (mondi, impostazioni e cache) in una cartella dedicata, senza condividerli con i dati di Minecraft di sistema.",

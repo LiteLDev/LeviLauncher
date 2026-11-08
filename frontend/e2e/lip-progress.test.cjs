@@ -126,7 +126,7 @@ async function run(label, check) {
       });
       const llSwitch = page.getByRole('switch', { name: translations.downloadpage.install.levilamina_label });
       await llSwitch.waitFor();
-      await llSwitch.press('Space');
+      assert.equal(await llSwitch.isChecked(), true);
       await page.getByRole('button', { name: translations.downloadpage.customappx.modal['1'].footer.install_button, exact: true }).click();
       await paused(page, 1);
       await page.getByText(progress.stage_solve, { exact: true }).waitFor();

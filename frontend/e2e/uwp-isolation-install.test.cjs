@@ -11,6 +11,7 @@ runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '../src/
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText, { exports: routeExports });
 const { ROUTES } = routeExports;
+const instanceName = translations.downloadpage.install_folder.default_name.replace('{{version}}', '1.21.100.0');
 const baseURL = process.env.UI_REVIEW_URL || 'http://127.0.0.1:5174/';
 const outputDir = process.env.UI_REVIEW_OUTPUT;
 let browser;
@@ -45,15 +46,15 @@ async function run(viewport, scenario, enabled) {
     await page.getByRole('button', { name: translations.downloadpage.customappx.modal['1'].footer.install_button, exact: true }).click();
     await page.waitForFunction(() => window.__audit.calls.some(call => call.name === 'SaveVersionMeta'));
     const saved = await page.evaluate(() => window.__audit.calls.find(call => call.name === 'SaveVersionMeta'));
-    assert.deepEqual(saved.args, ['1.21.100.0', scenario === 'uwp-isolation-local' ? '1.21.80.3' : '1.21.100.0',
+    assert.deepEqual(saved.args, [instanceName, scenario === 'uwp-isolation-local' ? '1.21.80.3' : '1.21.100.0',
       scenario === 'uwp-isolation-local' ? 'preview' : 'release', enabled, false, false, '', '']);
     if (scenario === 'uwp-isolation-save-error') {
       await page.waitForFunction(() => window.__audit.calls.some(call => call.name === 'DeleteVersionFolder'));
-      assert.deepEqual(await page.evaluate(() => window.__audit.calls.find(call => call.name === 'DeleteVersionFolder').args), ['1.21.100.0']);
+      assert.deepEqual(await page.evaluate(() => window.__audit.calls.find(call => call.name === 'DeleteVersionFolder').args), [instanceName]);
       assert.equal(await page.getByText(translations.downloadpage.install.success, { exact: true }).count(), 0);
     } else {
       await page.getByText(translations.downloadpage.install.success, { exact: true }).waitFor();
-      assert.equal(await page.evaluate(() => window.__audit.uwpMetas.find(meta => meta.name === '1.21.100.0').enableIsolation), enabled);
+      assert.equal(await page.evaluate(name => window.__audit.uwpMetas.find(meta => meta.name === name).enableIsolation, instanceName), enabled);
       assert.equal(await page.evaluate(() => window.__audit.calls.some(call => call.name === 'DeleteVersionFolder' || call.name.startsWith('CopyVersionData'))), false);
     }
     assert.deepEqual(errors, []);

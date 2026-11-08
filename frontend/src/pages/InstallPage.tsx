@@ -138,11 +138,16 @@ export default function InstallPage() {
     : (t("common.release") as unknown as string)) as unknown as string;
   const returnTo: string = String(location?.state?.returnTo || ROUTES.download);
 
-  const [installName, setInstallName] = useState<string>(mirrorVersion || "");
+  const [installName, setInstallName] = useState<string>(() =>
+    mirrorVersion
+      ? (t("downloadpage.install_folder.default_name", {
+          version: mirrorVersion,
+        }) as unknown as string)
+      : "",
+  );
   const [installIsolation, setInstallIsolation] = useState<boolean>(() =>
     readInstallIsolationPreference(),
   );
-  const [installLeviLamina, setInstallLeviLamina] = useState<boolean>(false);
   const [inheritSource, setInheritSource] = useState<string>("");
   const [inheritMetas, setInheritMetas] = useState<any[]>([]);
   const [inheritCandidates, setInheritCandidates] = useState<string[]>([]);
@@ -165,6 +170,9 @@ export default function InstallPage() {
   const isolationSupported = (isUWP && !!customInstallerPath && !mirrorVersion.trim()) ||
     supportsVersionIsolation(packageType, mirrorVersion);
   const isLeviLaminaSupported = !isUWP && Boolean(location?.state?.isLeviLaminaSupported);
+  // Checked by default; only takes effect while the package supports LeviLamina.
+  const [llSwitchOn, setInstallLeviLamina] = useState<boolean>(true);
+  const installLeviLamina = isLeviLaminaSupported && llSwitchOn;
   const [installerDir, setInstallerDir] = useState<string>("");
   const [downloadResolved, setDownloadResolved] = useState<boolean>(false);
   const { getSupportedLLVersions, getLatestLLVersion } = useLeviLamina();

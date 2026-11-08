@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "Instanz installieren",
       "name_label": "Instanzname",
+      "default_name": "Meine {{version}}-Instanz",
       "placeholder_name": "Instanznamen eingeben",
       "enable_isolation": "Instanz-Isolierung",
       "enable_isolation_desc": "Speichert die Spieldaten dieser Instanz (Welten, Einstellungen, Caches) in einem eigenen Ordner, statt sie mit den systemweiten Minecraft-Daten zu teilen.",

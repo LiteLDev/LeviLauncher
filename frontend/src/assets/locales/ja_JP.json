@@ -242,6 +242,7 @@
     "install_folder": {
       "confirm_title": "インスタンスをインストール",
       "name_label": "インスタンス名",
+      "default_name": "マイ{{version}}インスタンス",
       "placeholder_name": "インスタンス名を入力",
       "enable_isolation": "インスタンスの分離",
       "enable_isolation_desc": "このインスタンスのゲームデータ（ワールド、設定、キャッシュなど）を、システム共通のMinecraftデータと共有せず、専用フォルダーに保存します。",

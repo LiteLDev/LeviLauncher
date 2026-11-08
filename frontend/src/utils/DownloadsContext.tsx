@@ -29,14 +29,33 @@ export interface DownloadItem {
   fileName: string;
   url?: string;
   md5sum?: string;
-  installer?: { version: string; type: string; packageType?: "gdk" | "uwp"; uuid?: string; isLeviLaminaSupported: boolean };
+  installer?: {
+    version: string;
+    type: string;
+    packageType?: "gdk" | "uwp";
+    uuid?: string;
+    isLeviLaminaSupported: boolean;
+    // Set when the download was started to upgrade this existing instance;
+    // the finished download then offers the upgrade instead of a new install.
+    upgradeTarget?: string;
+  };
+  // Set while the download waits for a free slot (status "queued").
+  queuedAt?: number;
 }
+
+// At most this many downloads transfer at once; later ones wait in a queue
+// and start by themselves as slots free up.
+export const MAX_CONCURRENT_DOWNLOADS = 2;
 
 export const isDownloadActive = (status: string): boolean =>
   ["starting", "started", "resumed", "verifying"].includes(status);
 
 export const isDownloadTerminal = (status: string): boolean =>
   ["done", "cancelled", "error"].includes(status);
+
+// Pending downloads have not finished yet: running, paused or queued.
+export const isDownloadPending = (status: string): boolean =>
+  isDownloadActive(status) || status === "paused" || status === "queued";
 
 interface DownloadsContextType {
   downloads: DownloadItem[];
@@ -47,6 +66,14 @@ interface DownloadsContextType {
     installer?: DownloadItem["installer"],
   ) => Promise<boolean>;
   cancelDownload: (dest?: string) => void;
+  pauseDownload: (dest: string) => void;
+  resumeDownload: (dest: string) => void;
+  // Suppresses the global "finished, install now?" prompt for a download
+  // whose page already offers the next step.
+  dismissPrompt: (dest: string) => void;
+  // Names the instance whose upgrade dialog is open ("" when none); its
+  // finished downloads are offered by that dialog, not the global prompt.
+  setUpgradeDialogTarget: (name: string) => void;
   removeDownload: (dest: string) => void;
   clearError: (dest?: string) => void;
   isDownloading: boolean;
@@ -61,6 +88,10 @@ export const useDownloads = () => {
       downloads: [],
       startDownload: () => Promise.resolve(false),
       cancelDownload: () => {},
+      pauseDownload: () => {},
+      resumeDownload: () => {},
+      dismissPrompt: () => {},
+      setUpgradeDialogTarget: () => {},
       removeDownload: () => {},
       clearError: () => {},
       isDownloading: false,
@@ -77,6 +108,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [dismissedInstallPrompts, setDismissedInstallPrompts] = useState<Set<string>>(
     () => new Set(),
   );
+  const [upgradeDialogTarget, setUpgradeDialogTarget] = useState("");
   const [downloadsMap, setDownloadsMap] = useState<
     Record<string, DownloadItem>
   >({});
@@ -288,10 +320,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
       (dl) =>
         (dl.fileName === displayName ||
           (dl.dest && getFileNameFromDest(dl.dest) === displayName)) &&
-        (dl.status === "started" ||
-          dl.status === "resumed" ||
-          dl.status === "starting" ||
-          dl.status === "verifying"),
+        isDownloadPending(dl.status),
     );
 
     if (isAlreadyDownloading) {
@@ -301,6 +330,28 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         timeout: 2000,
       });
       return false;
+    }
+
+    const activeCount =
+      startingRef.current.size +
+      Object.values(downloadsRef.current).filter((dl) => isDownloadActive(dl.status)).length;
+    if (activeCount >= MAX_CONCURRENT_DOWNLOADS) {
+      const key = `queued:${displayName || url}`;
+      cancelledRef.current.delete(key);
+      updateDownload(key, () => ({
+        dest: key,
+        progress: null,
+        speed: 0,
+        status: "queued",
+        error: "",
+        fileName: displayName,
+        url,
+        md5sum,
+        installer,
+        queuedAt: Date.now(),
+      }));
+      toast(t("download_manager.queue.added"), { variant: "success", timeout: 2000 });
+      return true;
     }
 
     let urlWithFilename = url;
@@ -365,6 +416,15 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
   const cancelDownload = (dest?: string) => {
     if (typeof minecraft === "undefined") return;
 
+    if (dest && downloadsRef.current[dest]?.status === "queued") {
+      setDownloadsMap((prev) => {
+        const next = { ...prev };
+        delete next[dest];
+        return next;
+      });
+      return;
+    }
+
     if (dest) {
       if (typeof minecraft.CancelMsixvcDownloadTask === "function") {
         minecraft.CancelMsixvcDownloadTask(dest);
@@ -383,10 +443,15 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
     setDownloadsMap((prev) => {
       const next = { ...prev };
       Object.keys(next).forEach((key) => {
+        if (next[key].status === "queued") {
+          delete next[key];
+          return;
+        }
         if (
           next[key].status === "started" ||
           next[key].status === "starting" ||
-          next[key].status === "resumed"
+          next[key].status === "resumed" ||
+          next[key].status === "paused"
         ) {
           next[key] = {
             ...next[key],
@@ -399,6 +464,47 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
       return next;
     });
   };
+
+  const pauseDownload = (dest: string) => {
+    const status = downloadsRef.current[dest]?.status || "";
+    if (!["started", "resumed"].includes(status)) return;
+    if (typeof minecraft?.PauseMsixvcDownloadTask === "function") {
+      minecraft.PauseMsixvcDownloadTask(dest);
+    }
+  };
+
+  const resumeDownload = (dest: string) => {
+    if (downloadsRef.current[dest]?.status !== "paused") return;
+    if (typeof minecraft?.ResumeMsixvcDownloadTask === "function") {
+      minecraft.ResumeMsixvcDownloadTask(dest);
+    }
+  };
+
+  // Start queued downloads, oldest first, whenever a slot is free.
+  const pumpingRef = useRef(false);
+  useEffect(() => {
+    if (pumpingRef.current) return;
+    const all = Object.values(downloadsMap);
+    const running =
+      startingRef.current.size + all.filter((dl) => isDownloadActive(dl.status)).length;
+    if (running >= MAX_CONCURRENT_DOWNLOADS) return;
+    const next = all
+      .filter((dl) => dl.status === "queued")
+      .sort((a, b) => (a.queuedAt || 0) - (b.queuedAt || 0))[0];
+    if (!next || !next.url) return;
+    pumpingRef.current = true;
+    setDownloadsMap((prev) => {
+      const copy = { ...prev };
+      delete copy[next.dest];
+      return copy;
+    });
+    downloadsRef.current = { ...downloadsRef.current };
+    delete downloadsRef.current[next.dest];
+    void startDownload(next.url, next.fileName || undefined, next.md5sum, next.installer)
+      .finally(() => {
+        pumpingRef.current = false;
+      });
+  }, [downloadsMap]);
 
   const removeDownload = (dest: string) => {
     if (!isDownloadTerminal(downloadsRef.current[dest]?.status || "")) return;
@@ -447,7 +553,8 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
   const downloads = Object.values(downloadsMap);
   const isDownloading = downloads.some((dl) => isDownloadActive(dl.status));
   const installPrompt = downloads.find((dl) =>
-    dl.status === "done" && dl.installer && !dismissedInstallPrompts.has(dl.dest),
+    dl.status === "done" && dl.installer && !dismissedInstallPrompts.has(dl.dest) &&
+    !(dl.installer.upgradeTarget && dl.installer.upgradeTarget === upgradeDialogTarget),
   );
   const dismissInstallPrompt = () => {
     if (!installPrompt) return;
@@ -460,6 +567,11 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         downloads,
         startDownload,
         cancelDownload,
+        pauseDownload,
+        resumeDownload,
+        dismissPrompt: (dest: string) =>
+          setDismissedInstallPrompts((prev) => (prev.has(dest) ? prev : new Set(prev).add(dest))),
+        setUpgradeDialogTarget,
         removeDownload,
         clearError,
         isDownloading,
@@ -470,14 +582,31 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         isOpen={!!installPrompt}
         onOpenChange={(open) => { if (!open) dismissInstallPrompt(); }}
         type="success"
-        title={t("download_manager.install_prompt.title")}
-        confirmText={t("download_manager.install_prompt.confirm")}
+        title={t(installPrompt?.installer?.upgradeTarget
+          ? "download_manager.upgrade_prompt.title"
+          : "download_manager.install_prompt.title")}
+        confirmText={t(installPrompt?.installer?.upgradeTarget
+          ? "download_manager.upgrade_prompt.confirm"
+          : "download_manager.install_prompt.confirm")}
         cancelText={t("download_manager.install_prompt.later")}
         showCancelButton
         onCancel={dismissInstallPrompt}
         onConfirm={() => {
           if (!installPrompt?.installer) return;
           dismissInstallPrompt();
+          if (installPrompt.installer.upgradeTarget) {
+            navigate(ROUTES.instanceSettings, { state: {
+              name: installPrompt.installer.upgradeTarget,
+              tab: "manage",
+              upgradeInstaller: {
+                version: installPrompt.installer.version,
+                type: installPrompt.installer.type,
+                packageType: installPrompt.installer.packageType,
+                installerPath: installPrompt.dest,
+              },
+            } });
+            return;
+          }
           navigate(ROUTES.install, { state: {
             mirrorVersion: installPrompt.installer.version,
             mirrorType: installPrompt.installer.type,
@@ -489,9 +618,14 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         }}
       >
         <ModalDescription>
-          {t("download_manager.install_prompt.description", {
-            name: installPrompt?.fileName || installPrompt?.installer?.version || "",
-          })}
+          {installPrompt?.installer?.upgradeTarget
+            ? t("download_manager.upgrade_prompt.description", {
+                name: installPrompt.installer.upgradeTarget,
+                version: installPrompt.installer.version,
+              })
+            : t("download_manager.install_prompt.description", {
+                name: installPrompt?.fileName || installPrompt?.installer?.version || "",
+              })}
         </ModalDescription>
       </UnifiedModal>
     </DownloadsContext.Provider>

@@ -167,6 +167,21 @@
     "unknown_file": "未知檔案",
     "actions": {
       "retry": "重試"
+    },
+    "queue": {
+      "added": "已加入下載佇列",
+      "queued": "排隊中",
+      "paused": "已暫停",
+      "pause": "暫停",
+      "resume": "繼續"
+    },
+    "upgrade_prompt": {
+      "title": "下載完成",
+      "confirm": "升級實例",
+      "description": "{{version}} 已下載完成，現在把 {{name}} 升級到這個版本嗎？"
+    },
+    "indicator": {
+      "tooltip": "下載：{{active}} 個進行中，{{queued}} 個排隊，{{paused}} 個暫停"
     }
   },
   "updating": {
@@ -910,6 +925,45 @@
         "ll_remove_confirm_title": "確認移除 LeviLamina",
         "ll_remove_confirm_body": "將從目前實例中移除 LeviLamina。",
         "ll_remove_confirm_warning": "此操作不可復原。"
+      },
+      "upgrade": {
+        "title": "更換遊戲版本",
+        "hint": "把這個實例的遊戲檔案換成同一頻道的其他版本。世界、資源包、模組和設定都會留在實例中。",
+        "section_body": "目前為 {{version}}。直接升級或降級，不必新建實例再重新設定。",
+        "button": "更換版本",
+        "modal_title": "更換 {{name}} 的版本",
+        "modal_body": "目前版本：{{version}}。選擇要切換到的版本。尚未下載的版本會在背景下載，期間可以繼續使用啟動器。",
+        "search": "搜尋版本",
+        "list_label": "可用版本",
+        "loading": "正在載入版本…",
+        "empty": "此頻道沒有其他可用版本。",
+        "downloaded": "已下載",
+        "downloading": "下載中",
+        "download": "背景下載",
+        "download_hint": "這個版本還沒有下載。先在背景下載，完成後回到這裡（或在完成提示中）進行升級。",
+        "newer": "較新",
+        "older": "較舊",
+        "confirm": "立即升級",
+        "confirm_downgrade": "立即降級",
+        "downgrade_warning": "這是較舊的版本。在新版本中開過的世界，在舊版本中可能無法載入或損壞。請保持勾選備份。",
+        "leviLamina_warning": "此實例已安裝 LeviLamina {{version}} 及其模組，升級不會改動它們，但可能與新遊戲版本不相容；之後請在「載入器」頁更新。",
+        "backup_first": "先備份整個實例",
+        "backup_hint": "在任何改動前，把實例的隔離遊戲資料和模組打包成 zip 存到 Backups\\Instances。",
+        "progress_label": "正在升級",
+        "phase_backup": "正在備份實例…",
+        "phase_prepare": "正在準備…",
+        "phase_extract": "正在安裝 {{version}}…",
+        "success_title": "版本已更換",
+        "success_body": "{{name}} 已從 {{from}} 換成 {{to}}，資料、模組和設定都已保留。",
+        "backup_saved": "備份：{{path}}",
+        "delta_confirm": "升級（只下載變動部分）",
+        "download_full": "下載完整安裝包",
+        "delta_hint": "這個版本還沒有下載。啟動器可以用此實例現有的檔案，只下載有變動的區塊來組出新版本（通常只佔完整安裝包的一部分），並以微軟的安裝包簽章驗證。也可以改為在背景下載完整安裝包。",
+        "delta_phase_verify": "正在驗證 {{version}} 的安裝包簽章…",
+        "delta_phase_compare": "正在與實例現有檔案比對…",
+        "delta_phase_download": "正在下載 {{version}} 的變動區塊…",
+        "delta_phase_finish": "正在完成安裝…",
+        "delta_detail": "沿用 {{reused}} / {{total}} · 已下載 {{downloaded}} / {{toDownload}}"
       }
     },
     "logo": {
@@ -1058,7 +1112,18 @@
     "ERR_UWP_INTEGRITY": "安裝包完整性檢查失敗，請重新下載。",
     "ERR_UWP_NOT_REGISTERED": "此實例尚未註冊到 Windows。請先選擇「註冊」，成功後再啟動。",
     "ERR_UWP_PREPARE": "無法為此實例準備系統註冊，請檢查實例資料夾權限後重試。",
-    "ERR_LIP_INVALID_GITHUB_PROXY": "請輸入有效的 HTTP(S) URL"
+    "ERR_LIP_INVALID_GITHUB_PROXY": "請輸入有效的 HTTP(S) URL",
+    "ERR_UPGRADE_IN_USE": "實例檔案正在使用中。請關閉 Minecraft 以及開著實例資料夾的視窗或程式後重試。實例沒有任何改動。",
+    "ERR_UPGRADE_SWAP_FAILED": "無法替換遊戲檔案，實例已還原為原來的版本。",
+    "ERR_UPGRADE_PACKAGE_MISMATCH": "這個安裝包的類型（GDK/UWP）與實例不同。",
+    "ERR_UPGRADE_CHANNEL_MISMATCH": "這個安裝包的頻道（正式版/預覽版）與實例不同。",
+    "ERR_UPGRADE_SAME_VERSION": "實例已經是這個版本。",
+    "ERR_UPGRADE_INSTANCE_NOT_FOUND": "找不到這個實例。",
+    "ERR_UPGRADE_INSTALLER_NOT_FOUND": "找不到已下載的安裝包，請重新下載。",
+    "ERR_UPGRADE_INSTALLER_NOT_SPECIFIED": "未選擇安裝包。",
+    "ERR_NO_DOWNLOAD_URL": "這個版本沒有可用的下載位址。",
+    "ERR_UWP_DELTA_UNAVAILABLE": "這個版本無法只下載變動部分來升級（伺服器或安裝包不支援），請改為下載完整安裝包。",
+    "ERR_UWP_DELTA_DOWNLOAD": "下載變動區塊失敗。請檢查網路後重試，實例沒有任何改動。"
   },
   "filemanager": {
     "sort": {

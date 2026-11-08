@@ -2460,6 +2460,7 @@ export const useInstanceSettings = () => {
     newName,
     setNewName,
     gameVersion,
+    setGameVersion,
     versionType,
     isPreview,
     enableIsolation,

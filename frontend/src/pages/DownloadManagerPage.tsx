@@ -6,7 +6,7 @@ import { ROUTES } from "@/constants/routes";
 import { openDirectory } from "@/utils/explorer";
 import { resolveInstallError } from "@/utils/installError";
 import { PageHeader } from "@/components/PageHeader";
-import { isDownloadActive, isDownloadTerminal, useDownloads } from "@/utils/DownloadsContext";
+import { isDownloadActive, isDownloadPending, isDownloadTerminal, useDownloads } from "@/utils/DownloadsContext";
 import { useTranslation } from "react-i18next";
 
 import { motion } from "framer-motion";
@@ -21,16 +21,18 @@ import {
   FaExclamationCircle,
   FaBoxOpen,
   FaRedo,
+  FaPause,
+  FaPlay,
 } from "react-icons/fa";
 
 export const DownloadManagerPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [filter, setFilter] = React.useState("all");
-  const { downloads, cancelDownload, removeDownload, startDownload } =
+  const { downloads, cancelDownload, pauseDownload, resumeDownload, removeDownload, startDownload } =
     useDownloads();
   const matchesFilter = (status: string, value: string) => value === "all" ||
-    (value === "active" ? isDownloadActive(status) : value === "done" ? status === "done" : ["error", "cancelled"].includes(status));
+    (value === "active" ? isDownloadPending(status) : value === "done" ? status === "done" : ["error", "cancelled"].includes(status));
   const visibleDownloads = downloads.filter((task) => matchesFilter(task.status, filter));
 
   return (
@@ -91,6 +93,14 @@ export const DownloadManagerPage: React.FC = () => {
                                 {<FaCheckCircle />}
                                 <Chip.Label>{t("common.completed")}</Chip.Label>
                               </Chip>
+                            ) : task.status === "queued" ? (
+                              <Chip size="sm" variant="soft" color={"default"}>
+                                <Chip.Label>{t("download_manager.queue.queued")}</Chip.Label>
+                              </Chip>
+                            ) : task.status === "paused" ? (
+                              <Chip size="sm" variant="soft" color={"warning"}>
+                                <Chip.Label>{t("download_manager.queue.paused")}</Chip.Label>
+                              </Chip>
                             ) : task.status === "cancelled" ? (
                               <Chip size="sm" variant="soft" color={"warning"}>
                                 <Chip.Label>{t("common.cancelled")}</Chip.Label>
@@ -119,7 +129,23 @@ export const DownloadManagerPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {active && !verifying && (
+                      {(active || task.status === "paused") && !verifying && task.status !== "starting" && (
+                        <Tooltip>
+                          <Button
+                            aria-label={t(task.status === "paused" ? "download_manager.queue.resume" : "download_manager.queue.pause")}
+                            isIconOnly
+                            onPress={() => task.status === "paused" ? resumeDownload(task.dest) : pauseDownload(task.dest)}
+                            variant={"secondary"}
+                            className={"rounded-full"}
+                          >
+                            {task.status === "paused" ? <FaPlay /> : <FaPause />}
+                          </Button>
+                          <Tooltip.Content>
+                            {t(task.status === "paused" ? "download_manager.queue.resume" : "download_manager.queue.pause")}
+                          </Tooltip.Content>
+                        </Tooltip>
+                      )}
+                      {(active || task.status === "paused" || task.status === "queued") && !verifying && (
                         <Tooltip>
                         <Button
                           aria-label={t("audit.primary.download.cancel")}
@@ -137,7 +163,17 @@ export const DownloadManagerPage: React.FC = () => {
                         <div className="flex shrink-0 flex-wrap gap-2">
                           {task.status === "done" && (
                             <>
-                              {task.installer && <Button variant="primary" onPress={() => navigate(ROUTES.install, { state: {
+                              {task.installer?.upgradeTarget && <Button variant="primary" onPress={() => navigate(ROUTES.instanceSettings, { state: {
+                                name: task.installer!.upgradeTarget,
+                                tab: "manage",
+                                upgradeInstaller: {
+                                  version: task.installer!.version,
+                                  type: task.installer!.type,
+                                  packageType: task.installer!.packageType,
+                                  installerPath: task.dest,
+                                },
+                              } })}>{t("download_manager.upgrade_prompt.confirm")}</Button>}
+                              {task.installer && !task.installer.upgradeTarget && <Button variant="primary" onPress={() => navigate(ROUTES.install, { state: {
                                 mirrorVersion: task.installer!.version,
                                 mirrorType: task.installer!.type,
                                 packageType: task.installer!.packageType,
@@ -215,7 +251,7 @@ export const DownloadManagerPage: React.FC = () => {
                         }
                         size="md"
                         isIndeterminate={
-                          verifying || (active &&
+                          verifying || task.status === "queued" || (active &&
                           (!task.progress || task.progress.total === 0))
                         }
                       >

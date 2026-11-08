@@ -37,6 +37,7 @@ LeviLauncher 读写的每一个路径都在这里定义，名称常量在 `apppa
     Updates\                          启动器更新包，安装后删除
     Downloads\                        为导入而下载的文件，超过 1 天后启动时清理
     Imports\                          前端交给后端导入的文件，超过 1 天后启动时清理
+    Upgrades\                         原地升级实例时暂放新版本与换下的旧游戏文件，升级结束后删除
     gdk-pending-versions.json
     gamertags.json
 ```

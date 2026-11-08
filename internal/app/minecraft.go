@@ -367,6 +367,16 @@ func (a *Minecraft) CancelMsixvcDownloadTask(dest string) {
 	mcservice.CancelMsixvcDownloadTask(dest)
 }
 
+// PauseMsixvcDownloadTask pauses one download, keeping its partial file.
+func (a *Minecraft) PauseMsixvcDownloadTask(dest string) {
+	mcservice.PauseMsixvcDownloadTask(dest)
+}
+
+// ResumeMsixvcDownloadTask resumes a paused download from its partial file.
+func (a *Minecraft) ResumeMsixvcDownloadTask(dest string) {
+	mcservice.ResumeMsixvcDownloadTask(dest)
+}
+
 func (a *Minecraft) InstallExtractMsixvc(name string, folderName string, isPreview bool) string {
 	return mcservice.InstallExtractMsixvc(a.ctx, name, folderName, isPreview)
 }

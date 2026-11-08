@@ -35,6 +35,9 @@ const (
 	UpdatesDirName             = "Updates"
 	DownloadsDirName           = "Downloads"
 	ImportsDirName             = "Imports"
+	// UpgradesDirName stages a new game build while an instance is upgraded in
+	// place; it shares the volume of Instances, so the swap is a rename.
+	UpgradesDirName            = "Upgrades"
 	GDKPendingVersionsFileName = "gdk-pending-versions.json"
 	GamertagsFileName          = "gamertags.json"
 

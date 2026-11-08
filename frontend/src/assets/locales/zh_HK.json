@@ -286,7 +286,6 @@
       "version_label": "版本",
       "ll_version_label": "LeviLamina 版本",
       "ll_version_placeholder": "請選擇 LeviLamina 版本",
-      "hint": "請稍候，此過程可能需要較長時間…",
       "estimated_size": "安裝容量（估算）",
       "target": "安裝目標",
       "success_title": "安裝完成",

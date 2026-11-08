@@ -21,7 +21,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FaChevronDown, FaDownload } from "react-icons/fa";
+import { FaChevronDown } from "react-icons/fa";
 import { ROUTES } from "@/constants/routes";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
@@ -775,19 +775,6 @@ export default function InstallPage() {
               <Card className={LAYOUT.GLASS_CARD.BASE}>
                 <Card.Content className="py-12">
                   <div className="flex flex-col items-center justify-center h-full gap-4">
-                    <div className="w-16 h-16 rounded-full bg-surface dark:bg-surface-secondary border-4 border-border dark:border-zinc-700 flex items-center justify-center">
-                      <FaDownload className="w-5 h-5 text-accent" />
-                    </div>
-
-                    <div className="flex flex-col items-center gap-1 text-center max-w-sm">
-                      <h2 className="text-xl font-bold text-foreground dark:text-white">
-                        {t("downloadmodal.installing.title")}
-                      </h2>
-                      <p className="text-sm text-muted dark:text-zinc-400">
-                        {t("downloadpage.install.hint")}
-                      </p>
-                    </div>
-
                     <div className="w-full max-w-lg flex flex-col gap-2">
                       {installingVersion && (
                         <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-secondary/50 ">

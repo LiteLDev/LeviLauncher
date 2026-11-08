@@ -286,7 +286,6 @@
       "version_label": "Version",
       "ll_version_label": "LeviLamina Version",
       "ll_version_placeholder": "Select a LeviLamina version",
-      "hint": "Please wait, this process may take a while…",
       "estimated_size": "Installed size (estimated)",
       "target": "Install Target",
       "success_title": "Install Complete",

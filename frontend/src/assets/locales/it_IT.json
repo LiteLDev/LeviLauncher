@@ -286,7 +286,6 @@
       "version_label": "Versione",
       "ll_version_label": "Versione LeviLamina",
       "ll_version_placeholder": "Seleziona versione LeviLamina",
-      "hint": "Attendi, questo processo potrebbe richiedere del tempo…",
       "estimated_size": "Spazio installato (stimato)",
       "target": "Destinazione installazione",
       "success_title": "Installazione completata",

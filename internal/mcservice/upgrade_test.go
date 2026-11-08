@@ -104,3 +104,58 @@ func TestSwapInstanceRollsBackWhenNewBuildCannotMove(t *testing.T) {
 		t.Errorf("mods not restored: %q", got)
 	}
 }
+
+// A lip-installed LeviLamina keeps the unpatched executable as
+// Minecraft.Windows.exe.bak and renames it back on uninstall. The old build's
+// .bak must not survive the upgrade, or the next LeviLamina update restores
+// the old executable over the new game.
+func TestSwapInstanceReplacesExecutableBackups(t *testing.T) {
+	root := t.TempDir()
+	inst := filepath.Join(root, "Instances", "A")
+	newDir := filepath.Join(root, "Upgrades", "A_new")
+	oldDir := filepath.Join(root, "Upgrades", "A_old")
+
+	writeTestFile(t, filepath.Join(inst, "Minecraft.Windows.exe"), "old exe patched")
+	writeTestFile(t, filepath.Join(inst, "Minecraft.Windows.exe.bak"), "old exe")
+	writeTestFile(t, filepath.Join(inst, "Minecraft.Windows.exe.orig"), "old exe before import patch")
+	writeTestFile(t, filepath.Join(inst, "Removed.exe.bak"), "backup of a dropped exe")
+	writeTestFile(t, filepath.Join(inst, "notes.bak"), "user file")
+	writeTestFile(t, filepath.Join(newDir, "Minecraft.Windows.exe"), "new exe")
+
+	if code := swapInstance(inst, newDir, oldDir); code != "" {
+		t.Fatalf("swapInstance: %s", code)
+	}
+	checks := map[string]string{
+		"Minecraft.Windows.exe":     "new exe",
+		"Minecraft.Windows.exe.bak": "new exe",
+		"notes.bak":                 "user file",
+	}
+	for rel, want := range checks {
+		if got := readTestFile(t, filepath.Join(inst, rel)); got != want {
+			t.Errorf("%s = %q, want %q", rel, got, want)
+		}
+	}
+	for _, gone := range []string{"Minecraft.Windows.exe.orig", "Removed.exe.bak"} {
+		if _, err := os.Stat(filepath.Join(inst, gone)); !os.IsNotExist(err) {
+			t.Errorf("%s should not be carried over", gone)
+		}
+	}
+}
+
+// Without a lip backup in the old instance no .bak is invented.
+func TestSwapInstanceWritesNoBackupWithoutLip(t *testing.T) {
+	root := t.TempDir()
+	inst := filepath.Join(root, "Instances", "A")
+	newDir := filepath.Join(root, "Upgrades", "A_new")
+	oldDir := filepath.Join(root, "Upgrades", "A_old")
+
+	writeTestFile(t, filepath.Join(inst, "Minecraft.Windows.exe"), "old exe")
+	writeTestFile(t, filepath.Join(newDir, "Minecraft.Windows.exe"), "new exe")
+
+	if code := swapInstance(inst, newDir, oldDir); code != "" {
+		t.Fatalf("swapInstance: %s", code)
+	}
+	if _, err := os.Stat(filepath.Join(inst, "Minecraft.Windows.exe.bak")); !os.IsNotExist(err) {
+		t.Errorf("no .bak should be written when the old instance had none")
+	}
+}

@@ -3,6 +3,8 @@ package mcservice
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -324,6 +326,12 @@ func swapInstance(instDir, newDir, oldDir string) string {
 		undo()
 		return "ERR_UPGRADE_SWAP_FAILED"
 	}
+	// The copies land in newDir only, which the caller removes on failure.
+	if err := refreshExecutableBackups(oldDir, newDir); err != nil {
+		log.Printf("UpgradeInstance: refresh executable backups: %v", err)
+		undo()
+		return "ERR_UPGRADE_SWAP_FAILED"
+	}
 	for _, m := range plan {
 		if err := os.Rename(m[0], m[1]); err != nil {
 			log.Printf("UpgradeInstance: move %s: %v", m[0], err)
@@ -345,6 +353,11 @@ func swapInstance(instDir, newDir, oldDir string) string {
 // entries from oldDir into the new build at newDir:
 //   - entries the new build ships are left behind (they are game files);
 //   - top-level binaries the new build no longer ships are left behind;
+//   - backups of the old executable (Minecraft.Windows.exe.bak from lip's
+//     PeEditor, .orig from the launcher's import patch) are left behind: a
+//     later LeviLamina uninstall restores the .bak over the game, which
+//     would bring the old build's executable back (refreshExecutableBackups
+//     writes a .bak of the new executable instead);
 //   - .levilauncher is merged entry by entry and the new build wins, because
 //     the UWP installer writes the Xbox auth-key marker of the new executable
 //     there; the legacy root marker describes the old executable and is
@@ -377,11 +390,71 @@ func upgradeMoves(oldDir, newDir string) ([][2]string, error) {
 			continue
 		case !e.IsDir() && upgradeDropExt[strings.ToLower(filepath.Ext(n))]:
 			continue
+		case !e.IsDir() && isExecutableBackup(n):
+			continue
 		default:
 			plan = append(plan, [2]string{from, to})
 		}
 	}
 	return plan, nil
+}
+
+// isExecutableBackup reports a backup copy of a top-level executable:
+// "<name>.exe.bak" (lip's PeEditor -b) or "<name>.exe.orig" (peeditor's
+// ReplaceFileW backup).
+func isExecutableBackup(name string) bool {
+	lower := strings.ToLower(name)
+	return strings.HasSuffix(lower, ".exe.bak") || strings.HasSuffix(lower, ".exe.orig")
+}
+
+// refreshExecutableBackups keeps lip's restore point valid across an upgrade.
+// LeviLamina installed through lip patches the executable in place and keeps
+// the unpatched one as "<exe>.bak"; uninstalling (also when lip moves to a
+// newer LeviLamina) renames that .bak back over the executable. For every
+// such .bak in oldDir whose executable the new build ships, the new build's
+// own, still unpatched executable is copied to "<exe>.bak" in newDir.
+func refreshExecutableBackups(oldDir, newDir string) error {
+	entries, err := os.ReadDir(oldDir)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		n := e.Name()
+		if e.IsDir() || !strings.HasSuffix(strings.ToLower(n), ".exe.bak") {
+			continue
+		}
+		exe := n[:len(n)-len(".bak")]
+		src := filepath.Join(newDir, exe)
+		if fi, err := os.Stat(src); err != nil || fi.IsDir() {
+			continue
+		}
+		if err := copyFile(src, filepath.Join(newDir, n)); err != nil {
+			return fmt.Errorf("back up %s: %w", exe, err)
+		}
+	}
+	return nil
+}
+
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		out.Close()
+		os.Remove(dst)
+		return err
+	}
+	if err := out.Close(); err != nil {
+		os.Remove(dst)
+		return err
+	}
+	return nil
 }
 
 // UpgradeTargetError describes why a catalog version cannot be used to

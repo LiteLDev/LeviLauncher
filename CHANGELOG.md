@@ -4,9 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0-beta.2] - 2026-11-09
+
 ### Added
 
 - Added a preset picker next to the LIP GitHub proxy field in Settings; a custom proxy URL can still be typed in
+- Launch, register, mod install/uninstall and cache-clean error dialogs now show the likeliest causes in plain words, the technical detail of the failure, a copy button and a button to open the launcher logs folder; mod action toasts include the first cause
 
 ### Changed
 
@@ -28,7 +31,6 @@ All notable changes to this project will be documented in this file.
 - Installing a GDK version no longer fails over and over with `ERR_NATIVE_MSIXVC: missing device STS` when Microsoft stops accepting the launcher's registered device: the launcher registers a new device once and retries, keeping the old credential as `device.dpapi.rejected` in the accounts folder
 - When Microsoft still does not issue the device token, the install error is now `ERR_AUTH_DEVICE_TOKEN` and shows which step failed with its HTTP status and fault codes, or that login.live.com could not be reached or was answered by something else (such as a proxy), instead of suggesting a damaged download
 - GDK install errors in the GUI and CLI now include the failure reason after the error code
-
 - Brought the built-in lip in line with lip's latest package-engine fixes: package scripts are passed to `cmd.exe` as written, so quoted paths work; whether a preserved file is kept, and what uninstalling removes, is decided after the package's scripts run; installed dependencies keep their versions when they still fit; updating without arguments handles sources that now give another package; the `mods` folder is only created when an operation changes files; and local paths with `%`, `#` or non-ASCII characters are recorded correctly
 
 ## [1.1.0-beta.1] - 2026-11-08
@@ -338,7 +340,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.1...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.2...HEAD
+[1.1.0-beta.2]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.1...v1.1.0-beta.2
 [1.1.0-beta.1]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.7...v1.1.0-beta.1
 [1.0.7]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.5...v1.0.6

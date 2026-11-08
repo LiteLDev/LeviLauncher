@@ -25,6 +25,7 @@ import (
 	buildcfg "github.com/liteldev/LeviLauncher/build"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
@@ -375,7 +376,7 @@ func verifyFileSHA256(path string, expected string) error {
 
 func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error {
 	var lastErr error
-	tmp := dest + ".part"
+	tmp := fsx.PartialPath(dest)
 	for _, target := range urls {
 		_ = os.Remove(tmp)
 		req, cancel, err := newTimedRequest(ctx, http.MethodGet, target, updateDownloadTimeout)
@@ -554,8 +555,7 @@ func Update(version string) error {
 		execName += ".exe"
 	}
 
-	base := apppath.BaseRoot()
-	updDir := filepath.Join(base, "updates")
+	updDir := apppath.UpdatesDir()
 	if err := os.MkdirAll(updDir, 0o755); err != nil {
 		return emitUpdateError("ERR_UPDATE_WRITE_FAILED", err)
 	}

@@ -9,6 +9,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	"image/png"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,12 +24,12 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/icons"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/storage"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"golang.org/x/sys/windows"
-	winreg "golang.org/x/sys/windows/registry"
 )
 
 type ContentCounts struct {
@@ -167,7 +168,7 @@ func GetContentRoots(name string) types.ContentRoots {
 	channel := ""
 	packageType := "gdk"
 	if verName != "" {
-		if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+		if vdir, err := apppath.InstancesDir(); err == nil && strings.TrimSpace(vdir) != "" {
 			dir := filepath.Join(vdir, verName)
 			if m, merr := versions.ReadMeta(dir); merr == nil {
 				isIsolation = m.EnableIsolation
@@ -187,7 +188,7 @@ func GetContentRoots(name string) types.ContentRoots {
 		// named per channel to match GDK. Non-isolated instances share the Windows
 		// package family's LocalState.
 		if isIsolation && verName != "" {
-			if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+			if vdir, err := apppath.InstancesDir(); err == nil && strings.TrimSpace(vdir) != "" {
 				base := filepath.Join(vdir, verName, isolationDirName(packageType, channel))
 				roots.Base = base
 				roots.ComMojangRoot = filepath.Join(base, "games", "com.mojang")
@@ -223,7 +224,7 @@ func GetContentRoots(name string) types.ContentRoots {
 	}
 	base := ""
 	if isIsolation && verName != "" {
-		if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+		if vdir, err := apppath.InstancesDir(); err == nil && strings.TrimSpace(vdir) != "" {
 			base = filepath.Join(vdir, verName, gameDirName)
 		}
 	} else {
@@ -290,7 +291,7 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 	if code := versions.ValidateFolderName(name); code != "" || strings.TrimSpace(name) == "." || strings.TrimSpace(name) == ".." {
 		return "ERR_INVALID_NAME"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -356,7 +357,7 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 }
 
 func ListVersionMetas() []versions.VersionMeta {
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return []versions.VersionMeta{}
 	}
@@ -369,7 +370,7 @@ func ListVersionMetas() []versions.VersionMeta {
 
 func GetVersionMeta(name string) versions.VersionMeta {
 	var m versions.VersionMeta
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return m
 	}
@@ -382,7 +383,7 @@ func GetVersionMeta(name string) versions.VersionMeta {
 }
 
 func ReconcileRegisteredFlags() {
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return
 	}
@@ -392,7 +393,7 @@ func ReconcileRegisteredFlags() {
 	}
 	getLoc := func(name string) string {
 		if info, e := registry.GetAppxInfo(name); e == nil && info != nil {
-			return canonicalPath(info.InstallLocation)
+			return canonicalPath(storage.TranslateLegacyPath(info.InstallLocation))
 		}
 		return ""
 	}
@@ -418,7 +419,7 @@ func ListInheritableVersionNames(versionType string) []string {
 	if vt != "release" && vt != "preview" {
 		vt = "release"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return []string{}
 	}
@@ -460,7 +461,7 @@ func CopyVersionDataFromVersion(sourceName string, targetName string) string {
 	if s == "" || t == "" {
 		return "ERR_TARGET_DIR_NOT_SPECIFIED"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -505,7 +506,7 @@ func CopyVersionDataFromGDK(isPreview bool, targetName string) string {
 	if t == "" {
 		return "ERR_TARGET_DIR_NOT_SPECIFIED"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -540,7 +541,7 @@ func CopyVersionDataFromGDK(isPreview bool, targetName string) string {
 }
 
 func SaveVersionLogoDataUrl(name string, dataUrl string) string {
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -586,7 +587,7 @@ func SaveVersionLogoDataUrl(name string, dataUrl string) string {
 }
 
 func SaveVersionLogoFromPath(name string, filePath string) string {
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -626,7 +627,7 @@ func SaveVersionLogoFromPath(name string, filePath string) string {
 }
 
 func GetVersionLogoDataUrl(name string) string {
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return ""
 	}
@@ -643,7 +644,7 @@ func GetVersionLogoDataUrl(name string) string {
 }
 
 func RemoveVersionLogo(name string) string {
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -670,7 +671,7 @@ func ValidateVersionFolderName(name string) string {
 	if _, ok := reserved[lower]; ok {
 		return "ERR_NAME_RESERVED"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || vdir == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -700,7 +701,7 @@ func RenameVersionFolder(oldName string, newName string) string {
 	if versions.ValidateFolderName(on) != "" || versions.ValidateFolderName(nn) != "" || on == "." || on == ".." || nn == "." || nn == ".." {
 		return "ERR_INVALID_NAME"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -790,7 +791,7 @@ func DeleteVersionFolder(name string) string {
 	if versions.ValidateFolderName(n) != "" || n == "." || n == ".." {
 		return "ERR_INVALID_NAME"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -824,78 +825,7 @@ func CreateDesktopShortcut(name string) string {
 		return "ERR_SHORTCUT_CREATE_FAILED"
 	}
 
-	findDesktopDir := func() string {
-		candidates := []string{}
-		addCandidate := func(p string) {
-			p = strings.TrimSpace(p)
-			if p == "" {
-				return
-			}
-			candidates = append(candidates, filepath.Clean(p))
-		}
-		readDesktopFromUserShellFolders := func() string {
-			k, err := winreg.OpenKey(
-				winreg.CURRENT_USER,
-				`Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`,
-				winreg.QUERY_VALUE,
-			)
-			if err != nil {
-				return ""
-			}
-			defer k.Close()
-
-			raw, typ, err := k.GetStringValue("Desktop")
-			if err != nil {
-				return ""
-			}
-			raw = strings.TrimSpace(raw)
-			if raw == "" {
-				return ""
-			}
-			if typ == winreg.EXPAND_SZ || strings.Contains(raw, "%") {
-				if expanded, err := winreg.ExpandString(raw); err == nil {
-					raw = strings.TrimSpace(expanded)
-				} else {
-					raw = strings.TrimSpace(os.ExpandEnv(raw))
-				}
-			}
-			return raw
-		}
-
-		addCandidate(readDesktopFromUserShellFolders())
-		userProfile := strings.TrimSpace(os.Getenv("USERPROFILE"))
-		if userProfile != "" {
-			addCandidate(filepath.Join(userProfile, "Desktop"))
-			addCandidate(filepath.Join(userProfile, "OneDrive", "Desktop"))
-		}
-		for _, k := range []string{"OneDrive", "OneDriveConsumer", "OneDriveCommercial"} {
-			v := strings.TrimSpace(os.Getenv(k))
-			if v != "" {
-				addCandidate(filepath.Join(v, "Desktop"))
-			}
-		}
-		pub := strings.TrimSpace(os.Getenv("PUBLIC"))
-		if pub != "" {
-			addCandidate(filepath.Join(pub, "Desktop"))
-		}
-		seen := map[string]struct{}{}
-		for _, p := range candidates {
-			if p == "" {
-				continue
-			}
-			norm := strings.ToLower(p)
-			if _, ok := seen[norm]; ok {
-				continue
-			}
-			seen[norm] = struct{}{}
-			if fi, err := os.Stat(p); err == nil && fi.IsDir() {
-				return p
-			}
-		}
-		return ""
-	}
-
-	desktop := findDesktopDir()
+	desktop := userDesktopDir()
 	if desktop == "" {
 		return "ERR_SHORTCUT_CREATE_FAILED"
 	}
@@ -924,7 +854,7 @@ func CreateDesktopShortcut(name string) string {
 	}
 	workdir := filepath.Dir(exePath)
 	iconPath := exePath
-	if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+	if vdir, err := apppath.InstancesDir(); err == nil && strings.TrimSpace(vdir) != "" {
 		dir := filepath.Join(vdir, n)
 		e := versionExecutable(dir)
 		isPreview := false
@@ -955,11 +885,138 @@ func CreateDesktopShortcut(name string) string {
 	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-Command", script)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err := cmd.Run(); err != nil {
-		cmdFile := filepath.Join(desktop, "Minecraft - "+safeName+".cmd")
-		data := "@echo off\r\nstart \"\" \"" + exePath + "\" " + args + "\r\n"
-		if werr := os.WriteFile(cmdFile, []byte(data), 0o644); werr != nil {
-			return "ERR_SHORTCUT_CREATE_FAILED"
+		log.Printf("CreateDesktopShortcut: %s: %v", lnk, err)
+		return "ERR_SHORTCUT_CREATE_FAILED"
+	}
+	return ""
+}
+
+// userDesktopDir is the signed-in user's desktop (FOLDERID_Desktop), which
+// follows a redirection to OneDrive or elsewhere.
+func userDesktopDir() string {
+	if p, err := windows.KnownFolderPath(windows.FOLDERID_Desktop, 0); err == nil && utils.DirExists(p) {
+		return p
+	}
+	if home := strings.TrimSpace(os.Getenv("USERPROFILE")); home != "" {
+		if p := filepath.Join(home, "Desktop"); utils.DirExists(p) {
+			return p
 		}
 	}
 	return ""
+}
+
+// shortcutRepairDirs lists the desktops where launchers before the current
+// layout created shortcuts: the first of these that existed, which is
+// normally the user's desktop, but a OneDrive or public desktop on some
+// machines.
+func shortcutRepairDirs() []string {
+	var out []string
+	seen := map[string]bool{}
+	add := func(p string) {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			return
+		}
+		p = filepath.Clean(p)
+		key := strings.ToLower(p)
+		if seen[key] || !utils.DirExists(p) {
+			return
+		}
+		seen[key] = true
+		out = append(out, p)
+	}
+	add(userDesktopDir())
+	if home := strings.TrimSpace(os.Getenv("USERPROFILE")); home != "" {
+		add(filepath.Join(home, "Desktop"))
+		add(filepath.Join(home, "OneDrive", "Desktop"))
+	}
+	for _, k := range []string{"OneDrive", "OneDriveConsumer", "OneDriveCommercial"} {
+		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
+			add(filepath.Join(v, "Desktop"))
+		}
+	}
+	if pub := strings.TrimSpace(os.Getenv("PUBLIC")); pub != "" {
+		add(filepath.Join(pub, "Desktop"))
+	}
+	return out
+}
+
+// RepairMigratedShortcuts points the desktop shortcuts LeviLauncher created
+// at the icons of the instances the storage migration moved. It runs once
+// after a migration.
+func RepairMigratedShortcuts() {
+	rec := storage.LoadRecord()
+	if rec == nil || rec.ShortcutsRepaired {
+		return
+	}
+	var links []string
+	for _, desktop := range shortcutRepairDirs() {
+		found, _ := filepath.Glob(filepath.Join(desktop, "Minecraft - *.lnk"))
+		links = append(links, found...)
+	}
+	if len(links) == 0 {
+		_ = storage.MarkShortcutsRepaired()
+		return
+	}
+	esc := func(s string) string { return strings.ReplaceAll(s, "'", "''") }
+	quoted := make([]string, len(links))
+	for i, l := range links {
+		quoted[i] = "'" + esc(l) + "'"
+	}
+	readScript := "$s = New-Object -ComObject WScript.Shell; foreach ($p in @(" + strings.Join(quoted, ",") + ")) { " +
+		"$l = $s.CreateShortcut($p); [Console]::Out.WriteLine($p + '|' + $l.IconLocation + '|' + $l.Arguments) }"
+	out, err := runHiddenPowerShell(readScript)
+	if err != nil {
+		log.Printf("RepairMigratedShortcuts: read shortcuts: %v", err)
+		return
+	}
+	var set strings.Builder
+	for _, line := range strings.Split(strings.ReplaceAll(string(out), "\r", ""), "\n") {
+		link, rest, ok := strings.Cut(line, "|")
+		if !ok {
+			continue
+		}
+		icon, args, _ := strings.Cut(rest, "|")
+		// IconLocation is "<path>,<index>".
+		iconPath := strings.TrimSpace(icon)
+		if i := strings.LastIndex(iconPath, ","); i > 0 {
+			iconPath = iconPath[:i]
+		}
+		if !storage.IsMovedLegacyPath(iconPath) {
+			continue
+		}
+		instanceDir := storage.TranslateLegacyPath(filepath.Dir(iconPath))
+		newIcon := icons.EnsureVersionIcon(instanceDir, false)
+		if newIcon == "" {
+			newIcon = versionExecutable(instanceDir)
+		}
+		// An instance the migration kept under a "-legacy" name is launched by
+		// that name; the shortcut names the folder it was moved away from.
+		setArgs := ""
+		if a := strings.TrimSpace(args); strings.HasPrefix(a, "--launch=") {
+			old := strings.Trim(strings.TrimPrefix(a, "--launch="), `"`)
+			if name := filepath.Base(instanceDir); !strings.EqualFold(old, name) {
+				launch := "--launch=" + name
+				if strings.ContainsAny(name, " \t") {
+					launch = `--launch="` + strings.ReplaceAll(name, `"`, `\"`) + `"`
+				}
+				setArgs = "$l.Arguments = '" + esc(launch) + "'; "
+			}
+		}
+		// A shortcut the user may not change (the public desktop) is skipped.
+		set.WriteString("try { $l = $s.CreateShortcut('" + esc(link) + "'); $l.IconLocation = '" + esc(newIcon) + "'; " + setArgs + "$l.Save() } catch {}; ")
+	}
+	if set.Len() > 0 {
+		if _, err := runHiddenPowerShell("$s = New-Object -ComObject WScript.Shell; " + set.String()); err != nil {
+			log.Printf("RepairMigratedShortcuts: update shortcuts: %v", err)
+			return
+		}
+	}
+	_ = storage.MarkShortcutsRepaired()
+}
+
+func runHiddenPowerShell(script string) ([]byte, error) {
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-Command", script)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	return cmd.Output()
 }

@@ -2,7 +2,6 @@ package versions
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -65,7 +64,7 @@ func TestReadMetaGuardsEditorModeWithoutRewriting(t *testing.T) {
 			if err != nil || meta.EnableEditorMode != tc.want {
 				t.Fatalf("%s %s %s: %+v %v", packageType, tc.channel, tc.version, meta, err)
 			}
-			raw, err := os.ReadFile(filepath.Join(dir, metaFileName))
+			raw, err := os.ReadFile(metaPath(dir))
 			if err != nil || !strings.Contains(string(raw), `"enableEditorMode": true`) {
 				t.Fatalf("reading metadata modified stored preference: %s %v", raw, err)
 			}

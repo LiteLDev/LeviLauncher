@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 func CreateDir(path string) error {
@@ -68,17 +69,30 @@ func FileExists(path string) bool {
 	return true
 }
 
+// ZipDir writes srcDir as a ZIP archive to destZip through a staging file, so
+// destZip never holds a partial archive.
 func ZipDir(srcDir, destZip string) error {
-	out, err := os.Create(destZip)
+	out, err := fsx.CreateTemp(filepath.Dir(destZip), destZip)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	tmp := out.Name()
+	err = zipDirTo(out, srcDir)
+	if cerr := out.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Rename(tmp, destZip)
+	}
+	if err != nil {
+		_ = os.Remove(tmp)
+	}
+	return err
+}
 
+func zipDirTo(out io.Writer, srcDir string) error {
 	zw := zip.NewWriter(out)
-	defer zw.Close()
-
-	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -114,6 +128,10 @@ func ZipDir(srcDir, destZip string) error {
 		_, err = io.Copy(writer, f)
 		return err
 	})
+	if cerr := zw.Close(); err == nil {
+		err = cerr
+	}
+	return err
 }
 
 func DirSize(path string) int64 {
@@ -171,11 +189,17 @@ func CopyDir(src, dst string) error {
 	if err := os.MkdirAll(dst, 0755); err != nil {
 		return err
 	}
-	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+	// Walk does not enter a junction or symbolic link given as its root; with
+	// a trailing separator it follows it.
+	root := src
+	if !strings.HasSuffix(root, string(filepath.Separator)) {
+		root += string(filepath.Separator)
+	}
+	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		rel, err := filepath.Rel(src, path)
+		rel, err := filepath.Rel(root, path)
 		if err != nil {
 			return err
 		}

@@ -27,7 +27,7 @@ Vous devez donc supprimer les appareils inutiles dans la [gestion des appareils 
 ### LeviLauncher se ferme immédiatement ou n'affiche jamais de fenêtre
 
 - Sous Windows, LeviLauncher démarre désormais WebView2 dans un mode de rendu logiciel plus sûr afin de réduire les plantages au démarrage avec certaines combinaisons de GPU et de pilotes.
-- Si le lanceur échoue toujours avant l'affichage de l'interface, consultez `%APPDATA%\levilauncher.exe\logs\startup.log`.
+- Si le lanceur échoue toujours avant l'affichage de l'interface, consultez `%LOCALAPPDATA%\LeviLauncher\Logs\startup.log`.
 - Réessayez une fois après un lancement échoué. Si le problème persiste, joignez `startup.log` lorsque vous ouvrez une Issue sur GitHub.
 
 ### Une version ne démarre pas

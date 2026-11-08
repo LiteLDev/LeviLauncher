@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf16"
+
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 func unwrapKey(kek, wrapped []byte) []byte {
@@ -363,7 +365,7 @@ func fullExtract(path string, key []byte, keyID string) {
 		fail("required game files absent")
 	}
 	emit(map[string]any{"manifest_files": len(plans), "hash_tree_validated": true, "metadata_pages_validated": true})
-	staging, e := os.MkdirTemp(filepath.Dir(active.out), ".msixvc-staging-")
+	staging, e := fsx.MkdirTemp(filepath.Dir(active.out), filepath.Base(active.out))
 	must(e)
 	ok := false
 	var output *os.Root

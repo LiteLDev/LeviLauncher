@@ -27,7 +27,7 @@ Por ello, debes eliminar los dispositivos que no necesites en la [gestión de di
 ### LeviLauncher se cierra al instante o nunca muestra una ventana
 
 - En Windows, LeviLauncher ahora inicia WebView2 en un modo de renderizado por software más seguro para reducir los cierres inesperados al arrancar con algunas combinaciones de GPU y controladores.
-- Si el lanzador sigue fallando antes de que aparezca la interfaz, revisa `%APPDATA%\levilauncher.exe\logs\startup.log`.
+- Si el lanzador sigue fallando antes de que aparezca la interfaz, revisa `%LOCALAPPDATA%\LeviLauncher\Logs\startup.log`.
 - Vuelve a intentarlo una vez tras un inicio fallido. Si sigue ocurriendo, adjunta `startup.log` al abrir un Issue en GitHub.
 
 ### Una versión no se inicia

@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 // Historical entries win as a whole, including their verified MD5 and mirrors.
@@ -75,7 +77,7 @@ func savePending(filename string, raw []byte) error {
 	if err := os.MkdirAll(filepath.Dir(filename), 0o755); err != nil {
 		return err
 	}
-	file, err := os.CreateTemp(filepath.Dir(filename), ".gdk-pending-*")
+	file, err := fsx.CreateTemp(filepath.Dir(filename), filename)
 	if err != nil {
 		return err
 	}

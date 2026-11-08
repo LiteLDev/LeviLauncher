@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "version_config.h"
 #include "../core/logger.h"
+#include "../utils/windows_paths.h"
 #include <array>
 #include <charconv>
 #include <fstream>
@@ -83,14 +84,32 @@ bool supports_uwp_isolation(std::string_view game_version) {
   const auto version = parse_version(game_version.substr(first, last - first + 1));
   return version && *version >= std::array<unsigned, 4>{1, 19, 70, 2};
 }
+// The launcher keeps the metadata in <instance>\.levilauncher\instance.json;
+// instances of older launchers, and of the launcher running on its legacy
+// layout, have <instance>\version.json. When both exist the newer one is
+// the one the launcher reads.
+std::filesystem::path version_config_path(const std::filesystem::path &directory) {
+  const auto current = directory / L".levilauncher" / L"instance.json";
+  const auto legacy = directory / L"version.json";
+  std::error_code ec_current, ec_legacy;
+  const auto current_time = std::filesystem::last_write_time(current, ec_current);
+  const auto legacy_time = std::filesystem::last_write_time(legacy, ec_legacy);
+  if (ec_current)
+    return legacy;
+  if (!ec_legacy && legacy_time > current_time)
+    return legacy;
+  return current;
+}
 VersionConfig read_version_config(const std::filesystem::path &directory) {
-  std::ifstream input(directory / L"version.json");
+  const auto path = version_config_path(directory);
+  std::ifstream input(path);
   if (!input)
     return {};
   try {
     return parse_version_config(input);
   } catch (const std::exception &e) {
-    log(LogLevel::warning, "Cannot read version.json; using defaults: {}", e.what());
+    log(LogLevel::warning, "Cannot read {}; using defaults: {}", to_utf8(path.filename().wstring()),
+        e.what());
     return {};
   }
 }

@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -161,7 +162,7 @@ func (m *Manager) Cancel() {
 		}
 		if !st.running {
 			if m.opts.RemoveOnCancel {
-				_ = os.Remove(st.dest + ".download")
+				_ = os.Remove(fsx.PartialPath(st.dest))
 			}
 			delete(m.tasks, dest)
 		}
@@ -202,7 +203,7 @@ func (m *Manager) CancelTask(dest string) {
 		}
 		if !st.running {
 			if m.opts.RemoveOnCancel {
-				_ = os.Remove(st.dest + ".download")
+				_ = os.Remove(fsx.PartialPath(st.dest))
 			}
 			delete(m.tasks, dest)
 		}
@@ -231,7 +232,7 @@ func (m *Manager) run(s *state) {
 	m.mu.Unlock()
 
 	for {
-		downloadDest := local.dest + ".download"
+		downloadDest := fsx.PartialPath(local.dest)
 		if m.finishIfInterrupted(local, downloadDest) {
 			return
 		}

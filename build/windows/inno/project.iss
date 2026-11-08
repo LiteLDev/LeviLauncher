@@ -102,9 +102,9 @@ english.PreparingComponents=Installing required components
 english.PreparingLauncher=Preparing LeviLauncher
 english.CheckingRuntimes=Checking Microsoft Visual C++ and WebView2 runtimes...
 english.RuntimesReady=Your environment is ready. LeviLauncher will be installed next.
-english.UninstallInstallersDetail=installers · Downloaded game installation packages.
-english.UninstallBackupsDetail=backups · Backup archives of your instances.
-english.UninstallVersionsDetail=versions · Includes worlds, mods and other instance data.
+english.UninstallInstallersDetail=Cache · Downloaded game installation packages.
+english.UninstallBackupsDetail=Backups · Backup archives of your instances.
+english.UninstallVersionsDetail=Instances · Includes worlds, mods and other instance data.
 english.UninstallContinue=Continue uninstall
 english.InstallVCRuntime=Installing Microsoft Visual C++ Runtime...
 english.InstallWebView2=Installing WebView2 Runtime...
@@ -130,9 +130,9 @@ simpchinese.PreparingComponents=正在安装所需组件
 simpchinese.PreparingLauncher=正在准备安装 LeviLauncher
 simpchinese.CheckingRuntimes=正在检查 Microsoft Visual C++ 和 WebView2 运行环境...
 simpchinese.RuntimesReady=运行环境已就绪，即将安装 LeviLauncher。
-simpchinese.UninstallInstallersDetail=installers · 已下载的游戏安装包。
-simpchinese.UninstallBackupsDetail=backups · 游戏实例的备份文件。
-simpchinese.UninstallVersionsDetail=versions · 包含存档、模组及其他实例数据。
+simpchinese.UninstallInstallersDetail=Cache · 已下载的游戏安装包。
+simpchinese.UninstallBackupsDetail=Backups · 游戏实例的备份文件。
+simpchinese.UninstallVersionsDetail=Instances · 包含存档、模组及其他实例数据。
 simpchinese.UninstallContinue=继续卸载
 simpchinese.InstallVCRuntime=正在安装 Microsoft Visual C++ 运行库...
 simpchinese.InstallWebView2=正在安装 WebView2 运行时...
@@ -158,9 +158,9 @@ japanese.PreparingComponents=必要なコンポーネントをインストール
 japanese.PreparingLauncher=LeviLauncher のインストールを準備しています
 japanese.CheckingRuntimes=Microsoft Visual C++ と WebView2 のランタイムを確認しています...
 japanese.RuntimesReady=実行環境の準備ができました。続いて LeviLauncher をインストールします。
-japanese.UninstallInstallersDetail=installers · ダウンロード済みのゲームインストールパッケージ。
-japanese.UninstallBackupsDetail=backups · ゲームインスタンスのバックアップ。
-japanese.UninstallVersionsDetail=versions · ワールド、Mod、その他のインスタンスデータを含みます。
+japanese.UninstallInstallersDetail=Cache · ダウンロード済みのゲームインストールパッケージ。
+japanese.UninstallBackupsDetail=Backups · ゲームインスタンスのバックアップ。
+japanese.UninstallVersionsDetail=Instances · ワールド、Mod、その他のインスタンスデータを含みます。
 japanese.UninstallContinue=アンインストールを続行
 japanese.InstallVCRuntime=Microsoft Visual C++ ランタイムをインストールしています...
 japanese.InstallWebView2=WebView2 ランタイムをインストールしています...
@@ -186,9 +186,9 @@ korean.PreparingComponents=필수 구성 요소 설치 중
 korean.PreparingLauncher=LeviLauncher 설치 준비 중
 korean.CheckingRuntimes=Microsoft Visual C++ 및 WebView2 런타임을 확인하는 중...
 korean.RuntimesReady=실행 환경이 준비되었습니다. 이제 LeviLauncher를 설치합니다.
-korean.UninstallInstallersDetail=installers · 다운로드한 게임 설치 패키지.
-korean.UninstallBackupsDetail=backups · 게임 인스턴스의 백업 파일.
-korean.UninstallVersionsDetail=versions · 월드, 모드 및 기타 인스턴스 데이터가 포함됩니다.
+korean.UninstallInstallersDetail=Cache · 다운로드한 게임 설치 패키지.
+korean.UninstallBackupsDetail=Backups · 게임 인스턴스의 백업 파일.
+korean.UninstallVersionsDetail=Instances · 월드, 모드 및 기타 인스턴스 데이터가 포함됩니다.
 korean.UninstallContinue=제거 계속
 korean.InstallVCRuntime=Microsoft Visual C++ 런타임을 설치하는 중...
 korean.InstallWebView2=WebView2 런타임을 설치하는 중...
@@ -214,9 +214,9 @@ russian.PreparingComponents=Установка необходимых компо
 russian.PreparingLauncher=Подготовка к установке LeviLauncher
 russian.CheckingRuntimes=Проверка сред выполнения Microsoft Visual C++ и WebView2...
 russian.RuntimesReady=Среда готова. Далее будет установлен LeviLauncher.
-russian.UninstallInstallersDetail=installers · Загруженные установочные пакеты игры.
-russian.UninstallBackupsDetail=backups · Резервные копии сборок игры.
-russian.UninstallVersionsDetail=versions · Включает миры, моды и другие данные сборок.
+russian.UninstallInstallersDetail=Cache · Загруженные установочные пакеты игры.
+russian.UninstallBackupsDetail=Backups · Резервные копии сборок игры.
+russian.UninstallVersionsDetail=Instances · Включает миры, моды и другие данные сборок.
 russian.UninstallContinue=Продолжить удаление
 russian.InstallVCRuntime=Установка среды выполнения Microsoft Visual C++...
 russian.InstallWebView2=Установка среды выполнения WebView2...
@@ -242,9 +242,9 @@ french.PreparingComponents=Installation des composants requis
 french.PreparingLauncher=Préparation de LeviLauncher
 french.CheckingRuntimes=Vérification des runtimes Microsoft Visual C++ et WebView2...
 french.RuntimesReady=L'environnement est prêt. LeviLauncher sera installé ensuite.
-french.UninstallInstallersDetail=installers · Paquets d'installation du jeu téléchargés.
-french.UninstallBackupsDetail=backups · Archives de sauvegarde de vos instances.
-french.UninstallVersionsDetail=versions · Inclut les mondes, les mods et les autres données d'instance.
+french.UninstallInstallersDetail=Cache · Paquets d'installation du jeu téléchargés.
+french.UninstallBackupsDetail=Backups · Archives de sauvegarde de vos instances.
+french.UninstallVersionsDetail=Instances · Inclut les mondes, les mods et les autres données d'instance.
 french.UninstallContinue=Continuer la désinstallation
 french.InstallVCRuntime=Installation du runtime Microsoft Visual C++...
 french.InstallWebView2=Installation du runtime WebView2...
@@ -270,9 +270,9 @@ german.PreparingComponents=Erforderliche Komponenten werden installiert
 german.PreparingLauncher=LeviLauncher wird vorbereitet
 german.CheckingRuntimes=Microsoft Visual C++ und WebView2 werden geprüft...
 german.RuntimesReady=Die Umgebung ist bereit. Als Nächstes wird LeviLauncher installiert.
-german.UninstallInstallersDetail=installers · Heruntergeladene Installationspakete des Spiels.
-german.UninstallBackupsDetail=backups · Sicherungsarchive Ihrer Spielinstanzen.
-german.UninstallVersionsDetail=versions · Enthält Welten, Mods und weitere Instanzdaten.
+german.UninstallInstallersDetail=Cache · Heruntergeladene Installationspakete des Spiels.
+german.UninstallBackupsDetail=Backups · Sicherungsarchive Ihrer Spielinstanzen.
+german.UninstallVersionsDetail=Instances · Enthält Welten, Mods und weitere Instanzdaten.
 german.UninstallContinue=Deinstallation fortsetzen
 german.InstallVCRuntime=Microsoft Visual C++ Runtime wird installiert...
 german.InstallWebView2=WebView2-Runtime wird installiert...
@@ -298,9 +298,9 @@ spanish.PreparingComponents=Instalando los componentes necesarios
 spanish.PreparingLauncher=Preparando LeviLauncher
 spanish.CheckingRuntimes=Comprobando los entornos de Microsoft Visual C++ y WebView2...
 spanish.RuntimesReady=El entorno está listo. A continuación se instalará LeviLauncher.
-spanish.UninstallInstallersDetail=installers · Paquetes de instalación del juego descargados.
-spanish.UninstallBackupsDetail=backups · Copias de seguridad de tus instancias.
-spanish.UninstallVersionsDetail=versions · Incluye mundos, mods y otros datos de las instancias.
+spanish.UninstallInstallersDetail=Cache · Paquetes de instalación del juego descargados.
+spanish.UninstallBackupsDetail=Backups · Copias de seguridad de tus instancias.
+spanish.UninstallVersionsDetail=Instances · Incluye mundos, mods y otros datos de las instancias.
 spanish.UninstallContinue=Continuar desinstalación
 spanish.InstallVCRuntime=Instalando Microsoft Visual C++ Runtime...
 spanish.InstallWebView2=Instalando WebView2 Runtime...
@@ -601,33 +601,70 @@ begin
   end;
 end;
 
-function ResolveBaseRootFromConfig: string;
+// The launcher's storage layout is docs/storage.md: config.json in
+// %APPDATA%\LeviLauncher and the default data root %LOCALAPPDATA%\LeviLauncher.
+// Launchers before it kept everything in %APPDATA%\<exe name>.
+const
+  StorageDirName = 'LeviLauncher';
+
+function CurrentConfigDir: string;
+begin
+  Result := ExpandConstant('{userappdata}\') + StorageDirName;
+end;
+
+function CurrentLocalDir: string;
+begin
+  Result := ExpandConstant('{localappdata}\') + StorageDirName;
+end;
+
+function LegacyStorageDir: string;
+begin
+  Result := ExpandConstant('{userappdata}\{#AppExeName}');
+end;
+
+function ReadBaseRoot(const ConfigDir, DefaultRoot: string; var BaseRoot: string): Boolean;
 var
-  LocalPath: string;
-  ConfigPath: string;
   ConfigJsonRaw: AnsiString;
   ConfigJson: string;
 begin
-  Result := '';
-  LocalPath := ExpandConstant('{userappdata}\{#AppExeName}');
-  ConfigPath := LocalPath + '\config.json';
+  Result := LoadStringFromFile(ConfigDir + '\config.json', ConfigJsonRaw);
+  if not Result then
+    exit;
+  ConfigJson := ConfigJsonRaw;
+  BaseRoot := Trim(ExtractJsonStringValue(ConfigJson, 'base_root'));
+  if BaseRoot = '' then
+    BaseRoot := DefaultRoot;
+end;
 
-  if LoadStringFromFile(ConfigPath, ConfigJsonRaw) then
-  begin
-    ConfigJson := ConfigJsonRaw;
-    Result := Trim(ExtractJsonStringValue(ConfigJson, 'base_root'));
-  end;
+function ResolveBaseRootFromConfig: string;
+begin
+  Result := '';
+  if not ReadBaseRoot(CurrentConfigDir, CurrentLocalDir, Result) then
+    ReadBaseRoot(LegacyStorageDir, LegacyStorageDir, Result);
+end;
+
+// The data root holds Instances, Backups and Cache (Cache\Installers), or
+// versions, backups and installers in the legacy layout.
+function HasInstallersData(const BaseRoot: string): Boolean;
+begin
+  Result := DirExists(BaseRoot + '\Cache') or DirExists(BaseRoot + '\installers');
+end;
+
+function HasInstancesData(const BaseRoot: string): Boolean;
+begin
+  Result := DirExists(BaseRoot + '\Instances') or DirExists(BaseRoot + '\versions');
+end;
+
+function HasBackupsData(const BaseRoot: string): Boolean;
+begin
+  Result := DirExists(BaseRoot + '\Backups');
 end;
 
 function HasOptionalBaseRootData(const BaseRoot: string): Boolean;
 begin
   Result :=
     (BaseRoot <> '') and
-    (
-      DirExists(BaseRoot + '\installers') or
-      DirExists(BaseRoot + '\versions') or
-      DirExists(BaseRoot + '\backups')
-    );
+    (HasInstallersData(BaseRoot) or HasInstancesData(BaseRoot) or HasBackupsData(BaseRoot));
 end;
 
 function AddDialogLabel(OwnerForm: TSetupForm; const Caption: string; Bold: Boolean; Color: TColor; var CurTop: Integer): TNewStaticText;
@@ -716,13 +753,13 @@ begin
 
     AddDialogLabel(OptionsForm, ExpandConstant('{cm:UninstallSelectWhatToDelete}'), True, clWindowText, CurTop);
     CurTop := CurTop + ScaleY(4);
-    if DirExists(BaseRoot + '\installers') then
+    if HasInstallersData(BaseRoot) then
       InstallersCheck := AddCleanupOption(OptionsForm, ExpandConstant('{cm:UninstallDeleteInstallers}'),
         ExpandConstant('{cm:UninstallInstallersDetail}'), clWindowText, CurTop);
-    if DirExists(BaseRoot + '\backups') then
+    if HasBackupsData(BaseRoot) then
       BackupsCheck := AddCleanupOption(OptionsForm, ExpandConstant('{cm:UninstallDeleteBackups}'),
         ExpandConstant('{cm:UninstallBackupsDetail}'), clWindowText, CurTop);
-    if DirExists(BaseRoot + '\versions') then
+    if HasInstancesData(BaseRoot) then
       VersionsCheck := AddCleanupOption(OptionsForm, ExpandConstant('{cm:UninstallDeleteVersions}'),
         ExpandConstant('{cm:UninstallVersionsDetail}'), DangerColor, CurTop);
 
@@ -803,17 +840,39 @@ begin
   if CurUninstallStep <> usUninstall then
     exit;
 
-  LocalPath := ExpandConstant('{userappdata}\{#AppExeName}');
   BaseRoot := UninstallBaseRoot;
-
   if (BaseRoot <> '') and RemoveInstallers then
+  begin
+    DeleteDirIfExists(BaseRoot + '\Cache');
     DeleteDirIfExists(BaseRoot + '\installers');
+  end;
   if (BaseRoot <> '') and RemoveVersions then
+  begin
+    DeleteDirIfExists(BaseRoot + '\Instances');
     DeleteDirIfExists(BaseRoot + '\versions');
+  end;
   if (BaseRoot <> '') and RemoveBackups then
-    DeleteDirIfExists(BaseRoot + '\backups');
+    DeleteDirIfExists(BaseRoot + '\Backups');
 
+  // The current layout. Logs and Accounts stay, as logs and
+  // microsoft-account did in the legacy layout; RemoveDir only removes an
+  // empty directory.
+  if BaseRoot <> '' then
+  begin
+    DeleteFile(BaseRoot + '\Cache\gamertags.json');
+    RemoveDir(BaseRoot + '\Cache');
+  end;
+  DeleteFile(CurrentConfigDir + '\config.json');
+  RemoveDir(CurrentConfigDir);
+  DeleteDirIfExists(CurrentLocalDir + '\WebView2');
+  DeleteFile(CurrentLocalDir + '\storage-migration.json');
+  DeleteFile(CurrentLocalDir + '\storage-migration.lock');
+  RemoveDir(CurrentLocalDir);
+
+  // The legacy layout.
+  LocalPath := LegacyStorageDir;
   DeleteFile(LocalPath + '\config.json');
+  DeleteFile(LocalPath + '\config.migrated.json');
   DeleteFile(LocalPath + '\user_gamertag_map.json');
   DeleteDirIfExists(LocalPath + '\EBWebView');
   DeleteDirIfExists(LocalPath + '\bin');

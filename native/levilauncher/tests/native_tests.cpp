@@ -5,6 +5,7 @@
 #include "utils/windows_paths.h"
 #include <Windows.h>
 #include <array>
+#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -178,14 +179,37 @@ void test_mods(const fs::path &root, const fs::path &binaries) {
   check(skipped.external_preloader && skipped.loaded == 0 && skipped.failed == 0,
         "external preloader owns Mods");
 }
+void test_config_location(const fs::path &root) {
+  const auto directory = root / L"metadata location";
+  fs::create_directories(directory / L".levilauncher");
+  const auto current = directory / L".levilauncher" / L"instance.json";
+  const auto legacy = directory / L"version.json";
+  check(levi::version_config_path(directory) == legacy, "no metadata reads version.json");
+  write(legacy, R"({"enableIsolation":false})");
+  check(!levi::read_version_config(directory).isolation, "legacy version.json");
+  write(current, R"({"enableIsolation":true,"gameVersion":"1.26.0"})");
+  fs::last_write_time(legacy, fs::last_write_time(current) - std::chrono::hours(1));
+  check(levi::read_version_config(directory).isolation, "newer instance.json wins");
+  fs::last_write_time(legacy, fs::last_write_time(current) + std::chrono::hours(1));
+  check(!levi::read_version_config(directory).isolation, "newer version.json wins");
+  fs::remove(legacy);
+  const auto only_current = levi::read_version_config(directory);
+  check(only_current.has_metadata && only_current.isolation, "instance.json alone");
+  write(current, R"({"enableIsolation":false})");
+  check(!levi::read_version_config(directory).isolation, "instance.json alone, shared data");
+}
 void smoke(const fs::path &directory, const fs::path &binaries, const char *metadata,
            const wchar_t *data_subdirectory, bool uwp = false, bool console = false,
-           const wchar_t *executable = L"Minecraft.Windows.exe") {
+           const wchar_t *executable = L"Minecraft.Windows.exe", bool current_metadata = false) {
   fs::create_directories(directory);
   fs::copy_file(binaries / L"Minecraft.Windows.exe", directory / executable);
   fs::copy_file(binaries / L"LeviLauncher.dll", directory / L"LeviLauncher.dll");
-  if (metadata)
+  if (metadata && current_metadata) {
+    fs::create_directories(directory / L".levilauncher");
+    write(directory / L".levilauncher" / L"instance.json", metadata);
+  } else if (metadata) {
     write(directory / L"version.json", metadata);
+  }
   if (uwp)
     write(directory / L"AppxManifest.xml", "<Package/>");
   write(directory / L"mods" / L"test" / L"manifest.json",
@@ -232,6 +256,9 @@ int main() {
     smoke(scratch / L"隔离 on", binaries, R"({"enableIsolation":true,"gameVersion":"1.26.0"})",
           L"");
     smoke(scratch / L"隔离 off", binaries, R"({"enableIsolation":false})", nullptr);
+    smoke(scratch / L"instance.json off", binaries, R"({"enableIsolation":false})", nullptr, false,
+          false, L"Minecraft.Windows.exe", true);
+    test_config_location(scratch);
     smoke(scratch / L"旧版 release", binaries, R"({"gameVersion":"1.21.100"})",
           L"Minecraft Bedrock");
     smoke(scratch / L"旧版 preview", binaries, R"({"gameVersion":"1.25.0","type":"preview"})",

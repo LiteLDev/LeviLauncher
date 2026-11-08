@@ -14,6 +14,7 @@ import (
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/oslang"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -85,8 +86,8 @@ const (
 )
 
 var (
-	user32MessageBox             = win.NewLazySystemDLL("user32.dll")
-	procVcRuntimeMessageBoxW     = user32MessageBox.NewProc("MessageBoxW")
+	user32MessageBox         = win.NewLazySystemDLL("user32.dll")
+	procVcRuntimeMessageBoxW = user32MessageBox.NewProc("MessageBoxW")
 )
 
 type vcRuntimeDownloadCallbacks struct {
@@ -96,10 +97,9 @@ type vcRuntimeDownloadCallbacks struct {
 }
 
 func vcRuntimeInstallerPath() (string, string) {
+	// No fallback to the system temporary directory: when the cache cannot
+	// be created, the download reports why.
 	dir, _ := apppath.InstallersDir()
-	if dir == "" {
-		dir = filepath.Join(os.TempDir(), "LeviLauncher", "Installers")
-	}
 	return dir, filepath.Join(dir, vcRuntimeInstallerName)
 }
 
@@ -110,7 +110,7 @@ func downloadVcRuntimeInstaller(ctx context.Context, destPath string, callbacks 
 	if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 		return err
 	}
-	tmpPath := destPath + ".part"
+	tmpPath := fsx.PartialPath(destPath)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", vcRuntimeDownloadURL, nil)
 	if err != nil {

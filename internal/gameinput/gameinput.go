@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	winreg "golang.org/x/sys/windows/registry"
 )
@@ -67,7 +68,7 @@ func EnsureInteractive(ctx context.Context) {
 		return
 	}
 	dlPath := filepath.Join(dir, "GameInputRedist.msi")
-	tmpPath := dlPath + ".part"
+	tmpPath := fsx.PartialPath(dlPath)
 
 	application.Get().Event.Emit("gameinput.download.start", int64(len(msiBytes)))
 	if err := os.WriteFile(tmpPath, msiBytes, 0644); err != nil {

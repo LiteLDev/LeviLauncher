@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0-beta.3] - 2026-11-09
+
+### Changed
+
+- The "Install LeviLamina" switch on the install page now starts on; it only takes effect when the version supports LeviLamina
+- The default instance name is now "My <version> Instance", translated into the UI language
+- The installing card no longer repeats the page title and a generic hint, and starts directly with the version, target and progress details
+
 ### Fixed
 
 - In GDK versions started by the launcher, in-game buttons that open a file dialog (choosing a skin, importing a world, exporting a structure) open the dialog again instead of freezing the game or doing nothing
@@ -344,7 +352,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.2...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.3...HEAD
+[1.1.0-beta.3]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.2...v1.1.0-beta.3
 [1.1.0-beta.2]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.1...v1.1.0-beta.2
 [1.1.0-beta.1]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.7...v1.1.0-beta.1
 [1.0.7]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.6...v1.0.7

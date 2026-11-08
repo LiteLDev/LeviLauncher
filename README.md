@@ -33,6 +33,49 @@ See the user docs:
 - **User docs:** https://docs.levimc.org/LeviLauncher/
 - **中文文档：** https://docs.levimc.org/LeviLauncher/zh-CN/
 
+### Command Line
+
+`LeviLauncher.exe` with no arguments opens the launcher window. With a command it runs in the terminal and exits, using a `<noun> <verb>` grammar:
+
+```text
+Everyday:
+  play [instance]              Start the game and wait until its window is up (alias: launch)
+  install <version|file>       Download and install Minecraft as a new instance (= instance create)
+  use [instance]               Set or show the default instance
+  stop [instance|pid]          Close a running Minecraft (= process stop)
+
+Manage an instance:
+  instance    list, show, create, copy-data, rename, set, remove, register, unregister, shortcut, path
+  mod         list, show, search, install, update, import, set, remove, enable, disable, path
+  loader      versions, install, remove (LeviLamina)
+  world       list, import, export, copy, rename, set, get, remove
+  pack        list, import, copy, remove
+  screenshot  list, remove
+  server      list
+  player      list
+  backup      list, create, restore
+
+Find things to install:
+  installer   list, search, download, remove, mirrors (Minecraft builds)
+  curseforge  show, search, categories, install (alias: cf)
+
+This PC and the launcher:
+  process     list, stop (alias: ps)
+  account     status, login, logout
+  config      list, set, get, unset
+  cache       clean
+  doctor      Check what Minecraft and mods need on this PC; --fix repairs it
+  self-update Update LeviLauncher itself
+  version     Print version information
+  help        Help for any command, with examples
+```
+
+For example: `LeviLauncher.exe install latest --loader --use`, `LeviLauncher.exe play`, `LeviLauncher.exe mod install LiteLDev/LegacyMoney`, `LeviLauncher.exe world export "My World" -o D:\Backups`. Run `LeviLauncher.exe help <command>` for the flags and examples of each command.
+
+Global flags: `-i/--instance <name>`, `-p/--player <id|gamertag>`, `--json` (one JSON document on stdout), `-q/--quiet` (identifiers only), `-v/--verbose` (also the launcher log on stderr), `-y/--yes`, `--no-input`, `-h/--help`, `--version`. Results go to stdout; progress, notices and errors (`error:`, `hint:`, `[ERR_CODE]`) go to stderr. Exit codes: 0 ok, 1 failed, 2 usage, 3 not found, 4 conflict, 5 sign-in/licence, 6 network, 7 partial, 8 needs a system change or admin, 9 timeout, 10 cancelled, 130 interrupted. The environment variables `LEVILAUNCHER_INSTANCE` and `LEVILAUNCHER_PLAYER` set a default instance and player for a shell. The window's own switches (`--launch=<instance>`, `--debug`, ...) keep opening the window.
+
+`LeviLauncher.exe` is a GUI program, so shells don't wait for it by default. When you need its output before the prompt returns, or its exit code, use `start /wait LeviLauncher.exe ...` in cmd. In PowerShell, pipe the output (`LeviLauncher.exe instance list | Out-String`) or use `Start-Process -Wait -NoNewWindow`.
+
 ## Contributing
 
 ### Issue Reporting

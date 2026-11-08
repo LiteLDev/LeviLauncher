@@ -102,6 +102,19 @@ func Prepare() (Outcome, error) {
 	return outcome, nil
 }
 
+// PrepareShared is Prepare for the command line, which may run next to the
+// window. When windowRunning reports true it neither migrates nor recovers a
+// journal and decides the layout as a process that finds the migration lock
+// held does; the window's shared hold of that lock normally says the same,
+// and this also covers a lock file that could not be opened.
+func PrepareShared(windowRunning func() bool) (Outcome, error) {
+	if windowRunning != nil && windowRunning() {
+		resetRecordCache()
+		return busy()
+	}
+	return Prepare()
+}
+
 // markCurrentLayoutInUse writes a migration record without moves when this
 // launcher starts on a machine without legacy data: from then on the current
 // layout holds the user's data, and legacy data that appears later (an

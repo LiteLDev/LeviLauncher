@@ -25,13 +25,13 @@ import (
 	buildcfg "github.com/liteldev/LeviLauncher/build"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/mouuff/go-rocket-update/pkg/provider"
 	"github.com/mouuff/go-rocket-update/pkg/updater"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 var (
@@ -142,6 +142,12 @@ func makeUpdateErrorPayload(code string, detail string) string {
 }
 
 func emitUpdateError(code string, err error) error {
+	return emitUpdateErrorTo(context.Background(), code, err)
+}
+
+// emitUpdateErrorTo reports a failed update step to the context's event sink
+// and returns it as an error whose text starts with code.
+func emitUpdateErrorTo(ctx context.Context, code string, err error) error {
 	detail := ""
 	if err != nil {
 		detail = err.Error()
@@ -149,7 +155,7 @@ func emitUpdateError(code string, err error) error {
 	} else {
 		log.Printf("update %s", code)
 	}
-	application.Get().Event.Emit(EventAppUpdateError, makeUpdateErrorPayload(code, detail))
+	eventsink.From(ctx).Emit(EventAppUpdateError, makeUpdateErrorPayload(code, detail))
 	if err != nil {
 		return fmt.Errorf("%s: %w", code, err)
 	}
@@ -233,7 +239,10 @@ func getAcceptBeta() bool {
 }
 
 func selectUpdateRelease(releases []githubRelease, version string) (githubRelease, bool) {
-	acceptBeta := getAcceptBeta()
+	return selectUpdateReleaseFor(releases, version, getAcceptBeta())
+}
+
+func selectUpdateReleaseFor(releases []githubRelease, version string, acceptBeta bool) (githubRelease, bool) {
 	cur := strings.TrimPrefix(strings.TrimSpace(version), "v")
 	vCur, err1 := semver.NewVersion(cur)
 	for _, release := range releases {
@@ -397,7 +406,7 @@ func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error 
 			lastErr = fmt.Errorf("HTTP %s", resp.Status)
 			continue
 		}
-		application.Get().Event.Emit(EventAppUpdateStatus, "downloading")
+		eventsink.From(ctx).Emit(EventAppUpdateStatus, "downloading")
 		f, ferr := os.Create(tmp)
 		if ferr != nil {
 			resp.Body.Close()
@@ -419,7 +428,7 @@ func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error 
 				}
 				downloaded += int64(wn)
 				if time.Since(lastEmit) >= 250*time.Millisecond {
-					application.Get().Event.Emit(EventAppUpdateProgress, AppUpdateProgress{Phase: "download", Downloaded: downloaded, Total: total})
+					eventsink.From(ctx).Emit(EventAppUpdateProgress, AppUpdateProgress{Phase: "download", Downloaded: downloaded, Total: total})
 					lastEmit = time.Now()
 				}
 			}
@@ -431,7 +440,7 @@ func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error 
 				break
 			}
 		}
-		application.Get().Event.Emit(EventAppUpdateProgress, AppUpdateProgress{Phase: "download", Downloaded: downloaded, Total: total})
+		eventsink.From(ctx).Emit(EventAppUpdateProgress, AppUpdateProgress{Phase: "download", Downloaded: downloaded, Total: total})
 		cerr := f.Close()
 		resp.Body.Close()
 		cancel()
@@ -511,9 +520,81 @@ func CheckUpdate(version string) types.CheckUpdate {
 	return types.CheckUpdate{IsUpdate: false, Version: version}
 }
 
+// errNeedsElevation reports that the install directory is not writable by
+// this process.
+var errNeedsElevation = errors.New("ERR_UPDATE_ADMIN_REQUIRED: the launcher folder is not writable; run as administrator")
+
+// Update applies the newest release for the GUI: when the install directory
+// is not writable it relaunches itself elevated and exits; after installing
+// it restarts the launcher and exits.
 func Update(version string) error {
 	ctx := context.Background()
-	application.Get().Event.Emit(EventAppUpdateStatus, "checking")
+	exePath, _ := os.Executable()
+	res, err := apply(ctx, version, getAcceptBeta())
+	if errors.Is(err, errNeedsElevation) {
+		eventsink.From(ctx).Emit(EventAppUpdateStatus, "elevating")
+		if err := startSelfUpdateElevated(exePath, res.From); err != nil {
+			return emitUpdateError("ERR_UPDATE_ADMIN_REQUIRED", err)
+		}
+		os.Exit(0)
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	exe, err := os.Executable()
+	if err != nil {
+		return emitUpdateError("ERR_UPDATE_RESTART_FAILED", err)
+	}
+	eventsink.From(ctx).Emit(EventAppUpdateStatus, "restarting")
+	if err := restartProgram(exe); err != nil {
+		return emitUpdateError("ERR_UPDATE_RESTART_FAILED", err)
+	}
+	return nil
+}
+
+// ApplyResult describes an update found or installed by Apply.
+type ApplyResult struct {
+	// From and To are the versions before and after, with a leading "v".
+	// To is empty when no newer release was found.
+	From string
+	To   string
+}
+
+// CheckUpdateErr is CheckUpdate for callers that need to know why a check
+// failed: a network or metadata failure is returned as an error starting
+// with ERR_UPDATE_RELEASE_UNAVAILABLE instead of "no update". includeBeta
+// also accepts prereleases, on top of the beta setting and beta builds.
+func CheckUpdateErr(ctx context.Context, version string, includeBeta bool) (types.CheckUpdate, error) {
+	cur := strings.TrimSpace(version)
+	if cur == "" {
+		cur = GetAppVersion()
+	}
+	releases, err := fetchReleases(ctx)
+	if err != nil {
+		return types.CheckUpdate{Version: cur}, fmt.Errorf("ERR_UPDATE_RELEASE_UNAVAILABLE: %w", err)
+	}
+	if release, ok := selectUpdateReleaseFor(releases, cur, includeBeta || getAcceptBeta()); ok {
+		return types.CheckUpdate{IsUpdate: true, Version: release.TagName, Body: release.Body}, nil
+	}
+	return types.CheckUpdate{IsUpdate: false, Version: cur}, nil
+}
+
+// Apply downloads the newest release and installs it over the running
+// executable. Unlike Update it never elevates, restarts or exits: when this
+// process cannot write the install directory it fails with
+// ERR_UPDATE_ADMIN_REQUIRED, and the new version runs from the next start.
+// Status and progress events go to the context's event sink. Errors start
+// with their ERR_UPDATE_* code; ERR_UPDATE_NOT_AVAILABLE means the running
+// version is already the newest. An empty version means the running one.
+func Apply(ctx context.Context, version string, includeBeta bool) (ApplyResult, error) {
+	return apply(ctx, version, includeBeta || getAcceptBeta())
+}
+
+func apply(ctx context.Context, version string, acceptBeta bool) (ApplyResult, error) {
+	sink := eventsink.From(ctx)
+	sink.Emit(EventAppUpdateStatus, "checking")
 	exePath, _ := os.Executable()
 	instDir := filepath.Dir(exePath)
 
@@ -521,31 +602,28 @@ func Update(version string) error {
 	if cur == "" {
 		cur = GetAppVersion()
 	}
+	curVer := cur
+	if !strings.HasPrefix(curVer, "v") {
+		curVer = "v" + curVer
+	}
+	res := ApplyResult{From: curVer}
 	releases, err := fetchReleases(ctx)
 	if err != nil {
-		return emitUpdateError("ERR_UPDATE_RELEASE_UNAVAILABLE", err)
+		return res, emitUpdateErrorTo(ctx, "ERR_UPDATE_RELEASE_UNAVAILABLE", err)
 	}
-	release, ok := selectUpdateRelease(releases, cur)
+	release, ok := selectUpdateReleaseFor(releases, cur, acceptBeta)
 	target := strings.TrimSpace(release.TagName)
 	if !ok || target == "" {
-		return emitUpdateError("ERR_UPDATE_NOT_AVAILABLE", fmt.Errorf("no update available"))
+		return res, emitUpdateErrorTo(ctx, "ERR_UPDATE_NOT_AVAILABLE", fmt.Errorf("no update available"))
 	}
 	ver := target
 	if !strings.HasPrefix(ver, "v") {
 		ver = "v" + ver
 	}
-	curVer := cur
-	if !strings.HasPrefix(curVer, "v") {
-		curVer = "v" + curVer
-	}
+	res.To = ver
 
 	if runtime.GOOS == "windows" && !utils.CanWriteDir(instDir) {
-		application.Get().Event.Emit(EventAppUpdateStatus, "elevating")
-		if err := startSelfUpdateElevated(exePath, curVer); err != nil {
-			return emitUpdateError("ERR_UPDATE_ADMIN_REQUIRED", err)
-		}
-		os.Exit(0)
-		return nil
+		return res, errNeedsElevation
 	}
 
 	archName := fmt.Sprintf("%s.zip", ver)
@@ -557,15 +635,15 @@ func Update(version string) error {
 
 	updDir := apppath.UpdatesDir()
 	if err := os.MkdirAll(updDir, 0o755); err != nil {
-		return emitUpdateError("ERR_UPDATE_WRITE_FAILED", err)
+		return res, emitUpdateErrorTo(ctx, "ERR_UPDATE_WRITE_FAILED", err)
 	}
 	zipPath := filepath.Join(updDir, archName)
 	if fi, statErr := os.Stat(zipPath); statErr == nil && fi.Size() > 0 {
-		application.Get().Event.Emit(EventAppUpdateStatus, "downloaded")
-		application.Get().Event.Emit(EventAppUpdateProgress, AppUpdateProgress{Phase: "download", Downloaded: fi.Size(), Total: fi.Size()})
+		sink.Emit(EventAppUpdateStatus, "downloaded")
+		sink.Emit(EventAppUpdateProgress, AppUpdateProgress{Phase: "download", Downloaded: fi.Size(), Total: fi.Size()})
 	} else {
 		if err := downloadUpdateAsset(ctx, buildSelfUpdateCandidateURLs(ver), zipPath); err != nil {
-			return emitUpdateError("ERR_UPDATE_DOWNLOAD_FAILED", err)
+			return res, emitUpdateErrorTo(ctx, "ERR_UPDATE_DOWNLOAD_FAILED", err)
 		}
 	}
 
@@ -575,26 +653,17 @@ func Update(version string) error {
 		Version:        curVer,
 	}
 
-	application.Get().Event.Emit(EventAppUpdateStatus, "installing")
+	sink.Emit(EventAppUpdateStatus, "installing")
 	status, err := u.Update()
 	if err != nil {
-		return emitUpdateError("ERR_UPDATE_INSTALL_FAILED", err)
+		return res, emitUpdateErrorTo(ctx, "ERR_UPDATE_INSTALL_FAILED", err)
 	}
 
 	_ = u.CleanUp()
 	_ = os.RemoveAll(updDir)
 	log.Printf("Update status: %+v", status)
-	application.Get().Event.Emit(EventAppUpdateStatus, "installed")
-
-	exe, err := os.Executable()
-	if err != nil {
-		return emitUpdateError("ERR_UPDATE_RESTART_FAILED", err)
-	}
-	application.Get().Event.Emit(EventAppUpdateStatus, "restarting")
-	if err := restartProgram(exe); err != nil {
-		return emitUpdateError("ERR_UPDATE_RESTART_FAILED", err)
-	}
-	return nil
+	sink.Emit(EventAppUpdateStatus, "installed")
+	return res, nil
 }
 
 func restartProgram(exePath string) error {

@@ -33,6 +33,49 @@ UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，�
 - **用户文档：** https://docs.levimc.org/LeviLauncher/
 - **中文文档：** https://docs.levimc.org/LeviLauncher/zh-CN/
 
+### 命令行
+
+不带参数运行 `LeviLauncher.exe` 打开启动器窗口；带命令时在终端中执行并退出，命令格式为 `<名词> <动词>`：
+
+```text
+常用：
+  play [实例]                  启动游戏并等待窗口出现（别名：launch）
+  install <版本|文件>          下载并安装 Minecraft 为新实例（= instance create）
+  use [实例]                   设置或查看默认实例
+  stop [实例|PID]              关闭正在运行的 Minecraft（= process stop）
+
+管理实例：
+  instance    list, show, create, copy-data, rename, set, remove, register, unregister, shortcut, path
+  mod         list, show, search, install, update, import, set, remove, enable, disable, path
+  loader      versions, install, remove（LeviLamina）
+  world       list, import, export, copy, rename, set, get, remove
+  pack        list, import, copy, remove
+  screenshot  list, remove
+  server      list
+  player      list
+  backup      list, create, restore
+
+查找可安装的内容：
+  installer   list, search, download, remove, mirrors（Minecraft 安装包）
+  curseforge  show, search, categories, install（别名：cf）
+
+本机与启动器：
+  process     list, stop（别名：ps）
+  account     status, login, logout
+  config      list, set, get, unset
+  cache       clean
+  doctor      检查 Minecraft 和模组所需的系统组件；--fix 修复
+  self-update 更新 LeviLauncher 本身
+  version     显示版本信息
+  help        查看任意命令的帮助和示例
+```
+
+示例：`LeviLauncher.exe install latest --loader --use`、`LeviLauncher.exe play`、`LeviLauncher.exe mod install LiteLDev/LegacyMoney`、`LeviLauncher.exe world export "My World" -o D:\Backups`。运行 `LeviLauncher.exe help <命令>` 查看每个命令的选项和示例。
+
+全局选项：`-i/--instance <名称>`、`-p/--player <ID|玩家代号>`、`--json`（在 stdout 输出一个 JSON 文档）、`-q/--quiet`（只输出标识）、`-v/--verbose`（同时把启动器日志输出到 stderr）、`-y/--yes`、`--no-input`、`-h/--help`、`--version`。结果输出到 stdout；进度、提示和错误（`error:`、`hint:`、`[ERR_CODE]`）输出到 stderr。命令行输出仅提供英文。退出码：0 成功，1 失败，2 用法错误，3 未找到，4 冲突，5 登录/许可，6 网络，7 部分成功，8 需要系统设置或管理员权限，9 超时，10 已取消，130 被中断。环境变量 `LEVILAUNCHER_INSTANCE` 和 `LEVILAUNCHER_PLAYER` 可为当前终端设置默认实例和玩家。窗口自身的参数（`--launch=<实例>`、`--debug` 等）仍然打开窗口。
+
+`LeviLauncher.exe` 是 GUI 程序，终端默认不会等待它结束：需要在提示符返回前拿到输出或退出码时，cmd 中请用 `start /wait LeviLauncher.exe ...`，PowerShell 中可将输出接入管道（`LeviLauncher.exe instance list | Out-String`）或使用 `Start-Process -Wait -NoNewWindow`。
+
 ## 参与贡献
 
 ### 问题反馈

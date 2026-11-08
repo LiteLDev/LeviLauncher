@@ -14,10 +14,10 @@ import (
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/oslang"
-	"github.com/wailsapp/wails/v3/pkg/application"
 	win "golang.org/x/sys/windows"
 	winreg "golang.org/x/sys/windows/registry"
 )
@@ -489,29 +489,29 @@ func EnsureInteractive(ctx context.Context) {
 		return
 	}
 
-	application.Get().Event.Emit(EventEnsureStart, struct{}{})
+	eventsink.From(ctx).Emit(EventEnsureStart, struct{}{})
 
 	_, dlPath := vcRuntimeInstallerPath()
 	if err := downloadVcRuntimeInstaller(ctx, dlPath, vcRuntimeDownloadCallbacks{
 		Start: func(total int64) {
-			application.Get().Event.Emit(EventDownloadStart, total)
+			eventsink.From(ctx).Emit(EventDownloadStart, total)
 		},
 		Progress: func(downloaded int64, total int64) {
-			application.Get().Event.Emit(EventDownloadProgress, EnsureProgress{Downloaded: downloaded, Total: total})
+			eventsink.From(ctx).Emit(EventDownloadProgress, EnsureProgress{Downloaded: downloaded, Total: total})
 		},
 		Done: func() {
-			application.Get().Event.Emit(EventDownloadDone, struct{}{})
+			eventsink.From(ctx).Emit(EventDownloadDone, struct{}{})
 		},
 	}); err != nil {
-		application.Get().Event.Emit(EventDownloadError, err.Error())
-		application.Get().Event.Emit(EventEnsureDone, false)
+		eventsink.From(ctx).Emit(EventDownloadError, err.Error())
+		eventsink.From(ctx).Emit(EventEnsureDone, false)
 		return
 	}
 
 	if err := runVCInstallerVisible(dlPath); err != nil {
 		log.Println("failed to open VC Runtime installer:", err)
-		application.Get().Event.Emit(EventDownloadError, err.Error())
-		application.Get().Event.Emit(EventEnsureDone, false)
+		eventsink.From(ctx).Emit(EventDownloadError, err.Error())
+		eventsink.From(ctx).Emit(EventEnsureDone, false)
 		return
 	}
 
@@ -524,5 +524,5 @@ func EnsureInteractive(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 	log.Println("VC Runtime installed:", installed)
-	application.Get().Event.Emit(EventEnsureDone, installed)
+	eventsink.From(ctx).Emit(EventEnsureDone, installed)
 }

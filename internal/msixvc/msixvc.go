@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wailsapp/wails/v3/pkg/application"
-
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/downloader"
 )
@@ -64,15 +62,17 @@ type DownloadError struct {
 	Dest  string
 }
 
-func StartDownload(ctx context.Context, rawurl string, md5sum string) string {
+// StartDownload starts downloading an installer. It returns an error when the
+// download cannot start, for example downloader.ErrBusy when another process
+// is downloading the same file.
+func StartDownload(ctx context.Context, rawurl string, md5sum string) (string, error) {
 	dir, err := apppath.InstallersDir()
 	if err != nil {
-		application.Get().Event.Emit(EventDownloadError, err.Error())
-		return ""
+		return "", err
 	}
 	fname := deriveFilename(rawurl)
 	dest := filepath.Join(dir, fname)
-	return msixMgr.Start(ctx, stripFilenameParam(rawurl), dest, md5sum)
+	return msixMgr.StartChecked(ctx, stripFilenameParam(rawurl), dest, md5sum)
 }
 
 // StartNamedDownload shares task controls/events with MSIXVC downloads while
@@ -85,7 +85,46 @@ func StartNamedDownload(ctx context.Context, rawurl, filename string, verify fun
 	if err != nil {
 		return "", err
 	}
-	return msixMgr.StartVerified(ctx, rawurl, filepath.Join(dir, filename), verify), nil
+	return msixMgr.StartVerified(ctx, rawurl, filepath.Join(dir, filename), verify)
+}
+
+// InstallerPath returns where StartDownload and DownloadSync store the
+// installer downloaded from rawurl.
+func InstallerPath(rawurl string) (string, error) {
+	dir, err := apppath.InstallersDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, deriveFilename(rawurl)), nil
+}
+
+// DownloadSync downloads an MSIXVC installer like StartDownload, but blocks
+// until it is published, failed or ctx is cancelled, and reports progress
+// only to o. A cancelled download keeps its partial file; calling DownloadSync
+// again resumes it. It does not share tasks or events with the GUI downloads.
+func DownloadSync(ctx context.Context, rawurl, md5sum string, o downloader.SyncOptions) (string, error) {
+	dest, err := InstallerPath(rawurl)
+	if err != nil {
+		return "", err
+	}
+	o.MD5 = md5sum
+	return dest, downloader.Download(ctx, stripFilenameParam(rawurl), dest, o)
+}
+
+// DownloadNamedSync is the blocking form of StartNamedDownload (UWP
+// archives): the signed URL is used verbatim and verify checks the complete
+// file before it is published.
+func DownloadNamedSync(ctx context.Context, rawurl, filename string, verify func(string) error, o downloader.SyncOptions) (string, error) {
+	if filename == "" || filepath.Base(filename) != filename || strings.ContainsAny(filename, `<>:"/\|?*`) {
+		return "", fmt.Errorf("ERR_INVALID_NAME")
+	}
+	dir, err := apppath.InstallersDir()
+	if err != nil {
+		return "", err
+	}
+	dest := filepath.Join(dir, filename)
+	o.Verify = verify
+	return dest, downloader.Download(ctx, rawurl, dest, o)
 }
 
 func Pause() { msixMgr.Pause() }

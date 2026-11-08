@@ -553,6 +553,11 @@ func TestPauseTaskRetainsPartialTaskWithoutCancellationError(t *testing.T) {
 	waitForSignal(t, requestStarted, "request start")
 	manager.PauseTask(dest)
 	waitForTaskState(t, manager, dest, false, true)
+	// The paused task keeps the file's lock; cancelling releases it.
+	if _, err := lockDownload(dest); err != ErrBusy {
+		t.Fatalf("paused task lock: %v", err)
+	}
+	defer manager.CancelTask(dest)
 
 	eventMu.Lock()
 	defer eventMu.Unlock()
@@ -563,6 +568,76 @@ func TestPauseTaskRetainsPartialTaskWithoutCancellationError(t *testing.T) {
 		if status == "cancelled" {
 			t.Fatalf("pause emitted cancelled status: %v", statuses)
 		}
+	}
+}
+
+func TestStartRefusesFileLockedByAnotherDownload(t *testing.T) {
+	dest := filepath.Join(t.TempDir(), "a.msixvc")
+	unlock, err := lockDownload(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mu sync.Mutex
+	var got []string
+	manager := newTestManager(Events{Error: "error"}, Options{Resume: true})
+	manager.emitEvent = func(name string, data ...any) bool {
+		mu.Lock()
+		defer mu.Unlock()
+		if name == "error" {
+			got = append(got, data[0].(string))
+		}
+		return true
+	}
+	// StartChecked returns the refusal for the caller to report, with no
+	// event that a GUI row would then be overwritten by.
+	if d, err := manager.StartChecked(context.Background(), "http://127.0.0.1:1/never", dest, ""); d != "" || !errors.Is(err, ErrBusy) {
+		t.Fatalf("StartChecked = %q, %v; want ErrBusy", d, err)
+	}
+	mu.Lock()
+	if len(got) != 0 {
+		mu.Unlock()
+		t.Fatalf("StartChecked emitted errors %v", got)
+	}
+	mu.Unlock()
+	// Start reports it as an error event.
+	manager.Start(context.Background(), "http://127.0.0.1:1/never", dest, "")
+	mu.Lock()
+	if len(got) != 1 || got[0] != ErrBusy.Error() {
+		mu.Unlock()
+		t.Fatalf("errors = %v", got)
+	}
+	mu.Unlock()
+	if _, ok := manager.tasks[dest]; ok {
+		t.Fatal("a refused download was kept as a task")
+	}
+	unlock()
+
+	// A running task holds the lock for the synchronous downloader.
+	block := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		select {
+		case <-block:
+		case <-r.Context().Done():
+		}
+	}))
+	defer server.Close()
+	defer close(block)
+	manager.Start(context.Background(), server.URL, dest, "")
+	if err := Download(context.Background(), server.URL, dest, SyncOptions{}); err != ErrBusy {
+		t.Fatalf("Download beside a running task = %v, want ErrBusy", err)
+	}
+	// Cancelling releases the lock once the transfer has stopped.
+	manager.CancelTask(dest)
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if unlock, err := lockDownload(dest); err == nil {
+			unlock()
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the lock outlived the cancelled task")
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

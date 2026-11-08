@@ -382,6 +382,28 @@ func GetVersionMeta(name string) versions.VersionMeta {
 	return mm
 }
 
+// RegisteredPackageLocations returns the canonical install locations of the
+// registered Minecraft release and preview packages, "" for a channel with no
+// registered package. An instance is registered when its folder is the
+// location of its channel (beta counts as release).
+func RegisteredPackageLocations() (release, preview string) {
+	getLoc := func(name string) string {
+		if info, e := registry.GetAppxInfo(name); e == nil && info != nil {
+			return canonicalPath(storage.TranslateLegacyPath(info.InstallLocation))
+		}
+		return ""
+	}
+	// Each lookup starts PowerShell; run them side by side.
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		preview = getLoc("Microsoft.MinecraftWindowsBeta")
+	}()
+	release = getLoc("MICROSOFT.MINECRAFTUWP")
+	<-done
+	return release, preview
+}
+
 func ReconcileRegisteredFlags() {
 	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
@@ -391,14 +413,7 @@ func ReconcileRegisteredFlags() {
 	if err != nil || len(metas) == 0 {
 		return
 	}
-	getLoc := func(name string) string {
-		if info, e := registry.GetAppxInfo(name); e == nil && info != nil {
-			return canonicalPath(storage.TranslateLegacyPath(info.InstallLocation))
-		}
-		return ""
-	}
-	releaseLoc := getLoc("MICROSOFT.MINECRAFTUWP")
-	previewLoc := getLoc("Microsoft.MinecraftWindowsBeta")
+	releaseLoc, previewLoc := RegisteredPackageLocations()
 	for _, m := range metas {
 		isPreview := strings.EqualFold(strings.TrimSpace(m.Type), "preview")
 		dir := canonicalPath(filepath.Join(vdir, strings.TrimSpace(m.Name)))
@@ -830,23 +845,7 @@ func CreateDesktopShortcut(name string) string {
 		return "ERR_SHORTCUT_CREATE_FAILED"
 	}
 
-	safeName := strings.Map(func(r rune) rune {
-		switch r {
-		case '<', '>', ':', '"', '/', '\\', '|', '?', '*':
-			return '_'
-		}
-		if r < 32 {
-			return '_'
-		}
-		return r
-	}, n)
-	safeName = strings.TrimSpace(safeName)
-	safeName = strings.TrimRight(safeName, ". ")
-	if safeName == "" {
-		safeName = "Minecraft"
-	}
-
-	lnk := filepath.Join(desktop, "Minecraft - "+safeName+".lnk")
+	lnk := filepath.Join(desktop, ShortcutFileName(n))
 	args := "--launch=" + n
 	if strings.ContainsAny(n, " \t") {
 		esc := strings.ReplaceAll(n, `"`, `\"`)

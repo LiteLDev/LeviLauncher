@@ -18,13 +18,13 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/content"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/versions"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 const (
@@ -61,27 +61,15 @@ var (
 // emitInstanceBackupRestoreProgressEvent and emitInstanceBackupCreateProgressEvent
 // deliver progress payloads to the frontend; tests replace them to record events.
 var emitInstanceBackupRestoreProgressEvent = func(payload types.InstanceBackupRestoreProgress) {
-	app := application.Get()
-	if app == nil || app.Event == nil {
-		return
-	}
-	app.Event.Emit(EventInstanceBackupRestoreProgress, payload)
+	eventsink.Emit(EventInstanceBackupRestoreProgress, payload)
 }
 
 var emitInstanceBackupPreviewProgressEvent = func(payload types.InstanceBackupRestoreProgress) {
-	app := application.Get()
-	if app == nil || app.Event == nil {
-		return
-	}
-	app.Event.Emit(EventInstanceBackupPreviewProgress, payload)
+	eventsink.Emit(EventInstanceBackupPreviewProgress, payload)
 }
 
 var emitInstanceBackupCreateProgressEvent = func(payload types.InstanceBackupCreateProgress) {
-	app := application.Get()
-	if app == nil || app.Event == nil {
-		return
-	}
-	app.Event.Emit(EventInstanceBackupCreateProgress, payload)
+	eventsink.Emit(EventInstanceBackupCreateProgress, payload)
 }
 
 func emitInstanceBackupRestoreProgress(

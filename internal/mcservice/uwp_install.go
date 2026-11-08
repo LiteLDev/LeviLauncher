@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 func InstallExtractAppx(ctx context.Context, archivePath, folderName, channel string) string {
@@ -61,21 +61,15 @@ func InstallExtractAppx(ctx context.Context, archivePath, folderName, channel st
 				return
 			}
 			lastProgress = time.Now()
-			if app := application.Get(); app != nil {
-				app.Event.Emit(EventExtractProgress, types.ExtractProgress{Dir: target, Bytes: p.FileCurrent, TotalBytes: p.FileTotal, GlobalCurrent: p.Current, GlobalTotal: p.Total, CurrentFile: p.File, Ts: time.Now().UnixMilli()})
-			}
+			eventsink.From(ctx).Emit(EventExtractProgress, types.ExtractProgress{Dir: target, Bytes: p.FileCurrent, TotalBytes: p.FileTotal, GlobalCurrent: p.Current, GlobalTotal: p.Total, CurrentFile: p.File, Ts: time.Now().UnixMilli()})
 		},
 	})
 	if err != nil {
 		code := uwp.ErrorCode(err)
 		log.Printf("UWP install failed for %s: %v", folderName, err)
-		if app := application.Get(); app != nil {
-			app.Event.Emit(EventExtractError, code)
-		}
+		eventsink.From(ctx).Emit(EventExtractError, code)
 		return code
 	}
-	if app := application.Get(); app != nil {
-		app.Event.Emit(EventExtractDone, target)
-	}
+	eventsink.From(ctx).Emit(EventExtractDone, target)
 	return ""
 }

@@ -33,6 +33,9 @@ type AppConfig struct {
 	// MirrorSourceEnabled is nil until the user flips the global mirror
 	// switch; a nil value means "follow the China-user detection".
 	MirrorSourceEnabled *bool `json:"mirror_source_enabled,omitempty"`
+	// CurrentInstance is the default instance of the command line ("use"),
+	// the instance commands act on when none is named.
+	CurrentInstance string `json:"current_instance,omitempty"`
 }
 
 const (
@@ -65,26 +68,78 @@ func Reload() (AppConfig, error) {
 	return reloadLocked()
 }
 
-// Update applies mutate to the current config and writes the result back,
-// holding the write lock throughout. Read-modify-write through Load and Save
-// leaves a window in which a concurrent writer's change is read back stale and
-// then overwritten.
+// Update applies mutate to the config and writes the result back, holding
+// the write lock throughout. Read-modify-write through Load and Save leaves a
+// window in which a concurrent writer's change is read back stale and then
+// overwritten. The config is re-read from disk first, so a change that
+// another launcher process (the window or the command line) saved since this
+// one loaded it is kept rather than overwritten with a stale copy.
+//
+// The data root is the exception: a running process keeps the root it
+// started with (or last set itself), as switching it underneath an open
+// window would make instance names resolve against another directory. A
+// base_root saved by another process is kept on disk and takes effect at
+// the next start; only a mutation that changes BaseRoot moves this process.
+// SetBaseRoot sets the root even when it is the one this process runs on.
 func Update(mutate func(*AppConfig)) error {
 	configMutex.Lock()
 	defer configMutex.Unlock()
 
-	c := cachedConfig
-	if !isLoaded {
-		var err error
-		if c, err = reloadLocked(); err != nil {
-			return err
-		}
+	c, err := readLocked()
+	if err != nil {
+		return err
 	}
+	diskRoot := c.BaseRoot
+	root := diskRoot
+	if isLoaded {
+		root = cachedConfig.BaseRoot
+	}
+	c.BaseRoot = root
 	mutate(&c)
-	return saveLocked(c)
+	if c.BaseRoot != root {
+		root = c.BaseRoot
+	} else {
+		c.BaseRoot = diskRoot
+	}
+	if err := writeLocked(c); err != nil {
+		return err
+	}
+	c.BaseRoot = root
+	applyLocked(c)
+	return nil
+}
+
+// SetBaseRoot saves root ("" for the default) as the data root and moves
+// this process to it, like Update, even when the process already runs on
+// it: a different root another process saved meanwhile is replaced.
+func SetBaseRoot(root string) error {
+	configMutex.Lock()
+	defer configMutex.Unlock()
+
+	c, err := readLocked()
+	if err != nil {
+		return err
+	}
+	c.BaseRoot = root
+	if err := writeLocked(c); err != nil {
+		return err
+	}
+	applyLocked(c)
+	return nil
 }
 
 func reloadLocked() (AppConfig, error) {
+	c, err := readLocked()
+	if err != nil {
+		return c, err
+	}
+	applyLocked(c)
+	return c, nil
+}
+
+// readLocked reads config.json, writing a default one when there is none. It
+// leaves the cached config and the data root override alone.
+func readLocked() (AppConfig, error) {
 	var c AppConfig
 	p := apppath.ConfigPath()
 	if b, err := os.ReadFile(p); err == nil {
@@ -92,9 +147,6 @@ func reloadLocked() (AppConfig, error) {
 			log.Printf("config.Reload: invalid config at %s: %v", p, err)
 			return AppConfig{}, fmt.Errorf("ERR_CONFIG_CORRUPTED: %w", err)
 		}
-		cachedConfig = c
-		isLoaded = true
-		apppath.SetBaseRootOverride(c.BaseRoot)
 		return c, nil
 	} else if !os.IsNotExist(err) {
 		log.Printf("config.Reload: read config failed at %s: %v", p, err)
@@ -108,12 +160,16 @@ func reloadLocked() (AppConfig, error) {
 	}
 	if err := fsx.WriteFileAtomic(p, db, 0o644); err != nil {
 		log.Printf("config.Reload: write default config failed at %s: %v", p, err)
-		return c, fmt.Errorf("ERR_CONFIG_WRITE_FAILED: %w", err)
+		return AppConfig{}, fmt.Errorf("ERR_CONFIG_WRITE_FAILED: %w", err)
 	}
+	return c, nil
+}
+
+// applyLocked makes c the config this process runs with.
+func applyLocked(c AppConfig) {
 	cachedConfig = c
 	isLoaded = true
 	apppath.SetBaseRootOverride(c.BaseRoot)
-	return c, nil
 }
 
 func Save(c AppConfig) error {
@@ -124,18 +180,19 @@ func Save(c AppConfig) error {
 }
 
 func saveLocked(c AppConfig) error {
-	p := apppath.ConfigPath()
+	if err := writeLocked(c); err != nil {
+		return err
+	}
+	applyLocked(c)
+	return nil
+}
+
+func writeLocked(c AppConfig) error {
 	b, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
-	if err := fsx.WriteFileAtomic(p, b, 0o644); err != nil {
-		return err
-	}
-	cachedConfig = c
-	isLoaded = true
-	apppath.SetBaseRootOverride(c.BaseRoot)
-	return nil
+	return fsx.WriteFileAtomic(apppath.ConfigPath(), b, 0o644)
 }
 
 func ConfigDir() string {
@@ -255,4 +312,24 @@ func GetLipGithubProxyOverride() string {
 
 	c, _ := Load()
 	return strings.TrimSpace(c.LipGithubProxy)
+}
+
+// GetCurrentInstance returns the saved default instance name, or "".
+func GetCurrentInstance() string {
+	configMutex.RLock()
+	if isLoaded {
+		v := strings.TrimSpace(cachedConfig.CurrentInstance)
+		configMutex.RUnlock()
+		return v
+	}
+	configMutex.RUnlock()
+
+	c, _ := Load()
+	return strings.TrimSpace(c.CurrentInstance)
+}
+
+// SetCurrentInstance saves the default instance name; "" clears it.
+func SetCurrentInstance(name string) error {
+	name = strings.TrimSpace(name)
+	return Update(func(c *AppConfig) { c.CurrentInstance = name })
 }

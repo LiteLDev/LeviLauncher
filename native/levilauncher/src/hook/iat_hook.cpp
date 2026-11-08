@@ -20,7 +20,8 @@ std::string_view name_at(std::span<std::byte> image, std::size_t offset) noexcep
 bool is_system_import(std::string_view name) noexcept {
   const auto equals = [&](const char *value) { return _stricmp(name.data(), value) == 0; };
   return equals("kernel32.dll") || equals("kernelbase.dll") || equals("shell32.dll") ||
-         _strnicmp(name.data(), "api-ms-win-core-file-", 21) == 0 ||
+         equals("combase.dll") || _strnicmp(name.data(), "api-ms-win-core-file-", 21) == 0 ||
+         _strnicmp(name.data(), "api-ms-win-core-winrt-", 22) == 0 ||
          _strnicmp(name.data(), "api-ms-win-shell-", 17) == 0;
 }
 } // namespace

@@ -2,8 +2,11 @@
 #include "config/mod_loader.h"
 #include "config/version_config.h"
 #include "hook/iat_hook.h"
+#include "hook/winrt_activation.h"
 #include "utils/windows_paths.h"
 #include <Windows.h>
+#include <activation.h>
+#include <winstring.h>
 #include <array>
 #include <chrono>
 #include <cstring>
@@ -147,10 +150,44 @@ void test_imports() {
   descriptors[0].OriginalFirstThunk = 0;
   check(levi::patch_imports(image, replacement).patched == 1,
         "absent lookup table uses resolved address");
+  std::memcpy(memory + 700, "api-ms-win-core-winrt-l1-1-0.dll", 33);
+  std::memcpy(memory + 800 + 2, "RoGetActivationFactory", 23);
+  descriptors[0].OriginalFirstThunk = 1280;
+  slot->u1.Function = 0x1234;
+  const std::array activation{levi::ImportReplacement{
+      "RoGetActivationFactory", reinterpret_cast<void *>(0x9abc), nullptr}};
+  check(levi::patch_imports(image, activation).patched == 2, "patch WinRT API set imports");
   descriptors[0].FirstThunk = 4090;
   check(!levi::patch_imports(image, replacement).valid_image, "reject out of bounds IAT");
   check(!levi::patch_imports(image.first(100), replacement).valid_image,
         "reject truncated headers");
+}
+HRESULT activate(const wchar_t *name) {
+  HSTRING id = nullptr;
+  check(SUCCEEDED(WindowsCreateString(name, static_cast<UINT32>(wcslen(name)), &id)),
+        "create class name");
+  IActivationFactory *factory = nullptr;
+  const HRESULT hr = levi::fallback_activation_factory(id, __uuidof(IActivationFactory),
+                                                       reinterpret_cast<void **>(&factory));
+  WindowsDeleteString(id);
+  if (factory)
+    factory->Release();
+  check(FAILED(hr) == (factory == nullptr), "factory matches result");
+  return hr;
+}
+void test_activation(const fs::path &binaries) {
+  check(SUCCEEDED(RoInitialize(RO_INIT_MULTITHREADED)), "initialize WinRT");
+  levi::set_app_runtime_path(binaries / L"missing runtime.dll");
+  check(activate(L"Microsoft.LeviLauncher.Test") == REGDB_E_CLASSNOTREG,
+        "missing runtime keeps Windows' result");
+  levi::set_app_runtime_path(binaries / L"native_fixture.dll");
+  check(SUCCEEDED(activate(L"Microsoft.LeviLauncher.Test")), "unregistered App SDK class");
+  check(activate(L"Microsoft.LeviLauncher.Missing") == REGDB_E_CLASSNOTREG,
+        "class the runtime lacks keeps Windows' result");
+  check(activate(L"Windows.LeviLauncher.Test") == REGDB_E_CLASSNOTREG,
+        "Windows namespace is never redirected");
+  check(SUCCEEDED(activate(L"Windows.Foundation.Uri")), "registered class still activates");
+  RoUninitialize();
 }
 void test_mods(const fs::path &root, const fs::path &binaries) {
   const auto mod = root / L"mods" / L"测试 Mod";
@@ -216,6 +253,7 @@ void smoke(const fs::path &directory, const fs::path &binaries, const char *meta
         R"({"type":"preload-native","entry":"native_fixture.dll"})");
   fs::copy_file(binaries / L"native_fixture.dll",
                 directory / L"mods" / L"test" / L"native_fixture.dll");
+  fs::copy_file(binaries / L"native_fixture.dll", directory / L"Microsoft.WindowsAppRuntime.dll");
   auto command = L"\"" + (directory / executable).wstring() + L"\" " +
                  (data_subdirectory ? L"on" : L"off") + L" \"" +
                  (data_subdirectory ? data_subdirectory : L"") + L"\"";
@@ -284,6 +322,9 @@ int main() {
     if (auto module = GetModuleHandleW(L"native_fixture.dll"))
       FreeLibrary(module);
     fs::remove_all(scratch);
+    // Loads native_fixture.dll from the build directory as the App SDK runtime,
+    // so it runs after test_mods has checked and released the Mod copy.
+    test_activation(binaries);
     std::cout << "All native tests passed\n";
     return 0;
   } catch (const std::exception &e) {

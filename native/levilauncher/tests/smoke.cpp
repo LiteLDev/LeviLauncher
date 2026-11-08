@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include <ShlObj.h>
 #include <Windows.h>
+#include <activation.h>
 #include <filesystem>
+#include <roapi.h>
+#include <winstring.h>
 #include <string>
 #include <vector>
 
@@ -55,6 +58,29 @@ int wmain(int argc, wchar_t **argv) {
   }
   if (std::filesystem::exists(directory / L"TEMP"))
     return 8;
+  // GDK serves Windows App SDK classes from the runtime in the game directory;
+  // UWP keeps Windows' answer. Windows classes are never redirected.
+  if (FAILED(RoInitialize(RO_INIT_MULTITHREADED)))
+    return 13;
+  const auto activate = [](const wchar_t *name) {
+    HSTRING id = nullptr;
+    if (FAILED(WindowsCreateString(name, static_cast<UINT32>(wcslen(name)), &id)))
+      return E_FAIL;
+    IActivationFactory *factory = nullptr;
+    const HRESULT hr =
+        RoGetActivationFactory(id, __uuidof(IActivationFactory), reinterpret_cast<void **>(&factory));
+    WindowsDeleteString(id);
+    if (factory)
+      factory->Release();
+    return SUCCEEDED(hr) && !factory ? E_POINTER : hr;
+  };
+  const HRESULT app_sdk = activate(L"Microsoft.LeviLauncher.Test");
+  if (uwp ? app_sdk != REGDB_E_CLASSNOTREG : FAILED(app_sdk))
+    return 14;
+  if (activate(L"Microsoft.LeviLauncher.Missing") != REGDB_E_CLASSNOTREG)
+    return 15;
+  if (FAILED(activate(L"Windows.Foundation.Uri")))
+    return 16;
   for (int i = 0; i < 500; ++i) {
     if (GetModuleHandleW(L"native_fixture.dll")) {
       if (uwp) {

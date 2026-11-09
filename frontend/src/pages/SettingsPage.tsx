@@ -121,12 +121,12 @@ type AppearanceSection = typeof APPEARANCE_SECTIONS[number];
 // proxies that take a whole GitHub URL (gh-proxy.org, ghproxy.vip) end in
 // "/https://github.com".
 const LIP_GITHUB_PROXY_PRESETS = [
-  "https://github.bibk.top",
+  "https://gh.bibk.top/https://github.com",
   "https://gh-proxy.org/https://github.com",
   "https://v4.gh-proxy.org/https://github.com",
-  "https://hk.gh-proxy.org/https://github.com",
+  "https://v6.gh-proxy.org/https://github.com",
   "https://cdn.gh-proxy.org/https://github.com",
-  "https://edgeone.gh-proxy.org/https://github.com",
+  "https://axisnow.gh-proxy.org/https://github.com",
   "https://ghproxy.vip/https://github.com",
 ];
 
@@ -2720,9 +2720,9 @@ export const SettingsPage: React.FC = () => {
                             >
                               <InputGroup.Input
                                 className={COMPONENT_STYLES.input.input}
-                                placeholder={t(
-                                  "settings.lip.github_proxy.placeholder",
-                                )}
+                                placeholder={
+                                  "https://gh-proxy.org/https://github.com"
+                                }
                               />
                             </InputGroup>
                           </TextField>

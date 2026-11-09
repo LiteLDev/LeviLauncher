@@ -15,9 +15,8 @@ import (
 
 const (
 	githubURL   = "https://raw.githubusercontent.com/LiteLDev/minecraft-windows-gdk-version-db/refs/heads/main/historical_versions.json"
-	proxyURL    = "https://github.bibk.top/LiteLDev/minecraft-windows-gdk-version-db/raw/refs/heads/main/historical_versions.json"
+	proxyURL    = "https://gh.bibk.top/" + githubURL
 	ghProxyURL  = "https://gh-proxy.org/" + githubURL
-	jsdelivrURL = "https://cdn.jsdelivr.net/gh/LiteLDev/minecraft-windows-gdk-version-db@main/historical_versions.json"
 	packagesURL = "https://packagespc.xboxlive.com/GetBasePackage/"
 	releaseID   = "7792d9ce-355a-493c-afbd-768f4a77c3b0"
 	previewID   = "98bd2335-9b01-4e4c-bd05-ccc01614078b"
@@ -49,7 +48,7 @@ type Client struct {
 func NewClient(client *http.Client, authorize func(context.Context) (string, error)) *Client {
 	return &Client{
 		http: client, authorize: authorize,
-		historyURLs: []string{githubURL, proxyURL, ghProxyURL, jsdelivrURL}, packagesURL: packagesURL,
+		historyURLs: []string{githubURL, ghProxyURL, proxyURL}, packagesURL: packagesURL,
 		storeTimeout: 10 * time.Second,
 	}
 }

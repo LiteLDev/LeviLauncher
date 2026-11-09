@@ -18,7 +18,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
-const defaultLipGithubProxy = "https://github.bibk.top"
+const defaultLipGithubProxy = "https://gh-proxy.org/https://github.com"
 
 // emitEvent sends an application event; replaced in tests.
 var emitEvent = func(event string, data any) {
@@ -68,7 +68,7 @@ func configuredGithubProxy() string {
 // appends a request's path to the proxy, so these must be configured with
 // "/https://github.com"; without it they answer 404 (gh-proxy.org) or 400
 // (ghproxy.vip).
-var fullURLProxyHosts = []string{"gh-proxy.org", "gh-proxy.com", "ghproxy.vip"}
+var fullURLProxyHosts = []string{"gh-proxy.org", "ghproxy.vip", "gh.bibk.top"}
 
 const githubOrigin = "https://github.com"
 

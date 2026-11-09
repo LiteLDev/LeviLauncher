@@ -386,7 +386,6 @@
       "github_proxy": {
         "title": "GitHub 代理",
         "desc": "下載 LIP 套件時使用的 GitHub 代理，留空可恢復預設值。",
-        "placeholder": "https://github.bibk.top",
         "preset_custom": "自訂",
         "save_success": "GitHub 代理已儲存",
         "save_failed": "儲存 GitHub 代理失敗"

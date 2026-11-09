@@ -244,7 +244,7 @@ func TestCompleteGithubProxy(t *testing.T) {
 	tests := []struct{ in, want string }{
 		{"https://gh-proxy.org", "https://gh-proxy.org/https://github.com"},
 		{"https://gh-proxy.org/", "https://gh-proxy.org/https://github.com"},
-		{"https://EdgeOne.GH-Proxy.org", "https://EdgeOne.GH-Proxy.org/https://github.com"},
+		{"https://V4.GH-Proxy.org", "https://V4.GH-Proxy.org/https://github.com"},
 		{"https://cdn.gh-proxy.com", "https://cdn.gh-proxy.com/https://github.com"},
 		{"https://ghproxy.vip", "https://ghproxy.vip/https://github.com"},
 		{"https://gh-proxy.org/https://github.com", "https://gh-proxy.org/https://github.com"},
@@ -252,6 +252,7 @@ func TestCompleteGithubProxy(t *testing.T) {
 		{"https://github.bibk.top", "https://github.bibk.top"},
 		{"https://notgh-proxy.org", "https://notgh-proxy.org"},
 		{"https://gh-proxy.org.evil.example", "https://gh-proxy.org.evil.example"},
+		{"https://gh.bibk.top", "https://gh.bibk.top/https://github.com"},
 		{"", ""},
 	}
 	for _, tt := range tests {

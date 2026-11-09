@@ -52,7 +52,7 @@ type RemoteClient struct {
 	// HTTP is the client to use; nil means defaultHTTPClient.
 	HTTP *http.Client
 	// GithubProxy is the github_proxy setting (protocol/userspace.md §2),
-	// e.g. "https://github.bibk.top"; "" means none.
+	// e.g. "https://gh.bibk.top/https://github.com"; "" means none.
 	GithubProxy string
 	// TempDir is where fetched packs are written while they are read, as
 	// <guid>.tmp files deleted on close (lip uses its cache directory); ""

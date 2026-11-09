@@ -386,7 +386,6 @@
       "github_proxy": {
         "title": "GitHub プロキシ",
         "desc": "LIP パッケージをダウンロードする際に使用する GitHub プロキシです。空欄にすると既定値に戻ります。",
-        "placeholder": "https://github.bibk.top",
         "preset_custom": "カスタム",
         "save_success": "GitHub プロキシを保存しました",
         "save_failed": "GitHub プロキシの保存に失敗しました"

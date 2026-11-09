@@ -49,10 +49,14 @@ func FetchPackageReadme(projectURL string) (string, error) {
 	}
 
 	candidates := []string{
-		fmt.Sprintf("https://github.bibk.top/%s/%s/raw/refs/heads/main/README.md", owner, repo),
-		fmt.Sprintf("https://github.bibk.top/%s/%s/raw/refs/heads/master/README.md", owner, repo),
-		fmt.Sprintf("https://github.bibk.top/%s/%s/raw/refs/heads/main/readme.md", owner, repo),
-		fmt.Sprintf("https://github.bibk.top/%s/%s/raw/refs/heads/master/readme.md", owner, repo),
+		fmt.Sprintf("https://gh-proxy.org/https://github.com/%s/%s/raw/refs/heads/main/README.md", owner, repo),
+		fmt.Sprintf("https://gh-proxy.org/https://github.com/%s/%s/raw/refs/heads/master/README.md", owner, repo),
+		fmt.Sprintf("https://gh-proxy.org/https://github.com/%s/%s/raw/refs/heads/main/readme.md", owner, repo),
+		fmt.Sprintf("https://gh-proxy.org/https://github.com/%s/%s/raw/refs/heads/master/readme.md", owner, repo),
+		fmt.Sprintf("https://gh.bibk.top/https://github.com/%s/%s/raw/refs/heads/main/README.md", owner, repo),
+		fmt.Sprintf("https://gh.bibk.top/https://github.com/%s/%s/raw/refs/heads/master/README.md", owner, repo),
+		fmt.Sprintf("https://gh.bibk.top/https://github.com/%s/%s/raw/refs/heads/main/readme.md", owner, repo),
+		fmt.Sprintf("https://gh.bibk.top/https://github.com/%s/%s/raw/refs/heads/master/readme.md", owner, repo),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), readmeFetchTimeout)

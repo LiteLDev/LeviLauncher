@@ -253,7 +253,7 @@ func cfgLoad() config.AppConfig {
 
 // cfgDefaultGithubProxy is lip's built-in proxy, used while mirrors are on
 // and no proxy is configured (internal/lip defaultLipGithubProxy).
-const cfgDefaultGithubProxy = "https://github.bibk.top"
+const cfgDefaultGithubProxy = "https://gh-proxy.org/https://github.com"
 
 // cfgIsDefaultProxy reports whether the effective proxy is the built-in
 // default rather than one from lip's config.toml.

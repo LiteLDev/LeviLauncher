@@ -12,7 +12,7 @@
 
 === "Android"
 
-    - [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)에서 최신 APK를 다운로드합니다.
+    - [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)에서 최신 APK를 다운로드합니다.
     - 사용한 브라우저나 파일 관리자에서 앱 설치를 허용한 뒤 APK를 설치합니다.
     - LeviLauncher를 열고 런처 약관과 요청하는 권한을 허용합니다.
 

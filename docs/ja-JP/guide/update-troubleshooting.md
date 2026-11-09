@@ -89,4 +89,4 @@ LeviLauncher はアプリケーションの更新を確認、ダウンロード�
 
 問題の報告先：[GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
 
-Android 版の場合は、Android のバージョン、デバイスの機種、起動ログを添えて [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues) に issue を作成してください。
+Android 版の場合は、Android のバージョン、デバイスの機種、起動ログを添えて [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android/issues) に issue を作成してください。

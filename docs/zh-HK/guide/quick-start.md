@@ -12,7 +12,7 @@
 
 === "Android"
 
-    - 從 [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest) 下載最新 APK。
+    - 從 [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest) 下載最新 APK。
     - 允許您使用的瀏覽器或檔案管理器安裝應用程式，然後安裝 APK。
     - 打開 LeviLauncher，接受啟動器協議並授予它請求的權限。
 

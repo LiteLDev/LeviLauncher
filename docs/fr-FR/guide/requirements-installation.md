@@ -95,7 +95,7 @@ Les chemins relatifs sont résolus à partir du répertoire contenant `webview2.
 
 === "Android"
 
-    1. Ouvrez la page [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest) de la version Android.
+    1. Ouvrez la page [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest) de la version Android.
     2. Téléchargez le dernier APK.
     3. Autorisez l'installation depuis le navigateur ou le gestionnaire de fichiers utilisé pour le télécharger.
     4. Installez l'APK et ouvrez-le (l'application s'appelle « LeviLauncher »).

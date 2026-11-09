@@ -89,4 +89,4 @@ LeviLauncher 可以检查、下载并安装应用更新。若安装目录不可�
 
 问题反馈入口： [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
 
-Android 版的问题请附上 Android 版本、设备型号和启动日志，并提交到 [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues)。
+Android 版的问题请附上 Android 版本、设备型号和启动日志，并提交到 [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android/issues)。

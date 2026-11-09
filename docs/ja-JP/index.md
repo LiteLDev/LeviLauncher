@@ -15,7 +15,7 @@ hero:
       platform: windows
     - theme: alt
       text: Android 版をダウンロード
-      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      link: https://github.com/LiteLDev/LeviLauncher-Android/releases/latest
       platform: android
     - theme: alt
       text: ドキュメントを読む
@@ -62,7 +62,7 @@ LeviLauncher には Minecraft Bedrock Edition (GDK / UWP) 向けの **Windows �
 
 - **GitHub Releases (LeviLauncherダウンロード):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **LanZou Cloudミラーサイト:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — パスワード: `levi`
-- **Android 版:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
+- **Android 版:** [LiteLDev/LeviLauncher-Android Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases)
 
 ## コミュニティとフィードバック
 

@@ -95,7 +95,7 @@ Las rutas relativas se resuelven desde el directorio que contiene `webview2.json
 
 === "Android"
 
-    1. Abre la página de [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest) de la versión para Android.
+    1. Abre la página de [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest) de la versión para Android.
     2. Descarga el APK más reciente.
     3. Permite la instalación desde el navegador o el gestor de archivos que usaste para descargarlo.
     4. Instala el APK y ábrelo (la aplicación aparece como "LeviLauncher").

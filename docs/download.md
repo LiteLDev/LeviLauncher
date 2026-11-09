@@ -15,7 +15,7 @@ LeviLauncher comes in a Windows version and an Android version. The tab for your
 
     **Requires:** Android 9.0 or later on an ARM64 device and Minecraft Bedrock Edition 1.21.80 or later from Google Play.
 
-    - [Download the APK from GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+    - [Download the APK from GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)
 
     Next: [Requirements & Installation](/guide/requirements-installation?platform=android) · [Get Started in 5 Minutes](/guide/quick-start?platform=android)
 
@@ -26,4 +26,4 @@ There is no iOS version of LeviLauncher, and we have no plans to make one.
 ## All releases
 
 - Windows version: [LiteLDev/LeviLauncher releases](https://github.com/LiteLDev/LeviLauncher/releases)
-- Android version: [LiteLDev/LeviLaunchroid releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
+- Android version: [LiteLDev/LeviLauncher-Android releases](https://github.com/LiteLDev/LeviLauncher-Android/releases)

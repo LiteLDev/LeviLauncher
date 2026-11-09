@@ -12,7 +12,7 @@ Si vous voulez seulement le chemin le plus court entre le téléchargement et le
 
 === "Android"
 
-    - Téléchargez le dernier APK depuis [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest).
+    - Téléchargez le dernier APK depuis [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest).
     - Autorisez l'installation d'applications depuis le navigateur ou le gestionnaire de fichiers utilisé, puis installez l'APK.
     - Ouvrez LeviLauncher et acceptez le contrat du lanceur et les autorisations demandées.
 

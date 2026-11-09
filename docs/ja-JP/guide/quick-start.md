@@ -12,7 +12,7 @@
 
 === "Android"
 
-    - [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest) から最新の APK をダウンロードします。
+    - [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest) から最新の APK をダウンロードします。
     - 使用したブラウザーまたはファイルマネージャーからのアプリのインストールを許可し、APK をインストールします。
     - LeviLauncher を開き、ランチャーの利用規約と要求される権限を承認します。
 

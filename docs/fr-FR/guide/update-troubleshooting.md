@@ -89,4 +89,4 @@ Lors de la soumission, veuillez joindre autant que possible :
 
 Lien pour signaler un problème : [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
 
-Pour la version Android, indiquez la version d'Android, le modèle de l'appareil et le journal de lancement, et ouvrez le ticket dans [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues).
+Pour la version Android, indiquez la version d'Android, le modèle de l'appareil et le journal de lancement, et ouvrez le ticket dans [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android/issues).

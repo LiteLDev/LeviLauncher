@@ -1,5 +1,5 @@
 // LeviLauncher user documentation — levimc-kit site config (replaces .vitepress/config.mts).
-// One guide for both versions of LeviLauncher (Windows: this repository; Android: LiteLDev/LeviLaunchroid), organised
+// One guide for both versions of LeviLauncher (Windows: this repository; Android: LiteLDev/LeviLauncher-Android), organised
 // by task like mainstream multi-platform docs: where the platforms differ, a page shows `=== "Windows"` /
 // `=== "Android"` tabs (one site-wide choice: the visitor's device, their last pick or ?platform=), sections that
 // apply to one platform carry a <Badge platform="…" />, and whole pages a `platforms:` frontmatter.
@@ -328,7 +328,7 @@ const REDIRECTS: Record<string, string> = Object.fromEntries(
       [`${p}android/guide/features`, `${p}guide/version-management?platform=android`],
       [`${p}android/guide/compatibility`, `${p}guide/faq-community-feedback`],
       [`${p}android/guide/developer`, ll],
-      [`${p}android/guide/build`, 'https://github.com/LiteLDev/LeviLaunchroid#development-setup'],
+      [`${p}android/guide/build`, 'https://github.com/LiteLDev/LeviLauncher-Android#development-setup'],
       [`${p}android/privacy-policy`, `${p}privacy-policy`],
       ...ANDROID_API.map((a) => [`${p}android/api/${a}`, `${ll}api/${a.replace(/-/g, '_')}/`]),
     ];

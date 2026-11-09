@@ -89,4 +89,4 @@ When reporting, include:
 
 Open issues here: [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
 
-For the Android version, include the Android version, the device model and the launch log, and open the issue in [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues).
+For the Android version, include the Android version, the device model and the launch log, and open the issue in [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android/issues).

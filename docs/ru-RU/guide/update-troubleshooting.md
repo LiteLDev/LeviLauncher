@@ -89,4 +89,4 @@ LeviLauncher может проверять, загружать и устанав
 
 Открыть задачи можно здесь: [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
 
-Для версии для Android укажите версию Android, модель устройства и журнал запуска и создайте issue в [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues).
+Для версии для Android укажите версию Android, модель устройства и журнал запуска и создайте issue в [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android/issues).

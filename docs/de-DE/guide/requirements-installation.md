@@ -95,7 +95,7 @@ Relative Pfade werden vom Verzeichnis aus aufgelöst, das `webview2.json` enthä
 
 === "Android"
 
-    1. Öffne die Seite [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest) der Android-Version.
+    1. Öffne die Seite [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest) der Android-Version.
     2. Lade die neueste APK herunter.
     3. Erlaube die Installation über den Browser oder Dateimanager, mit dem du sie heruntergeladen hast.
     4. Installiere die APK und öffne sie (die App heißt „LeviLauncher“).

@@ -86,7 +86,7 @@ func fixtureDB() LoaderDB {
 
 // The shared fixture (testdata/): /mods/index.json and four details of a
 // local build of levimc.org/mods. The site's tests, the launcher's frontend
-// (scripts/lipCatalog.test.mjs) and LeviLaunchroid read the same bytes.
+// (scripts/lipCatalog.test.mjs) and LeviLauncher-Android read the same bytes.
 
 func readTestdata(t *testing.T, path string, out any) {
 	t.Helper()

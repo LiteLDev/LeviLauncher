@@ -38,6 +38,10 @@ const (
 	EventMigrateError    = "leviloader.migrate.error"
 )
 
+// LeviLauncher.dll is built from native/levilauncher and is not tracked by git.
+// Run `task common:build:native` (needs xmake and MSVC) before building or
+// testing Go code that imports this package.
+//
 //go:embed LeviLauncher.dll
 var embeddedLoader []byte
 

@@ -395,7 +395,7 @@ export function launcherEntries(entries: readonly LipCatalogEntry[], side: LipSi
  * `platform` are unions over the latest version's entries, so a mod with
  * client entries only for Android and server entries only for Windows passes
  * {@link launcherEntries} for Windows without being installable there; Go
- * (lipindex ParsePackageFor) and LeviLaunchroid (LipIndex.parsePackage) leave
+ * (lipindex ParsePackageFor) and LeviLauncher-Android (LipIndex.parsePackage) leave
  * such a mod out, as they do one whose detail did not load.
  */
 export function hasLauncherVariant(

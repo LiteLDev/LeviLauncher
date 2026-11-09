@@ -89,4 +89,4 @@ Bitte füge bei der Meldung folgende Informationen bei:
 
 Eingang für Feedback: [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
 
-Gib für die Android-Version die Android-Version, das Gerätemodell und das Startprotokoll an und eröffne das Issue in [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues).
+Gib für die Android-Version die Android-Version, das Gerätemodell und das Startprotokoll an und eröffne das Issue in [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android/issues).

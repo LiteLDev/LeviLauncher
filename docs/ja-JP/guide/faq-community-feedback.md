@@ -49,7 +49,7 @@ ARM64 デバイス上の Android 9.0 以降と、Google Play からインスト�
 - **GitHub Releases（LeviLauncher ダウンロード）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **LanZou Cloud ミラー：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — パスワード：`levi`
 
-- **Android 版（APK）:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+- **Android 版（APK）:** [LiteLDev/LeviLauncher-Android Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)
 
 ## 問題や機能要望の報告方法
 
@@ -60,7 +60,7 @@ ARM64 デバイス上の Android 9.0 以降と、Google Play からインスト�
 - ドキュメントの分かりにくさに関する改善提案
 - 明確な使用シナリオがある機能リクエスト
 
-Android 版の問題は [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues) に報告してください。
+Android 版の問題は [LiteLDev/LeviLauncher-Android Issues](https://github.com/LiteLDev/LeviLauncher-Android/issues) に報告してください。
 
 ## Issue を作成する前に確認すること
 

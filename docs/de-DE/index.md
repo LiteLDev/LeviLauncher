@@ -15,7 +15,7 @@ hero:
       platform: windows
     - theme: alt
       text: Für Android herunterladen
-      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      link: https://github.com/LiteLDev/LeviLauncher-Android/releases/latest
       platform: android
     - theme: alt
       text: Dokumentation lesen
@@ -62,7 +62,7 @@ Diese Dokumentation richtet sich an **Endnutzer**, nicht an Entwickler oder Mitw
 
 - **GitHub Releases (offizieller LeviLauncher-Download):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)  
 - **Lanzou Cloud Mirror (chinesischer Mirror):** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — Passwort: `levi`
-- **Android-Version:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
+- **Android-Version:** [LiteLDev/LeviLauncher-Android Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases)
 
 ## Community & Feedback
 

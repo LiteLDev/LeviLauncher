@@ -626,7 +626,7 @@ const buildLIPIndexResult = (
     detailsByIdentifier[entry.id] = parsed;
     const { files: _files, variantDetails: _variants, detail: _detail, ...basic } = parsed;
     // Listed only with a variant the launcher can install (as Go and
-    // LeviLaunchroid do): the index's side and platform are unions, so an
+    // LeviLauncher-Android do): the index's side and platform are unions, so an
     // entry can pass launcherEntries with none, and one whose detail failed
     // cannot be installed either. Its detail stays available for lookups.
     if (hasLauncherVariant(detail)) packages.push(basic);

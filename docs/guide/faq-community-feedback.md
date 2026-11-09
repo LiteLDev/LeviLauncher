@@ -49,7 +49,7 @@ Yes. Import official Minecraft APKs to run other versions inside the launcher, a
 - **GitHub Releases (LeviLauncher downloads):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Lanzou mirror:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — password: `levi`
 
-- **Android version (APK):** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+- **Android version (APK):** [LiteLDev/LeviLauncher-Android Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)
 
 ## Reporting issues and feature requests
 
@@ -60,7 +60,7 @@ Use [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) for:
 - requests for clearer documentation
 - feature suggestions with a concrete use case
 
-Issues with the Android version go to [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues).
+Issues with the Android version go to [LiteLDev/LeviLauncher-Android Issues](https://github.com/LiteLDev/LeviLauncher-Android/issues).
 
 ## Before opening an issue
 

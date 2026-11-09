@@ -49,7 +49,7 @@ ARM64 裝置上的 Android 9.0 或更高版本，以及從 Google Play 安裝的
 - **GitHub Releases（LeviLauncher 下載）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **藍奏雲鏡像：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 密碼：`levi`
 
-- **Android 版（APK）：** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+- **Android 版（APK）：** [LiteLDev/LeviLauncher-Android Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)
 
 ## 如何回饋問題與功能建議
 
@@ -60,7 +60,7 @@ ARM64 裝置上的 Android 9.0 或更高版本，以及從 Google Play 安裝的
 - 針對文檔表達不清的改進建議
 - 帶有明確使用場景的功能請求
 
-Android 版的問題請提交到 [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues)。
+Android 版的問題請提交到 [LiteLDev/LeviLauncher-Android Issues](https://github.com/LiteLDev/LeviLauncher-Android/issues)。
 
 ## 提交 Issue 之前建議先做
 

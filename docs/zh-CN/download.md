@@ -15,7 +15,7 @@ LeviLauncher 提供 Windows 版和 Android 版，下方已自动选中适合你�
 
     **要求：** Android 9.0 或更高版本的 ARM64 设备，以及从 Google Play 安装的 Minecraft 基岩版 1.21.80 或更高版本。
 
-    - [从 GitHub Releases 下载 APK](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+    - [从 GitHub Releases 下载 APK](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)
 
     下一步：[系统要求与安装](/zh-CN/guide/requirements-installation?platform=android) · [5 分钟上手](/zh-CN/guide/quick-start?platform=android)
 
@@ -26,4 +26,4 @@ LeviLauncher 没有 iOS 版，我们也没有开发 iOS 版的计划。
 ## 全部版本
 
 - Windows 版：[LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
-- Android 版：[LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
+- Android 版：[LiteLDev/LeviLauncher-Android Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases)

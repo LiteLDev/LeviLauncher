@@ -49,7 +49,7 @@ ARM64 기기의 Android 9.0 이상과 Google Play에서 설치한 Minecraft Bedr
 - **GitHub 릴리스(LeviLauncher 다운로드):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **란조우(Lanzou) 클라우드 미러:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 비밀번호: `levi`
 
-- **Android 버전(APK):** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+- **Android 버전(APK):** [LiteLDev/LeviLauncher-Android Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)
 
 ## 문제 및 기능 요청을 피드백하는 방법
 
@@ -60,7 +60,7 @@ ARM64 기기의 Android 9.0 이상과 Google Play에서 설치한 Minecraft Bedr
 - 문서 표현이 불명확한 부분에 대한 개선 제안
 - 명확한 사용 시나리오가 있는 기능 요청
 
-Android 버전 문제는 [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues)에 등록하세요.
+Android 버전 문제는 [LiteLDev/LeviLauncher-Android Issues](https://github.com/LiteLDev/LeviLauncher-Android/issues)에 등록하세요.
 
 ## Issue를 제출하기 전에 먼저 수행할 사항
 

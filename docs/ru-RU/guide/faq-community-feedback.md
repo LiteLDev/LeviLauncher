@@ -49,7 +49,7 @@ Android 9.0 или новее на устройстве ARM64 и Minecraft Bedro
 - **Релизы GitHub (загрузки LeviLauncher):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Зеркало Lanzou:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — пароль: `levi`
 
-- **Версия для Android (APK):** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+- **Версия для Android (APK):** [LiteLDev/LeviLauncher-Android Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)
 
 ## Сообщение об ошибках и запросы функций
 
@@ -60,7 +60,7 @@ Android 9.0 или новее на устройстве ARM64 и Minecraft Bedro
 - запросов на улучшение документации
 - предложений функций с конкретным вариантом использования
 
-Проблемы версии для Android сообщайте в [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues).
+Проблемы версии для Android сообщайте в [LiteLDev/LeviLauncher-Android Issues](https://github.com/LiteLDev/LeviLauncher-Android/issues).
 
 ## Перед открытием темы (issue)
 

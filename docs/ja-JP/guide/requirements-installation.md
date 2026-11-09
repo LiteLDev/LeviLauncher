@@ -95,7 +95,7 @@ LeviLauncher.exe --webview2-runtime-dir "D:\WebView2\FixedRuntime"
 
 === "Android"
 
-    1. Android 版の [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest) ページを開きます。
+    1. Android 版の [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest) ページを開きます。
     2. 最新の APK をダウンロードします。
     3. ダウンロードに使ったブラウザーまたはファイルマネージャーからのインストールを許可します。
     4. APK をインストールして開きます（アプリ名は「LeviLauncher」）。

@@ -12,7 +12,7 @@
 
 === "Android"
 
-    - Скачайте последний APK с [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest).
+    - Скачайте последний APK с [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest).
     - Разрешите установку приложений из браузера или файлового менеджера, которым вы пользовались, и установите APK.
     - Откройте LeviLauncher и примите соглашение лаунчера и запрошенные разрешения.
 

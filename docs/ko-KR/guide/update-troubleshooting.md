@@ -89,4 +89,4 @@ LeviLauncher는 애플리케이션 업데이트를 확인, 다운로드 및 설�
 
 문제 피드백 진입점: [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
 
-Android 버전은 Android 버전, 기기 모델, 실행 로그를 첨부해 [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues)에 이슈를 등록하세요.
+Android 버전은 Android 버전, 기기 모델, 실행 로그를 첨부해 [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android/issues)에 이슈를 등록하세요.

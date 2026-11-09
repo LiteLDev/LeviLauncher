@@ -49,7 +49,7 @@ Sí. Importa APK oficiales de Minecraft para ejecutar otras versiones dentro del
 - **GitHub Releases (Descargas de LeviLauncher):** [Versiones de LiteLDev/LeviLauncher](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Mirror en Lanzou:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — contraseña: `levi`
 
-- **Versión para Android (APK):** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+- **Versión para Android (APK):** [LiteLDev/LeviLauncher-Android Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)
 
 ## Cómo informar de problemas y sugerencias de funciones
 
@@ -60,7 +60,7 @@ Utiliza [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) para in
 - Sugerencias de mejora para la claridad de la documentación
 - Solicitudes de funciones con un caso de uso claro
 
-Los problemas de la versión para Android van a [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues).
+Los problemas de la versión para Android van a [LiteLDev/LeviLauncher-Android Issues](https://github.com/LiteLDev/LeviLauncher-Android/issues).
 
 ## Antes de enviar un Issue, se recomienda
 

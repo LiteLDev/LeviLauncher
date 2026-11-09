@@ -195,7 +195,7 @@ func latestVersionIndex(d *Detail) int {
 // What the detail cannot tell: the site names a dependency without a page
 // (an unlisted or excluded package of the registry) by the registry's
 // spelling, but the detail's ref of it is lower case and has no url, so
-// such a dependency keeps the key's spelling, as LeviLaunchroid's
+// such a dependency keeps the key's spelling, as LeviLauncher-Android's
 // LipIndex.latestDeps does too. The two differ only when a lip.toml spells
 // such an id in another case than the registry.
 func catalogDeps(d *Detail, pairs []depPair) map[string]string {

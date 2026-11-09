@@ -89,4 +89,4 @@ Al enviarlo, incluye siempre:
 
 Enlace para informar de problemas: [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
 
-Para la versión para Android, incluye la versión de Android, el modelo del dispositivo y el registro de inicio, y abre la incidencia en [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues).
+Para la versión para Android, incluye la versión de Android, el modelo del dispositivo y el registro de inicio, y abre la incidencia en [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android/issues).

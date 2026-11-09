@@ -95,7 +95,7 @@ Relative paths are resolved from the directory containing `webview2.json`. The s
 
 === "Android"
 
-    1. Open the [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest) page of the Android version.
+    1. Open the [GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest) page of the Android version.
     2. Download the latest APK.
     3. Allow installation from the browser or file manager you used to download it.
     4. Install the APK and open it (the app is shown as "LeviLauncher").

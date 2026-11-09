@@ -1,6 +1,6 @@
 // The launcher's port of the levimc.org/mods catalogue logic
 // (src/utils/lipCatalog.ts) against the shared fixture: the same JSON bytes
-// the site's own tests, the Go lipindex tests and LeviLaunchroid read. The
+// the site's own tests, the Go lipindex tests and LeviLauncher-Android read. The
 // expected values are the site's (mods/src/lib/{catalog-query,search}.ts) on
 // these bytes.
 import assert from "node:assert/strict";
@@ -55,7 +55,7 @@ test("the launcher lists what has a client entry for its platform", () => {
   assert.equal(run({ side: ["client"], platform: ["win-x64"] }).matched.length, 62);
 });
 
-test("the launcher lists only what has an installable variant (as Go and LeviLaunchroid)", () => {
+test("the launcher lists only what has an installable variant (as Go and LeviLauncher-Android)", () => {
   assert.equal(lip.hasLauncherVariant(detail("github.com/LiteLDev/Arke")), true);
   assert.equal(lip.hasLauncherVariant(detail("github.com/LiteLDev/LegacyScriptEngine")), true);
   // PLand's latest versions run on the server only, but its versions up to

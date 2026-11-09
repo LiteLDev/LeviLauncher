@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0-beta.4] - 2026-11-10
+
 ### Added
 
 - The LeviMC Mods page can filter by tags (the featured tags such as Library / API or Economy first, each with its icon; a tag can also be excluded), license (Permissive, Weak copyleft, Copyleft, Other or No license, or an exact license), dependencies and author, shows how many mods each choice leaves, and lists active filters as removable chips; a mod's page has a "More by <author>" link
@@ -17,6 +19,9 @@ All notable changes to this project will be documented in this file.
 - Installing a mod without choosing a variant installs its "client" variant, else its default variant, else the first other variant with a client build for this platform, as the catalogue says; an installed mod is still updated in place whatever its variant
 - The developer guide on the LeviMC Mods page explains `side` and `platform` in `lip.toml` and links to lip's guide to creating packages
 - `mod search --sort` takes `relevance` (the default), `stars`, `updated` or `newest`; `--sort name` and `--reverse` are gone, and `--game` matches the catalogue's game versions. The command line caches the catalogue in `lip-catalog.v4.json`
+- The launcher updates itself from the `LeviLauncher.zip` asset of the GitHub release instead of the GoProxy module mirrors; with the mirror source on, it tries gh-proxy.org mirrors first and falls back to GitHub
+- The default GitHub proxy of the package manager and `config` is now `https://gh-proxy.org/https://github.com` (formerly `https://github.bibk.top`), and `gh.bibk.top` is added to the presets
+- The GDK version list, the LeviLamina version list and mod READMEs are no longer fetched from jsDelivr: they come from GitHub, through gh-proxy.org or gh.bibk.top first only when the mirror source is on
 
 ### Fixed
 
@@ -370,7 +375,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.3...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.4...HEAD
+[1.1.0-beta.4]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.3...v1.1.0-beta.4
 [1.1.0-beta.3]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.2...v1.1.0-beta.3
 [1.1.0-beta.2]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.1...v1.1.0-beta.2
 [1.1.0-beta.1]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.7...v1.1.0-beta.1

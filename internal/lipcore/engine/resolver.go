@@ -20,10 +20,10 @@ import (
 // AssetHandle and Package records of Contracts.cs and Packages.cs
 // (v0.38.0-beta.1).
 
-// environment is LipEnvironment: the (platform, runtime) of a workspace.
+// environment is LipEnvironment: the (side, platform) of a workspace.
 type environment struct {
+	Side     string
 	Platform string
-	Runtime  string
 }
 
 // versionRange is a VersionRange as a constraint of the solver: its text, as
@@ -474,7 +474,7 @@ func (r *resolver) resolveArchive(w *walk, a *archiveHandle, tagVersion *semver.
 		version = *tagVersion
 	}
 
-	pf, err := d.readFor(r.env.Platform, r.env.Runtime, &version)
+	pf, err := d.readFor(r.env.Side, r.env.Platform, &version)
 	if err != nil {
 		if _, ok := err.(*compat.FormatError); !ok {
 			return nil, err
@@ -484,7 +484,7 @@ func (r *resolver) resolveArchive(w *walk, a *archiveHandle, tagVersion *semver.
 	}
 
 	variant := source.Variant
-	entry := pf.SelectEntry(variant, r.env.Platform, r.env.Runtime)
+	entry := pf.SelectEntry(variant, r.env.Side, r.env.Platform)
 	if entry == nil {
 		r.reportNoEntry(w, a, pf, fileName, variant)
 		return nil, nil
@@ -516,8 +516,8 @@ func (r *resolver) reportNoEntry(w *walk, a *archiveHandle, pf *pkgmodel.Documen
 	if variant != "" {
 		variantName = fmt.Sprintf("the variant \"%s\"", variant)
 	}
-	wanted := fmt.Sprintf("no entry of %s for the platform %s and the runtime %s", variantName,
-		env.Platform, env.Runtime)
+	wanted := fmt.Sprintf("no entry of %s for the side %s and the platform %s", variantName,
+		env.Side, env.Platform)
 	entries, ok := pf.EntriesOf(variant)
 	if !ok || len(entries) == 0 {
 		if len(pf.Variants) == 0 {
@@ -538,23 +538,24 @@ func (r *resolver) reportNoEntry(w *walk, a *archiveHandle, pf *pkgmodel.Documen
 	}
 
 	available := make([]string, len(entries))
-	samePlatform := false
+	sameSide := false
 	for i, e := range entries {
-		available[i] = fmt.Sprintf("(%s, %s)", e.Platform, e.Runtime)
-		if e.Platform == env.Platform {
-			samePlatform = true
+		available[i] = fmt.Sprintf("(%s, %s)", e.Side, e.Platform)
+		if e.Side == env.Side {
+			sameSide = true
 		}
 	}
-	// An entry for another runtime of the same platform: the package does not
-	// support the runtime lip installs for. Whether --rid can help depends on
-	// the workspace, which is not known here, so the advice is conditional.
-	runtimeNote := ""
-	if samePlatform {
-		runtimeNote = fmt.Sprintf("; it does not support the runtime %s (if the server runs another"+
-			" runtime and the workspace has no packages yet, pass it with --rid)", env.Runtime)
+	// An entry for another platform of the same side: the package does not
+	// support the platform lip installs for. Whether --platform can help
+	// depends on the workspace, which is not known here, so the advice is
+	// conditional.
+	platformNote := ""
+	if sameSide {
+		platformNote = fmt.Sprintf("; it does not support the platform %s (if the server runs on another"+
+			" platform and the workspace has no packages yet, pass it with --platform)", env.Platform)
 	}
 	w.report(a.Key, fmt.Sprintf("its %s has %s; it has entries for %s%s", fileName, wanted,
-		strings.Join(available, ", "), runtimeNote), nil)
+		strings.Join(available, ", "), platformNote), nil)
 }
 
 // listVersions is the versions of a version list, newest first, cut short

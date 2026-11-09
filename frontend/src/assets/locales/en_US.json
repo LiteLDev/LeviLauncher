@@ -1288,8 +1288,6 @@
     "search_placeholder": "Search mods…",
     "sort_by": "Sort by",
     "select_sort": "Select sort",
-    "order_by": "Order",
-    "select_order": "Select order",
     "no_description": "No description available",
     "ll_version_label": "LeviLamina version",
     "ll_version_placeholder": "Select LeviLamina version",
@@ -1297,7 +1295,7 @@
     "game_version_label": "Game version",
     "game_version_placeholder": "Select game version",
     "game_all_versions": "All game versions",
-    "mapping_unavailable_hint": "Game version compatibility information is unavailable, so version filters are turned off to avoid incorrect matches.",
+    "mapping_unavailable_hint": "LeviLamina version information is unavailable, so the LeviLamina version filter is turned off to avoid incorrect matches.",
     "files": {
       "game_versions_unknown": "No matching game version",
       "version_count": "{{count}} versions",
@@ -1316,7 +1314,6 @@
       "variant_label": "Variant",
       "variant_hint_keep_default": "Most packages have only one variant. Keep the default unless the author says otherwise.",
       "variant_placeholder": "Select a variant",
-      "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
       "checking_ll_state": "Checking LeviLamina status…",
       "mapping_unavailable_blocked_hint": "Compatibility information for LeviLamina and this game version is unavailable, so installation is blocked to avoid installing the wrong package.",
@@ -1331,28 +1328,71 @@
       "downgrade_success": "Downgrade completed successfully",
       "reinstall_success": "Reinstallation completed successfully",
       "current_installed_version_label": "Current installed version",
-      "checking_current_installed_version": "Checking currently installed version…"
+      "checking_current_installed_version": "Checking currently installed version…",
+      "prerelease": "Pre-release",
+      "no_client_variant": "This mod has no variant for the client on {{platform}}, so LeviLauncher cannot install it."
     },
     "guide": {
       "open_button": "Developer Guide",
       "title": "LeviMC Mods Developer Guide",
-      "description": "If you want your mod to appear on LeviLauncher's LeviMC Mods page, publish it according to the LIP package_manifest specification.",
-      "manifest_hint": "This dialog is only a quick overview for developers. Field names, required entries, examples, and validation rules are defined in the official documentation.",
-      "variant_hint": "A variant is indexed by the launcher only when its label contains client. By default, use \"label\": \"client\"; for sub-extensions, use \"label\": \"client_xxxx\" or \"label\": \"client\\xxxx\".",
+      "description": "If you want your mod to appear on LeviLauncher's LeviMC Mods page, publish it with a lip.toml as described in the lip documentation.",
+      "manifest_hint": "LeviLauncher lists a mod when the lip.toml of its latest version has an entry with side = \"client\" and platform = \"win-x64\", and installs the variant chosen for them: \"client\" first, then the default variant \"\", then the others by name.",
+      "variant_hint": "Add one entry for each side and platform the mod supports, e.g. a [[variants.\"\"]] entry with side = \"client\" and platform = \"win-x64\" next to the server's entry. With recommended tags such as \"library\" or \"economy\" in [info] tags, the mod shows up under those filters.",
       "docs_button": "View Full Spec",
       "close_button": "Close"
     },
     "title": "LeviMC Mods",
     "sort_options": {
-      "hotness": "Hotness",
+      "relevance": "Relevance",
+      "stars": "Stars",
       "updated": "Updated",
-      "name": "Name"
+      "newest": "Newest"
     },
-    "order_options": {
-      "desc": "Descending",
-      "asc": "Ascending"
+    "filters": {
+      "title": "Filters",
+      "title_count": "Filters ({{count}})",
+      "clear": "Clear all filters",
+      "active": "Active filters",
+      "tags": "Tags",
+      "other_tags": "Other tags",
+      "license": "License",
+      "dependencies": "Dependencies",
+      "exclude": "Exclude {{label}}",
+      "not_label": "not {{label}}",
+      "remove": "Remove filter: {{label}}",
+      "show_more": "Show {{count}} more",
+      "show_fewer": "Show fewer",
+      "search_tags": "Search tags…",
+      "license_ids": "{{family}} licenses",
+      "depends_on": "Depends on {{name}}",
+      "more_by_owner": "More by {{owner}}",
+      "more_tags": "{{count}} more"
     },
-    "by_author_inline": "By {{author}}",
+    "tags": {
+      "library": "Library / API",
+      "utility": "Utility",
+      "management": "Server management",
+      "game-mechanics": "Game mechanics",
+      "adventure": "Content & adventure",
+      "visual": "Visual & HUD",
+      "economy": "Economy",
+      "teleport": "Teleport",
+      "anticheat": "Anti-cheat",
+      "optimization": "Optimization",
+      "bugfix": "Bug fixes",
+      "technology": "Technical & redstone",
+      "protocol": "Protocol & multi-version"
+    },
+    "license": {
+      "permissive": "Permissive",
+      "weak-copyleft": "Weak copyleft",
+      "copyleft": "Copyleft",
+      "other": "Other",
+      "none": "No license"
+    },
+    "variant_default": "Default",
+    "mod_id": "Mod ID",
+    "by_author_inline": "by {{author}}",
     "package_details_aria_label": "Package Details",
     "task_console": {
       "title_install": "Installing",

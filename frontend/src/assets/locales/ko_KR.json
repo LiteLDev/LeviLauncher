@@ -1255,8 +1255,6 @@
     "search_placeholder": "모드 검색…",
     "sort_by": "정렬 기준",
     "select_sort": "정렬 선택",
-    "order_by": "순서",
-    "select_order": "순서 선택",
     "no_description": "사용 가능한 설명이 없습니다",
     "ll_version_label": "LeviLamina 버전",
     "ll_version_placeholder": "LeviLamina 버전 선택",
@@ -1264,7 +1262,7 @@
     "game_version_label": "게임 버전",
     "game_version_placeholder": "게임 버전 선택",
     "game_all_versions": "모든 게임 버전",
-    "mapping_unavailable_hint": "게임 버전 호환 정보를 가져올 수 없어, 잘못된 결과를 막기 위해 버전 필터를 껐습니다.",
+    "mapping_unavailable_hint": "LeviLamina 버전 정보를 가져올 수 없어, 잘못된 결과를 막기 위해 LeviLamina 버전 필터를 껐습니다.",
     "files": {
       "game_versions_unknown": "일치하는 게임 버전 없음",
       "version_count": "버전 {{count}}개",
@@ -1283,7 +1281,6 @@
       "variant_label": "변형",
       "variant_hint_keep_default": "대부분의 패키지는 변형이 하나뿐입니다. 제작자의 안내가 없다면 기본값을 유지하세요.",
       "variant_placeholder": "변형 선택",
-      "variant_default": "기본값",
       "select_version_incompatible_hint": "{{version}} 버전은 게임 버전 {{gameVersion}} 과 호환되지 않습니다.",
       "checking_ll_state": "LeviLamina 상태 확인 중…",
       "mapping_unavailable_blocked_hint": "LeviLamina와 이 게임 버전의 호환 정보를 가져올 수 없어, 잘못된 패키지 설치를 막기 위해 설치를 차단했습니다.",
@@ -1298,27 +1295,70 @@
       "downgrade_success": "다운그레이드가 성공적으로 완료되었습니다",
       "reinstall_success": "재설치가 성공적으로 완료되었습니다",
       "current_installed_version_label": "현재 설치된 버전",
-      "checking_current_installed_version": "현재 설치된 버전 확인 중…"
+      "checking_current_installed_version": "현재 설치된 버전 확인 중…",
+      "prerelease": "사전 출시",
+      "no_client_variant": "이 모드에는 {{platform}} 클라이언트용 변형이 없어 LeviLauncher에서 설치할 수 없습니다."
     },
     "guide": {
       "open_button": "개발자 가이드",
       "title": "LeviMC Mods 개발자 가이드",
-      "description": "모드가 LeviLauncher 의 LeviMC Mods 페이지에 나타나도록 하려면 LIP package_manifest 사양에 따라 게시하세요.",
-      "manifest_hint": "이 대화 상자는 개발자를 위한 빠른 개요일 뿐입니다. 필드 이름, 필수 엔트리, 예제 및 유효성 검사 규칙은 공식 문서에 정의되어 있습니다.",
-      "variant_hint": "변형은 레이블에 client 가 포함된 경우에만 런처에서 인덱싱됩니다. 기본적으로 \\\"label\\\": \\\"client\\\"를 사용하세요; 하위 확장용으로는 \\\"label\\\": \\\"client_xxxx\\\" 또는 \\\"label\\\": \\\"client\\\\xxxx\\\"를 사용하세요.",
+      "description": "모드가 LeviLauncher의 LeviMC Mods 페이지에 나타나도록 하려면 lip 문서에 설명된 대로 lip.toml과 함께 게시하세요.",
+      "manifest_hint": "LeviLauncher는 최신 버전의 lip.toml에 side = \"client\", platform = \"win-x64\"인 엔트리가 있는 모드를 표시하고, 이에 맞는 변형을 설치합니다. \"client\"가 먼저, 그다음 기본 변형 \"\", 나머지는 이름순입니다.",
+      "variant_hint": "지원하는 사이드와 플랫폼마다 엔트리를 하나씩 추가하세요. 예: 서버용 엔트리 옆에 side = \"client\", platform = \"win-x64\"인 [[variants.\"\"]] 엔트리를 추가합니다. [info] tags에 \"library\"나 \"economy\" 같은 권장 태그를 넣으면 해당 필터에 모드가 표시됩니다.",
       "docs_button": "전체 사양 보기",
       "close_button": "닫기"
     },
     "title": "LeviMC Mods",
     "sort_options": {
-      "hotness": "인기도",
+      "relevance": "관련도",
+      "stars": "스타",
       "updated": "업데이트됨",
-      "name": "이름"
+      "newest": "최신순"
     },
-    "order_options": {
-      "desc": "내림차순",
-      "asc": "오름차순"
+    "filters": {
+      "title": "필터",
+      "title_count": "필터 ({{count}})",
+      "clear": "모든 필터 지우기",
+      "active": "적용된 필터",
+      "tags": "태그",
+      "other_tags": "기타 태그",
+      "license": "라이선스",
+      "dependencies": "의존성",
+      "exclude": "{{label}} 제외",
+      "not_label": "{{label}} 제외됨",
+      "remove": "필터 제거: {{label}}",
+      "show_more": "{{count}}개 더 보기",
+      "show_fewer": "간단히 보기",
+      "search_tags": "태그 검색…",
+      "license_ids": "{{family}} 라이선스",
+      "depends_on": "{{name}}에 의존",
+      "more_by_owner": "{{owner}}의 다른 모드",
+      "more_tags": "{{count}}개 더"
     },
+    "tags": {
+      "library": "라이브러리 / API",
+      "utility": "유틸리티",
+      "management": "서버 관리",
+      "game-mechanics": "게임 메커니즘",
+      "adventure": "콘텐츠 및 모험",
+      "visual": "시각 효과 및 HUD",
+      "economy": "경제",
+      "teleport": "텔레포트",
+      "anticheat": "안티 치트",
+      "optimization": "최적화",
+      "bugfix": "버그 수정",
+      "technology": "기술 및 레드스톤",
+      "protocol": "프로토콜 및 다중 버전"
+    },
+    "license": {
+      "permissive": "허용적",
+      "weak-copyleft": "약한 카피레프트",
+      "copyleft": "카피레프트",
+      "other": "기타",
+      "none": "라이선스 없음"
+    },
+    "variant_default": "기본값",
+    "mod_id": "모드 ID",
     "by_author_inline": "{{author}} 제작",
     "package_details_aria_label": "패키지 세부 정보",
     "task_console": {

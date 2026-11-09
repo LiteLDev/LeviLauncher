@@ -1288,8 +1288,6 @@
     "search_placeholder": "搜索模组…",
     "sort_by": "排序",
     "select_sort": "选择排序",
-    "order_by": "顺序",
-    "select_order": "选择顺序",
     "no_description": "暂无简介",
     "ll_version_label": "LeviLamina 版本",
     "ll_version_placeholder": "选择 LeviLamina 版本",
@@ -1297,7 +1295,7 @@
     "game_version_label": "游戏版本",
     "game_version_placeholder": "选择游戏版本",
     "game_all_versions": "所有游戏版本",
-    "mapping_unavailable_hint": "暂时无法获取游戏版本兼容信息，已关闭版本筛选以免匹配错误。",
+    "mapping_unavailable_hint": "暂时无法获取 LeviLamina 版本信息，已关闭 LeviLamina 版本筛选以免匹配错误。",
     "files": {
       "game_versions_unknown": "未找到匹配的游戏版本",
       "version_count": "{{count}} 个版本",
@@ -1316,7 +1314,6 @@
       "variant_label": "变体",
       "variant_hint_keep_default": "大多数包只有一个变体，除非作者另有说明，保持默认即可",
       "variant_placeholder": "选择要安装的变体",
-      "variant_default": "默认",
       "select_version_incompatible_hint": "版本 {{version}} 与游戏版本 {{gameVersion}} 不兼容。",
       "checking_ll_state": "正在检查 LeviLamina 状态…",
       "mapping_unavailable_blocked_hint": "暂时无法确认 LeviLamina 与游戏版本的兼容关系，已阻止本次安装以免装错包。",
@@ -1331,27 +1328,70 @@
       "downgrade_success": "降级成功",
       "reinstall_success": "重装成功",
       "current_installed_version_label": "当前已安装版本",
-      "checking_current_installed_version": "正在检查当前已安装版本…"
+      "checking_current_installed_version": "正在检查当前已安装版本…",
+      "prerelease": "预发布",
+      "no_client_variant": "此模组没有可在 {{platform}} 客户端上安装的变体，LeviLauncher 无法安装。"
     },
     "guide": {
       "open_button": "开发者指南",
       "title": "LeviMC 模组开发者指南",
-      "description": "如果你希望自己的模组出现在 LeviLauncher 的 LeviMC 模组页面中，请按照 LIP 的 package_manifest 规范发布。",
-      "manifest_hint": "这个弹窗只提供面向开发者的快速说明。字段命名、必填项、示例与校验细则请以官方文档为准。",
-      "variant_hint": "仅当 variant 的 label 包含 client 时，才会被启动器收录。默认情况下请使用 \"label\": \"client\"；子扩展请使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
+      "description": "如果你希望自己的模组出现在 LeviLauncher 的 LeviMC 模组页面中，请按照 lip 文档在仓库中提供 lip.toml 并发布。",
+      "manifest_hint": "当模组最新版本的 lip.toml 中有 side = \"client\" 且 platform = \"win-x64\" 的条目时，LeviLauncher 才会收录它，并安装与之匹配的变体：优先 \"client\"，其次默认变体 \"\"，其余按名称排序。",
+      "variant_hint": "请为每个支持的运行端和平台各添加一个条目，例如在服务端条目旁添加 side = \"client\"、platform = \"win-x64\" 的 [[variants.\"\"]] 条目。在 [info] tags 中使用 \"library\"、\"economy\" 等推荐标签，模组就会出现在对应的筛选中。",
       "docs_button": "查看完整规范",
       "close_button": "关闭"
     },
     "title": "LeviMC 模组",
     "sort_options": {
-      "hotness": "热门",
+      "relevance": "相关性",
+      "stars": "星标",
       "updated": "最近更新",
-      "name": "名称"
+      "newest": "最新发布"
     },
-    "order_options": {
-      "desc": "降序",
-      "asc": "升序"
+    "filters": {
+      "title": "筛选",
+      "title_count": "筛选（{{count}}）",
+      "clear": "清除所有筛选",
+      "active": "已选筛选条件",
+      "tags": "标签",
+      "other_tags": "其他标签",
+      "license": "许可证",
+      "dependencies": "依赖",
+      "exclude": "排除 {{label}}",
+      "not_label": "排除 {{label}}",
+      "remove": "移除筛选：{{label}}",
+      "show_more": "再显示 {{count}} 项",
+      "show_fewer": "收起",
+      "search_tags": "搜索标签…",
+      "license_ids": "{{family}}许可证",
+      "depends_on": "依赖 {{name}}",
+      "more_by_owner": "{{owner}} 的更多项目",
+      "more_tags": "另外 {{count}} 项"
     },
+    "tags": {
+      "library": "前置库 / API",
+      "utility": "实用工具",
+      "management": "服务器管理",
+      "game-mechanics": "游戏机制",
+      "adventure": "内容与冒险",
+      "visual": "视觉与界面",
+      "economy": "经济",
+      "teleport": "传送",
+      "anticheat": "反作弊",
+      "optimization": "性能优化",
+      "bugfix": "错误修复",
+      "technology": "技术与红石",
+      "protocol": "协议与多版本"
+    },
+    "license": {
+      "permissive": "宽松",
+      "weak-copyleft": "弱著佐权",
+      "copyleft": "著佐权",
+      "other": "其他",
+      "none": "无许可证"
+    },
+    "variant_default": "默认",
+    "mod_id": "模组 ID",
     "by_author_inline": "作者 {{author}}",
     "package_details_aria_label": "包详情",
     "task_console": {

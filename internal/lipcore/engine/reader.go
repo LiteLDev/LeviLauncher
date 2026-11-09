@@ -45,11 +45,11 @@ func (d *packageDocument) fileName() string {
 // readFor is ReadFor: the package file the package is read as for an
 // environment, with version, when given, as the version of the package (its
 // tag version). A *compat.FormatError is a tooth.json that cannot be read so.
-func (d *packageDocument) readFor(platform, runtime string, version *semver.Version) (*pkgmodel.Document, error) {
+func (d *packageDocument) readFor(side, platform string, version *semver.Version) (*pkgmodel.Document, error) {
 	if d.file != nil {
 		return d.file, nil
 	}
-	return d.legacy.Derive(platform, runtime, version)
+	return d.legacy.Derive(side, platform, version)
 }
 
 // readArchive is ArchiveReader.Read. Every failure to read the archive as a

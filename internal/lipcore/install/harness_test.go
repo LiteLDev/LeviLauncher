@@ -243,7 +243,7 @@ func (h *harness) pkgOf(id, version string, entry pkgmodel.Entry, self archive.S
 	if self == nil {
 		self = src()
 	}
-	entry.Platform, entry.Runtime = pkgmodel.PlatformServer, "win-x64"
+	entry.Side, entry.Platform = pkgmodel.SideServer, "win-x64"
 	return &Package{
 		ID: id, Version: version, Entry: &entry, Archive: self,
 		OpenAsset: func(urls []string) (archive.Source, error) {

@@ -25,12 +25,14 @@ if(isUWP) localStorage.setItem('download.filters', JSON.stringify({packageType:'
 localStorage.setItem('app.backgroundImage', scenario === 'wallpaper' ? 'C:\\Fixture\\wallpapers' : '');
 if (scenario === 'root-error') localStorage.removeItem('ll.onboarded'); else localStorage.setItem('ll.onboarded','fixture');
 state.catalogPackages = Array.from({ length: 45 }, (_, index) => ({
-  identifier: `fixture/package-${index + 1}`,
+  id: `github.com/fixture/package-${index + 1}`, identifier: `github.com/fixture/package-${index + 1}`,
   name: `Preview package ${String(index + 1).padStart(2, '0')}`,
   description: 'A sample package used to check search, scrolling and pagination in a small launcher window.',
-  author: 'Preview author', avatarUrl: '', projectUrl: '', hotness: 100 - index,
-  updated: '2026-09-08', tags: ['platform:levilamina', 'type:mod'],
-  versions: ['1.0.0'], llDependencyRanges: ['>=0.1.0'], variants: [], preferredVariantKey: '',
+  owner: 'fixture', author: 'fixture', logo: '', avatarUrl: '', projectUrl: '', stars: 100 - index,
+  updated: '2026-09-08', tags: ['platform:levilamina', 'type:mod', index % 3 ? 'utility' : 'economy'],
+  side: ['client'], platform: ['win-x64'], gameVersions: ['1.21.0'], deps: {'github.com/LiteLDev/LeviLamina': '>=0.1.0'},
+  license: index % 2 ? 'MIT' : 'GPL-3.0', url: '', json: '', requiredBy: 0, order: index,
+  versions: ['1.0.0'], llDependencyRanges: ['>=0.1.0'], variants: [{key: 'client', packageIdentifier: `github.com/fixture/package-${index + 1}#client`}], preferredVariantKey: 'client',
 }));
 state.uwpVersions = Array.from({length: 24}, (_, index) => ({version: `1.21.${100-index}.0`, uuid:`00000000-0000-4000-8000-${String(index).padStart(12,'0')}`,type: ['release','beta','preview'][index%3], packageType:'uwp'}));
 if(scenario.startsWith('uwp-isolation-min')) state.uwpVersions[0].version=new URLSearchParams(location.search).get('version') || '';
@@ -224,7 +226,7 @@ state.call = async (name, ...args) => {
  if (scenario.startsWith('catalog') && name==='SearchCurseForgeMods') {
   const matches = state.catalogPackages.filter(pkg => pkg.name.toLowerCase().includes(String(args[4] || '').toLowerCase()));
   const index = Number(args[8] || 0), pageSize = Number(args[7] || 20);
-  return {data:matches.slice(index,index+pageSize).map(pkg=>({id:Number(pkg.identifier.split('-').pop()),name:pkg.name,summary:pkg.description,authors:[{name:pkg.author}],logo:{thumbnailUrl:'/src/assets/images/LeviLamina.png',url:'/src/assets/images/LeviLamina.png'},downloadCount:pkg.hotness,dateModified:pkg.updated,dateCreated:pkg.updated,categories:[],latestFiles:[],latestFilesIndexes:[]})),pagination:{index,pageSize,totalCount:matches.length}};
+  return {data:matches.slice(index,index+pageSize).map(pkg=>({id:Number(pkg.identifier.split('-').pop()),name:pkg.name,summary:pkg.description,authors:[{name:pkg.author}],logo:{thumbnailUrl:'/src/assets/images/LeviLamina.png',url:'/src/assets/images/LeviLamina.png'},downloadCount:pkg.stars,dateModified:pkg.updated,dateCreated:pkg.updated,categories:[],latestFiles:[],latestFilesIndexes:[]})),pagination:{index,pageSize,totalCount:matches.length}};
  }
  if (name==='ListVersionMetas') return scenario==='no-instances' ? [] : [{name:'UI test instance',gameVersion:'1.21.0',type:'Release',enableIsolation:true}];
  if (name==='ListPacksForVersion' && scenario==='resource-packs') return Array.from({length:24},(_,index)=>({name:'Resource pack '+String(index+1).padStart(2,'0'),path:'C:/Fixture/resource_packs/pack-'+(index+1),manifest:{pack_type:6,name:'Resource pack '+String(index+1).padStart(2,'0'),description:'A sample resource pack.',identity:{version:{major:1,minor:0,patch:0}}}}));

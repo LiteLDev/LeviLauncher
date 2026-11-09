@@ -81,7 +81,7 @@ func TestDeriveWorkspaceInstallationOrderAndFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if lf.Format != 4 || lf.Platform != "server" || lf.Runtime != "win-x64" {
+	if lf.Format != 4 || lf.Side != "server" || lf.Platform != "win-x64" {
 		t.Errorf("lock file = %+v", lf)
 	}
 	eq(t, "packages", identities(lf), []string{lib, app})
@@ -104,8 +104,8 @@ func TestDeriveWorkspaceInstallationOrderAndFiles(t *testing.T) {
 	variants, _ := m.Get("variants")
 	entries, _ := variants.(*doc.Object).Get("")
 	e := entries.([]any)[0].(*doc.Object)
-	if pl, _ := e.Get("platform"); pl != "server" {
-		t.Errorf("platform = %v", pl)
+	if sd, _ := e.Get("side"); sd != "server" {
+		t.Errorf("side = %v", sd)
 	}
 }
 
@@ -192,9 +192,9 @@ func TestDeriveWorkspaceVariantIsInRefAndIdentity(t *testing.T) {
 	eq(t, "files", p.Files, []string{"x.dll"})
 }
 
-// On the client platform, the variant "" of a tooth.json with a "client"
+// On the client side, the variant "" of a tooth.json with a "client"
 // label is that label, and a dependency on X#client orders after X#client.
-func TestDeriveWorkspaceClientPlatform(t *testing.T) {
+func TestDeriveWorkspaceClientSide(t *testing.T) {
 	client := `{"format_version": 3, "format_uuid": "` + uuid3 + `", "tooth": "example.com/ll",
 	  "version": "1.0.0", "variants": [
 	    { "platform": "win-x64", "dependencies": { "example.com/bds": "1.*" } },

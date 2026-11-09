@@ -47,6 +47,8 @@ LeviLauncher 支援超出「基礎啟動器」範圍的模組相關工作流程�
 
 LeviLauncher 內置了相容 [lip](https://github.com/LiteLDev/lip) 的套件管理器，毋須另外安裝 lip 或 .NET 執行階段。它遵循 lip：每個版本的套件記錄在 `.lip/state.json` 中，套件從其 `lip.toml` 讀取（只有 `tooth.json` 的舊套件仍可使用）。用舊版啟動器安裝過 LeviLamina 或 LIP 套件的版本（`tooth_lock.json`）會在第一次套件操作時自動遷移。開啟 **使用鏡像來源** 時，從 GitHub 下載套件會經過[設定](./settings-personalization)中的 **GitHub 代理**；否則直接連線 GitHub（如已設定系統代理，則經過系統代理）。之前儲存過的 GitHub 代理，或 lip 的 `config.toml`（位於 `%APPDATA%\lip`，例如透過 `lip config set github_proxy <URL>` 設定）中的 `github_proxy`，在兩種情況下都會生效。**清理快取** 可刪除已下載的套件檔案。
 
+自 lip v0.40 起，`lip.toml` 與 `.lip/state.json` 中的每個條目都用 `side`（`server` 或 `client`）和 `platform`（.NET 執行階段識別碼，例如 `win-x64`）表示其執行位置；lip v0.39 及更早版本把它們叫作 `platform` 和 `runtime`。由 lip v0.39 及更早版本或舊版啟動器寫入、仍使用舊鍵名的 `.lip/state.json` 會被拒絕，並提示需要的修改：把 `platform` 改名為 `side`、把 `runtime` 改名為 `platform`，或重新安裝該版本的套件。
+
 這類集成更適合希望使用包驅動或加載器驅動工作流程的進階用戶。
 
 最佳實踐：
@@ -56,6 +58,10 @@ LeviLauncher 內置了相容 [lip](https://github.com/LiteLDev/lip) 的套件管
 - 記錄下「最後一次成功運作」的版本組合
 
 要為用戶端版本加入 LeviLamina，請參閱 LeviLamina 文檔中的[在Windows上安裝用戶端](https://docs.levimc.org/LeviLamina/zh-Hant/user_guides/install_on_client/)。
+
+### LeviMC 模組頁面
+
+**LeviMC 模組** 頁面列出 [levimc.org/mods](https://levimc.org/mods/) 中提供 Windows x64 用戶端建置的模組（即有 `side = "client"` 且 `platform = "win-x64"` 的條目）。可以按名稱、ID、作者、標籤或簡介搜尋；按相關性、星標、最近更新或最新發佈排序；並按遊戲版本、LeviLamina 版本、標籤（前置庫 / API、經濟等推薦標籤排在最前，也可以排除某個標籤）、授權條款（寬鬆等類別或 SPDX ID）、依賴和作者（模組頁面上的 **…的更多專案**）篩選。安裝模組時會選擇其 `client` 變體，沒有時選擇預設變體，再沒有時選擇第一個有用戶端建置的其他變體；在模組頁面中也可以改選其他這樣的變體。
 
 ## 原生模組 <Badge platform="android" />
 

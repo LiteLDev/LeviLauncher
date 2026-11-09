@@ -31,7 +31,7 @@ func parseTOMLOf(t *testing.T, text string) (*pkgmodel.Document, error) {
 
 func TestParseTOMLRendersTemplates(t *testing.T) {
 	text := `{"format":4,"id":"example.com/owner/tool","version":"1.2.3","tag":"v{{version}}",` +
-		`"info":{"name":"Tool"},"variants":{"":[{"platform":"server","runtime":"win-x64",` +
+		`"info":{"name":"Tool"},"variants":{"":[{"side":"server","platform":"win-x64",` +
 		`"assets":[{"type":"zip","urls":["https://example.com/{{id}}/{{tag}}/{{info.name}}-{{version}}.zip"]}]}]}}`
 	d, err := parseTOMLOf(t, text)
 	if err != nil {

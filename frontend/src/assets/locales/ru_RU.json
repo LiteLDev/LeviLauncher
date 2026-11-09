@@ -1255,8 +1255,6 @@
     "search_placeholder": "Поиск модов…",
     "sort_by": "Сортировать по",
     "select_sort": "Выберите сортировку",
-    "order_by": "Порядок",
-    "select_order": "Выберите порядок",
     "no_description": "Нет описания",
     "ll_version_label": "Версия LeviLamina",
     "ll_version_placeholder": "Выберите версию LeviLamina",
@@ -1264,7 +1262,7 @@
     "game_version_label": "Версия игры",
     "game_version_placeholder": "Выберите версию игры",
     "game_all_versions": "Все версии игры",
-    "mapping_unavailable_hint": "Сведения о совместимости с версиями игры недоступны, поэтому фильтры по версии отключены, чтобы избежать неверных совпадений.",
+    "mapping_unavailable_hint": "Сведения о версиях LeviLamina недоступны, поэтому фильтр по версии LeviLamina отключён, чтобы избежать неверных совпадений.",
     "files": {
       "game_versions_unknown": "Подходящая версия игры не найдена",
       "version_count": "Версий: {{count}}",
@@ -1283,7 +1281,6 @@
       "variant_label": "Вариант",
       "variant_hint_keep_default": "У большинства пакетов только один вариант. Оставьте значение по умолчанию, если автор не указал иное.",
       "variant_placeholder": "Выберите вариант",
-      "variant_default": "по умолчанию",
       "select_version_incompatible_hint": "Версия {{version}} несовместима с версией игры {{gameVersion}}.",
       "checking_ll_state": "Проверка состояния LeviLamina…",
       "mapping_unavailable_blocked_hint": "Сведения о совместимости LeviLamina с этой версией игры недоступны, поэтому установка заблокирована, чтобы не установить не тот пакет.",
@@ -1298,27 +1295,70 @@
       "downgrade_success": "Понижение версии выполнено успешно",
       "reinstall_success": "Переустановка выполнена успешно",
       "current_installed_version_label": "Установленная версия",
-      "checking_current_installed_version": "Проверка установленной версии…"
+      "checking_current_installed_version": "Проверка установленной версии…",
+      "prerelease": "Предварительная версия",
+      "no_client_variant": "У этого мода нет варианта для клиента на {{platform}}, поэтому LeviLauncher не может его установить."
     },
     "guide": {
       "open_button": "Руководство для разработчиков",
       "title": "Руководство для разработчиков LeviMC Mods",
-      "description": "Если вы хотите, чтобы ваш мод появился на странице LeviMC Mods в LeviLauncher, публикуйте его по спецификации LIP package_manifest.",
-      "manifest_hint": "Это краткая памятка для разработчиков. Названия полей, обязательные поля, примеры и правила валидации смотрите в официальной документации.",
-      "variant_hint": "Вариант будет включён в лаунчер только если его label содержит client. По умолчанию используйте \"label\": \"client\"; для подрасширений используйте \"label\": \"client_xxxx\" или \"label\": \"client\\xxxx\".",
+      "description": "Чтобы ваш мод появился на странице LeviMC Mods в LeviLauncher, опубликуйте его с файлом lip.toml, как описано в документации lip.",
+      "manifest_hint": "LeviLauncher показывает мод, если в lip.toml его последней версии есть запись с side = \"client\" и platform = \"win-x64\", и устанавливает выбранный для них вариант: сначала \"client\", затем вариант по умолчанию \"\", затем остальные по имени.",
+      "variant_hint": "Добавьте по записи на каждую поддерживаемую сторону и платформу, например запись [[variants.\"\"]] с side = \"client\" и platform = \"win-x64\" рядом с записью для сервера. С рекомендуемыми тегами вроде \"library\" или \"economy\" в [info] tags мод появится в этих фильтрах.",
       "docs_button": "Открыть спецификацию",
       "close_button": "Закрыть"
     },
     "title": "LeviMC Mods",
     "sort_options": {
-      "hotness": "Популярность",
-      "updated": "Обновление",
-      "name": "Название"
+      "relevance": "Релевантность",
+      "stars": "Звёзды",
+      "updated": "Обновлено",
+      "newest": "Новые"
     },
-    "order_options": {
-      "desc": "По убыванию",
-      "asc": "По возрастанию"
+    "filters": {
+      "title": "Фильтры",
+      "title_count": "Фильтры ({{count}})",
+      "clear": "Сбросить все фильтры",
+      "active": "Активные фильтры",
+      "tags": "Теги",
+      "other_tags": "Другие теги",
+      "license": "Лицензия",
+      "dependencies": "Зависимости",
+      "exclude": "Исключить {{label}}",
+      "not_label": "не {{label}}",
+      "remove": "Убрать фильтр: {{label}}",
+      "show_more": "Показать ещё {{count}}",
+      "show_fewer": "Свернуть",
+      "search_tags": "Поиск тегов…",
+      "license_ids": "Лицензии: {{family}}",
+      "depends_on": "Зависит от {{name}}",
+      "more_by_owner": "Ещё от {{owner}}",
+      "more_tags": "ещё {{count}}"
     },
+    "tags": {
+      "library": "Библиотека / API",
+      "utility": "Утилиты",
+      "management": "Управление сервером",
+      "game-mechanics": "Игровая механика",
+      "adventure": "Контент и приключения",
+      "visual": "Визуал и HUD",
+      "economy": "Экономика",
+      "teleport": "Телепортация",
+      "anticheat": "Античит",
+      "optimization": "Оптимизация",
+      "bugfix": "Исправления ошибок",
+      "technology": "Техника и редстоун",
+      "protocol": "Протокол и мультиверсия"
+    },
+    "license": {
+      "permissive": "Разрешительная",
+      "weak-copyleft": "Слабый копилефт",
+      "copyleft": "Копилефт",
+      "other": "Другая",
+      "none": "Без лицензии"
+    },
+    "variant_default": "По умолчанию",
+    "mod_id": "ID мода",
     "by_author_inline": "Автор: {{author}}",
     "package_details_aria_label": "Информация о пакете",
     "task_console": {

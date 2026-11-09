@@ -18,6 +18,7 @@
     "test:uwp": "node --test scripts/uwp.test.mjs scripts/content-paths.test.mjs",
     "test:lip-progress": "node --test scripts/lip-progress.test.mjs",
     "test:error-detail": "node --test scripts/error-detail.test.mjs",
+    "test:lipcatalog": "node --test scripts/lipCatalog.test.mjs",
     "styles:check": "node ./scripts/check-materials.mjs"
   },
   "dependencies": {

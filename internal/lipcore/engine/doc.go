@@ -1,12 +1,13 @@
 // Package engine carries out lip's workspace operations
 // (src/Lip.Core/Mcmod/McmodService.cs, Resolution/Resolver.cs,
 // Archives/ArchiveProvider.cs, ArchiveReader.cs and PublicApi/LipClient.cs,
-// from v0.38.0-beta.1 with the fixes of lip main; protocol/workspace.md
+// from v0.38.0-beta.1 with the fixes of lip main up to v0.40.0;
+// protocol/workspace.md
 // §3-§7, protocol/package.md §4,
 // protocol/cli.md §3-§5.4, protocol/compatibility.md) on top of the other
 // lipcore packages:
 //
-//	New(dir, Options{GithubProxy, HTTPClient, Platform, Runtime}, reporter)
+//	New(dir, Options{GithubProxy, HTTPClient, Side, Platform}, reporter)
 //	Install(packages, dryRun, ignoreScripts, noDependencies)
 //	Update(packages, dryRun, ignoreScripts)
 //	Uninstall(packages, dryRun, ignoreScripts, noDependencies)
@@ -22,9 +23,9 @@
 // one view of the workspace (install), then applies the plans in one
 // transaction and writes the state file at the commit point.
 //
-// The engine follows lip exactly, with one parameter: the platform of the
+// The engine follows lip exactly, with one parameter: the side of the
 // workspaces it manages. lip manages server workspaces only; LeviLauncher's
-// workspaces are client workspaces (Options.Platform defaults to "client"),
+// workspaces are client workspaces (Options.Side defaults to "client"),
 // with every other protocol rule unchanged.
 //
 // Archives: remote repositories are read through the git smart-HTTP protocol

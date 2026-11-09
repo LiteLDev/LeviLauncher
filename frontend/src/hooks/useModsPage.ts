@@ -269,6 +269,12 @@ export const useModsPage = (
     };
   }, [importing]);
 
+  // Updates and promotions name the package without a variant ("<id>", not
+  // "<id>#" or "<id>#<variant>"): the backend changes the installed package
+  // in place whatever its variant, and only for a package that is not
+  // installed picks the variant itself (the catalogue's rule A2: "client",
+  // then the default "", then the others by name, among those with a
+  // client entry for this platform).
   const resolveLIPIdentifierForRequest = (
     identifier: string,
     identifierKey?: string,

@@ -24,7 +24,7 @@ func manifestJSON(id, version, variant, entry string) string {
 	return `{"format":4, "id":"` + id + `","version":"` + version + `","variants":{"` + variant + `":[` + entry + `]} }`
 }
 
-const serverEntry = `{"platform":"server","runtime":"win-x64"}`
+const serverEntry = `{"side":"server","platform":"win-x64"}`
 
 func manifest(t *testing.T, id, version, variant, entry string) *doc.Object {
 	t.Helper()
@@ -51,7 +51,7 @@ func gitPackage(t *testing.T, id string) pkgmodel.LockedPackage {
 }
 
 func lockOf(packages ...pkgmodel.LockedPackage) *pkgmodel.LockFile {
-	return &pkgmodel.LockFile{Format: 4, Platform: "server", Runtime: "win-x64", Packages: packages}
+	return &pkgmodel.LockFile{Format: 4, Side: "server", Platform: "win-x64", Packages: packages}
 }
 
 func lipPath(root string) string { return filepath.Join(root, ".lip", "state.json") }
@@ -111,18 +111,18 @@ func TestSaveThenLoadRoundTrips(t *testing.T) {
 	root := t.TempDir()
 	original := lockOf(
 		samplePackage(t, "github.com/a/zip", "https://example.com/z.zip", "", "",
-			`{"platform":"server","runtime":"win-x64","assets":[{"type":"self"},`+
+			`{"side":"server","platform":"win-x64","assets":[{"type":"self"},`+
 				`{"type":"mcmod","urls":["https://example.com/m.zip"]}]}`),
 		samplePackage(t, "github.com/a/git", "github.com/a/git#lua/client@1.0.0", commit40, "lua/client", serverEntry),
 		samplePackage(t, "github.com/a/file", "file:///C:/abs/x.zip", "", "", serverEntry),
 		samplePackage(t, "github.com/a/derived", "github.com/a/derived", commit40, "",
-			`{"platform":"server","runtime":"win-x64","preserve":["**/config.json"],`+
+			`{"side":"server","platform":"win-x64","preserve":["**/config.json"],`+
 				`"purge":["data","data/"],"hooks":{"post_install":["echo"]}}`))
 	if err := SaveWorkspace(root, original); err != nil {
 		t.Fatal(err)
 	}
 	loaded := mustLoad(t, root)
-	if loaded.Platform != "server" || loaded.Runtime != "win-x64" || len(loaded.Packages) != 4 {
+	if loaded.Side != "server" || loaded.Platform != "win-x64" || len(loaded.Packages) != 4 {
 		t.Fatalf("%+v", loaded)
 	}
 	for i, want := range original.Packages {
@@ -155,8 +155,8 @@ func TestSaveWritesExactlyTheMembersOfTheSchemaInOrder(t *testing.T) {
 	// As JsonFile writes it: indented by two spaces, "\n", a line break at the end.
 	want := `{
   "format": 4,
-  "platform": "server",
-  "runtime": "win-x64",
+  "side": "server",
+  "platform": "win-x64",
   "packages": [
     {
       "manifest": {
@@ -166,8 +166,8 @@ func TestSaveWritesExactlyTheMembersOfTheSchemaInOrder(t *testing.T) {
         "variants": {
           "": [
             {
-              "platform": "server",
-              "runtime": "win-x64"
+              "side": "server",
+              "platform": "win-x64"
             }
           ]
         }
@@ -187,8 +187,8 @@ func TestSaveWritesExactlyTheMembersOfTheSchemaInOrder(t *testing.T) {
         "variants": {
           "": [
             {
-              "platform": "server",
-              "runtime": "win-x64"
+              "side": "server",
+              "platform": "win-x64"
             }
           ]
         }
@@ -230,7 +230,7 @@ func TestSaveExistingLockReplacesItAsAWhole(t *testing.T) {
 func TestStageCommitAndDiscard(t *testing.T) {
 	root := t.TempDir()
 	other := lockOf()
-	other.Runtime = "linux-x64"
+	other.Platform = "linux-x64"
 	if err := SaveWorkspace(root, other); err != nil {
 		t.Fatal(err)
 	}
@@ -238,13 +238,13 @@ func TestStageCommitAndDiscard(t *testing.T) {
 	if err := StageWorkspace(root, lockOf()); err != nil {
 		t.Fatal(err)
 	}
-	if !exists(staged) || mustLoad(t, root).Runtime != "linux-x64" {
+	if !exists(staged) || mustLoad(t, root).Platform != "linux-x64" {
 		t.Fatal("staging changed the state file")
 	}
 	if err := CommitStaged(root); err != nil {
 		t.Fatal(err)
 	}
-	if exists(staged) || mustLoad(t, root).Runtime != "win-x64" {
+	if exists(staged) || mustLoad(t, root).Platform != "win-x64" {
 		t.Fatal("CommitStaged did not move the staged file")
 	}
 
@@ -260,7 +260,7 @@ func TestStageCommitAndDiscard(t *testing.T) {
 	if err := CommitStaged(root); err != nil {
 		t.Fatal(err)
 	}
-	if exists(staged) || mustLoad(t, root).Runtime != "linux-x64" {
+	if exists(staged) || mustLoad(t, root).Platform != "linux-x64" {
 		t.Fatal("DiscardStaged did not discard")
 	}
 	if err := DiscardStaged(root); err != nil {
@@ -354,7 +354,7 @@ func TestRecoverHooksCommitTheStagedFileAndDeleteToothLock(t *testing.T) {
 func TestLoadHandWrittenWorkspaceFiles(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, lipPath(root), `{
-  "format": 4, "platform": "server", "runtime": "win-x64",
+  "format": 4, "side": "server", "platform": "win-x64",
   "packages": [{
     "files": ["a.txt"], "ref": "github.com/a/b@branch:main", "commit": "`+commit40+`",
     "explicit": false, "variant": "",
@@ -366,7 +366,7 @@ func TestLoadHandWrittenWorkspaceFiles(t *testing.T) {
 		stringMember(p.Manifest, "version") != "1.2.3" {
 		t.Fatalf("%+v", p)
 	}
-	writeFile(t, lipPath(root), "\xef\xbb\xbf"+`{"format":4,"platform":"server","runtime":"win-x64","packages":[`+
+	writeFile(t, lipPath(root), "\xef\xbb\xbf"+`{"format":4,"side":"server","platform":"win-x64","packages":[`+
 		`{"manifest":`+manifestJSON("github.com/a/b", "1.2.3", "", serverEntry)+`,"variant":"","explicit":true,`+
 		`"ref":"github.com/a/b","commit":"`+commit40+`","files":["a.txt","1.0"]}]}`)
 	p = mustLoad(t, root).Packages[0]
@@ -379,7 +379,9 @@ func TestLoadInvalidWorkspaceFiles(t *testing.T) {
 	const invalid = "' is invalid, so lip cannot tell which packages are installed. If you edited it by hand," +
 		" undo the change; if you have a copy of the file, restore it."
 	const other = "' was written by a different version of lip, so this lip cannot tell which packages are installed."
-	head := `"format": 4, "platform": "server", "runtime": "win-x64"`
+	const oldKeys = ` uses the keys "platform" and "runtime" of lip before v0.40; rename "platform" to "side" and` +
+		` "runtime" to "platform".`
+	head := `"format": 4, "side": "server", "platform": "win-x64"`
 	m := manifestJSON("github.com/a/b", "1.0.0", "", serverEntry)
 	pkg := `"manifest": ` + m + `, "variant": "", "explicit": true, "ref": "github.com/a/b", "commit": "` +
 		commit40 + `", "files": []`
@@ -389,7 +391,7 @@ func TestLoadInvalidWorkspaceFiles(t *testing.T) {
 			`"format" is missing or not a number, but this version of lip reads only 4. If another version of lip` +
 				` wrote the file, use that version.`},
 		{`{ "format": 5, "packages": [] }`, other, `"format" is 5, but this version of lip reads only 4.`},
-		{`{ "format": "4", "platform": "server", "runtime": "win-x64", "packages": [] }`, invalid, `"format" is missing`},
+		{`{ "format": "4", "side": "server", "platform": "win-x64", "packages": [] }`, invalid, `"format" is missing`},
 		{"", invalid, "The file is not valid JSON"},
 		{"format = 4\n", invalid, "The file is not valid JSON"},
 		{`{ "format": 4, "format": 4 }`, invalid, "The file is not valid JSON"},
@@ -397,27 +399,27 @@ func TestLoadInvalidWorkspaceFiles(t *testing.T) {
 		{"null", invalid, "The file is not a JSON object."},
 		{`{ ` + head + `, "packages": null }`, invalid, "The property or field 'packages' on type" +
 			" 'Lip.Core.Mcmod.LockFile' doesn't allow setting null values. Consider updating its nullability" +
-			" annotation. Path: $.packages | LineNumber: 0 | BytePositionInLine: 67."},
+			" annotation. Path: $.packages | LineNumber: 0 | BytePositionInLine: 64."},
 		{`{ ` + head + `, "packages": [null] }`, invalid, "packages[0] is null, but it must be an object."},
-		{`{ "format": 4, "platform": 5, "runtime": "win-x64", "packages": [] }`, invalid, "The JSON value could" +
-			" not be converted to System.String. Path: $.platform | LineNumber: 0 | BytePositionInLine: 24."},
+		{`{ "format": 4, "side": 5, "platform": "win-x64", "packages": [] }`, invalid, "The JSON value could" +
+			" not be converted to System.String. Path: $.side | LineNumber: 0 | BytePositionInLine: 20."},
 		{`{ "format": 4, "packages": [] }`, invalid, "JSON deserialization for type 'Lip.Core.Mcmod.LockFile'" +
-			" was missing required properties including: 'platform', 'runtime'."},
-		{`{ "format": 4, "platform": "universal", "runtime": "win-x64", "packages": [] }`, invalid,
-			`"platform" is "universal", but it must be "server" or "client".`},
-		{`{ "format": 4, "platform": "server", "runtime": "", "packages": [] }`, invalid,
-			`"runtime" is missing or empty, but it must be a runtime identifier such as "win-x64".`},
-		{`{ "format": 4, "platform": "server", "runtime": "x", "packages": [1] }`, invalid, "The JSON value" +
+			" was missing required properties including: 'side', 'platform'."},
+		{`{ "format": 4, "side": "universal", "platform": "win-x64", "packages": [] }`, invalid,
+			`"side" is "universal", but it must be "server" or "client".`},
+		{`{ "format": 4, "side": "server", "platform": "", "packages": [] }`, invalid,
+			`"platform" is missing or empty, but it must be a runtime identifier such as "win-x64".`},
+		{`{ "format": 4, "side": "server", "platform": "x", "packages": [1] }`, invalid, "The JSON value" +
 			" could not be converted to Lip.Core.Mcmod.LockedPackage. Path: $.packages[0] | LineNumber: 0 |" +
-			" BytePositionInLine: 59."},
+			" BytePositionInLine: 56."},
 		{w(strings.Replace(pkg, `"explicit": true,`, "", 1)), invalid, "JSON deserialization for type" +
 			" 'Lip.Core.Mcmod.LockedPackage' was missing required properties including: 'explicit'."},
 		{w(strings.Replace(pkg, `"ref"`, `"Ref"`, 1)), invalid, "including: 'ref'."},
 		{w(strings.Replace(pkg, `"explicit": true`, `"explicit": "true"`, 1)), invalid, "The JSON value could" +
 			" not be converted to System.Boolean. Path: $.packages[0].explicit | LineNumber: 0 |" +
-			" BytePositionInLine: 219."},
+			" BytePositionInLine: 213."},
 		{w(strings.Replace(pkg, `"files": []`, `"files": [1]`, 1)), invalid, "Path: $.packages[0].files[0] |" +
-			" LineNumber: 0 | BytePositionInLine: 303."},
+			" LineNumber: 0 | BytePositionInLine: 297."},
 		{w(strings.Replace(pkg, m, "[]", 1)), invalid,
 			"packages[0].manifest is array, but it must be the package file of the package, a mapping."},
 		{w(strings.Replace(pkg, `"1.0.0"`, `"1.0"`, 1)), invalid, "packages[0].manifest, the package file of" +
@@ -426,6 +428,13 @@ func TestLoadInvalidWorkspaceFiles(t *testing.T) {
 			`packages[0].variant is "A", which is not a valid variant name.`},
 		{w(strings.Replace(pkg, `"files": []`, `"files": ["a", null]`, 1)), invalid,
 			"packages[0].files[1] is null, but it must be a workspace-relative path."},
+		{`{ "format": 4, "platform": "server", "runtime": "win-x64", "packages": [] }`, other, "The file" + oldKeys},
+		{`{ "format": 4, "platform": "client", "packages": [] }`, other, "The file" + oldKeys},
+		{`{ "format": 4, "runtime": "win-x64" }`, other, "The file" + oldKeys},
+		{`{ "format": 4, "side": "server", "platform": "win-x64", "runtime": "win-x64", "packages": [] }`, other,
+			"The file" + oldKeys},
+		{w(strings.Replace(pkg, serverEntry, `{"platform":"server","runtime":"win-x64"}`, 1)), invalid,
+			"packages[0].manifest, the package file of github.com/a/b 1.0.0, is not a valid package file."},
 		{w(strings.Replace(pkg, commit40, strings.ToUpper(commit40), 1)), invalid,
 			`packages[0].commit is "` + strings.ToUpper(commit40) + `", but it must be 40 lowercase hexadecimal digits.`},
 		{w(strings.Replace(pkg, `"`+commit40+`"`, "null", 1)), invalid, "packages[0].commit is null, but it must" +
@@ -454,9 +463,9 @@ func TestLoadInvalidWorkspaceFiles(t *testing.T) {
 func TestStageInvalidLockWritesNothing(t *testing.T) {
 	mutate := []func(*pkgmodel.LockFile){
 		func(l *pkgmodel.LockFile) { l.Format = 3 },
-		func(l *pkgmodel.LockFile) { l.Platform = "Server" },
+		func(l *pkgmodel.LockFile) { l.Side = "Server" },
+		func(l *pkgmodel.LockFile) { l.Side = "" },
 		func(l *pkgmodel.LockFile) { l.Platform = "" },
-		func(l *pkgmodel.LockFile) { l.Runtime = "" },
 		func(l *pkgmodel.LockFile) { l.Packages[0].Manifest = nil },
 		func(l *pkgmodel.LockFile) {
 			l.Packages[0].Manifest = manifest(t, "github.com/a/b", "v1.0.0", "", serverEntry)

@@ -57,7 +57,7 @@ func defaultModBackend() modBackend {
 	return modBackend{
 		catalog: func(ctx context.Context, refresh bool) (*lipindex.Index, time.Time, bool, error) {
 			src := &lipindex.Source{Client: client, MaxAge: catalogMaxAge,
-				Cache: &lipindex.Cache{Path: filepath.Join(apppath.CacheDir(), "lip-catalog.json")}}
+				Cache: &lipindex.Cache{Path: filepath.Join(apppath.CacheDir(), "lip-catalog.v4.json")}}
 			return src.Load(ctx, refresh)
 		},
 		fetchDetail: client.FetchDetail,
@@ -425,7 +425,8 @@ func modFirstNonEmpty(s ...string) string {
 }
 
 func modNotClientMod(id string) *Error {
-	return Errorf(ExitNotFound, "ERR_LIP_PACKAGE_NOT_FOUND", "%s is not a client mod (it has no client variant)", lipShortID(id)).
+	return Errorf(ExitNotFound, "ERR_LIP_PACKAGE_NOT_FOUND", "%s has no build for the client on %s (no variant has an entry with side client and platform %s)",
+		lipShortID(id), lipindex.TargetPlatform, lipindex.TargetPlatform).
 		WithHint("%s mod search <words>", ProgramName)
 }
 

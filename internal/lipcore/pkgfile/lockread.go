@@ -155,7 +155,7 @@ type lockedPackage struct {
 }
 
 type lockFile struct {
-	platform, runtime string
+	side, platform string
 	// packages may hold nils, for JSON null items.
 	packages []*lockedPackage
 }
@@ -169,10 +169,10 @@ func deserializeLock(root *doc.Object) (*lockFile, error) {
 	err := members(root, func() int { return 0 }, func(k string, v any, pos offset) error {
 		var err error
 		switch k {
+		case "side":
+			lf.side, err = readSTJString(v, k, lockFileType, "$."+k, pos)
 		case "platform":
 			lf.platform, err = readSTJString(v, k, lockFileType, "$."+k, pos)
-		case "runtime":
-			lf.runtime, err = readSTJString(v, k, lockFileType, "$."+k, pos)
 		case "packages":
 			lf.packages, err = deserializePackages(v, pos)
 		case pkgmodel.FormatKey:
@@ -185,7 +185,7 @@ func deserializeLock(root *doc.Object) (*lockFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := checkRequired(lockFileType, seen, "platform", "runtime", "packages"); err != nil {
+	if err := checkRequired(lockFileType, seen, "side", "platform", "packages"); err != nil {
 		return nil, err
 	}
 	return lf, nil

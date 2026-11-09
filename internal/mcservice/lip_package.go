@@ -11,6 +11,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/lip"
+	"github.com/liteldev/LeviLauncher/internal/lipindex"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
@@ -20,12 +21,13 @@ var lipIdentifierPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$
 // leviLaminaPackageID is LeviLamina's package id.
 const leviLaminaPackageID = "github.com/LiteLDev/LeviLamina"
 
-// lipClientVariant is the variant that holds the client build of a package:
-// the label "client" of a tooth.json, and the variant lip migrate gives a
-// package for the client. A request that names no variant asks for it, and
-// falls back to the variant "" when lip finds no package for it (a package
-// whose variant "" has entries for both platforms). Installed packages are
-// matched by package id, whatever their variant.
+// lipClientVariant is the variant that conventionally holds the client
+// build of a package (the label "client" of a tooth.json, which lip's
+// migration keeps as the variant name). It is what a request without a
+// variant asks for when the catalogue cannot say which variant has a client
+// entry (see chooseLIPVariant), falling back to the variant "" when lip
+// finds no package for it. Installed packages are matched by package id,
+// whatever their variant.
 const lipClientVariant = "client"
 
 const lipPackageQueryTimeout = 10 * time.Second
@@ -37,34 +39,40 @@ var (
 	lipUpdatePackages    = lip.UpdatePackages
 	lipUninstallPackages = lip.UninstallPackages
 	lipResolveTargetDir  = resolveLIPTargetDir
+	// lipFetchDetail fetches a package's catalogue detail (levimc.org/mods).
+	lipFetchDetail = func(ctx context.Context, packageID string) (*lipindex.Detail, error) {
+		return lipindex.NewClient().FetchDetail(ctx, packageID)
+	}
 )
 
 type lipPackageIdentifierParts struct {
 	base    string
 	variant string
-	// bare is set for an identifier ending in "#" without a variant, which
-	// names the variant "".
-	bare bool
+	// named is set when the identifier names a variant: "#<variant>", or
+	// "#" alone for the variant "".
+	named bool
 }
 
 // lipPackageRequest is what the launcher asks lip for a frontend identifier
-// ("owner/repo", "github.com/owner/repo", optionally with "#variant").
+// ("owner/repo", "github.com/owner/repo", optionally with "#variant"). The
+// identity encoding is lip's: "<id>#" (or "<id>") is the variant "",
+// "<id>#<v>" the variant v. An identifier without "#" names no variant: an
+// install picks one with chooseLIPVariant (rule A2 over the catalogue).
 type lipPackageRequest struct {
 	// identifier is the normalized frontend identifier: "owner/repo", with
-	// "#variant" for a variant other than client.
+	// "#variant" when it names a variant other than "".
 	identifier string
 	// packageID is "github.com/owner/repo".
 	packageID string
-	// variant is the requested variant other than client, or "".
+	// variant is the variant named, "" for the default variant or none.
 	variant string
-	// requestRef is the source of a new install: the package id with
-	// "#variant", or with "#client" when the identifier names no other
-	// variant.
+	// named is set when the identifier names a variant ("#" included).
+	named bool
+	// requestRef is the source of a new install of a named variant: the
+	// package id, with "#variant" for a variant other than "". For a
+	// request without a variant it is the bare package id until an install
+	// chooses the variant.
 	requestRef string
-	// fallbackRef is the source a new install falls back to when lip finds
-	// no package for requestRef: the bare package id for a request of the
-	// client variant, otherwise "".
-	fallbackRef string
 }
 
 type lipPackageInstallStateRequest struct {
@@ -85,9 +93,9 @@ func canonicalizeLIPPackageIdentifier(identifier string) lipPackageIdentifierPar
 	}
 
 	variant := ""
-	marker := false
+	named := false
 	if idx := strings.Index(normalized, "#"); idx >= 0 {
-		marker = true
+		named = true
 		variant = strings.TrimSpace(normalized[idx+1:])
 		normalized = strings.TrimSpace(normalized[:idx])
 	}
@@ -97,7 +105,6 @@ func canonicalizeLIPPackageIdentifier(identifier string) lipPackageIdentifierPar
 	} else if idx := strings.Index(normalized, "@"); idx >= 0 {
 		normalized = strings.TrimSpace(normalized[:idx])
 	}
-	bare := marker && variant == ""
 	lowerNormalized := strings.ToLower(normalized)
 	if strings.HasPrefix(lowerNormalized, "https://") {
 		normalized = normalized[len("https://"):]
@@ -111,19 +118,18 @@ func canonicalizeLIPPackageIdentifier(identifier string) lipPackageIdentifierPar
 
 	parts := strings.FieldsFunc(normalized, func(r rune) bool { return r == '/' })
 	if len(parts) == 2 {
-		return lipPackageIdentifierParts{base: strings.Join(parts, "/"), variant: variant, bare: bare}
+		return lipPackageIdentifierParts{base: strings.Join(parts, "/"), variant: variant, named: named}
 	}
 	if len(parts) == 3 && strings.EqualFold(parts[0], "github.com") {
-		return lipPackageIdentifierParts{base: fmt.Sprintf("%s/%s", parts[1], parts[2]), variant: variant, bare: bare}
+		return lipPackageIdentifierParts{base: fmt.Sprintf("%s/%s", parts[1], parts[2]), variant: variant, named: named}
 	}
 
 	return lipPackageIdentifierParts{}
 }
 
 // buildLIPPackageRequest maps a frontend identifier to the lip package it
-// names. The variant "client" (or none) requests the client variant, falling
-// back to the bare repository; an identifier ending in "#" requests the bare
-// repository.
+// names: "#<variant>" names that variant, "#" alone the variant "", and an
+// identifier without "#" no variant (an install chooses one).
 func buildLIPPackageRequest(identifier string) (lipPackageRequest, bool) {
 	parts := canonicalizeLIPPackageIdentifier(identifier)
 	if !lipIdentifierPattern.MatchString(parts.base) {
@@ -132,20 +138,35 @@ func buildLIPPackageRequest(identifier string) (lipPackageRequest, bool) {
 	req := lipPackageRequest{
 		identifier: parts.base,
 		packageID:  "github.com/" + parts.base,
+		variant:    parts.variant,
+		named:      parts.named,
 	}
-	req.requestRef = req.packageID + "#" + lipClientVariant
-	req.fallbackRef = req.packageID
-	if parts.bare {
-		req.requestRef = req.packageID
-		req.fallbackRef = ""
-	}
-	if parts.variant != "" && !strings.EqualFold(parts.variant, lipClientVariant) {
-		req.variant = parts.variant
+	req.requestRef = req.packageID
+	if parts.variant != "" {
 		req.identifier += "#" + parts.variant
-		req.requestRef = req.packageID + "#" + parts.variant
-		req.fallbackRef = ""
+		req.requestRef += "#" + parts.variant
 	}
 	return req, true
+}
+
+// chooseLIPVariant is the variant a request without one installs: rule A2
+// of the catalogue (the variant "client", else "", else the first by name,
+// among those with an entry for the client on this platform) over the
+// package's catalogue detail, for version (or the newest version that has
+// such a variant). ok is false when the catalogue cannot say (it is
+// unreachable or does not list the package); a package listed without such
+// a variant gets "" (lip then reports what is missing).
+func chooseLIPVariant(ctx context.Context, packageID, version string) (variant string, ok bool) {
+	d, err := lipFetchDetail(ctx, packageID)
+	if err != nil {
+		log.Printf("chooseLIPVariant: no catalogue detail for %s: %v", packageID, err)
+		return "", false
+	}
+	if v, found := lipindex.ChooseVariant(d, version, lipindex.TargetSide, lipindex.TargetPlatform); found {
+		return v, true
+	}
+	log.Printf("chooseLIPVariant: %s %s has no variant for %s on %s", packageID, version, lipindex.TargetSide, lipindex.TargetPlatform)
+	return "", true
 }
 
 // lipPackageStateFor returns the installed package with req's package id,
@@ -338,9 +359,34 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	if stateQueryErr != nil {
 		log.Printf("InstallLIPPackage: failed to query install states for %s in %s: %v", req.identifier, targetName, stateQueryErr)
 	}
-	state, _ := lipInstalledFor(states, req.packageID, req.variant)
+	// The installed package this request changes in place: any installed
+	// variant of the package for a request without a variant, else only the
+	// variant named.
+	state, installed := lipPackageStateFor(states, req.packageID)
+	if installed && req.named && !strings.EqualFold(state.Variant, req.variant) {
+		state, installed = lip.PackageInstallState{}, false
+	}
 
-	pkg := withLIPVersion(lipOperationRef(states, req.packageID, req.variant, req.requestRef), normalizedVersion)
+	ref := req.requestRef
+	fallbackRef := ""
+	switch {
+	case installed && strings.TrimSpace(state.Identity) != "":
+		ref = state.Identity
+	case !req.named:
+		// No variant named: the catalogue says which one has a client entry
+		// for this platform. When it cannot, ask for the conventional
+		// client variant and fall back to the variant "".
+		if variant, ok := chooseLIPVariant(ctx, req.packageID, normalizedVersion); ok {
+			if variant != "" {
+				ref = req.packageID + "#" + variant
+			}
+		} else {
+			ref = req.packageID + "#" + lipClientVariant
+			fallbackRef = req.packageID
+		}
+	}
+
+	pkg := withLIPVersion(ref, normalizedVersion)
 	targetOnlyPkgs := []string{pkg}
 	installPkgs := []string{pkg}
 	hasPinnedLL := false
@@ -366,10 +412,10 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	}
 
 	err := lipInstallPackages(ctx, targetDir, installPkgs)
-	if err != nil && req.fallbackRef != "" && isLipNoPackageFoundFor(err, pkg) {
+	if err != nil && fallbackRef != "" && isLipNoPackageFoundFor(err, pkg) {
 		// No client variant: the variant "" holds the client build.
-		log.Printf("InstallLIPPackage: no package for %s, trying %s", pkg, req.fallbackRef)
-		pkg = withLIPVersion(req.fallbackRef, normalizedVersion)
+		log.Printf("InstallLIPPackage: no package for %s, trying %s", pkg, fallbackRef)
+		pkg = withLIPVersion(fallbackRef, normalizedVersion)
 		installPkgs[0] = pkg
 		targetOnlyPkgs = []string{pkg}
 		err = lipInstallPackages(ctx, targetDir, installPkgs)

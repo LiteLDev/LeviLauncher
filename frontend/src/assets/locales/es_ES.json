@@ -1255,8 +1255,6 @@
     "search_placeholder": "Buscar mods…",
     "sort_by": "Ordenar por",
     "select_sort": "Seleccionar orden",
-    "order_by": "Orden",
-    "select_order": "Seleccionar orden",
     "no_description": "No hay descripción disponible",
     "ll_version_label": "Versión de LeviLamina",
     "ll_version_placeholder": "Seleccionar versión de LeviLamina",
@@ -1264,7 +1262,7 @@
     "game_version_label": "Versión del juego",
     "game_version_placeholder": "Seleccionar versión del juego",
     "game_all_versions": "Todas las versiones del juego",
-    "mapping_unavailable_hint": "No hay información de compatibilidad con las versiones del juego, así que los filtros por versión se han desactivado para evitar coincidencias erróneas.",
+    "mapping_unavailable_hint": "No hay información sobre las versiones de LeviLamina, así que el filtro por versión de LeviLamina se ha desactivado para evitar coincidencias erróneas.",
     "files": {
       "game_versions_unknown": "No hay versión del juego compatible",
       "version_count": "{{count}} versiones",
@@ -1283,7 +1281,6 @@
       "variant_label": "Variante",
       "variant_hint_keep_default": "La mayoría de los paquetes solo tienen una variante. Deja el valor predeterminado salvo que el autor indique lo contrario.",
       "variant_placeholder": "Seleccionar una variante",
-      "variant_default": "predeterminado",
       "select_version_incompatible_hint": "La versión {{version}} no es compatible con la versión del juego {{gameVersion}}.",
       "checking_ll_state": "Verificando estado de LeviLamina…",
       "mapping_unavailable_blocked_hint": "No hay información sobre la compatibilidad entre LeviLamina y esta versión del juego, así que se ha bloqueado la instalación para no instalar el paquete equivocado.",
@@ -1298,27 +1295,70 @@
       "downgrade_success": "Degradación completada exitosamente",
       "reinstall_success": "Reinstalación completada exitosamente",
       "current_installed_version_label": "Versión instalada actual",
-      "checking_current_installed_version": "Verificando versión actualmente instalada…"
+      "checking_current_installed_version": "Verificando versión actualmente instalada…",
+      "prerelease": "Prelanzamiento",
+      "no_client_variant": "Este mod no tiene ninguna variante para el cliente en {{platform}}, por lo que LeviLauncher no puede instalarlo."
     },
     "guide": {
       "open_button": "Guía para desarrolladores",
       "title": "Guía para desarrolladores de LeviMC Mods",
-      "description": "Si desea que su mod aparezca en la página LeviMC Mods de LeviLauncher, publíquelo según la especificación package_manifest de LIP.",
-      "manifest_hint": "Este diálogo es solo una visión general rápida para desarrolladores. Los nombres de campos, entradas requeridas, ejemplos y reglas de validación están definidos en la documentación oficial.",
-      "variant_hint": "Una variante es indexada por el lanzador solo cuando su etiqueta contiene client. Por defecto, use \\\"label\\\": \\\"client\\\"; para subextensiones, use \\\"label\\\": \\\"client_xxxx\\\" o \\\"label\\\": \\\"client\\\\xxxx\\\".",
+      "description": "Si quiere que su mod aparezca en la página LeviMC Mods de LeviLauncher, publíquelo con un lip.toml como se describe en la documentación de lip.",
+      "manifest_hint": "LeviLauncher muestra un mod cuando el lip.toml de su última versión tiene una entrada con side = \"client\" y platform = \"win-x64\", e instala la variante elegida para ellos: primero \"client\", luego la variante predeterminada \"\" y después las demás por nombre.",
+      "variant_hint": "Añada una entrada por cada lado y plataforma que admita el mod, p. ej. una entrada [[variants.\"\"]] con side = \"client\" y platform = \"win-x64\" junto a la entrada del servidor. Con etiquetas recomendadas como \"library\" o \"economy\" en [info] tags, el mod aparece en esos filtros.",
       "docs_button": "Ver especificación completa",
       "close_button": "Cerrar"
     },
     "title": "LeviMC Mods",
     "sort_options": {
-      "hotness": "Popularidad",
+      "relevance": "Relevancia",
+      "stars": "Estrellas",
       "updated": "Actualizado",
-      "name": "Nombre"
+      "newest": "Más recientes"
     },
-    "order_options": {
-      "desc": "Descendente",
-      "asc": "Ascendente"
+    "filters": {
+      "title": "Filtros",
+      "title_count": "Filtros ({{count}})",
+      "clear": "Borrar todos los filtros",
+      "active": "Filtros activos",
+      "tags": "Etiquetas",
+      "other_tags": "Otras etiquetas",
+      "license": "Licencia",
+      "dependencies": "Dependencias",
+      "exclude": "Excluir {{label}}",
+      "not_label": "no {{label}}",
+      "remove": "Quitar filtro: {{label}}",
+      "show_more": "Mostrar {{count}} más",
+      "show_fewer": "Mostrar menos",
+      "search_tags": "Buscar etiquetas…",
+      "license_ids": "Licencias: {{family}}",
+      "depends_on": "Depende de {{name}}",
+      "more_by_owner": "Más de {{owner}}",
+      "more_tags": "{{count}} más"
     },
+    "tags": {
+      "library": "Biblioteca / API",
+      "utility": "Utilidades",
+      "management": "Administración de servidores",
+      "game-mechanics": "Mecánicas de juego",
+      "adventure": "Contenido y aventura",
+      "visual": "Visual y HUD",
+      "economy": "Economía",
+      "teleport": "Teletransporte",
+      "anticheat": "Antitrampas",
+      "optimization": "Optimización",
+      "bugfix": "Corrección de errores",
+      "technology": "Técnica y redstone",
+      "protocol": "Protocolo y multiversión"
+    },
+    "license": {
+      "permissive": "Permisiva",
+      "weak-copyleft": "Copyleft débil",
+      "copyleft": "Copyleft",
+      "other": "Otra",
+      "none": "Sin licencia"
+    },
+    "variant_default": "Predeterminada",
+    "mod_id": "ID del mod",
     "by_author_inline": "Por {{author}}",
     "package_details_aria_label": "Detalles del paquete",
     "task_console": {

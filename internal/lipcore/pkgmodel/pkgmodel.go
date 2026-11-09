@@ -2,7 +2,7 @@
 // (protocol/lip.schema.toml; PackageFile and PackageEntry of
 // src/Lip.Core/Mcmod/Documents.cs) and state file
 // (protocol/state.schema.json; LockFile and LockedPackage of
-// src/Lip.Core/Mcmod/Contracts.cs), as of lip v0.38.0-beta.1. It does no
+// src/Lip.Core/Mcmod/Contracts.cs), as of lip v0.40.0. It does no
 // parsing or validation.
 package pkgmodel
 
@@ -28,10 +28,10 @@ const (
 	ModsDir = "mods"
 )
 
-// Platforms.
+// Sides.
 const (
-	PlatformServer = "server"
-	PlatformClient = "client"
+	SideServer = "server"
+	SideClient = "client"
 )
 
 // Document is a package file (protocol/package.md §3), or the one
@@ -71,15 +71,15 @@ func (d *Document) EntriesOf(variant string) ([]Entry, bool) {
 }
 
 // SelectEntry is PackageFile.SelectEntry: the entry of a variant whose
-// platform and runtime are those of the environment (protocol/package.md §4
+// side and platform are those of the environment (protocol/package.md §4
 // step 2), or nil.
-func (d *Document) SelectEntry(variant, platform, runtime string) *Entry {
+func (d *Document) SelectEntry(variant, side, platform string) *Entry {
 	entries, ok := d.EntriesOf(variant)
 	if !ok {
 		return nil
 	}
 	for i := range entries {
-		if entries[i].Platform == platform && entries[i].Runtime == runtime {
+		if entries[i].Side == side && entries[i].Platform == platform {
 			return &entries[i]
 		}
 	}
@@ -97,9 +97,10 @@ type Info struct {
 
 // Entry is an entry of a variant (lip.schema.toml, the items of "variants").
 type Entry struct {
+	// Side is "server" or "client".
+	Side string
+	// Platform is a .NET runtime identifier.
 	Platform string
-	// Runtime is a .NET runtime identifier.
-	Runtime string
 	// Deps are the "deps", in document order.
 	Deps   []Dep
 	Assets []Asset
@@ -199,9 +200,10 @@ type Hooks struct {
 // LockFile is the state file (protocol/workspace.md §7.1).
 type LockFile struct {
 	Format int
-	// Platform is "server" or "client".
+	// Side is "server" or "client".
+	Side string
+	// Platform is a .NET runtime identifier.
 	Platform string
-	Runtime  string
 	// Packages are in installation order.
 	Packages []LockedPackage
 }

@@ -2,7 +2,7 @@
 // launcher: it runs package operations per instance directory, forwards
 // engine reports as lip_task_* events and exposes package states keyed by
 // package id. Workspaces follow lip (lip.toml packages, .lip/state.json) on
-// the client platform.
+// the client side.
 package lip
 
 import (

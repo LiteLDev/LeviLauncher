@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -27,11 +28,12 @@ func catalogueServer(t *testing.T, delay time.Duration) (*httptest.Server, *atom
 		}
 		if r.URL.Path == "/index.json" {
 			w.Write([]byte(`{"mods":[
-				{"tooth":"github.com/MarmieQi/LHolo","env":["client"]},
-				{"tooth":"github.com/LiteLDev/LegacyMoney","env":[]},
-				{"tooth":"github.com/ShrBox/BackupHelper","env":["server"]},
-				{"tooth":"github.com/LiteLDev/LegacyScriptEngine"},
-				{"tooth":"github.com/Broken/Detail","env":["client"]}]}`))
+				{"id":"github.com/MarmieQi/LHolo","description":"Schematic mod, as the index cuts it…","side":["client"],"platform":["win-x64"]},
+				{"id":"github.com/LiteLDev/LegacyMoney","side":["server","client"],"platform":["win-x64"]},
+				{"id":"github.com/ShrBox/BackupHelper","side":["server"],"platform":["win-x64"]},
+				{"id":"github.com/Some/AndroidOnly","side":["client"],"platform":["android-arm64"]},
+				{"id":"github.com/LiteLDev/LegacyScriptEngine","side":["server","client"],"platform":["win-x64"]},
+				{"id":"github.com/Broken/Detail","side":["client"],"platform":["win-x64"]}]}`))
 			return
 		}
 		if d, ok := docs[r.URL.Path]; ok {
@@ -56,14 +58,30 @@ func TestFetchDetails(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(details) != 3 {
-		t.Fatalf("details = %d, want 3 (server-only skipped, broken ignored)", len(details))
+		t.Fatalf("details = %d, want 3 (server-only and Android-only skipped, broken ignored)", len(details))
 	}
 	if n := hits.Load(); n != 5 {
 		t.Fatalf("requests = %d, want index + 4 details", n)
 	}
+	var order []string
+	for _, d := range details {
+		order = append(order, d.ID)
+	}
+	if want := []string{"github.com/MarmieQi/LHolo", "github.com/LiteLDev/LegacyMoney", "github.com/LiteLDev/LegacyScriptEngine"}; !reflect.DeepEqual(order, want) {
+		t.Fatalf("details in %v, want the index's order", order)
+	}
 	idx := Build(details)
-	if _, ok := idx.Find("MarmieQi/LHolo"); !ok {
+	holo, ok := idx.Find("MarmieQi/LHolo")
+	if !ok {
 		t.Fatal("LHolo missing")
+	}
+	// The search reads the index's description (what the site and the
+	// window search); the detail's whole one is kept for `mod show`.
+	if holo.Description != "Schematic mod, as the index cuts it…" || holo.FullDescription != "Schematic mod" {
+		t.Fatalf("LHolo description = %q / %q", holo.Description, holo.FullDescription)
+	}
+	if money, _ := idx.Find("LiteLDev/LegacyMoney"); money == nil || money.Description != "Economy for servers and clients" {
+		t.Fatalf("without an index description, the detail's is used: %+v", money)
 	}
 	if _, err := c.FetchDetail(context.Background(), "github.com/no/such"); !errors.Is(err, ErrPackageNotFound) {
 		t.Fatalf("FetchDetail(missing) = %v", err)

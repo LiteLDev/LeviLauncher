@@ -1,8 +1,8 @@
-// Package pkgfile ports lip 0.38's package file parser
+// Package pkgfile ports lip 0.40's package file parser
 // (src/Lip.Core/Mcmod/Parsing/PackageFileParser.cs), the mod manifest reader
 // (Candidate.GetModManifest of src/Lip.Core/Mcmod/Contracts.cs) and the
 // state file store (src/Lip.Core/Mcmod/Lock/LockStore.cs), as of lip
-// v0.38.0-beta.1 (protocol/package.md §3-4, protocol/workspace.md §7.1,
+// v0.40.0 (protocol/package.md §3-4, protocol/workspace.md §7.1,
 // protocol/compatibility.md §3, lip.schema.toml, state.schema.json).
 //
 // Documents are the JSON values of package doc (*doc.Object and friends);
@@ -54,9 +54,30 @@ var (
 // .NET runtime identifier without wildcards.
 func IsRuntime(value string) bool { return runtimeRegex.MatchString(value) }
 
-// IsPlatform is McmodPlatformExtensions.TryParse: "server" or "client",
+// IsSide is McmodSideExtensions.TryParse: "server" or "client",
 // case-sensitively.
-func IsPlatform(s string) bool { return s == pkgmodel.PlatformServer || s == pkgmodel.PlatformClient }
+func IsSide(s string) bool { return s == pkgmodel.SideServer || s == pkgmodel.SideClient }
+
+// OldKeysMessage is the detail of the error for an entry of a package file,
+// or a state file, written with the keys of lip before v0.40, which named
+// the side "platform" and the platform "runtime".
+const OldKeysMessage = "uses the keys \"platform\" and \"runtime\" of lip before v0.40; rename" +
+	" \"platform\" to \"side\" and \"runtime\" to \"platform\""
+
+// UsesOldKeys is whether an entry of a package file, or the root of a state
+// file, uses the keys of lip before v0.40: it has a "runtime", or its
+// "platform" is "server" or "client".
+func UsesOldKeys(o *doc.Object) bool {
+	if o.Has("runtime") {
+		return true
+	}
+	if v, ok := o.Get("platform"); ok {
+		if s, ok := v.(string); ok && IsSide(s) {
+			return true
+		}
+	}
+	return false
+}
 
 // Format is PackageFileParser.Format: the "format" of a package file or of
 // the state file when it is an integer (see doc.IntegerMember).
@@ -158,9 +179,9 @@ func Parse(root any) (*pkgmodel.Document, error) {
 		}
 		for i := range list {
 			for j := 0; j < i; j++ {
-				if list[i].Platform == list[j].Platform && list[i].Runtime == list[j].Runtime {
+				if list[i].Side == list[j].Side && list[i].Platform == list[j].Platform {
 					return nil, invalid(fmt.Sprintf("%s[%d]", path, i),
-						fmt.Sprintf("has the platform and the runtime of %s[%d]", path, j), nil)
+						fmt.Sprintf("has the side and the platform of %s[%d]", path, j), nil)
 				}
 			}
 		}
@@ -189,6 +210,9 @@ func parseEntryAt(element any, path string) (pkgmodel.Entry, error) {
 	if err != nil {
 		return e, err
 	}
+	if UsesOldKeys(obj) {
+		return e, invalid(path, OldKeysMessage, nil)
+	}
 
 	assets, err := readOptional(obj, "assets", path, arrayOf(readAsset))
 	if err != nil {
@@ -204,10 +228,10 @@ func parseEntryAt(element any, path string) (pkgmodel.Entry, error) {
 		return e, invalid(path+".assets", "has more than one asset of type \"mcmod\"", nil)
 	}
 
-	if e.Platform, err = readRequired(obj, "platform", path, readPlatform); err != nil {
+	if e.Side, err = readRequired(obj, "side", path, readSide); err != nil {
 		return e, err
 	}
-	if e.Runtime, err = readRequired(obj, "runtime", path, readRuntime); err != nil {
+	if e.Platform, err = readRequired(obj, "platform", path, readPlatform); err != nil {
 		return e, err
 	}
 	if e.Deps, err = readOptional(obj, "deps", path, readDependencies); err != nil {
@@ -274,22 +298,22 @@ func mustGet(o *doc.Object, k string) any {
 	return v
 }
 
-func readPlatform(element any, path string) (string, error) {
-	if s, ok := element.(string); ok && IsPlatform(s) {
+func readSide(element any, path string) (string, error) {
+	if s, ok := element.(string); ok && IsSide(s) {
 		return s, nil
 	}
 	return "", invalid(path, "must be \"server\" or \"client\"", nil)
 }
 
-func readRuntime(element any, path string) (string, error) {
-	runtime, err := readString(element, path)
+func readPlatform(element any, path string) (string, error) {
+	platform, err := readString(element, path)
 	if err != nil {
 		return "", err
 	}
-	if !IsRuntime(runtime) {
-		return "", invalid(path, fmt.Sprintf("'%s' is not a runtime identifier", runtime), nil)
+	if !IsRuntime(platform) {
+		return "", invalid(path, fmt.Sprintf("'%s' is not a runtime identifier", platform), nil)
 	}
-	return runtime, nil
+	return platform, nil
 }
 
 func readDependencies(element any, path string) ([]pkgmodel.Dep, error) {

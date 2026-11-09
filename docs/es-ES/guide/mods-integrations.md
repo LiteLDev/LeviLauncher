@@ -47,6 +47,8 @@ Ideal para estas necesidades:
 
 LeviLauncher incluye un gestor de paquetes integrado compatible con [lip](https://github.com/LiteLDev/lip), así que no necesitas instalar lip ni el runtime de .NET por separado. Sigue lip: cada versión registra sus paquetes en `.lip/state.json` y los paquetes se leen de su `lip.toml` (los paquetes antiguos que solo tienen un `tooth.json` siguen funcionando). Las versiones que ya tienen LeviLamina o paquetes LIP instalados con un launcher anterior (`tooth_lock.json`) se migran automáticamente en la primera operación de paquetes. Con **Usar servidores espejo** activado, las descargas de paquetes desde GitHub pasan por el **Proxy de GitHub** configurado en [Ajustes](./settings-personalization); si no, se conectan directamente a GitHub (a través del proxy del sistema, si hay uno configurado). Un proxy de GitHub guardado anteriormente, o un `github_proxy` definido en el `config.toml` de lip (en `%APPDATA%\lip`, por ejemplo con `lip config set github_proxy <URL>`), se aplica en ambos casos. **Limpiar caché** elimina los archivos de paquetes descargados.
 
+Desde lip v0.40, cada entrada de un `lip.toml` y de `.lip/state.json` indica dónde se ejecuta con `side` (`server` o `client`) y `platform` (un identificador de runtime de .NET como `win-x64`); lip v0.39 y anteriores las llamaban `platform` y `runtime`. Un `.lip/state.json` escrito con las claves antiguas, por lip v0.39 o anterior o por un lanzador antiguo, se rechaza con un mensaje que indica el cambio: renombra `platform` a `side` y `runtime` a `platform`, o reinstala los paquetes de esa versión.
+
 Este tipo de integración es más adecuado para usuarios avanzados que desean utilizar flujos de trabajo basados en paquetes o cargadores.
 
 Mejores prácticas:
@@ -56,6 +58,10 @@ Mejores prácticas:
 - Registra la combinación de versión que funcionó "por última vez"
 
 Para añadir LeviLamina a una versión de cliente, consulta [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/) en la documentación de LeviLamina (en inglés).
+
+### Página LeviMC Mods
+
+La página **LeviMC Mods** muestra los mods de [levimc.org/mods](https://levimc.org/mods/) que tienen una compilación para el cliente en Windows x64 (una entrada con `side = "client"` y `platform = "win-x64"`). Puedes buscarlos por nombre, ID, autor, etiqueta o descripción; ordenarlos por relevancia, estrellas, última actualización o más recientes; y filtrarlos por versión del juego, versión de LeviLamina, etiquetas (las recomendadas, como Biblioteca / API o Economía, van primero, y una etiqueta también se puede excluir), licencia (una familia como Permisiva o un ID SPDX), dependencias y autor (**Más de …** en la página de un mod). Al instalar un mod se elige su variante `client`, si no la variante predeterminada, y si no la primera otra variante con compilación para el cliente; en la página de un mod puedes elegir otra de esas variantes.
 
 ## Mods nativos <Badge platform="android" />
 

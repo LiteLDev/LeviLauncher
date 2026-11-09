@@ -32,7 +32,7 @@ import (
 // store) over a fake git remote whose repositories are in memory, and a
 // fake HTTP server for downloads.
 
-const testRuntime = "win-x64"
+const testPlatform = "win-x64"
 
 type harness struct {
 	t         *testing.T
@@ -48,8 +48,8 @@ type harness struct {
 	failing  map[string]bool
 	// onRun are called when a hook command of that text runs.
 	onRun    map[string]func()
+	side     string
 	platform string
-	runtime  string
 }
 
 func newHarness(t *testing.T) *harness {
@@ -64,8 +64,8 @@ func newHarness(t *testing.T) *harness {
 		rec:       &recorder{},
 		failing:   map[string]bool{},
 		onRun:     map[string]func(){},
-		platform:  pkgmodel.PlatformServer,
-		runtime:   testRuntime,
+		side:      pkgmodel.SideServer,
+		platform:  testPlatform,
 	}
 	if err := os.MkdirAll(h.root, 0o755); err != nil {
 		t.Fatal(err)
@@ -79,7 +79,7 @@ func (h *harness) restart() {
 	rep := h.rec
 	client := &http.Client{Transport: roundTripFunc(h.serve)}
 	n := 0
-	h.e = New(h.root, Options{Platform: h.platform, Runtime: h.runtime, HTTPClient: client}, rep)
+	h.e = New(h.root, Options{Side: h.side, Platform: h.platform, HTTPClient: client}, rep)
 	h.e.cache = fetch.NewHTTPCache(h.cacheDir, rep)
 	h.e.git = h.git
 	h.e.inst = &install.Installer{Reporter: rep, RunCommand: h.runCommand}
@@ -89,9 +89,9 @@ func (h *harness) restart() {
 	}
 }
 
-// withRuntime restarts with another runtime override ("" for none).
-func (h *harness) withRuntime(rid string) *Engine {
-	h.runtime = rid
+// withPlatform restarts with another platform override ("" for none).
+func (h *harness) withPlatform(rid string) *Engine {
+	h.platform = rid
 	h.restart()
 	return h.e
 }
@@ -296,15 +296,15 @@ func (h *harness) addTag(spec, version string, files ...string) string {
 // lipJSON is a lip.toml, written as JSON, whose variant "" has one entry for
 // (server, win-x64) with the given members (comma-separated JSON members).
 func lipJSON(id, version, entry string) string {
-	return lipJSONFor(id, version, pkgmodel.PlatformServer, entry)
+	return lipJSONFor(id, version, pkgmodel.SideServer, entry)
 }
 
-func lipJSONFor(id, version, platform, entry string) string {
+func lipJSONFor(id, version, side, entry string) string {
 	if entry != "" {
 		entry = ", " + entry
 	}
-	return fmt.Sprintf(`{ "format": 4, "id": %q, "version": %q, "variants": { "": [ { "platform": %q,`+
-		` "runtime": %q%s } ] } }`, id, version, platform, testRuntime, entry)
+	return fmt.Sprintf(`{ "format": 4, "id": %q, "version": %q, "variants": { "": [ { "side": %q,`+
+		` "platform": %q%s } ] } }`, id, version, side, testPlatform, entry)
 }
 
 // selfAsset is the member "assets" with one asset of type "self" placing

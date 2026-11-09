@@ -11,7 +11,7 @@ import (
 
 // e2eLeviLamina is a published LeviLamina release, requested as the
 // launcher does: the bare repository, whose tooth.json "client" label is the
-// variant "" on the client platform. LIP_E2E_PACKAGE overrides it.
+// variant "" on the client side. LIP_E2E_PACKAGE overrides it.
 var e2eLeviLamina = func() string {
 	if pkg := os.Getenv("LIP_E2E_PACKAGE"); pkg != "" {
 		return pkg

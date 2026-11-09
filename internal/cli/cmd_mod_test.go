@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -18,14 +19,23 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/versions"
 )
 
+// The catalogue fixtures are for Windows x64, the launcher's platform;
+// the tests run on any platform.
+func init() { lipindex.TargetPlatform = "win-x64" }
+
 // Catalogue documents for the mod command tests.
 var modTestDetails = map[string]string{
-	"github.com/LiteLDev/LegacyMoney": `{"tooth":"github.com/LiteLDev/LegacyMoney","name":"LegacyMoney","stars":50,
-		"description":"Economy","updated":"2026-01-01T00:00:00Z","versions":[
-		{"version":"0.9.1","variants":[{"label":"client","dependencies":{"github.com/LiteLDev/LeviLamina#client":"26.51.*"}}]},
-		{"version":"0.9.2","variants":[{"label":"client","dependencies":{"github.com/LiteLDev/LeviLamina#client":"26.60.*"}}]}]}`,
-	"github.com/Some/Chat": `{"tooth":"github.com/Some/Chat","name":"BetterChat","stars":5,"versions":[
-		{"version":"2.0.0","variants":[{"label":"client","dependencies":{}}]}]}`,
+	"github.com/LiteLDev/LegacyMoney": `{"id":"github.com/LiteLDev/LegacyMoney","name":"LegacyMoney","owner":"LiteLDev","stars":50,
+		"description":"Economy","tags":["money"],"license":"MIT","updated":"2026-01-01T00:00:00Z",
+		"side":["server","client"],"platform":["win-x64"],"gameVersions":["1.26.60","1.26.51"],"versions":[
+		{"version":"0.9.2","variants":{
+			"":[{"side":"server","platform":"win-x64","deps":{"github.com/LiteLDev/LeviLamina":"26.60.*"}}],
+			"client":[{"side":"client","platform":"win-x64","deps":{"github.com/LiteLDev/LeviLamina#client":"26.60.*"}}]}},
+		{"version":"0.9.1","variants":{
+			"client":[{"side":"client","platform":"win-x64","deps":{"github.com/LiteLDev/LeviLamina#client":"26.51.*"}}]}}]}`,
+	"github.com/Some/Chat": `{"id":"github.com/Some/Chat","name":"BetterChat","owner":"Some","stars":5,
+		"side":["client"],"platform":["win-x64"],"versions":[
+		{"version":"2.0.0","variants":{"":[{"side":"client","platform":"win-x64","deps":{"github.com/Some/Lib":"^1.0.0"}}]}}]}`,
 }
 
 type fakeModWorld struct {
@@ -44,11 +54,17 @@ func newModWorld(t *testing.T) *fakeModWorld {
 	w := &fakeModWorld{t: t, h: h, states: map[string]map[string]types.LIPPackageInstallState{}, results: map[string]string{}}
 	saved := modOps
 	t.Cleanup(func() { modOps = saved })
+	// In a fixed order: the catalogue's index order is the default order.
 	details := func() []*lipindex.Detail {
+		ids := make([]string, 0, len(modTestDetails))
+		for id := range modTestDetails {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
 		var out []*lipindex.Detail
-		for _, doc := range modTestDetails {
+		for _, id := range ids {
 			var d lipindex.Detail
-			if err := json.Unmarshal([]byte(doc), &d); err != nil {
+			if err := json.Unmarshal([]byte(modTestDetails[id]), &d); err != nil {
 				t.Fatal(err)
 			}
 			out = append(out, &d)
@@ -404,7 +420,8 @@ func TestModInstall(t *testing.T) {
 	if code != 0 || out != "upgraded LegacyMoney 0.9.1 -> 0.9.2\n" {
 		t.Fatalf("upgrade = %d %q %q", code, out, errs)
 	}
-	if last := w.calls[len(w.calls)-1]; last != "install Survival github.com/LiteLDev/LegacyMoney#client@0.9.2" {
+	// Installed already: changed in place, whatever its variant.
+	if last := w.calls[len(w.calls)-1]; last != "install Survival github.com/LiteLDev/LegacyMoney@0.9.2" {
 		t.Fatalf("call = %q", last)
 	}
 	// Same version again: nothing to do.
@@ -512,16 +529,16 @@ func TestModSearchAndShow(t *testing.T) {
 	w := newModWorld(t)
 	inst := w.survival()
 	w.h.current = inst.Name
-	// The default instance's game filters out mods without a LeviLamina range.
+	// The default instance's game filters out mods that do not run on it
+	// (the catalogue's game versions).
 	code, out, errs := w.h.run("mod", "search")
-	if code != 0 || !strings.Contains(out, "LiteLDev/LegacyMoney") || strings.Contains(out, "Some/Chat") || !strings.Contains(errs, "Minecraft 1.26.60.05") {
+	if code != 0 || !strings.Contains(out, "LiteLDev/LegacyMoney") || strings.Contains(out, "Some/Chat") || !strings.Contains(errs, "Minecraft 1.26.60 (instance Survival)") {
 		t.Fatalf("search = %d %q %q", code, out, errs)
 	}
-	// A default instance LeviLamina does not support filters nothing, and
-	// says so.
+	// A default instance no mod runs on filters nothing, and says so.
 	w.h.current = w.h.add("Alpha", "1.21.50.07", "release", versions.PackageTypeGDK).Name
 	code, out, errs = w.h.run("mod", "search")
-	if code != 0 || !strings.Contains(out, "Some/Chat") || !strings.Contains(errs, "does not support Minecraft 1.21.50.07 (instance Alpha); showing mods for every game version") {
+	if code != 0 || !strings.Contains(out, "Some/Chat") || !strings.Contains(errs, "no mod of the catalogue runs on Minecraft 1.21.50 (instance Alpha); showing mods for every game version") {
 		t.Fatalf("unsupported default = %d %q %q", code, out, errs)
 	}
 	w.h.current = ""
@@ -530,9 +547,39 @@ func TestModSearchAndShow(t *testing.T) {
 	if code != 0 || out != "LiteLDev/LegacyMoney\n" {
 		t.Fatalf("by game = %d %q", code, out)
 	}
-	code, out, _ = w.h.run("mod", "search", "--any-version", "--sort", "name", "-q")
-	if code != 0 || out != "Some/Chat\nLiteLDev/LegacyMoney\n" {
-		t.Fatalf("by name = %d %q", code, out)
+	// Relevance without a search is the catalogue's order; the site's sorts
+	// only (no name sort, no reverse order).
+	code, out, _ = w.h.run("mod", "search", "--any-version", "-q")
+	if code != 0 || out != "LiteLDev/LegacyMoney\nSome/Chat\n" {
+		t.Fatalf("relevance = %d %q", code, out)
+	}
+	code, out, _ = w.h.run("mod", "search", "--any-version", "--sort", "stars", "-q")
+	if code != 0 || out != "LiteLDev/LegacyMoney\nSome/Chat\n" {
+		t.Fatalf("by stars = %d %q", code, out)
+	}
+	for _, args := range [][]string{{"--sort", "name"}, {"--reverse"}, {"--license", "oss"}, {"--license", "WTFPL"}} {
+		if code, _, _ = w.h.run(append([]string{"mod", "search", "--any-version"}, args...)...); code != ExitUsage {
+			t.Fatalf("%v = %d", args, code)
+		}
+	}
+	// Tags (aliases group under featured tags), licenses, dependencies, authors.
+	for _, tc := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"--tag", "economy"}, "LiteLDev/LegacyMoney\n"},
+		{[]string{"--tag", "-money"}, "Some/Chat\n"},
+		{[]string{"--license", "permissive"}, "LiteLDev/LegacyMoney\n"},
+		{[]string{"--license", "none,GPL-3.0"}, "Some/Chat\n"},
+		{[]string{"--license", "Permissive"}, "LiteLDev/LegacyMoney\n"},
+		{[]string{"--license", "mit,NONE"}, "LiteLDev/LegacyMoney\nSome/Chat\n"},
+		{[]string{"--dep", "Some/Lib"}, "Some/Chat\n"},
+		{[]string{"--author", "liteldev", "--author", "nobody"}, "LiteLDev/LegacyMoney\n"},
+	} {
+		code, out, _ = w.h.run(append([]string{"mod", "search", "--any-version", "-q"}, tc.args...)...)
+		if code != 0 || out != tc.want {
+			t.Fatalf("%v = %d %q, want %q", tc.args, code, out, tc.want)
+		}
 	}
 	if code, _, _ = w.h.run("mod", "search", "--game", "9.9"); code != ExitNotFound {
 		t.Fatalf("unknown game = %d", code)

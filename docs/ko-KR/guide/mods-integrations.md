@@ -47,6 +47,8 @@ LeviLauncher는 "기본 런처" 범위를 넘어서는 모드 관련 작업 흐�
 
 LeviLauncher에는 [lip](https://github.com/LiteLDev/lip)와 호환되는 패키지 관리자가 내장되어 있으므로 lip이나 .NET 런타임을 따로 설치할 필요가 없습니다. lip을 따르므로 각 버전은 패키지를 `.lip/state.json`에 기록하고, 패키지는 `lip.toml`에서 읽습니다(`tooth.json`만 있는 이전 패키지도 계속 사용할 수 있습니다). 이전 런처로 LeviLamina나 LIP 패키지를 설치한 버전(`tooth_lock.json`)은 첫 패키지 작업 때 자동으로 마이그레이션됩니다. **미러 소스 사용**이 켜져 있으면 GitHub에서 패키지를 다운로드할 때 [설정](./settings-personalization)의 **GitHub 프록시**를 거칩니다. 꺼져 있으면 GitHub에 직접 연결합니다(시스템 프록시가 설정되어 있으면 이를 거칩니다). 이전에 저장한 GitHub 프록시나 lip의 `config.toml`(`%APPDATA%\lip` 안, 예: `lip config set github_proxy <URL>`)에 설정한 `github_proxy`는 두 경우 모두 적용됩니다. **캐시 지우기**로 다운로드한 패키지 파일을 삭제할 수 있습니다.
 
+lip v0.40부터 `lip.toml`과 `.lip/state.json`의 각 엔트리는 실행 위치를 `side`(`server` 또는 `client`)와 `platform`(`win-x64` 같은 .NET 런타임 식별자)으로 나타냅니다. lip v0.39 이하에서는 이를 `platform`과 `runtime`이라고 불렀습니다. lip v0.39 이하나 이전 런처가 예전 키로 기록한 `.lip/state.json`은 필요한 변경을 알려 주는 메시지와 함께 거부됩니다. `platform`을 `side`로, `runtime`을 `platform`으로 이름을 바꾸거나 해당 버전의 패키지를 다시 설치하세요.
+
 이러한 통합은 패키지 기반 또는 로더 기반 작업 흐름을 사용하려는 고급 사용자에게 더 적합합니다.
 
 모범 사례:
@@ -56,6 +58,10 @@ LeviLauncher에는 [lip](https://github.com/LiteLDev/lip)와 호환되는 패키
 - "마지막으로 성공적으로 작동한" 버전 조합을 기록
 
 클라이언트 버전에 LeviLamina를 추가하려면 LeviLamina 문서의 [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/)(영어)를 참고하세요.
+
+### LeviMC Mods 페이지
+
+**LeviMC Mods** 페이지에는 [levimc.org/mods](https://levimc.org/mods/)의 모드 중 Windows x64 클라이언트용 빌드(`side = "client"`, `platform = "win-x64"`인 엔트리)가 있는 모드가 표시됩니다. 이름, ID, 작성자, 태그, 설명으로 검색하고, 관련도, 스타, 업데이트됨, 최신순으로 정렬하며, 게임 버전, LeviLamina 버전, 태그(라이브러리 / API나 경제 같은 권장 태그가 먼저 표시되고, 태그를 제외할 수도 있습니다), 라이선스(허용적 같은 분류 또는 SPDX ID), 의존성, 작성자(모드 페이지의 **…의 다른 모드**)로 필터링할 수 있습니다. 모드를 설치하면 `client` 변형을, 없으면 기본 변형을, 그것도 없으면 클라이언트용 빌드가 있는 첫 번째 다른 변형을 선택합니다. 모드 페이지에서 이러한 변형 중 다른 것을 고를 수도 있습니다.
 
 ## 네이티브 모드 <Badge platform="android" />
 

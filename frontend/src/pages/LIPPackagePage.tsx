@@ -41,12 +41,13 @@ import { shouldDisableAnimations } from "@/hooks/useAnimations";
 import {
   LuClock,
   LuDownload,
-  LuFlame,
   LuGamepad2,
   LuGlobe,
-  LuTag,
+  LuScale,
+  LuStar,
   LuUser,
 } from "react-icons/lu";
+import { LipTagChips } from "@/components/LipTagChips";
 import {
   GetVersionLogoDataUrl,
   ListVersionMetas,
@@ -84,6 +85,12 @@ import {
   type LIPPackageFileInfo,
   type LIPPackageVariantDetail,
 } from "@/utils/content";
+import {
+  LAUNCHER_PLATFORM,
+  licenseFamily,
+  licenseOf,
+  ownerUrl,
+} from "@/utils/lipCatalog";
 
 type GithubRepoRef = {
   owner: string;
@@ -133,13 +140,11 @@ const INSTALL_DIALOG_ACTION_SUCCESS_KEYS: Record<
   reinstall: "lip.files.reinstall_success",
 };
 
+/** A variant's name; the default variant `""` is shown as `defaultLabel`. */
 const getVariantDisplayLabel = (
-  variant: Pick<LIPPackageVariantDetail, "key" | "label"> | null | undefined,
+  variant: Pick<LIPPackageVariantDetail, "key"> | null | undefined,
   defaultLabel: string,
 ): string => {
-  const explicitLabel = String(variant?.label || "").trim();
-  if (explicitLabel) return explicitLabel;
-
   const variantKey = String(variant?.key || "").trim();
   return variantKey || defaultLabel;
 };
@@ -680,16 +685,9 @@ const LIPPackagePage: React.FC = () => {
     [pkg?.variantDetails],
   );
 
-  const visiblePackageVariants = useMemo<LIPPackageVariantDetail[]>(
-    () =>
-      packageVariants.filter((variant) =>
-        String(variant.key || "")
-          .trim()
-          .toLowerCase()
-          .includes("client"),
-      ),
-    [packageVariants],
-  );
+  // Only variants with an entry for the launcher's side and platform are
+  // listed (content.ts), so every one can be installed.
+  const visiblePackageVariants = packageVariants;
 
   const activeVariant = useMemo<LIPPackageVariantDetail | null>(() => {
     if (visiblePackageVariants.length === 0) return null;
@@ -711,18 +709,11 @@ const LIPPackagePage: React.FC = () => {
       if (matched) return matched;
     }
 
-    const preferredVariantKey = String(pkg?.preferredVariantKey || "")
-      .trim()
-      .toLowerCase();
-    if (preferredVariantKey) {
-      const preferredVariant = visiblePackageVariants.find(
-        (variant) =>
-          String(variant.key || "")
-            .trim()
-            .toLowerCase() === preferredVariantKey,
-      );
-      if (preferredVariant) return preferredVariant;
-    }
+    // Rule A2's choice (client, then the default "", then by name).
+    const preferredVariant = visiblePackageVariants.find(
+      (variant) => variant.key === pkg?.preferredVariantKey,
+    );
+    if (preferredVariant) return preferredVariant;
 
     return visiblePackageVariants[0] || null;
   }, [
@@ -739,8 +730,20 @@ const LIPPackagePage: React.FC = () => {
   );
 
   const activeVariantDisplayLabel = useMemo<string>(
-    () => getVariantDisplayLabel(activeVariant, t("lip.files.variant_default")),
+    () => getVariantDisplayLabel(activeVariant, t("lip.variant_default")),
     [activeVariant, t],
+  );
+
+  /** A dependency key's mod name (`<id>#<variant>` → `Name#variant`), from the detail's dependencies. */
+  const dependencyName = useCallback(
+    (key: string): string => {
+      const hash = key.indexOf("#");
+      const id = hash < 0 ? key : key.slice(0, hash);
+      const variant = hash < 0 ? "" : key.slice(hash);
+      const ref = pkg?.detail?.dependencies[id.toLowerCase()];
+      return ref?.name ? `${ref.name}${variant}` : key;
+    },
+    [pkg?.detail],
   );
 
   const activeVariantFiles = useMemo<LIPPackageFileInfo[]>(
@@ -1052,6 +1055,17 @@ const LIPPackagePage: React.FC = () => {
       return;
     }
 
+    // An installed package is changed in place, whatever its variant: unless
+    // a variant was picked here (or named by the link), ask by bare id so the
+    // backend reuses the installed identity rather than adding the variant
+    // rule A2 prefers next to it.
+    const requestIdentifier =
+      dialogInstancePackageState?.installed &&
+      !selectedVariantIdentifier &&
+      !routeVariantIdentifier
+        ? String(pkg.identifier || "").trim() || activePackageIdentifier
+        : activePackageIdentifier;
+
     setActionRunning(true);
     try {
       await runWithLipTask(
@@ -1064,12 +1078,12 @@ const LIPPackagePage: React.FC = () => {
         async ({ addLog }) => {
           addLog(
             "info",
-            `${t(installDialogActionLabelKey)} ${activePackageIdentifier}@${installDialogTriggerVersion}`,
+            `${t(installDialogActionLabelKey)} ${requestIdentifier}@${installDialogTriggerVersion}`,
           );
 
           const err = await InstallLIPPackage(
             installDialogSelectedInstance,
-            activePackageIdentifier,
+            requestIdentifier,
             installDialogTriggerVersion,
           );
           if (String(err || "").trim()) {
@@ -1119,6 +1133,7 @@ const LIPPackagePage: React.FC = () => {
     }
   }, [
     activePackageIdentifier,
+    dialogInstancePackageState?.installed,
     dialogLLInstalled,
     dialogLLStateLoading,
     dialogPackageStateLoading,
@@ -1129,7 +1144,9 @@ const LIPPackagePage: React.FC = () => {
     pkg,
     redirectToInstanceLoaderSettings,
     resolveErrorText,
+    routeVariantIdentifier,
     runWithLipTask,
+    selectedVariantIdentifier,
     ensurePackageInstallState,
     getInstanceSnapshot,
     installDialogSuccessKey,
@@ -1268,34 +1285,68 @@ const LIPPackagePage: React.FC = () => {
 
                   <div className="flex items-center gap-3 text-muted dark:text-zinc-400 text-sm flex-wrap">
                     <div className="flex items-center gap-1">
-                      <LuUser size={14} />
-                      <span className="font-medium text-foreground dark:text-zinc-200">
-                        {pkg.author || t("common.unknown")}
-                      </span>
+                      <LuUser size={14} aria-hidden="true" />
+                      {pkg.owner ? (
+                        <button
+                          type="button"
+                          className="font-medium text-foreground dark:text-zinc-200 hover:text-brand-600 dark:hover:text-brand-500 hover:underline rounded focus-visible:outline-2 focus-visible:outline-focus"
+                          title={ownerUrl(pkg.owner)}
+                          onClick={() => Browser.OpenURL(ownerUrl(pkg.owner))}
+                        >
+                          {t("lip.by_author_inline", { author: pkg.owner })}
+                        </button>
+                      ) : (
+                        <span className="font-medium text-foreground dark:text-zinc-200">
+                          {t("common.unknown")}
+                        </span>
+                      )}
+                      {pkg.owner ? (
+                        <button
+                          type="button"
+                          className="ml-1 text-xs text-brand-600 dark:text-brand-500 hover:underline rounded focus-visible:outline-2 focus-visible:outline-focus"
+                          onClick={() =>
+                            navigate(
+                              `${ROUTES.lip}?author=${encodeURIComponent(pkg.owner)}`,
+                            )
+                          }
+                        >
+                          {t("lip.filters.more_by_owner", { owner: pkg.owner })}
+                        </button>
+                      ) : null}
                     </div>
                     <span className="w-1 h-1 rounded-full bg-surface-quaternary"></span>
                     <div className="flex items-center gap-1">
-                      <LuClock size={14} />
+                      <LuClock size={14} aria-hidden="true" />
                       <span>{formatDateStr(pkg.updated)}</span>
                     </div>
                     <span className="w-1 h-1 rounded-full bg-surface-quaternary"></span>
-                    <div className="flex items-center gap-1">
-                      <LuFlame size={14} className="text-orange-500" />
-                      <span>{pkg.hotness}</span>
+                    <div
+                      className="flex items-center gap-1"
+                      title={t("lip.sort_options.stars")}
+                    >
+                      <LuStar size={14} className="text-amber-500" aria-hidden="true" />
+                      <span>{pkg.stars}</span>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {pkg.tags.map((tag) => (
-                      <Chip key={tag} size="sm" variant="soft">
-                        {<LuTag size={12} />}
-                        <Chip.Label>{tag}</Chip.Label>
-                      </Chip>
-                    ))}
+                    <LipTagChips tags={pkg.tags} className="gap-2" />
                     <Chip size="sm" variant="secondary">
-                      {<LuGamepad2 size={12} />}
+                      {<LuScale size={12} aria-hidden="true" />}
+                      <Chip.Label>
+                        {t("lip.filters.license")}:{" "}
+                        {t(`lip.license.${licenseFamily(licenseOf(pkg))}`)}
+                        {licenseOf(pkg) ? (
+                          <span className="ml-1 font-mono text-[0.85em] text-muted dark:text-zinc-500">
+                            {licenseOf(pkg)}
+                          </span>
+                        ) : null}
+                      </Chip.Label>
+                    </Chip>
+                    <Chip size="sm" variant="secondary">
+                      {<LuGamepad2 size={12} aria-hidden="true" />}
                       <Chip.Label className="select-text">
-                        ID: {pkg.identifier}
+                        {t("lip.mod_id")}: {pkg.identifier}
                       </Chip.Label>
                     </Chip>
                   </div>
@@ -1474,7 +1525,7 @@ const LIPPackagePage: React.FC = () => {
                                 {visiblePackageVariants.map((variant) => {
                                   const label = getVariantDisplayLabel(
                                     variant,
-                                    t("lip.files.variant_default"),
+                                    t("lip.variant_default"),
                                   );
                                   return (
                                     <ListBox.Item
@@ -1505,6 +1556,13 @@ const LIPPackagePage: React.FC = () => {
                           </Select>
                         </div>
                       ) : null}
+                      {visiblePackageVariants.length === 0 ? (
+                        <div className="text-sm text-amber-600 dark:text-amber-400" role="status">
+                          {t("lip.files.no_client_variant", {
+                            platform: LAUNCHER_PLATFORM,
+                          })}
+                        </div>
+                      ) : null}
                       <LIPVersionList
                         key={activePackageIdentifier}
                         files={filesWithGameVersionState}
@@ -1513,6 +1571,7 @@ const LIPPackagePage: React.FC = () => {
                         mappingAvailable={mappingAvailable}
                         installDisabled={instanceOptions.length === 0 || actionRunning}
                         onInstall={openInstallDialog}
+                        dependencyName={dependencyName}
                       />
                     </div>
                   </Tabs.Panel>

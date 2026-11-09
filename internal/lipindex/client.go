@@ -87,41 +87,59 @@ func (c *Client) getJSON(ctx context.Context, url string, out any) error {
 
 type indexDoc struct {
 	Mods []struct {
-		Tooth any `json:"tooth"`
-		Env   any `json:"env"`
+		ID          string   `json:"id"`
+		Description string   `json:"description"`
+		Side        []string `json:"side"`
+		Platform    []string `json:"platform"`
 	} `json:"mods"`
 }
 
-// clientIdentifiers lists the catalogue entries that can run on the client
-// (an empty env or one that includes "client").
-func clientIdentifiers(doc *indexDoc) []string {
-	out := []string{}
+// descriptions maps each id of the index to the description it lists
+// (cut to 200 characters: what the site and the window search).
+func (doc *indexDoc) descriptions() map[string]string {
+	out := map[string]string{}
 	for _, m := range doc.Mods {
-		id := strings.TrimSpace(str(m.Tooth))
-		if id == "" {
-			continue
+		id := strings.TrimSpace(m.ID)
+		if _, seen := out[id]; id != "" && !seen {
+			out[id] = m.Description
 		}
-		env := strList(m.Env)
-		if len(env) > 0 {
-			client := false
-			for _, e := range env {
-				if strings.EqualFold(e, "client") {
-					client = true
-				}
-			}
-			if !client {
-				continue
-			}
-		}
-		out = append(out, id)
 	}
 	return out
 }
 
-// FetchDetails fetches the catalogue: its index, then every client
-// package's detail with a pool of workers. Details that fail are skipped
-// (reused from previous when given); the fetch fails only when every
-// detail failed. It times out with ErrIndexTimeout.
+// installableIdentifiers lists, in the index's order, the catalogue entries
+// whose latest version has an entry for side and platform (the launcher
+// installs for the client on its own platform only).
+func installableIdentifiers(doc *indexDoc, side, platform string) []string {
+	out := []string{}
+	seen := map[string]bool{}
+	for _, m := range doc.Mods {
+		id := strings.TrimSpace(m.ID)
+		if id == "" || seen[id] {
+			continue
+		}
+		hasSide, hasPlatform := false, false
+		for _, s := range m.Side {
+			hasSide = hasSide || strings.EqualFold(strings.TrimSpace(s), side)
+		}
+		for _, p := range m.Platform {
+			hasPlatform = hasPlatform || strings.EqualFold(strings.TrimSpace(p), platform)
+		}
+		if hasSide && hasPlatform {
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// FetchDetails fetches the catalogue: its index, then the detail of every
+// package the launcher can install (an entry for TargetSide and
+// TargetPlatform in its latest version) with a pool of workers. Each detail
+// gets the index's description (CatalogDescription). The details
+// come in the index's order. Details that fail are skipped (reused from
+// previous when given); the fetch fails only when every detail failed. It
+// times out with ErrIndexTimeout.
 func (c *Client) FetchDetails(ctx context.Context, previous map[string]*Detail) ([]*Detail, error) {
 	timeout := c.Timeout
 	if timeout <= 0 {
@@ -142,7 +160,8 @@ func (c *Client) FetchDetails(ctx context.Context, previous map[string]*Detail) 
 	if err := c.getJSON(ctx2, strings.TrimRight(c.base(), "/")+"/index.json", &doc); err != nil {
 		return nil, wrap(err)
 	}
-	ids := clientIdentifiers(&doc)
+	ids := installableIdentifiers(&doc, TargetSide, TargetPlatform)
+	descriptions := doc.descriptions()
 	workers := c.Workers
 	if workers <= 0 {
 		workers = defaultWorkers
@@ -151,7 +170,7 @@ func (c *Client) FetchDetails(ctx context.Context, previous map[string]*Detail) 
 	var (
 		mu      sync.Mutex
 		next    int
-		out     []*Detail
+		slots   = make([]*Detail, len(ids))
 		fetched int
 		wg      sync.WaitGroup
 	)
@@ -165,17 +184,20 @@ func (c *Client) FetchDetails(ctx context.Context, previous map[string]*Detail) 
 					mu.Unlock()
 					return
 				}
-				id := ids[next]
+				i, id := next, ids[next]
 				next++
 				mu.Unlock()
 				d, err := c.fetchDetail(ctx2, id)
 				mu.Lock()
 				switch {
 				case err == nil:
-					out = append(out, d)
+					d.CatalogDescription = descriptions[id]
+					slots[i] = d
 					fetched++
 				case previous[id] != nil:
-					out = append(out, previous[id])
+					cp := *previous[id]
+					cp.CatalogDescription = descriptions[id]
+					slots[i] = &cp
 				}
 				mu.Unlock()
 			}
@@ -187,6 +209,12 @@ func (c *Client) FetchDetails(ctx context.Context, previous map[string]*Detail) 
 	}
 	if len(ids) > 0 && fetched == 0 {
 		return nil, wrap(errors.New("failed to fetch the package details"))
+	}
+	out := make([]*Detail, 0, len(slots))
+	for _, d := range slots {
+		if d != nil {
+			out = append(out, d)
+		}
 	}
 	return out, nil
 }
@@ -200,7 +228,9 @@ func (c *Client) fetchDetail(ctx context.Context, identifier string) (*Detail, e
 	if err := c.getJSON(ctx, u, &d); err != nil {
 		return nil, err
 	}
-	if strings.TrimSpace(d.Tooth) == "" {
+	// A document without "id" is not a detail of this shape (the catalogue
+	// before lip v0.40 had "tooth").
+	if strings.TrimSpace(d.ID) == "" {
 		return nil, fmt.Errorf("%w: %s has no package id", ErrPackageNotFound, u)
 	}
 	return &d, nil
@@ -224,7 +254,10 @@ func (c *Client) FetchDetail(ctx context.Context, identifier string) (*Detail, e
 }
 
 // Cache keeps the fetched catalogue on disk so that commands do not fetch
-// every package each time (a full fetch takes many seconds).
+// every package each time (a full fetch takes many seconds). The details
+// keep the index's order. A cache of another shape (from before lip v0.40)
+// lives in another file (the CLI's lip-catalog.v4.json); one read anyway
+// gives details without ids, which Build skips.
 type Cache struct {
 	Path string
 }
@@ -300,7 +333,7 @@ func (s *Source) Load(ctx context.Context, refresh bool) (idx *Index, fetchedAt 
 	prev := map[string]*Detail{}
 	for _, d := range cached {
 		if d != nil {
-			prev[d.Tooth] = d
+			prev[d.ID] = d
 		}
 	}
 	client := s.Client

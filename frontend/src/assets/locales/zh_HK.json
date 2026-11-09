@@ -1255,8 +1255,6 @@
     "search_placeholder": "搜尋模組…",
     "sort_by": "排序",
     "select_sort": "選擇排序",
-    "order_by": "順序",
-    "select_order": "選擇順序",
     "no_description": "暫無簡介",
     "ll_version_label": "LeviLamina 版本",
     "ll_version_placeholder": "選擇 LeviLamina 版本",
@@ -1264,7 +1262,7 @@
     "game_version_label": "遊戲版本",
     "game_version_placeholder": "選擇遊戲版本",
     "game_all_versions": "所有遊戲版本",
-    "mapping_unavailable_hint": "暫時無法取得遊戲版本相容資訊，已關閉版本篩選以免比對錯誤。",
+    "mapping_unavailable_hint": "暫時無法取得 LeviLamina 版本資訊，已關閉 LeviLamina 版本篩選以免比對錯誤。",
     "files": {
       "game_versions_unknown": "找不到相符的遊戲版本",
       "version_count": "{{count}} 個版本",
@@ -1283,7 +1281,6 @@
       "variant_label": "變體",
       "variant_hint_keep_default": "大多數套件只有一種變體，除非作者另有說明，保持預設即可。",
       "variant_placeholder": "選擇要安裝的變體",
-      "variant_default": "預設",
       "select_version_incompatible_hint": "版本 {{version}} 與遊戲版本 {{gameVersion}} 不相容。",
       "checking_ll_state": "正在檢查 LeviLamina 狀態…",
       "mapping_unavailable_blocked_hint": "暫時無法確認 LeviLamina 與遊戲版本的相容關係，已阻止本次安裝以免裝錯套件。",
@@ -1298,27 +1295,70 @@
       "downgrade_success": "降級成功",
       "reinstall_success": "重裝成功",
       "current_installed_version_label": "目前已安裝版本",
-      "checking_current_installed_version": "正在檢查目前已安裝版本…"
+      "checking_current_installed_version": "正在檢查目前已安裝版本…",
+      "prerelease": "預發佈",
+      "no_client_variant": "此模組沒有可在 {{platform}} 用戶端上安裝的變體，LeviLauncher 無法安裝。"
     },
     "guide": {
       "open_button": "開發者指南",
       "title": "LeviMC 模組開發者指南",
-      "description": "如果你希望自己的模組出現在 LeviLauncher 的 LeviMC 模組頁面中，請按照 LIP 的 package_manifest 規範發佈。",
-      "manifest_hint": "這個彈窗只提供面向開發者的快速說明。欄位命名、必填項、示例與校驗細則請以官方文件為準。",
-      "variant_hint": "僅當 variant 的 label 包含 client 時，才會被啟動器收錄。預設情況下請使用 \"label\": \"client\"；子擴展請使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
+      "description": "如果你希望自己的模組出現在 LeviLauncher 的 LeviMC 模組頁面中，請按照 lip 文件在倉庫中提供 lip.toml 並發佈。",
+      "manifest_hint": "當模組最新版本的 lip.toml 中有 side = \"client\" 且 platform = \"win-x64\" 的條目時，LeviLauncher 才會收錄它，並安裝與之相符的變體：優先 \"client\"，其次預設變體 \"\"，其餘按名稱排序。",
+      "variant_hint": "請為每個支援的執行端和平台各新增一個條目，例如在伺服器端條目旁新增 side = \"client\"、platform = \"win-x64\" 的 [[variants.\"\"]] 條目。在 [info] tags 中使用 \"library\"、\"economy\" 等推薦標籤，模組就會出現在對應的篩選中。",
       "docs_button": "查看完整規範",
       "close_button": "關閉"
     },
     "title": "LeviMC 模組",
     "sort_options": {
-      "hotness": "熱門",
+      "relevance": "相關性",
+      "stars": "星標",
       "updated": "最近更新",
-      "name": "名稱"
+      "newest": "最新發佈"
     },
-    "order_options": {
-      "desc": "降序",
-      "asc": "升序"
+    "filters": {
+      "title": "篩選",
+      "title_count": "篩選（{{count}}）",
+      "clear": "清除所有篩選",
+      "active": "已選篩選條件",
+      "tags": "標籤",
+      "other_tags": "其他標籤",
+      "license": "授權條款",
+      "dependencies": "依賴",
+      "exclude": "排除 {{label}}",
+      "not_label": "排除 {{label}}",
+      "remove": "移除篩選：{{label}}",
+      "show_more": "再顯示 {{count}} 項",
+      "show_fewer": "收起",
+      "search_tags": "搜尋標籤…",
+      "license_ids": "{{family}}授權條款",
+      "depends_on": "依賴 {{name}}",
+      "more_by_owner": "{{owner}} 的更多專案",
+      "more_tags": "另外 {{count}} 項"
     },
+    "tags": {
+      "library": "前置庫 / API",
+      "utility": "實用工具",
+      "management": "伺服器管理",
+      "game-mechanics": "遊戲機制",
+      "adventure": "內容與冒險",
+      "visual": "視覺與介面",
+      "economy": "經濟",
+      "teleport": "傳送",
+      "anticheat": "反作弊",
+      "optimization": "效能優化",
+      "bugfix": "錯誤修復",
+      "technology": "技術與紅石",
+      "protocol": "協議與多版本"
+    },
+    "license": {
+      "permissive": "寬鬆",
+      "weak-copyleft": "弱著佐權",
+      "copyleft": "著佐權",
+      "other": "其他",
+      "none": "無授權條款"
+    },
+    "variant_default": "預設",
+    "mod_id": "模組 ID",
     "by_author_inline": "作者 {{author}}",
     "package_details_aria_label": "套件詳情",
     "task_console": {

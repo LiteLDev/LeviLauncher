@@ -16,20 +16,20 @@ import (
 // (PackageFileParser.Parse(byte[])).
 
 const validDoc = `{"format":4,"id":"example.com/owner/tool","version":"1.2.3",` +
-	`"variants":{"":[{"platform":"server","runtime":"win-x64"}]}}`
+	`"variants":{"":[{"side":"server","platform":"win-x64"}]}}`
 
 func withEntry(entry string) string {
 	return `{"format":4,"id":"example.com/owner/tool","version":"1.2.3","variants":{"":[` + entry + `]}}`
 }
 
 func withMembers(members string) string {
-	return withEntry(`{"platform":"server","runtime":"win-x64",` + members + `}`)
+	return withEntry(`{"side":"server","platform":"win-x64",` + members + `}`)
 }
 
 // setRoot replaces (or with v == "" removes) a member of validDoc.
 func setRoot(key, v string) string {
 	members := []struct{ k, v string }{{"format", "4"}, {"id", `"example.com/owner/tool"`},
-		{"version", `"1.2.3"`}, {"variants", `{"":[{"platform":"server","runtime":"win-x64"}]}`}}
+		{"version", `"1.2.3"`}, {"variants", `{"":[{"side":"server","platform":"win-x64"}]}`}}
 	var parts []string
 	found := false
 	for _, m := range members {
@@ -100,7 +100,7 @@ func TestParseMinimalDocumentReadsMembers(t *testing.T) {
 		t.Fatalf("variants %+v", d.Variants)
 	}
 	e := d.Variants[0].Entries[0]
-	if e.Platform != "server" || e.Runtime != "win-x64" || len(e.Deps) != 0 || len(e.Assets) != 0 ||
+	if e.Side != "server" || e.Platform != "win-x64" || len(e.Deps) != 0 || len(e.Assets) != 0 ||
 		len(e.Preserve) != 0 || len(e.Purge) != 0 || e.McmodAsset() != -1 {
 		t.Fatalf("entry %+v", e)
 	}
@@ -111,8 +111,8 @@ func TestParseMinimalDocumentReadsMembers(t *testing.T) {
 	if !ok {
 		t.Fatalf("entry Raw is %T", e.Raw)
 	}
-	if v, _ := raw.Get("platform"); v != "server" {
-		t.Fatalf("entry Raw platform %v", v)
+	if v, _ := raw.Get("side"); v != "server" {
+		t.Fatalf("entry Raw side %v", v)
 	}
 	if _, ok := d.Raw.(*doc.Object); !ok {
 		t.Fatalf("document Raw is %T", d.Raw)
@@ -121,8 +121,8 @@ func TestParseMinimalDocumentReadsMembers(t *testing.T) {
 
 func TestParseTOMLReadsMembers(t *testing.T) {
 	d := mustParse(t, "# lip.toml\nformat = 4\nid = \"example.com/owner/tool\"\nversion = '1.0.0'\n\n"+
-		"[info]\nname = \"true\"\ntags = [\"null\", \"~\"]\n\n[[variants.\"\"]]\nplatform = \"server\"\n"+
-		"runtime = \"win-x64\"\ndeps = { \"example.com/a\" = \"^1.0.0\" }\nhooks.post_install = [\"echo yes\"]\n")
+		"[info]\nname = \"true\"\ntags = [\"null\", \"~\"]\n\n[[variants.\"\"]]\nside = \"server\"\n"+
+		"platform = \"win-x64\"\ndeps = { \"example.com/a\" = \"^1.0.0\" }\nhooks.post_install = [\"echo yes\"]\n")
 	if d.Version != "1.0.0" || d.Info.Name != "true" || !reflect.DeepEqual(d.Info.Tags, []string{"null", "~"}) {
 		t.Fatalf("got %+v %+v", d, d.Info)
 	}
@@ -135,7 +135,7 @@ func TestParseTOMLReadsMembers(t *testing.T) {
 
 func TestParseTOMLValueOfOtherTypeThrows(t *testing.T) {
 	base := "format = 4\nid = \"example.com/owner/tool\"\nversion = \"1.2.3\"\n" +
-		"variants = { \"\" = [ { platform = \"server\", runtime = \"win-x64\" } ] }"
+		"variants = { \"\" = [ { side = \"server\", platform = \"win-x64\" } ] }"
 	for _, c := range []struct{ line, path string }{
 		{"version = 1.0", "$.version"}, {"version = true", "$.version"}, {"version = [\"1.2.3\"]", "$.version"},
 		{"format = \"4\"", "$.format"}, {"format = 4.5", "$.format"},
@@ -218,7 +218,7 @@ func TestParseRootRules(t *testing.T) {
 	}
 	// The keys of the unreleased tooth.json of format_version 4 are not read.
 	assertInvalid(t, `{"format_version":4,"tooth":"example.com/owner/tool","version":"1.2.3",`+
-		`"variants":{"":[{"platform":"server","runtime":"win-x64"}]}}`, "$.format")
+		`"variants":{"":[{"side":"server","platform":"win-x64"}]}}`, "$.format")
 	for _, text := range []string{"[]", `"lip"`, "null"} {
 		fe := assertInvalid(t, text, "$")
 		if !strings.Contains(fe.Message, "at $:") {
@@ -260,14 +260,14 @@ func TestParseVersion(t *testing.T) {
 
 func TestParseVariants(t *testing.T) {
 	for _, v := range []string{"lua", "a_1", "0", "engine/lua"} {
-		d := mustParse(t, setRoot("variants", `{"":[{"platform":"server","runtime":"win-x64"}],"`+v+
-			`":[{"platform":"client","runtime":"win-x64"}]}`))
-		if len(d.Variants) != 2 || d.Variants[1].Name != v || d.Variants[1].Entries[0].Platform != "client" {
+		d := mustParse(t, setRoot("variants", `{"":[{"side":"server","platform":"win-x64"}],"`+v+
+			`":[{"side":"client","platform":"win-x64"}]}`))
+		if len(d.Variants) != 2 || d.Variants[1].Name != v || d.Variants[1].Entries[0].Side != "client" {
 			t.Errorf("variant %q: %+v", v, d.Variants)
 		}
 	}
 	for _, v := range []string{"Lua", "a-b", "a.b", "a/b/c", "/a", "a/", " "} {
-		fe := assertInvalid(t, setRoot("variants", `{"`+v+`":[{"platform":"server","runtime":"win-x64"}]}`),
+		fe := assertInvalid(t, setRoot("variants", `{"`+v+`":[{"side":"server","platform":"win-x64"}]}`),
 			`$.variants["`+v+`"]`)
 		if !strings.HasSuffix(fe.Message, ": '"+v+"' is not a variant.") {
 			t.Errorf("%q", fe.Message)
@@ -288,40 +288,68 @@ func TestParseVariants(t *testing.T) {
 	}
 }
 
-func TestParsePlatformAndRuntime(t *testing.T) {
+func TestParseSideAndPlatform(t *testing.T) {
 	for _, p := range []string{`""`, `"Server"`, `"any"`, `"win-x64"`, "null"} {
-		fe := assertInvalid(t, withEntry(`{"platform":`+p+`,"runtime":"win-x64"}`), `$.variants[""][0].platform`)
-		if !strings.HasSuffix(fe.Message, `platform: must be "server" or "client".`) {
+		fe := assertInvalid(t, withEntry(`{"side":`+p+`,"platform":"win-x64"}`), `$.variants[""][0].side`)
+		if !strings.HasSuffix(fe.Message, `side: must be "server" or "client".`) {
 			t.Errorf("%q", fe.Message)
 		}
 	}
-	for _, key := range []string{"platform", "runtime"} {
-		other := map[string]string{"platform": `"runtime":"win-x64"`, "runtime": `"platform":"server"`}[key]
+	for _, key := range []string{"side", "platform"} {
+		other := map[string]string{"side": `"platform":"win-x64"`, "platform": `"side":"server"`}[key]
 		assertInvalid(t, withEntry(`{`+other+`}`), `$.variants[""][0].`+key)
 	}
 	for _, r := range []string{"win-x64", "linux-musl-arm64", "osx.13-arm64", "any"} {
-		if e := singleEntry(t, withEntry(`{"platform":"server","runtime":"`+r+`"}`)); e.Runtime != r {
-			t.Errorf("runtime %q", e.Runtime)
+		if e := singleEntry(t, withEntry(`{"side":"server","platform":"`+r+`"}`)); e.Platform != r {
+			t.Errorf("platform %q", e.Platform)
 		}
 	}
 	for _, r := range []string{`""`, `"win-*"`, `"win x64"`, `"win--x64"`, `"-win"`, "1"} {
-		assertInvalid(t, withEntry(`{"platform":"server","runtime":`+r+`}`), `$.variants[""][0].runtime`)
+		assertInvalid(t, withEntry(`{"side":"server","platform":`+r+`}`), `$.variants[""][0].platform`)
 	}
-	// The assets are read before the platform.
-	fe := assertInvalid(t, withEntry(`{"platform":"bad","assets":[{"type":"bad"}]}`), `$.variants[""][0].assets[0].type`)
+	// The assets are read before the side.
+	fe := assertInvalid(t, withEntry(`{"side":"bad","assets":[{"type":"bad"}]}`), `$.variants[""][0].assets[0].type`)
 	_ = fe
 }
 
+func TestParseOldKeys(t *testing.T) {
+	const want = `uses the keys "platform" and "runtime" of lip before v0.40; rename "platform" to "side"` +
+		` and "runtime" to "platform".`
+	for _, entry := range []string{
+		`{"platform":"server","runtime":"win-x64"}`,
+		`{"platform":"client"}`,
+		`{"runtime":"win-x64"}`,
+		`{"side":"server","platform":"win-x64","runtime":"win-x64"}`,
+		// Before the assets, and before the required keys.
+		`{"platform":"client","runtime":"win-x64","assets":[{"type":"bad"}]}`,
+	} {
+		fe := assertInvalid(t, withEntry(entry), `$.variants[""][0]`)
+		if fe.Message != `Invalid package file at $.variants[""][0]: `+want {
+			t.Errorf("%s: %q", entry, fe.Message)
+		}
+	}
+	_, err := ParseTOML([]byte("format = 4\nid = \"example.com/owner/tool\"\nversion = \"1.2.3\"\n" +
+		"[[variants.\"\"]]\nplatform = \"server\"\nruntime = \"win-x64\"\n"))
+	var fe *FormatError
+	if !errors.As(err, &fe) || fe.Message != `Invalid package file at $.variants[""][0]: `+want {
+		t.Errorf("lip.toml of lip before v0.40: %v", err)
+	}
+	// A "platform" that is a runtime identifier is the new key.
+	if e := singleEntry(t, withEntry(`{"side":"client","platform":"win-x64"}`)); e.Side != "client" {
+		t.Errorf("entry %+v", e)
+	}
+}
+
 func TestParseDuplicateEntries(t *testing.T) {
-	fe := assertInvalid(t, setRoot("variants", `{"":[{"platform":"server","runtime":"win-x64"},`+
-		`{"platform":"client","runtime":"win-x64"},{"platform":"server","runtime":"win-x64","hooks":{}}]}`),
+	fe := assertInvalid(t, setRoot("variants", `{"":[{"side":"server","platform":"win-x64"},`+
+		`{"side":"client","platform":"win-x64"},{"side":"server","platform":"win-x64","hooks":{}}]}`),
 		`$.variants[""][2]`)
-	if fe.Message != `Invalid package file at $.variants[""][2]: has the platform and the runtime of $.variants[""][0].` {
+	if fe.Message != `Invalid package file at $.variants[""][2]: has the side and the platform of $.variants[""][0].` {
 		t.Errorf("%q", fe.Message)
 	}
-	d := mustParse(t, setRoot("variants", `{"":[{"platform":"server","runtime":"win-x64"},`+
-		`{"platform":"client","runtime":"win-x64"},{"platform":"server","runtime":"linux-x64"}],`+
-		`"lua":[{"platform":"server","runtime":"win-x64"}]}`))
+	d := mustParse(t, setRoot("variants", `{"":[{"side":"server","platform":"win-x64"},`+
+		`{"side":"client","platform":"win-x64"},{"side":"server","platform":"linux-x64"}],`+
+		`"lua":[{"side":"server","platform":"win-x64"}]}`))
 	entries, _ := d.EntriesOf("")
 	if got := d.SelectEntry("", "client", "win-x64"); got != &entries[1] {
 		t.Errorf("SelectEntry = %+v", got)
@@ -418,8 +446,8 @@ func TestParseAssets(t *testing.T) {
 	if fe.Message != `Invalid package file at $.variants[""][0].assets: has more than one asset of type "mcmod".` {
 		t.Errorf("%q", fe.Message)
 	}
-	d := mustParse(t, setRoot("variants", `{"":[{"platform":"server","runtime":"win-x64","assets":[`+
-		`{"type":"mcmod","urls":["https://a/s.mcmod"]}]},{"platform":"client","runtime":"win-x64","assets":[`+
+	d := mustParse(t, setRoot("variants", `{"":[{"side":"server","platform":"win-x64","assets":[`+
+		`{"type":"mcmod","urls":["https://a/s.mcmod"]}]},{"side":"client","platform":"win-x64","assets":[`+
 		`{"type":"mcmod","urls":["https://a/c.mcmod"]}]}]}`))
 	for _, e := range d.Variants[0].Entries {
 		if e.McmodAsset() != 0 {
@@ -555,7 +583,7 @@ func TestParseUnknownKeysAreIgnored(t *testing.T) {
 
 func TestParseTOMLErrors(t *testing.T) {
 	valid := "format = 4\nid = \"example.com/owner/tool\"\nversion = \"1.2.3\"\n" +
-		"[[variants.\"\"]]\nplatform = \"server\"\nruntime = \"win-x64\"\n"
+		"[[variants.\"\"]]\nside = \"server\"\nplatform = \"win-x64\"\n"
 	for _, c := range []struct{ text, inner string }{
 		{validDoc, "not valid TOML"},
 		{strings.Replace(valid, "version", "id = \"x\"\nversion", 1), "not valid TOML"},
@@ -598,14 +626,14 @@ func TestFormat(t *testing.T) {
 }
 
 func TestParseEntry(t *testing.T) {
-	valid, _ := doc.ParseJSON([]byte(`{"platform":"client","runtime":"linux-x64",`+
+	valid, _ := doc.ParseJSON([]byte(`{"side":"client","platform":"linux-x64",`+
 		`"assets":[{"type":"zip","urls":["https://a.example/x.zip"]}]}`), "x")
 	e, err := ParseEntry(valid)
-	if err != nil || e.Platform != "client" || e.Runtime != "linux-x64" || len(e.Assets) != 1 ||
+	if err != nil || e.Side != "client" || e.Platform != "linux-x64" || len(e.Assets) != 1 ||
 		e.Assets[0].Type != pkgmodel.AssetZip {
 		t.Fatalf("%+v %v", e, err)
 	}
-	invalid, _ := doc.ParseJSON([]byte(`{"platform":"client","runtime":"linux-x64",`+
+	invalid, _ := doc.ParseJSON([]byte(`{"side":"client","platform":"linux-x64",`+
 		`"assets":[{"type":"tar","urls":["https://a.example/x.tar"]}]}`), "x")
 	if _, err := ParseEntry(invalid); err == nil || !strings.HasPrefix(err.Error(), "Invalid package file at $.assets[0].type:") {
 		t.Fatalf("%v", err)

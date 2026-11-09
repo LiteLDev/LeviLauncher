@@ -52,6 +52,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Test the lip catalogue logic against the shared fixture
+        working-directory: frontend
+        run: npm run test:lipcatalog
+
       - name: Generate Wails bindings
         shell: pwsh
         run: |

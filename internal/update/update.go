@@ -267,98 +267,6 @@ func selectUpdateReleaseFor(releases []githubRelease, version string, acceptBeta
 	return githubRelease{}, false
 }
 
-func findAssetByName(release githubRelease, name string) *githubReleaseAsset {
-	for i := range release.Assets {
-		if strings.EqualFold(strings.TrimSpace(release.Assets[i].Name), strings.TrimSpace(name)) {
-			return &release.Assets[i]
-		}
-	}
-	return nil
-}
-
-func expectedZipAssetName() string {
-	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("LeviLauncher_windows_%s.zip", runtime.GOARCH)
-	}
-	return fmt.Sprintf("LeviLauncher_%s_%s.zip", runtime.GOOS, runtime.GOARCH)
-}
-
-func buildAssetCandidateURLs(target string) []string {
-	target = strings.TrimSpace(target)
-	if target == "" {
-		return nil
-	}
-	proxies := []string{
-		"https://edgeone.gh-proxy.org/",
-		"https://gh-proxy.org/",
-		"https://hk.gh-proxy.org/",
-		"https://cdn.gh-proxy.org/",
-	}
-	out := make([]string, 0, len(proxies)+1)
-	if utils.IsMirrorEnabled() {
-		for _, prefix := range proxies {
-			out = append(out, prefix+target)
-		}
-	}
-	out = append(out, target)
-	if !utils.IsMirrorEnabled() {
-		for _, prefix := range proxies[:1] {
-			out = append(out, prefix+target)
-		}
-	}
-	return out
-}
-
-func downloadTextWithCandidates(ctx context.Context, urls []string, timeout time.Duration) (string, error) {
-	var lastErr error
-	for _, target := range urls {
-		req, cancel, err := newTimedRequest(ctx, http.MethodGet, target, timeout)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		resp, err := httpx.Do(req)
-		if err != nil {
-			cancel()
-			lastErr = err
-			continue
-		}
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			resp.Body.Close()
-			cancel()
-			lastErr = fmt.Errorf("HTTP %s", resp.Status)
-			continue
-		}
-		data, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		cancel()
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		return string(data), nil
-	}
-	if lastErr == nil {
-		lastErr = fmt.Errorf("download text failed")
-	}
-	return "", lastErr
-}
-
-func parseSHA256Checksum(content string) (string, error) {
-	fields := strings.Fields(strings.TrimSpace(content))
-	if len(fields) == 0 {
-		return "", fmt.Errorf("empty checksum content")
-	}
-	hash := strings.TrimSpace(fields[0])
-	if len(hash) != 64 {
-		return "", fmt.Errorf("invalid sha256 length")
-	}
-	if _, err := hex.DecodeString(hash); err != nil {
-		return "", err
-	}
-	return strings.ToLower(hash), nil
-}
-
 func calculateSHA256(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -473,9 +381,17 @@ func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error 
 }
 
 func buildSelfUpdateCandidateURLs(ver string) []string {
-	return []string{
-		"https://goproxy.io/github.com/dreamguxiang/!levi!launcher/@v/" + ver + ".zip",
-		"https://mirrors.aliyun.com/goproxy/github.com/dreamguxiang/levilauncher/@v/" + ver + ".zip",
+	if utils.IsMirrorEnabled() {
+		return []string{
+			"https://gh-proxy.org/github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
+			"https://v4.gh-proxy.org/github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
+			"https://v6.gh-proxy.org/github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
+			"https://gh.bibk.top/github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
+		}
+	} else {
+		return []string{
+			"https://github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
+		}
 	}
 }
 

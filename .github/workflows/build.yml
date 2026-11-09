@@ -199,7 +199,6 @@ jobs:
         uses: actions/upload-artifact@v7.0.0
         with:
           path: bin/LeviLauncher.exe
-          archive: false
           if-no-files-found: error
 
       - name: Upload installer artifact
@@ -273,8 +272,10 @@ jobs:
 
           for raw_exe_file in ./artifacts/*/LeviLauncher.exe; do
             if [ -f "$raw_exe_file" ]; then
-              echo "Uploading standalone EXE: $raw_exe_file"
-              gh release upload ${{ github.ref_name }} "$raw_exe_file" --clobber
+              echo "Zipping standalone EXE: $raw_exe_file"
+              Compress-Archive -Path $raw_exe_file -DestinationPath LeviLauncher.zip -Force
+              echo "Uploading zipped standalone EXE"
+              gh release upload ${{ github.ref_name }} LeviLauncher.zip --clobber
             fi
           done
 
@@ -286,6 +287,7 @@ jobs:
           done
 
           echo "All assets uploaded successfully"
+
       - name: Notify Discord
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -326,121 +328,3 @@ jobs:
             }]
           }" \
           "$DISCORD_WEBHOOK"
-
-  upload-to-target-repo:
-    name: Upload EXE to Target Repository
-    needs: build
-    # Temporarily disabled: no longer uploading to dreamguxiang/LeviLauncher
-    # if: startsWith(github.ref, 'refs/tags/')
-    if: false
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download build artifacts
-        uses: actions/download-artifact@v8.0.0
-        with:
-          path: ./downloaded-artifacts
-
-      - name: Find EXE file
-        id: find_exe
-        run: |
-          set -euo pipefail
-          echo "Looking for LeviLauncher.exe in downloaded artifacts..."
-
-          EXE_FILE=$(find ./downloaded-artifacts -name "LeviLauncher.exe" -type f | head -1 || true)
-
-          if [ -n "${EXE_FILE}" ]; then
-            echo "Found EXE file: $EXE_FILE"
-            echo "exe_path=$EXE_FILE" >> $GITHUB_OUTPUT
-          else
-            echo "LeviLauncher.exe still not found, searching for non-installer EXE..."
-            OTHER_EXE=$(find ./downloaded-artifacts -name "*.exe" -type f | grep -v installer | head -1 || true)
-            if [ -n "${OTHER_EXE}" ]; then
-              echo "Found alternative EXE file: $OTHER_EXE"
-              echo "exe_path=$OTHER_EXE" >> $GITHUB_OUTPUT
-            else
-              echo "No suitable EXE file found"
-              exit 1
-            fi
-          fi
-
-      - name: Checkout target repository
-        uses: actions/checkout@v7
-        with:
-          repository: dreamguxiang/LeviLauncher
-          token: ${{ secrets.TARGET_REPO_TOKEN }}
-          path: target-repo
-
-      - name: Setup target repository
-        run: |
-          cd target-repo
-
-          mkdir -p windows
-
-          cp ../${{ steps.find_exe.outputs.exe_path }} windows/LeviLauncher.exe
-
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-          if git diff --quiet; then
-            echo "No changes to commit"
-            echo "has_changes=false" >> $GITHUB_ENV
-          else
-            echo "Changes detected, preparing commit"
-            echo "has_changes=true" >> $GITHUB_ENV
-          fi
-
-      - name: Commit and push to target repository
-        if: env.has_changes == 'true'
-        run: |
-          cd target-repo
-
-          git add windows/LeviLauncher.exe
-
-          git commit -m "Update LeviLauncher.exe from ${{ github.repository }}@${{ github.sha }}"
-
-          git push origin main
-
-      - name: Create tag in target repository
-        if: env.has_changes == 'true'
-        run: |
-          cd target-repo
-
-          TAG_NAME="${{ github.ref_name }}"
-
-          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
-          git push origin "$TAG_NAME"
-
-  prime-goproxy:
-    name: Prime GoProxy caches
-    needs:
-      - upload-to-target-repo
-    # Temporarily disabled: depends on dreamguxiang/LeviLauncher upload flow
-    # if: startsWith(github.ref, 'refs/tags/')
-    if: false
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Prime GoProxy caches
-        run: |
-          set -euo pipefail
-          TAG="${{ github.ref_name }}"
-          echo "Priming GoProxy caches for tag: ${TAG}"
-
-          URLS=(
-            "https://goproxy.io/github.com/dreamguxiang/!levi!launcher/@v/${TAG}.zip"
-            "https://mirrors.aliyun.com/goproxy/github.com/dreamguxiang/levilauncher/@v/${TAG}.zip"
-          )
-
-          for url in "${URLS[@]}"; do
-            echo "Requesting: ${url}"
-            for i in {1..5}; do
-              if curl -fsSL "${url}" -o /dev/null; then
-                echo "Primed: ${url}"
-                break
-              else
-                echo "Attempt ${i} failed for ${url}, retrying..."
-                sleep $((i*2))
-              fi
-            done
-          done

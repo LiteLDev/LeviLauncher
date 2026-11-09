@@ -272,9 +272,11 @@ jobs:
 
           for raw_exe_file in ./artifacts/*/LeviLauncher.exe; do
             if [ -f "$raw_exe_file" ]; then
-              echo "Zipping standalone EXE: $raw_exe_file"
-              Compress-Archive -Path $raw_exe_file -DestinationPath LeviLauncher.zip -Force
-              echo "Uploading zipped standalone EXE"
+              echo "Uploading standalone EXE: $raw_exe_file"
+              gh release upload ${{ github.ref_name }} "$raw_exe_file" --clobber
+              echo "Zipping standalone EXE for self-update: $raw_exe_file"
+              rm -f LeviLauncher.zip
+              zip -j LeviLauncher.zip "$raw_exe_file"
               gh release upload ${{ github.ref_name }} LeviLauncher.zip --clobber
             fi
           done

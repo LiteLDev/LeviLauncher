@@ -1295,7 +1295,7 @@
     "game_version_label": "游戏版本",
     "game_version_placeholder": "选择游戏版本",
     "game_all_versions": "所有游戏版本",
-    "mapping_unavailable_hint": "暂时无法获取游戏版本兼容信息，已关闭版本筛选以免匹配错误。",
+    "mapping_unavailable_hint": "暂时无法获取 LeviLamina 版本信息，已关闭 LeviLamina 版本筛选以免匹配错误。",
     "files": {
       "game_versions_unknown": "未找到匹配的游戏版本",
       "version_count": "{{count}} 个版本",

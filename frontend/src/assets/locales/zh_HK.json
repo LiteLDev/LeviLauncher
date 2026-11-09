@@ -1262,7 +1262,7 @@
     "game_version_label": "遊戲版本",
     "game_version_placeholder": "選擇遊戲版本",
     "game_all_versions": "所有遊戲版本",
-    "mapping_unavailable_hint": "暫時無法取得遊戲版本相容資訊，已關閉版本篩選以免比對錯誤。",
+    "mapping_unavailable_hint": "暫時無法取得 LeviLamina 版本資訊，已關閉 LeviLamina 版本篩選以免比對錯誤。",
     "files": {
       "game_versions_unknown": "找不到相符的遊戲版本",
       "version_count": "{{count}} 個版本",

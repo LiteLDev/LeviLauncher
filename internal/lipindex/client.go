@@ -87,10 +87,24 @@ func (c *Client) getJSON(ctx context.Context, url string, out any) error {
 
 type indexDoc struct {
 	Mods []struct {
-		ID       string   `json:"id"`
-		Side     []string `json:"side"`
-		Platform []string `json:"platform"`
+		ID          string   `json:"id"`
+		Description string   `json:"description"`
+		Side        []string `json:"side"`
+		Platform    []string `json:"platform"`
 	} `json:"mods"`
+}
+
+// descriptions maps each id of the index to the description it lists
+// (cut to 200 characters: what the site and the window search).
+func (doc *indexDoc) descriptions() map[string]string {
+	out := map[string]string{}
+	for _, m := range doc.Mods {
+		id := strings.TrimSpace(m.ID)
+		if _, seen := out[id]; id != "" && !seen {
+			out[id] = m.Description
+		}
+	}
+	return out
 }
 
 // installableIdentifiers lists, in the index's order, the catalogue entries
@@ -121,7 +135,8 @@ func installableIdentifiers(doc *indexDoc, side, platform string) []string {
 
 // FetchDetails fetches the catalogue: its index, then the detail of every
 // package the launcher can install (an entry for TargetSide and
-// TargetPlatform in its latest version) with a pool of workers. The details
+// TargetPlatform in its latest version) with a pool of workers. Each detail
+// gets the index's description (CatalogDescription). The details
 // come in the index's order. Details that fail are skipped (reused from
 // previous when given); the fetch fails only when every detail failed. It
 // times out with ErrIndexTimeout.
@@ -146,6 +161,7 @@ func (c *Client) FetchDetails(ctx context.Context, previous map[string]*Detail) 
 		return nil, wrap(err)
 	}
 	ids := installableIdentifiers(&doc, TargetSide, TargetPlatform)
+	descriptions := doc.descriptions()
 	workers := c.Workers
 	if workers <= 0 {
 		workers = defaultWorkers
@@ -175,10 +191,13 @@ func (c *Client) FetchDetails(ctx context.Context, previous map[string]*Detail) 
 				mu.Lock()
 				switch {
 				case err == nil:
+					d.CatalogDescription = descriptions[id]
 					slots[i] = d
 					fetched++
 				case previous[id] != nil:
-					slots[i] = previous[id]
+					cp := *previous[id]
+					cp.CatalogDescription = descriptions[id]
+					slots[i] = &cp
 				}
 				mu.Unlock()
 			}

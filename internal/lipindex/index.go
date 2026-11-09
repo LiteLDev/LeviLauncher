@@ -35,9 +35,13 @@ var TargetPlatform = engine.CurrentPlatform()
 // name). The JSON names are a contract of `--json` output: keep them.
 type Package struct {
 	// Identifier is the catalogue id ("github.com/owner/repo").
-	Identifier  string `json:"identifier"`
-	Name        string `json:"name"`
+	Identifier string `json:"identifier"`
+	Name       string `json:"name"`
+	// Description is the catalogue index's: cut to 200 characters as the
+	// site lists and searches it.
 	Description string `json:"description"`
+	// FullDescription is the detail's whole description.
+	FullDescription string `json:"-"`
 	// Author is the repository owner, the same as Owner (kept for scripts).
 	Author string `json:"author"`
 	// Owner is the repository owner: the author, at https://github.com/<owner>.
@@ -58,8 +62,9 @@ type Package struct {
 	// GameVersions are the Minecraft versions any version runs on, newest
 	// first, as the catalogue works them out.
 	GameVersions []string `json:"gameVersions"`
-	// Deps is what the latest version depends on: bare id -> range
-	// (several ranges joined by " || "), the package itself left out.
+	// Deps is what the latest version depends on: bare id (as the
+	// catalogue names it) -> range (several ranges joined by " || "), the
+	// package itself left out, as the catalogue index's deps.
 	Deps map[string]string `json:"deps"`
 	// Versions are the preferred variant's versions, newest first.
 	Versions []string `json:"versions"`
@@ -175,8 +180,21 @@ type Detail struct {
 	GameVersions []string        `json:"gameVersions,omitempty"`
 	Tags         []string        `json:"tags,omitempty"`
 	Versions     []DetailVersion `json:"versions"`
+	// Latest names the version the catalogue offers (its deps describe it).
+	Latest *DetailLatest `json:"latest,omitempty"`
+	// Dependencies names every dependency as the catalogue does, by
+	// lower-case bare id.
+	Dependencies map[string]DependencyRef `json:"dependencies,omitempty"`
 	// Readmes are not cached; only a direct fetch has them.
 	Readmes []Readme `json:"readmes,omitempty"`
+	// CatalogDescription is not in the document: it is the description the
+	// catalogue index lists (mods[].description, cut to 200 characters),
+	// which FetchDetails sets and the Cache keeps. The search reads it.
+	CatalogDescription string `json:"catalogDescription,omitempty"`
+	// CatalogDeps is not in the document either: the catalogue's deps as
+	// UnmarshalJSON works them out from the document's order (see
+	// catalogDeps), kept by the Cache.
+	CatalogDeps map[string]string `json:"catalogDeps,omitempty"`
 }
 
 // DetailVersion is one version of a Detail, newest first.
@@ -396,48 +414,6 @@ func variantsOf(d *Detail, identifier, side, platform string) []Variant {
 	return out
 }
 
-// latestDeps is what the latest version depends on, keyed by bare id, the
-// package itself left out and several ranges joined by " || " (the
-// catalogue index's deps).
-func latestDeps(d *Detail) map[string]string {
-	out := map[string]string{}
-	if len(d.Versions) == 0 {
-		return out
-	}
-	ranges := map[string][]string{}
-	var order []string
-	names := make([]string, 0, len(d.Versions[0].Variants))
-	for n := range d.Versions[0].Variants {
-		names = append(names, n)
-	}
-	sort.Slice(names, func(i, j int) bool { return compareVariantNames(names[i], names[j]) < 0 })
-	for _, n := range names {
-		for _, e := range d.Versions[0].Variants[n] {
-			keys := make([]string, 0, len(e.Deps))
-			for k := range e.Deps {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				id := strings.TrimSpace(strings.SplitN(k, "#", 2)[0])
-				if id == "" || strings.EqualFold(id, d.ID) {
-					continue
-				}
-				if _, ok := ranges[id]; !ok {
-					order = append(order, id)
-				}
-				if r := strings.TrimSpace(e.Deps[k]); r != "" && !contains(ranges[id], r) {
-					ranges[id] = append(ranges[id], r)
-				}
-			}
-		}
-	}
-	for _, id := range order {
-		out[id] = strings.Join(ranges[id], " || ")
-	}
-	return out
-}
-
 func contains(list []string, s string) bool {
 	for _, x := range list {
 		if x == s {
@@ -550,7 +526,8 @@ func ParsePackageFor(d *Detail, side, platform string) (*Package, bool) {
 	p := &Package{
 		Identifier:       id,
 		Name:             name,
-		Description:      strings.TrimSpace(d.Description),
+		Description:      catalogDescription(d),
+		FullDescription:  strings.TrimSpace(d.Description),
 		Author:           owner,
 		Owner:            owner,
 		Tags:             nonNil(d.Tags),

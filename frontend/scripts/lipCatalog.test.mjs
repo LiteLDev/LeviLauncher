@@ -55,6 +55,35 @@ test("the launcher lists what has a client entry for its platform", () => {
   assert.equal(run({ side: ["client"], platform: ["win-x64"] }).matched.length, 62);
 });
 
+test("the launcher lists only what has an installable variant (as Go and LeviLaunchroid)", () => {
+  assert.equal(lip.hasLauncherVariant(detail("github.com/LiteLDev/Arke")), true);
+  assert.equal(lip.hasLauncherVariant(detail("github.com/LiteLDev/LegacyScriptEngine")), true);
+  // PLand's latest versions run on the server only, but its versions up to
+  // 0.10.0 have client entries: some version is enough (Go variantsOf).
+  assert.equal(lip.hasLauncherVariant(detail("github.com/IceBlcokMC/PLand")), true);
+  assert.equal(lip.hasLauncherVariant(detail("github.com/IceBlcokMC/PLand"), "client", "linux-x64"), false);
+  assert.equal(lip.hasLauncherVariant(detail("github.com/LiteLDev/Arke"), "client", "android-arm64"), false);
+  assert.equal(lip.hasLauncherVariant(null), false, "a detail that failed");
+  // The index's side and platform are unions: client entries only for
+  // Android and server entries only for Windows pass launcherEntries for
+  // Windows, yet no variant is installable there.
+  const split = lip.parseLipModDetail({
+    ...readJSON("github.com/LiteLDev/Arke/index.json"),
+    versions: [
+      {
+        version: "1.0.0",
+        variants: {
+          "": [{ side: "server", platform: "win-x64", deps: {} }],
+          client: [{ side: "client", platform: "android-arm64", deps: {} }],
+        },
+      },
+    ],
+  });
+  assert.ok(split);
+  assert.equal(lip.hasLauncherVariant(split), false);
+  assert.equal(lip.hasLauncherVariant(split, "client", "android-arm64"), true);
+});
+
 test("facet options", () => {
   const options = lip.facetOptions(entries);
   assert.deepEqual(plain(options.tags.slice(0, 20)), [

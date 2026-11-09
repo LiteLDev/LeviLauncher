@@ -1262,7 +1262,7 @@
     "game_version_label": "ゲームバージョン",
     "game_version_placeholder": "ゲームバージョンを選択",
     "game_all_versions": "すべてのゲームバージョン",
-    "mapping_unavailable_hint": "ゲームバージョンの互換性情報を取得できないため、誤った一致を避けるためバージョンの絞り込みを無効にしました。",
+    "mapping_unavailable_hint": "LeviLamina のバージョン情報を取得できないため、誤った一致を避けるため LeviLamina バージョンの絞り込みを無効にしました。",
     "files": {
       "game_versions_unknown": "対応するゲームバージョンがありません",
       "version_count": "{{count}} バージョン",

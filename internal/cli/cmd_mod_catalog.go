@@ -315,7 +315,7 @@ func runModShow(c *Ctx) error {
 	} else {
 		db = d
 	}
-	res := modShowResult{ID: lipShortID(pkg.Identifier), Name: pkg.Name, Description: pkg.Description, Author: pkg.Owner,
+	res := modShowResult{ID: lipShortID(pkg.Identifier), Name: pkg.Name, Description: modFirstNonEmpty(pkg.FullDescription, pkg.Description), Author: pkg.Owner,
 		Owner: pkg.Owner, OwnerURL: lipindex.OwnerURL(pkg.Owner), ProjectURL: pkg.ProjectURL, License: pkg.License,
 		LicenseFamily: pkg.LicenseFamily, Tags: pkg.Tags, Stars: pkg.Stars, Updated: pkg.Updated,
 		Variant: variant.Key, Variants: []string{}, Latest: lipindex.PickTargetVersion(variant.Versions), Versions: []modVersionInfo{}}

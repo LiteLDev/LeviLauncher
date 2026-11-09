@@ -3,6 +3,7 @@ import { compareVersions } from "./version";
 import { GetUserGamertagMap } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import {
   compareVariantNames,
+  hasLauncherVariant,
   LAUNCHER_PLATFORM,
   LAUNCHER_SIDE,
   launcherEntries,
@@ -622,7 +623,11 @@ const buildLIPIndexResult = (
     const parsed = buildLIPPackageDetail(entry, detail);
     detailsByIdentifier[entry.id] = parsed;
     const { files: _files, variantDetails: _variants, detail: _detail, ...basic } = parsed;
-    packages.push(basic);
+    // Listed only with a variant the launcher can install (as Go and
+    // LeviLaunchroid do): the index's side and platform are unions, so an
+    // entry can pass launcherEntries with none, and one whose detail failed
+    // cannot be installed either. Its detail stays available for lookups.
+    if (hasLauncherVariant(detail)) packages.push(basic);
     const aliases = extractSelfVariantAliasesFromPackage(detail);
     if (aliases.length > 0) {
       relations.push({ identifier: entry.id, packageName: parsed.name || entry.id, aliases });
@@ -645,6 +650,7 @@ const fetchLIPIndexResult = async (options?: {
   signal?: AbortSignal;
 }): Promise<ParsedLIPIndexResult> => {
   const forceRefresh = options?.forceRefresh === true;
+  const previous = cachedLIPIndexResult;
 
   if (!forceRefresh && cachedLIPIndexResult) {
     return cachedLIPIndexResult;
@@ -682,6 +688,12 @@ const fetchLIPIndexResult = async (options?: {
       );
       if (entries.length > 0 && Object.keys(details).length === 0) {
         throw new Error("Failed to fetch lip package details");
+      }
+      // A detail that failed this time is reused from the previous load (as
+      // Go's FetchDetails does); without one the mod is not listed.
+      for (const entry of entries) {
+        const old = previous?.detailsByIdentifier[entry.id]?.detail;
+        if (!details[entry.id] && old) details[entry.id] = old;
       }
       cachedLIPIndexResult = buildLIPIndexResult(entries, details);
       return cachedLIPIndexResult;

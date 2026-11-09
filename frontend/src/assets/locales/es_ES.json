@@ -1262,7 +1262,7 @@
     "game_version_label": "Versión del juego",
     "game_version_placeholder": "Seleccionar versión del juego",
     "game_all_versions": "Todas las versiones del juego",
-    "mapping_unavailable_hint": "No hay información de compatibilidad con las versiones del juego, así que los filtros por versión se han desactivado para evitar coincidencias erróneas.",
+    "mapping_unavailable_hint": "No hay información sobre las versiones de LeviLamina, así que el filtro por versión de LeviLamina se ha desactivado para evitar coincidencias erróneas.",
     "files": {
       "game_versions_unknown": "No hay versión del juego compatible",
       "version_count": "{{count}} versiones",

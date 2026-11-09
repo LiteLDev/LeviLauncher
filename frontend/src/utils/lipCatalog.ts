@@ -389,6 +389,23 @@ export function launcherEntries(entries: readonly LipCatalogEntry[], side: LipSi
   return entries.filter((e) => e.side.includes(side) && e.platform.some((x) => x.toLowerCase() === p));
 }
 
+/**
+ * Whether a detail has a variant the launcher can install: one with an entry
+ * for the side and platform in some version. The index's `side` and
+ * `platform` are unions over the latest version's entries, so a mod with
+ * client entries only for Android and server entries only for Windows passes
+ * {@link launcherEntries} for Windows without being installable there; Go
+ * (lipindex ParsePackageFor) and LeviLaunchroid (LipIndex.parsePackage) leave
+ * such a mod out, as they do one whose detail did not load.
+ */
+export function hasLauncherVariant(
+  detail: Pick<LipModDetail, "versions"> | null | undefined,
+  side: LipSide = LAUNCHER_SIDE,
+  platform: string = LAUNCHER_PLATFORM,
+): boolean {
+  return !!detail && detail.versions.some((v) => qualifyingVariants(v.variants, side, platform).length > 0);
+}
+
 // ------------------------------------------------------------------ platforms, game versions
 
 /** The platforms launchers force (and the site lists first, in this order). */

@@ -251,7 +251,7 @@ func latestDeps(d *Detail) map[string]string {
 // descriptions to (the site's DESCRIPTION_MAX).
 const descriptionMax = 200
 
-func isJSSpace(r rune) bool { return unicode.IsSpace(r) || r == '﻿' }
+func isJSSpace(r rune) bool { return unicode.IsSpace(r) || r == '\uFEFF' }
 
 // truncateDescription is the site's truncate: the trimmed text, cut to 199
 // code points, trimmed at the end and followed by "…" when it is longer

@@ -88,7 +88,7 @@ func (ws *fakeLipWorkspace) expect(t *testing.T, calls []string, args [][]string
 }
 
 // useFakeCatalogue makes the catalogue answer with detail documents
-// (levimc.org/mods/<id>/index.json) by package id; others are not found.
+// (levimc.org/api/v4/mods/<id>/index.json) by package id; others are not found.
 func useFakeCatalogue(t *testing.T, docs map[string]string) {
 	t.Helper()
 	lipFetchDetail = func(ctx context.Context, packageID string) (*lipindex.Detail, error) {

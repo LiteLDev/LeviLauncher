@@ -27,8 +27,10 @@ var (
 	ErrPackageNotFound = errors.New("ERR_LIP_PACKAGE_NOT_FOUND")
 )
 
-// DefaultBaseURL is the catalogue of LeviLamina mods.
-const DefaultBaseURL = "https://levimc.org/mods/"
+// DefaultBaseURL is the JSON of the catalogue of LeviLamina mods: version 4
+// (lip v0.40's keys). levimc.org/mods/ keeps the JSON from before version 4
+// for older launchers.
+const DefaultBaseURL = "https://levimc.org/api/v4/mods/"
 
 const (
 	defaultWorkers = 8

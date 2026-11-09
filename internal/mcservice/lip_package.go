@@ -39,7 +39,7 @@ var (
 	lipUpdatePackages    = lip.UpdatePackages
 	lipUninstallPackages = lip.UninstallPackages
 	lipResolveTargetDir  = resolveLIPTargetDir
-	// lipFetchDetail fetches a package's catalogue detail (levimc.org/mods).
+	// lipFetchDetail fetches a package's catalogue detail (levimc.org/api/v4/mods).
 	lipFetchDetail = func(ctx context.Context, packageID string) (*lipindex.Detail, error) {
 		return lipindex.NewClient().FetchDetail(ctx, packageID)
 	}

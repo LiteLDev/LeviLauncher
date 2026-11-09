@@ -117,7 +117,9 @@ export function resolvePlayerDisplayName(
 
 // ------------------------------------------------------------------ lip catalogue
 //
-// The catalogue is levimc.org/mods: its index (`index.json`) lists every mod
+// The catalogue is levimc.org/mods, read from its JSON at
+// levimc.org/api/v4/mods/ (lip v0.40's keys; /mods/ itself keeps the JSON from
+// before version 4 for older launchers): its index (`index.json`) lists every mod
 // with what the filters need, and each mod's detail (`<id>/index.json`) its
 // versions, each with variants of entries {side, platform, deps}. The
 // launcher installs for the client on its platform (lipCatalog.ts
@@ -125,7 +127,7 @@ export function resolvePlayerDisplayName(
 // has such an entry, and offers the variants that have one (rule A2 picks
 // the default). The pure logic lives in lipCatalog.ts.
 
-const LIP_MODS_BASE_URL = "https://levimc.org/mods/";
+const LIP_MODS_BASE_URL = "https://levimc.org/api/v4/mods/";
 const LIP_INDEX_URL = `${LIP_MODS_BASE_URL}index.json`;
 const LIP_DETAIL_FETCH_CONCURRENCY = 8;
 
@@ -543,7 +545,7 @@ const buildLIPPackageDetail = (
   };
 };
 
-/** The detail document of a catalogue id (`levimc.org/mods/<id>/index.json`). */
+/** The detail document of a catalogue id (`levimc.org/api/v4/mods/<id>/index.json`). */
 const buildLIPModDetailUrl = (identifier: string): string => {
   const path = String(identifier || "")
     .trim()

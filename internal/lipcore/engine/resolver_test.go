@@ -23,8 +23,8 @@ const (
 )
 
 var (
-	serverEnv = environment{Platform: "server", Runtime: "win-x64"}
-	clientEnv = environment{Platform: "client", Runtime: "win-x64"}
+	serverEnv = environment{Side: "server", Platform: "win-x64"}
+	clientEnv = environment{Side: "client", Platform: "win-x64"}
 )
 
 func rLipJSON(id, version, variants string) string {
@@ -35,11 +35,11 @@ func simple4(id, version, members string) string {
 	return rLipJSON(id, version, `"": [ `+rEntry("server", "win-x64", members)+` ]`)
 }
 
-func rEntry(platform, runtime, members string) string {
+func rEntry(side, platform, members string) string {
 	if members != "" {
 		members = ", " + members
 	}
-	return fmt.Sprintf(`{ "platform": %q, "runtime": %q%s }`, platform, runtime, members)
+	return fmt.Sprintf(`{ "side": %q, "platform": %q%s }`, side, platform, members)
 }
 
 func marker(name string) string {
@@ -240,7 +240,7 @@ func (f *resolverFixture) resolver(env environment) *resolver {
 
 func newFixture() *resolverFixture { return &resolverFixture{a: newFakeArchives()} }
 
-func TestResolveURLSelectsEntryOfExactPlatformAndRuntime(t *testing.T) {
+func TestResolveURLSelectsEntryOfExactSideAndPlatform(t *testing.T) {
 	f := newFixture()
 	f.a.addURL(rURL, strp(rLipJSON("example.com/pkg", "1.0.0", `"": [ `+
 		rEntry("server", "linux-x64", marker("linux"))+`, `+rEntry("client", "win-x64", marker("client"))+`, `+
@@ -255,14 +255,15 @@ func TestResolveURLSelectsEntryOfExactPlatformAndRuntime(t *testing.T) {
 	}
 }
 
-func TestResolveNoEntryForRuntimeNoCandidate(t *testing.T) {
+func TestResolveNoEntryForPlatformNoCandidate(t *testing.T) {
 	f := newFixture()
 	f.a.addURL(rURL, strp(simple4("example.com/pkg", "1.0.0", "")))
 	res := resolveAll(t, f.resolver(environment{"server", "linux-x64"}), rURL, nil)
 	if len(res.candidates) != 0 || len(res.diagnostics) != 1 ||
-		res.diagnostics[0] != rURL+": its lip.toml has no entry of the default variant for the platform server and the"+
-			" runtime linux-x64; it has entries for (server, win-x64); it does not support the runtime linux-x64 (if"+
-			" the server runs another runtime and the workspace has no packages yet, pass it with --rid)" {
+		res.diagnostics[0] != rURL+": its lip.toml has no entry of the default variant for the side server and the"+
+			" platform linux-x64; it has entries for (server, win-x64); it does not support the platform linux-x64"+
+			" (if the server runs on another platform and the workspace has no packages yet, pass it with"+
+			" --platform)" {
 		t.Fatalf("%q", res.diagnostics)
 	}
 }
@@ -508,7 +509,7 @@ func TestResolveFormat3DerivesEntryForEnvironment(t *testing.T) {
 	if len(res.candidates) != 1 || markerOf(t, res.candidates[0]) != "default" {
 		t.Fatalf("%+v", res)
 	}
-	// On the client platform too, the label "" is the variant "" (lip 26d8295).
+	// On the client side too, the label "" is the variant "" (lip 26d8295).
 	res = resolveAll(t, f.resolver(clientEnv), rURL, nil)
 	if len(res.candidates) != 1 || markerOf(t, res.candidates[0]) != "default" {
 		t.Fatalf("%+v", res)
@@ -538,7 +539,7 @@ func TestResolveClientVariantIsItsOwnVariant(t *testing.T) {
 		res := resolveAll(t, f.resolver(env), "https://example.com/t.zip#client", nil)
 		if len(res.candidates) != 1 || markerOf(t, res.candidates[0]) != "client" ||
 			res.candidates[0].Identity() != rSpec+"#client" {
-			t.Fatalf("%s: %+v", env.Platform, res)
+			t.Fatalf("%s: %+v", env.Side, res)
 		}
 	}
 }

@@ -15,8 +15,11 @@ func init() {
 		Args:    "<package[@version]>...",
 		Description: `Installs mods from the LeviLamina mod catalogue into an instance (GDK only).
 <package> is owner/repo, github.com/owner/repo or a URL, optionally with
-#variant (a client variant) and @version. Without a version, the newest one
-that runs on the instance's game version is installed.
+#variant and @version. Without a variant, the one made for the client is
+installed: "client", else the default variant, else the first by name that
+has a build for the client on this platform ("owner/repo#" names the default
+variant). Without a version, the newest one that runs on the instance's game
+version is installed.
 
 When the mod needs LeviLamina and the installed one does not fit (or none is
 installed), a compatible LeviLamina is installed first: the newest stable
@@ -137,7 +140,7 @@ func runModInstall(c *Ctx) error {
 			continue
 		}
 		item = lipShortID(pkg.Identifier)
-		variant, err := modPickVariant(pkg, ref.Variant)
+		variant, err := modPickVariant(pkg, ref.Variant, ref.HasVariant)
 		if err != nil {
 			b.fail(item, err)
 			continue
@@ -238,8 +241,15 @@ func runInstallStep(c *Ctx, inst Instance, s modInstallStep) (modBatchResult, st
 		prog.Done()
 		c.Notice("Installed LeviLamina %s", p.LoaderVersion)
 	}
+	// An installed package is changed in place, whatever its variant, when
+	// the reference names none; otherwise the variant chosen is installed
+	// ("<id>#<variant>", "<id>#" for the default variant).
+	target := s.variant.PackageIdentifier
+	if !s.ref.HasVariant && p.Action != lipindex.ActionInstall {
+		target = s.pkg.Identifier
+	}
 	prog.Phase("Installing %s %s", id, p.Version)
-	r := modOps.installPackage(c.Context(), inst, s.variant.PackageIdentifier, p.Version)
+	r := modOps.installPackage(c.Context(), inst, target, p.Version)
 	prog.Done()
 	if r != "" {
 		if err := c.Context().Err(); err != nil {

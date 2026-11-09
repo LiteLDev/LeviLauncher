@@ -24,6 +24,14 @@ import (
 // the inputs of migrate/testdata/golden/cases.jsonl; each for (server,
 // win-x64), (client, win-x64), (client, win-arm64), (server, linux-x64), and
 // (client, win-x64) with a tag version.
+//
+// For lip v0.40, which renamed the keys "platform" and "runtime" of an entry
+// to "side" and "platform", the file was rewritten, not derived again: the
+// keys of results[] and the keys of the entries in results[].toml were
+// renamed by a one-off script (rewrite_golden.py: "runtime =" to a
+// placeholder, "platform =" to "side =", the placeholder to "platform =",
+// line-anchored, and written with gzip mtime 0); the tooth inputs are
+// unchanged.
 
 // knownKindDivergence are inputs where lip fails with an exception other than
 // PackageFormatException and this port with a *FormatError: a placement whose
@@ -49,8 +57,8 @@ func TestDeriveGolden(t *testing.T) {
 			Name    string `json:"name"`
 			Tooth   string `json:"tooth"`
 			Results []struct {
+				Side     string  `json:"side"`
 				Platform string  `json:"platform"`
-				Runtime  string  `json:"runtime"`
 				Tag      *string `json:"tag"`
 				TOML     *string `json:"toml"`
 				Err      string  `json:"err"`
@@ -67,8 +75,8 @@ func TestDeriveGolden(t *testing.T) {
 				v := semver.MustParse(*r.Tag)
 				tag = &v
 			}
-			got, err := Derive([]byte(row.Tooth), r.Platform, r.Runtime, tag)
-			where := row.Name + " " + r.Platform + " " + r.Runtime
+			got, err := Derive([]byte(row.Tooth), r.Side, r.Platform, tag)
+			where := row.Name + " " + r.Side + " " + r.Platform
 			if r.TOML != nil {
 				if err != nil {
 					t.Errorf("%s: %v; lip derives\n%s", where, err, *r.TOML)

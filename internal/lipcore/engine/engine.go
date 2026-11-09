@@ -38,12 +38,13 @@ type Options struct {
 	// HTTPClient carries git requests and downloads; nil is the default
 	// client with httpclient.CheckRedirect.
 	HTTPClient *http.Client
-	// Platform is the platform of the workspace; "" is "client", the
-	// platform of LeviLauncher's workspaces.
+	// Side is the side of the workspace; "" is "client", the side of
+	// LeviLauncher's workspaces.
+	Side string
+	// Platform overrides the platform (a .NET runtime identifier) of the
+	// environment (lip's --platform); "" is the platform the state file
+	// records, else CurrentPlatform().
 	Platform string
-	// Runtime overrides the runtime of the environment (lip's --rid); ""
-	// is the runtime the state file records, else CurrentRID().
-	Runtime string
 }
 
 // InstalledPackage is a package of the state file.
@@ -67,13 +68,13 @@ type Engine struct {
 	// Dir is the absolute workspace root.
 	Dir string
 
-	opts     Options
-	platform string
-	rep      report.Reporter
-	client   *http.Client
-	cache    *fetch.HTTPCache
-	git      gitRemote
-	inst     *install.Installer
+	opts   Options
+	side   string
+	rep    report.Reporter
+	client *http.Client
+	cache  *fetch.HTTPCache
+	git    gitRemote
+	inst   *install.Installer
 	// newID returns the id of a new progress bar.
 	newID func() string
 }
@@ -86,19 +87,19 @@ func New(dir string, opts Options, r report.Reporter) *Engine {
 	}
 	rep := report.OrNop(r)
 	client := httpclient.WithLipRedirects(opts.HTTPClient)
-	platform := opts.Platform
-	if platform == "" {
-		platform = pkgmodel.PlatformClient
+	side := opts.Side
+	if side == "" {
+		side = pkgmodel.SideClient
 	}
 	e := &Engine{
-		Dir:      abs,
-		opts:     opts,
-		platform: platform,
-		rep:      rep,
-		client:   client,
-		cache:    fetch.DefaultHTTPCache(rep),
-		inst:     &install.Installer{Reporter: rep},
-		newID:    newGUID,
+		Dir:    abs,
+		opts:   opts,
+		side:   side,
+		rep:    rep,
+		client: client,
+		cache:  fetch.DefaultHTTPCache(rep),
+		inst:   &install.Installer{Reporter: rep},
+		newID:  newGUID,
 	}
 	e.git = &remoteGit{
 		client: &gitproto.RemoteClient{HTTP: client, GithubProxy: opts.GithubProxy, TempDir: lipdirs.CacheDir()},
@@ -114,9 +115,10 @@ func (e *Engine) HTTPClient() *http.Client { return e.client }
 // Close releases the engine. It must not be used afterwards.
 func (e *Engine) Close() error { return nil }
 
-// CurrentRID returns the .NET runtime identifier of this process
-// (RuntimeInformation.RuntimeIdentifier), e.g. "win-x64", "linux-arm64".
-func CurrentRID() string {
+// CurrentPlatform returns the platform of this process, its .NET runtime
+// identifier (RuntimeInformation.RuntimeIdentifier), e.g. "win-x64",
+// "linux-arm64".
+func CurrentPlatform() string {
 	goos := runtime.GOOS
 	switch goos {
 	case "windows":
@@ -534,8 +536,8 @@ func (e *Engine) Packages(ctx context.Context) ([]InstalledPackage, error) {
 		return nil, err
 	}
 	if !exists {
-		// DetermineEnvironment(null, null): list takes no runtime override.
-		env := environment{Platform: e.platform, Runtime: CurrentRID()}
+		// DetermineEnvironment(null, null): list takes no platform override.
+		env := environment{Side: e.side, Platform: CurrentPlatform()}
 		if lf, err = e.readToothLock(ctx, e.Dir, env, nil, false); err != nil {
 			return nil, err
 		}
@@ -604,7 +606,7 @@ func (e *Engine) openWorkspace(ctx context.Context) (*workspace, error) {
 	// operation.
 	lf := recorded
 	if lf == nil {
-		lf = &pkgmodel.LockFile{Format: pkgmodel.Format, Platform: env.Platform, Runtime: env.Runtime}
+		lf = &pkgmodel.LockFile{Format: pkgmodel.Format, Side: env.Side, Platform: env.Platform}
 	}
 	res := newResolver(ctx, p, env, e.warning)
 	for i := range lf.Packages {
@@ -671,7 +673,7 @@ func (e *Engine) readToothLock(ctx context.Context, root string, env environment
 			return commit, nil
 		}
 	}
-	return compat.DeriveWorkspace(tl, root, env.Platform, env.Runtime, commitOf)
+	return compat.DeriveWorkspace(tl, root, env.Side, env.Platform, commitOf)
 }
 
 // beginOperation is BeginOperation: takes the workspace lock, then finishes
@@ -752,31 +754,31 @@ func (e *Engine) recoverInterrupted(root string, op operation) error {
 }
 
 // determineEnvironment is DetermineEnvironment (protocol/cli.md §4): the
-// platform of the engine, which a state file must record when it has
-// one; the runtime is the override, then the state file's, then the RID
-// the engine runs on.
+// side of the engine, which a state file must record when it has one; the
+// platform is the override, then the state file's, then the RID the engine
+// runs on.
 func (e *Engine) determineEnvironment(lf *pkgmodel.LockFile) (environment, error) {
-	if lf != nil && lf.Platform != e.platform {
+	if lf != nil && lf.Side != e.side {
 		var msg string
-		if e.platform == pkgmodel.PlatformServer {
-			msg = fmt.Sprintf("The state file %s records the platform \"%s\" in its \"platform\" field,"+
+		if e.side == pkgmodel.SideServer {
+			msg = fmt.Sprintf("The state file %s records the side \"%s\" in its \"side\" field,"+
 				" but lip manages server workspaces only (\"%s\"). Client workspaces are managed by"+
-				" launchers such as LeviLauncher.", pkgmodel.WorkspaceFile, lf.Platform, e.platform)
+				" launchers such as LeviLauncher.", pkgmodel.WorkspaceFile, lf.Side, e.side)
 		} else {
-			msg = fmt.Sprintf("The state file %s records the platform \"%s\" in its \"platform\" field,"+
+			msg = fmt.Sprintf("The state file %s records the side \"%s\" in its \"side\" field,"+
 				" but LeviLauncher manages %s workspaces only (\"%s\"). Server workspaces are managed"+
-				" by lip.", pkgmodel.WorkspaceFile, lf.Platform, e.platform, e.platform)
+				" by lip.", pkgmodel.WorkspaceFile, lf.Side, e.side, e.side)
 		}
 		return environment{}, &Error{Msg: msg}
 	}
-	runtime := e.opts.Runtime
-	if runtime == "" && lf != nil {
-		runtime = lf.Runtime
+	platform := e.opts.Platform
+	if platform == "" && lf != nil {
+		platform = lf.Platform
 	}
-	if runtime == "" {
-		runtime = CurrentRID()
+	if platform == "" {
+		platform = CurrentPlatform()
 	}
-	return environment{Platform: e.platform, Runtime: runtime}, nil
+	return environment{Side: e.side, Platform: platform}, nil
 }
 
 // parseRequests parses package arguments; local paths are relative to the
@@ -845,7 +847,7 @@ func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (
 
 	const shown = 10
 	summary := fmt.Sprintf("No package found for '%s' that can be installed in this workspace (%s, %s).",
-		r.arg, ws.env.Platform, ws.env.Runtime)
+		r.arg, ws.env.Side, ws.env.Platform)
 	message := summary
 	if len(diagnostics) > 0 {
 		message += " Every place lip looked failed:"
@@ -1496,8 +1498,8 @@ func lockWith(ws *workspace, packages []pkgmodel.LockedPackage) *pkgmodel.LockFi
 	}
 	return &pkgmodel.LockFile{
 		Format:   ws.lock.Format,
+		Side:     ws.env.Side,
 		Platform: ws.env.Platform,
-		Runtime:  ws.env.Runtime,
 		Packages: packages,
 	}
 }
@@ -1563,15 +1565,15 @@ func (e *Engine) pinnedCandidate(ctx context.Context, ws *workspace, p *pkgmodel
 	var lfe *pkgfile.LockFormatError
 	extra := " If the file was edited by hand, undo the edit."
 	switch {
-	case errors.As(err, &ie) && err == error(ie) && ws.env.Runtime != ws.lock.Runtime:
-		extra = fmt.Sprintf(" The workspace was installed for the runtime %s; run lip without --rid, or"+
-			" with that runtime.", ws.lock.Runtime)
+	case errors.As(err, &ie) && err == error(ie) && ws.env.Platform != ws.lock.Platform:
+		extra = fmt.Sprintf(" The workspace was installed for the platform %s; run lip without"+
+			" --platform, or with that platform.", ws.lock.Platform)
 	case errors.As(err, &lfe) && err == error(lfe):
 		extra = ""
 	}
 	return nil, &Error{Msg: fmt.Sprintf("Cannot use the installed package '%s' as the state file %s"+
 		" records it, in the environment (%s, %s).%s", install.LockedIdentity(p), pkgmodel.WorkspaceFile,
-		ws.env.Platform, ws.env.Runtime, extra), Err: err}
+		ws.env.Side, ws.env.Platform, extra), Err: err}
 }
 
 // lockedEntry is McmodInstaller.LockedEntry: the entry of the variant of an
@@ -1588,12 +1590,12 @@ func lockedEntry(p *pkgmodel.LockedPackage, env environment) (*pkgmodel.Entry, e
 	if p.Variant != "" {
 		variant = fmt.Sprintf("the variant \"%s\"", p.Variant)
 	}
-	entry := doc.SelectEntry(p.Variant, env.Platform, env.Runtime)
+	entry := doc.SelectEntry(p.Variant, env.Side, env.Platform)
 	if entry == nil {
 		return nil, &install.Error{Msg: fmt.Sprintf("The package file that the state file (%s) records"+
-			" for %s %s has no entry of %s for the platform %s and the runtime %s. If you passed --rid,"+
-			" pass the runtime the workspace was installed for instead.",
-			pkgmodel.WorkspaceFile, identity, version, variant, env.Platform, env.Runtime)}
+			" for %s %s has no entry of %s for the side %s and the platform %s. If you passed"+
+			" --platform, pass the platform the workspace was installed for instead.",
+			pkgmodel.WorkspaceFile, identity, version, variant, env.Side, env.Platform)}
 	}
 	return entry, nil
 }

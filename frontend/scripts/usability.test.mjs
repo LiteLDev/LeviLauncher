@@ -27,6 +27,7 @@ function setup(listDir) {
   const content = loadUtility("../src/utils/content.ts", {
     "./fs": filesystem,
     "./version": {},
+    "./lipCatalog": {},
     "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice": {},
   });
   return { ...filesystem, ...content };

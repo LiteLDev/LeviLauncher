@@ -132,7 +132,7 @@ func TestOperationAfterInterruptedOperationUndoesItFirst(t *testing.T) {
 	h.must(killed.WriteFile("mods/Base/Base.dll", strings.NewReader("half")))
 	h.must(killed.WriteFile("mods/New/a/b.txt", strings.NewReader("")))
 	h.must(killed.DeleteFile("mods/Base/manifest.json"))
-	h.must(pkgfile.StageWorkspace(h.root, &pkgmodel.LockFile{Format: 4, Platform: "server", Runtime: "win-x64"}))
+	h.must(pkgfile.StageWorkspace(h.root, &pkgmodel.LockFile{Format: 4, Side: "server", Platform: "win-x64"}))
 	killed.Close()
 	f, err := os.OpenFile(filepath.Join(h.root, ".lip", "journal"), os.O_APPEND|os.O_WRONLY, 0)
 	if err != nil {

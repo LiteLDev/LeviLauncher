@@ -1255,8 +1255,6 @@
     "search_placeholder": "Szukaj modów…",
     "sort_by": "Sortuj według",
     "select_sort": "Wybierz sortowanie",
-    "order_by": "Kolejność",
-    "select_order": "Wybierz kolejność",
     "no_description": "Brak dostępnego opisu",
     "ll_version_label": "Wersja LeviLamina",
     "ll_version_placeholder": "Wybierz wersję LeviLamina",
@@ -1283,7 +1281,6 @@
       "variant_label": "Wariant",
       "variant_hint_keep_default": "Większość pakietów ma tylko jeden wariant. Zostaw wartość domyślną, chyba że autor zaleca inaczej.",
       "variant_placeholder": "Wybierz wariant",
-      "variant_default": "domyślny",
       "select_version_incompatible_hint": "Wersja {{version}} nie jest zgodna z wersją gry {{gameVersion}}.",
       "checking_ll_state": "Sprawdzanie stanu LeviLamina…",
       "mapping_unavailable_blocked_hint": "Informacje o zgodności LeviLamina z tą wersją gry są niedostępne, więc instalacja została zablokowana, aby uniknąć zainstalowania niewłaściwego pakietu.",
@@ -1298,27 +1295,70 @@
       "downgrade_success": "Przywrócenie starszej wersji zakończone powodzeniem",
       "reinstall_success": "Ponowna instalacja zakończona powodzeniem",
       "current_installed_version_label": "Obecnie zainstalowana wersja",
-      "checking_current_installed_version": "Sprawdzanie obecnie zainstalowanej wersji…"
+      "checking_current_installed_version": "Sprawdzanie obecnie zainstalowanej wersji…",
+      "prerelease": "Wersja przedpremierowa",
+      "no_client_variant": "Ten mod nie ma wariantu dla klienta na {{platform}}, więc LeviLauncher nie może go zainstalować."
     },
     "guide": {
       "open_button": "Przewodnik dewelopera",
       "title": "Przewodnik dewelopera LeviMC Mods",
-      "description": "Jeśli chcesz, aby Twój mod pojawił się na stronie LeviMC Mods w LeviLauncher, opublikuj go zgodnie ze specyfikacją package_manifest LIP.",
-      "manifest_hint": "To okno to tylko szybki przegląd dla deweloperów. Nazwy pól, wymagane wpisy, przykłady i reguły walidacji są zdefiniowane w oficjalnej dokumentacji.",
-      "variant_hint": "Wariant jest indeksowany przez launcher tylko wtedy, gdy jego etykieta zawiera człon client. Domyślnie użyj \"label\": \"client\"; dla podrozszerzeń użyj \"label\": \"client_xxxx\" lub \"label\": \"client\\xxxx\".",
+      "description": "Jeśli chcesz, aby Twój mod pojawił się na stronie LeviMC Mods w LeviLauncher, opublikuj go z plikiem lip.toml zgodnie z dokumentacją lip.",
+      "manifest_hint": "LeviLauncher wyświetla mod, gdy lip.toml jego najnowszej wersji ma wpis z side = \"client\" i platform = \"win-x64\", i instaluje wybrany dla nich wariant: najpierw \"client\", potem domyślny wariant \"\", a następnie pozostałe według nazwy.",
+      "variant_hint": "Dodaj wpis dla każdej obsługiwanej strony i platformy, np. wpis [[variants.\"\"]] z side = \"client\" i platform = \"win-x64\" obok wpisu serwera. Z zalecanymi tagami, takimi jak \"library\" lub \"economy\", w [info] tags mod pojawi się w tych filtrach.",
       "docs_button": "Zobacz pełną specyfikację",
       "close_button": "Zamknij"
     },
     "title": "LeviMC Mods",
     "sort_options": {
-      "hotness": "Popularność",
+      "relevance": "Trafność",
+      "stars": "Gwiazdki",
       "updated": "Aktualizacja",
-      "name": "Nazwa"
+      "newest": "Najnowsze"
     },
-    "order_options": {
-      "desc": "Malejąco",
-      "asc": "Rosnąco"
+    "filters": {
+      "title": "Filtry",
+      "title_count": "Filtry ({{count}})",
+      "clear": "Wyczyść wszystkie filtry",
+      "active": "Aktywne filtry",
+      "tags": "Tagi",
+      "other_tags": "Inne tagi",
+      "license": "Licencja",
+      "dependencies": "Zależności",
+      "exclude": "Wyklucz {{label}}",
+      "not_label": "nie {{label}}",
+      "remove": "Usuń filtr: {{label}}",
+      "show_more": "Pokaż {{count}} więcej",
+      "show_fewer": "Pokaż mniej",
+      "search_tags": "Szukaj tagów…",
+      "license_ids": "Licencje: {{family}}",
+      "depends_on": "Wymaga {{name}}",
+      "more_by_owner": "Więcej od {{owner}}",
+      "more_tags": "{{count}} więcej"
     },
+    "tags": {
+      "library": "Biblioteka / API",
+      "utility": "Narzędzia",
+      "management": "Zarządzanie serwerem",
+      "game-mechanics": "Mechaniki gry",
+      "adventure": "Zawartość i przygoda",
+      "visual": "Grafika i HUD",
+      "economy": "Ekonomia",
+      "teleport": "Teleportacja",
+      "anticheat": "Antycheat",
+      "optimization": "Optymalizacja",
+      "bugfix": "Poprawki błędów",
+      "technology": "Technika i redstone",
+      "protocol": "Protokół i wiele wersji"
+    },
+    "license": {
+      "permissive": "Liberalna",
+      "weak-copyleft": "Słaby copyleft",
+      "copyleft": "Copyleft",
+      "other": "Inna",
+      "none": "Brak licencji"
+    },
+    "variant_default": "Domyślny",
+    "mod_id": "ID moda",
     "by_author_inline": "Autor: {{author}}",
     "package_details_aria_label": "Szczegóły pakietu",
     "task_console": {

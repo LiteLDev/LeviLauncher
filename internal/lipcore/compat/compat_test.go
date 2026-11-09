@@ -46,9 +46,9 @@ func v3(variants string, extra ...string) string {
 	return s + `, "variants": ` + variants + `}`
 }
 
-func derive(t *testing.T, tooth, platform, runtime string) *pkgmodel.Document {
+func derive(t *testing.T, tooth, side, platform string) *pkgmodel.Document {
 	t.Helper()
-	d, err := Derive([]byte(tooth), platform, runtime, nil)
+	d, err := Derive([]byte(tooth), side, platform, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestDerivePlatformPatternMergesMatchingVariantsOfEachLabel(t *testing.T) {
 	}
 	eq(t, "variants", variantNames(d), []string{"", "client"})
 	e := single(t, d, "")
-	if e.Platform != "server" || e.Runtime != "win-x64" {
+	if e.Side != "server" || e.Platform != "win-x64" {
 		t.Errorf("entry = %+v", e)
 	}
 	eq(t, "deps", depKeys(e), []string{"github.com/user/common", "github.com/user/windows#client"})
@@ -123,15 +123,15 @@ func TestDerivePlatformPatternMergesMatchingVariantsOfEachLabel(t *testing.T) {
 }
 
 func TestDeriveOtherRuntimeMatchingPatternUsesThatRuntime(t *testing.T) {
-	for _, runtime := range []string{"win-arm64", "win-x86"} {
-		d := derive(t, multiPlatformV3, "server", runtime)
+	for _, rid := range []string{"win-arm64", "win-x86"} {
+		d := derive(t, multiPlatformV3, "server", rid)
 		eq(t, "variants", variantNames(d), []string{""})
 		e := single(t, d, "")
-		if e.Runtime != runtime {
-			t.Errorf("runtime = %s", e.Runtime)
+		if e.Platform != rid {
+			t.Errorf("platform = %s", e.Platform)
 		}
 		eq(t, "deps", depKeys(e), []string{"github.com/user/common", "github.com/user/windows#client"})
-		if d.SelectEntry("", "server", runtime) != e || d.SelectEntry("", "server", "win-x64") != nil {
+		if d.SelectEntry("", "server", rid) != e || d.SelectEntry("", "server", "win-x64") != nil {
 			t.Error("SelectEntry")
 		}
 	}
@@ -164,18 +164,18 @@ func TestDeriveNoVariantMatchesRuntimeHasNoVariants(t *testing.T) {
 	}
 }
 
-func TestDeriveClientPlatformKeepsVariantEmptyAndClientLabel(t *testing.T) {
+func TestDeriveClientSideKeepsVariantEmptyAndClientLabel(t *testing.T) {
 	// The label "client" no longer stands for the variant "" on the client
-	// (lip 26d8295): each label is its own variant, for the client platform.
+	// (lip 26d8295): each label is its own variant, for the client side.
 	d := derive(t, multiPlatformV3, "client", "win-x64")
 	eq(t, "variants", variantNames(d), []string{"", "client"})
 	e := single(t, d, "")
-	if e.Platform != "client" || e.Runtime != "win-x64" {
+	if e.Side != "client" || e.Platform != "win-x64" {
 		t.Errorf("entry = %+v", e)
 	}
 	eq(t, "deps", depKeys(e), []string{"github.com/user/common", "github.com/user/windows#client"})
 	c := single(t, d, "client")
-	if c.Platform != "client" {
+	if c.Side != "client" {
 		t.Errorf("client entry = %+v", c)
 	}
 	eq(t, "client deps", depKeys(c), []string{"github.com/user/clientdep"})
@@ -184,23 +184,23 @@ func TestDeriveClientPlatformKeepsVariantEmptyAndClientLabel(t *testing.T) {
 	}
 }
 
-func TestDeriveClientPlatformWithoutClientLabelKeepsVariantEmpty(t *testing.T) {
+func TestDeriveClientSideWithoutClientLabelKeepsVariantEmpty(t *testing.T) {
 	d := derive(t, v3(`[ { "label": "", "platform": "win-x64",
 	  "dependencies": { "github.com/user/a": "1.0.0" } } ]`), "client", "win-x64")
 	e := single(t, d, "")
-	if e.Platform != "client" {
-		t.Errorf("platform = %s", e.Platform)
+	if e.Side != "client" {
+		t.Errorf("side = %s", e.Side)
 	}
 	eq(t, "deps", depKeys(e), []string{"github.com/user/a"})
 }
 
-func TestDeriveServerPlatformKeepsVariantEmptyAndClientLabel(t *testing.T) {
+func TestDeriveServerSideKeepsVariantEmptyAndClientLabel(t *testing.T) {
 	d := derive(t, multiPlatformV3, "server", "win-x64")
 	if slices.Equal(depKeys(single(t, d, "")), depKeys(single(t, d, "client"))) {
 		t.Error("the variant \"\" is the client label on the server")
 	}
-	if single(t, d, "client").Platform != "server" {
-		t.Error("platform")
+	if single(t, d, "client").Side != "server" {
+		t.Error("side")
 	}
 }
 
@@ -216,8 +216,8 @@ description = "d"
 tags = ["a"]
 
 [[variants.""]]
-platform = "server"
-runtime = "win-x64"
+side = "server"
+platform = "win-x64"
 preserve = ["config/*.json"]
 
 [variants."".deps]
@@ -232,8 +232,8 @@ type = "self"
 place = [{ src = "a.dll", dest = "plugins/a/a.dll" }]
 
 [[variants.client]]
-platform = "server"
-runtime = "win-x64"
+side = "server"
+platform = "win-x64"
 
 [variants.client.deps]
 "github.com/user/clientdep" = "2.*"
@@ -245,7 +245,7 @@ runtime = "win-x64"
 	}
 	e := single(t, d, "")
 	eq(t, "entry keys", e.Raw.(*doc.Object).Keys(),
-		[]string{"platform", "runtime", "deps", "assets", "preserve", "hooks"})
+		[]string{"side", "platform", "deps", "assets", "preserve", "hooks"})
 	if hooks, _ := e.Raw.(*doc.Object).Get("hooks"); string(doc.MarshalJSONCompact(hooks)) != `{"post_install":["echo win"]}` {
 		t.Errorf("hooks = %s", doc.MarshalJSONCompact(hooks))
 	}
@@ -314,7 +314,7 @@ func TestDeriveDerivedEntryHasPreserveAndPurge(t *testing.T) {
 	  "preserve_files": ["config.json"], "remove_files": ["logs"] } ]`), "server", "win-x64")
 	e := single(t, d, "")
 	raw := e.Raw.(*doc.Object)
-	eq(t, "keys", raw.Keys(), []string{"platform", "runtime", "assets", "preserve", "purge"})
+	eq(t, "keys", raw.Keys(), []string{"side", "platform", "assets", "preserve", "purge"})
 	eq(t, "preserve", e.Preserve, []string{"**/config.json"})
 	eq(t, "purge", e.Purge, []string{"logs", "logs/"})
 	assets, _ := raw.Get("assets")
@@ -497,13 +497,13 @@ func TestDeriveV2PlatformPatternHasVariantForEveryRuntime(t *testing.T) {
 	  "info": { "name": "", "description": "", "author": "", "tags": [] },
 	  "platforms": [ { "goos": "windows", "commands": { "post_install": ["echo"] } } ]
 	}`
-	for runtime, windows := range map[string]bool{"win-x64": true, "linux-x64": false, "osx-arm64": false} {
-		e := single(t, derive(t, tooth, "server", runtime), "")
-		if e.Runtime != runtime {
-			t.Errorf("runtime = %s", e.Runtime)
+	for rid, windows := range map[string]bool{"win-x64": true, "linux-x64": false, "osx-arm64": false} {
+		e := single(t, derive(t, tooth, "server", rid), "")
+		if e.Platform != rid {
+			t.Errorf("platform = %s", e.Platform)
 		}
 		if (len(e.Hooks.PostInstall) == 1) != windows {
-			t.Errorf("%s: post_install = %v", runtime, e.Hooks.PostInstall)
+			t.Errorf("%s: post_install = %v", rid, e.Hooks.PostInstall)
 		}
 	}
 }
@@ -555,7 +555,7 @@ func TestDeriveDerivedEntryReparses(t *testing.T) {
 	}
 }
 
-func TestDeriveRejectsUnknownPlatform(t *testing.T) {
+func TestDeriveRejectsUnknownSide(t *testing.T) {
 	if _, err := Derive([]byte(multiPlatformV3), "desktop", "win-x64", nil); err == nil {
 		t.Error("no error")
 	}

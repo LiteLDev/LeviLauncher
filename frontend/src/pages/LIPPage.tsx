@@ -3,7 +3,6 @@ import { PagePagination } from "@/components/PagePagination";
 import {
   Button,
   Card,
-  Chip,
   InputGroup,
   Label,
   ListBox,
@@ -22,7 +21,13 @@ import React, {
 
 import { PageHeader } from "@/components/PageHeader";
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { Link } from "react-router-dom";
+import {
+  LIPActiveFilters,
+  LIPCatalogFilters,
+  type LipCatalogFilterState,
+} from "@/components/LIPCatalogFilters";
+import { LipTagChips } from "@/components/LipTagChips";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -33,24 +38,38 @@ import {
   compareSemverLike,
   fetchLIPPackagesIndex,
   normalizeSemverInput,
-  isLeviLaminaRangesCompatibleWithAnyVersion,
   isLeviLaminaVersionCompatible,
   type LIPPackageBasicInfo,
 } from "@/utils/content";
 import {
+  catalogGameVersion,
+  DEFAULT_QUERY_STATE,
+  EMPTY_FACET,
+  facetOptions,
+  filterCount,
+  isLipSortKey,
+  licenseFilterValues,
+  LIP_SORTS,
+  ownerUrl,
+  runQuery,
+  searchCatalog,
+  tagFacet,
+  type LipSortKey,
+} from "@/utils/lipCatalog";
+import {
   LuSearch,
   LuDownload,
   LuClock,
-  LuFlame,
+  LuStar,
   LuBookOpen,
   LuExternalLink,
+  LuFilter,
 } from "react-icons/lu";
 import { motion } from "framer-motion";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
-import { compareVersions } from "@/utils/version";
 import {
   GetVersionMeta,
   ListVersionMetas,
@@ -60,30 +79,48 @@ import { routeTo } from "@/constants/routes";
 const PAGE_SIZE = 20;
 const ALL_GAME_VERSION = "__all_game__";
 const ALL_LL_VERSION = "__all_ll__";
+/** lip's guide to writing lip.toml (docs/guides/creating_packages.md of LiteLDev/lip). */
 const LIP_DEVELOPER_GUIDE_URL =
-  "https://github.com/LiteLDev/levilamina-mod-template/blob/d0a888ec116c9a00fe4dc8f28ccead4dfc6b6760/tooth.json#L51";
+  "https://docs.levimc.org/lip/guides/creating_packages.html";
 const HIDDEN_LIP_PACKAGES = new Set([
   "levilamina",
   "levilamina-loc",
   "crashlogger",
 ]);
 
-type LIPSortKey = "hotness" | "updated" | "name";
-type LIPOrderKey = "asc" | "desc";
+const EMPTY_FILTERS: LipCatalogFilterState = {
+  tags: EMPTY_FACET,
+  license: [],
+  dep: [],
+  author: [],
+};
+
+/** Comma lists and repeated keys alike (`tags=a,b` = `tags=a&tags=b`), as the site reads them. */
+const listParam = (params: URLSearchParams, key: string): string[] =>
+  params
+    .getAll(key)
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+const uniqueAnyCase = (values: string[]) =>
+  values.filter(
+    (v, i, all) => all.findIndex((x) => x.toLowerCase() === v.toLowerCase()) === i,
+  );
+
+/** The filters a link to the page sets (`/lip?author=LiteLDev`, `?tags=economy,-tp`, `?license=permissive`, `?dep=...`). */
+const filtersFromParams = (params: URLSearchParams): LipCatalogFilterState => ({
+  tags: tagFacet(listParam(params, "tags")),
+  license: licenseFilterValues(listParam(params, "license")),
+  dep: uniqueAnyCase(listParam(params, "dep")),
+  author: uniqueAnyCase(listParam(params, "author")),
+});
 
 const sortLLVersionValuesDesc = (values: string[]): string[] => {
   const unique = Array.from(
     new Set(values.map((value) => String(value || "").trim()).filter(Boolean)),
   );
   unique.sort((a, b) => compareSemverLike(b, a));
-  return unique;
-};
-
-const sortGameVersionValuesDesc = (values: string[]): string[] => {
-  const unique = Array.from(
-    new Set(values.map((value) => String(value || "").trim()).filter(Boolean)),
-  );
-  unique.sort((a, b) => compareVersions(b, a));
   return unique;
 };
 
@@ -116,30 +153,6 @@ const resolveCurrentInstanceName = async (
   }
 };
 
-const parseUpdatedTime = (value: string): number => {
-  const timestamp = Date.parse(value);
-  return Number.isFinite(timestamp) ? timestamp : 0;
-};
-
-const sortPackages = (
-  list: LIPPackageBasicInfo[],
-  sort: LIPSortKey,
-  order: LIPOrderKey,
-) => {
-  const sorted = [...list].sort((a, b) => {
-    if (sort === "hotness") return a.hotness - b.hotness;
-    if (sort === "updated")
-      return parseUpdatedTime(a.updated) - parseUpdatedTime(b.updated);
-    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-  });
-
-  if (order === "desc") {
-    sorted.reverse();
-  }
-
-  return sorted;
-};
-
 const shouldHidePackage = (pkg: LIPPackageBasicInfo): boolean => {
   const name = String(pkg.name || "")
     .trim()
@@ -167,19 +180,23 @@ const LIPPage: React.FC = () => {
   } = useLeviLamina();
   const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
     useModIntelligence();
+  const [searchParams] = useSearchParams();
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [allPackages, setAllPackages] = useState<LIPPackageBasicInfo[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sort, setSort] = useState<LIPSortKey>("hotness");
-  const [order, setOrder] = useState<LIPOrderKey>("desc");
+  const [sort, setSort] = useState<LipSortKey>("relevance");
+  const [filters, setFilters] = useState<LipCatalogFilterState>(() =>
+    filtersFromParams(searchParams),
+  );
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedGameVersion, setSelectedGameVersion] =
     useState<string>(ALL_GAME_VERSION);
   const [selectedLLVersion, setSelectedLLVersion] =
     useState<string>(ALL_LL_VERSION);
-  const [gameVersionOptions, setGameVersionOptions] = useState<string[]>([]);
   const [llVersionOptions, setLLVersionOptions] = useState<string[]>([]);
+  const [currentGameVersion, setCurrentGameVersion] = useState("");
   const [currentInstalledLLVersion, setCurrentInstalledLLVersion] =
     useState("");
   const [error, setError] = useState("");
@@ -190,8 +207,19 @@ const LIPPage: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gameFilterInitializedRef = useRef(false);
   const llFilterInitializedRef = useRef(false);
-  const versionFiltersEnabled = mappingAvailable;
+  // The LeviLamina filter needs the game-to-LeviLamina mapping; the game
+  // version filter reads the catalogue's own game versions.
+  const llFilterEnabled = mappingAvailable;
   const showMappingUnavailableHint = mappingInitialized && !mappingAvailable;
+
+  // A link to the page ("More by <owner>" on a package page) sets filters.
+  const searchKey = searchParams.toString();
+  useEffect(() => {
+    const next = filtersFromParams(new URLSearchParams(searchKey));
+    if (filterCount({ ...DEFAULT_QUERY_STATE, ...next }) === 0) return;
+    setFilters(next);
+    setPage(1);
+  }, [searchKey]);
 
   const collectScrollTargets = () => {
     const seen = new Set<unknown>();
@@ -267,18 +295,40 @@ const LIPPage: React.FC = () => {
     void loadPackages();
   }, []);
 
+  const options = useMemo(() => facetOptions(allPackages), [allPackages]);
+  // Once the catalogue is known, SPDX ids from a link take its spelling and
+  // ids no mod has go (the site's license=).
+  useEffect(() => {
+    if (allPackages.length === 0) return;
+    const ids = options.license.flatMap((o) => o.ids);
+    setFilters((current) => {
+      const license = licenseFilterValues(current.license, ids);
+      return license.length === current.license.length &&
+        license.every((v, i) => v === current.license[i])
+        ? current
+        : { ...current, license };
+    });
+  }, [options, allPackages.length]);
+  const gameVersionOptions = options.gv;
+
+  /** Bare id (lower case) → name, for the Dependencies group. */
+  const packageNames = useMemo(
+    () =>
+      new Map(allPackages.map((pkg) => [pkg.id.toLowerCase(), pkg.name] as const)),
+    [allPackages],
+  );
+
   const loadFilterContext = useCallback(async () => {
     const instanceName = await resolveCurrentInstanceName(currentVersionName);
 
-    let currentGameVersion = "";
+    let gameVersion = "";
     let installedLLVersion = "";
-    const mappingGameToLLVersions = mappingAvailable ? gameToLLVersions : {};
 
     if (instanceName) {
       try {
         const meta: any = await GetVersionMeta(instanceName);
-        currentGameVersion = normalizeGameVersion(
-          String(meta?.gameVersion || "").trim(),
+        gameVersion = catalogGameVersion(
+          normalizeGameVersion(String(meta?.gameVersion || "").trim()),
         );
       } catch {}
 
@@ -294,76 +344,13 @@ const LIPPage: React.FC = () => {
       } catch {}
     }
 
-    const normalizedGameToLL = Object.fromEntries(
-      Object.entries(mappingGameToLLVersions).map(
-        ([gameVersion, llVersions]) => [
-          normalizeGameVersion(String(gameVersion || "").trim()),
-          sortLLVersionValuesDesc(
-            Array.isArray(llVersions)
-              ? llVersions.map((version) =>
-                  normalizeLLVersionForFilter(String(version || "").trim()),
-                )
-              : [],
-          ),
-        ],
-      ),
-    ) as Record<string, string[]>;
-
-    const gameOptions = sortGameVersionValuesDesc(
-      Object.keys(normalizedGameToLL).filter(Boolean),
-    );
-    if (
-      mappingAvailable &&
-      currentGameVersion &&
-      !gameOptions.includes(currentGameVersion)
-    ) {
-      gameOptions.unshift(currentGameVersion);
-      if (!Array.isArray(normalizedGameToLL[currentGameVersion])) {
-        normalizedGameToLL[currentGameVersion] = [];
-      }
-    }
-    const currentGameHasMappedLLVersions =
-      Boolean(currentGameVersion) &&
-      Array.isArray(normalizedGameToLL[currentGameVersion]) &&
-      normalizedGameToLL[currentGameVersion].length > 0;
-
-    setGameVersionOptions(gameOptions);
+    setCurrentGameVersion(gameVersion);
     setCurrentInstalledLLVersion(installedLLVersion);
-    setSelectedGameVersion((prev) => {
-      if (!gameFilterInitializedRef.current) {
-        gameFilterInitializedRef.current = true;
-        if (
-          currentGameVersion &&
-          gameOptions.includes(currentGameVersion) &&
-          currentGameHasMappedLLVersions
-        ) {
-          return currentGameVersion;
-        }
-        return ALL_GAME_VERSION;
-      }
-      if (
-        prev === ALL_GAME_VERSION &&
-        currentGameVersion &&
-        gameOptions.includes(currentGameVersion) &&
-        currentGameHasMappedLLVersions
-      ) {
-        return currentGameVersion;
-      }
-      if (prev === currentGameVersion && !currentGameHasMappedLLVersions) {
-        return ALL_GAME_VERSION;
-      }
-      if (gameOptions.includes(prev)) {
-        return prev;
-      }
-      return ALL_GAME_VERSION;
-    });
     setFilterContextReady(true);
   }, [
     currentVersionName,
     ensureInstanceHydrated,
-    gameToLLVersions,
     getInstanceSnapshot,
-    mappingAvailable,
     normalizeGameVersion,
     snapshotRevision,
   ]);
@@ -372,20 +359,45 @@ const LIPPage: React.FC = () => {
     void loadFilterContext();
   }, [loadFilterContext]);
 
+  // The game version starts at the current instance's, when some mod runs on it.
+  useEffect(() => {
+    if (!filterContextReady || gameVersionOptions.length === 0) return;
+    setSelectedGameVersion((prev) => {
+      if (!gameFilterInitializedRef.current) {
+        gameFilterInitializedRef.current = true;
+        return currentGameVersion && gameVersionOptions.includes(currentGameVersion)
+          ? currentGameVersion
+          : ALL_GAME_VERSION;
+      }
+      return prev === ALL_GAME_VERSION || gameVersionOptions.includes(prev)
+        ? prev
+        : ALL_GAME_VERSION;
+    });
+  }, [filterContextReady, gameVersionOptions, currentGameVersion]);
+
+  /** The LeviLamina versions of the mapping, per catalogue game version (`1.21.50.07` → `1.21.50`). */
+  const llVersionsByGame = useMemo(() => {
+    const out: Record<string, string[]> = {};
+    for (const [game, versions] of Object.entries(gameToLLVersions)) {
+      const key = catalogGameVersion(normalizeGameVersion(game));
+      out[key] = [
+        ...(out[key] || []),
+        ...(Array.isArray(versions) ? versions : []).map((version) =>
+          normalizeLLVersionForFilter(String(version || "").trim()),
+        ),
+      ];
+    }
+    return out;
+  }, [gameToLLVersions, normalizeGameVersion]);
+
   useEffect(() => {
     if (!filterContextReady) return;
 
-    const allMappedLLVersions = sortLLVersionValuesDesc(
-      Object.values(gameToLLVersions).flatMap((versions) => versions),
-    );
-    let nextOptions =
-      selectedGameVersion === ALL_GAME_VERSION
-        ? sortLLVersionValuesDesc(allMappedLLVersions)
-        : sortLLVersionValuesDesc(gameToLLVersions[selectedGameVersion] || []);
-
-    if (!mappingAvailable) {
-      nextOptions = [];
-    }
+    let nextOptions = !mappingAvailable
+      ? []
+      : selectedGameVersion === ALL_GAME_VERSION
+        ? sortLLVersionValuesDesc(Object.values(llVersionsByGame).flat())
+        : sortLLVersionValuesDesc(llVersionsByGame[selectedGameVersion] || []);
 
     if (
       mappingAvailable &&
@@ -423,92 +435,49 @@ const LIPPage: React.FC = () => {
   }, [
     filterContextReady,
     selectedGameVersion,
-    gameToLLVersions,
+    llVersionsByGame,
     currentInstalledLLVersion,
     mappingAvailable,
   ]);
 
-  const llCandidatesByGame = useMemo(() => {
-    if (!mappingAvailable || selectedGameVersion === ALL_GAME_VERSION)
-      return [];
-    return gameToLLVersions[selectedGameVersion] || [];
-  }, [gameToLLVersions, mappingAvailable, selectedGameVersion]);
-
-  const filteredPackages = useMemo(() => {
-    const keyword = query.trim().toLowerCase();
-
-    return allPackages.filter((pkg) => {
-      const gameFilterActive =
-        mappingAvailable && selectedGameVersion !== ALL_GAME_VERSION;
-      const llFilterActive =
-        mappingAvailable && selectedLLVersion !== ALL_LL_VERSION;
-
-      if (gameFilterActive && !pkg.llDependencyRanges?.length) {
-        return false;
-      }
-
-      if (gameFilterActive && !llFilterActive) {
-        if (
-          !isLeviLaminaRangesCompatibleWithAnyVersion(
-            pkg.llDependencyRanges,
-            llCandidatesByGame,
-          )
-        ) {
-          return false;
-        }
-      } else if (gameFilterActive && llFilterActive) {
-        if (
-          llCandidatesByGame.length > 0 &&
-          !llCandidatesByGame.includes(selectedLLVersion)
-        ) {
-          return false;
-        }
-        if (
-          !isLeviLaminaVersionCompatible(
-            selectedLLVersion,
-            pkg.llDependencyRanges,
-          )
-        ) {
-          return false;
-        }
-      } else if (llFilterActive) {
-        if (
-          !pkg.llDependencyRanges?.length ||
-          !isLeviLaminaVersionCompatible(
-            selectedLLVersion,
-            pkg.llDependencyRanges,
-          )
-        ) {
-          return false;
-        }
-      }
-
-      if (!keyword) {
-        return true;
-      }
-
-      const haystacks = [
-        pkg.identifier,
-        pkg.name,
-        pkg.description,
-        pkg.author,
-        ...pkg.tags,
-      ].map((part) => String(part || "").toLowerCase());
-      return haystacks.some((part) => part.includes(keyword));
-    });
-  }, [
-    allPackages,
-    mappingAvailable,
-    query,
-    selectedGameVersion,
-    selectedLLVersion,
-    llCandidatesByGame,
-  ]);
-
-  const sortedPackages = useMemo(
-    () => sortPackages(filteredPackages, sort, order),
-    [filteredPackages, sort, order],
+  const scores = useMemo(
+    () => searchCatalog(allPackages, query),
+    [allPackages, query],
   );
+
+  // The launcher's one filter beyond the site's: a LeviLamina version the
+  // mod's preferred variant accepts.
+  const llFilter = useMemo(() => {
+    if (!llFilterEnabled || selectedLLVersion === ALL_LL_VERSION) {
+      return undefined;
+    }
+    return (pkg: LIPPackageBasicInfo) =>
+      pkg.llDependencyRanges.length > 0 &&
+      isLeviLaminaVersionCompatible(selectedLLVersion, pkg.llDependencyRanges);
+  }, [llFilterEnabled, selectedLLVersion]);
+
+  const result = useMemo(
+    () =>
+      runQuery(
+        allPackages,
+        {
+          ...DEFAULT_QUERY_STATE,
+          q: query,
+          gv:
+            selectedGameVersion === ALL_GAME_VERSION ? [] : [selectedGameVersion],
+          tags: filters.tags,
+          license: filters.license,
+          dep: filters.dep,
+          author: filters.author,
+          sort,
+        },
+        scores,
+        llFilter,
+      ),
+    [allPackages, query, selectedGameVersion, filters, sort, scores, llFilter],
+  );
+  const sortedPackages = result.matched;
+  const activeFilterCount = filterCount({ ...DEFAULT_QUERY_STATE, ...filters });
 
   const totalPages = Math.max(1, Math.ceil(sortedPackages.length / PAGE_SIZE));
 
@@ -534,14 +503,9 @@ const LIPPage: React.FC = () => {
     }
   };
 
-  const handleSortChange = (value: LIPSortKey) => {
-    setSort(value);
+  const handleFiltersChange = (next: LipCatalogFilterState) => {
+    setFilters(next);
     setPage(1);
-    if (value === "name") {
-      setOrder("asc");
-    } else {
-      setOrder("desc");
-    }
   };
 
   const renderSkeletons = () => {
@@ -648,7 +612,7 @@ const LIPPage: React.FC = () => {
             <div data-testid="catalog-filters" className={LAYOUT.CATALOG.FILTERS}>
               <Select
                 placeholder={t("lip.game_version_placeholder")}
-                isDisabled={!versionFiltersEnabled}
+                isDisabled={gameVersionOptions.length === 0}
                 value={Array.from([selectedGameVersion])[0] ?? null}
                 onChange={(keys) => {
                   const value = keys as string;
@@ -677,7 +641,7 @@ const LIPPage: React.FC = () => {
                       },
                       ...gameVersionOptions.map((version) => ({
                         key: version,
-                        label: version,
+                        label: `${version} (${result.counts.gv[version] ?? 0})`,
                       })),
                     ]}
                     className={COMPONENT_STYLES.select.listbox}
@@ -698,7 +662,7 @@ const LIPPage: React.FC = () => {
 
               <Select
                 placeholder={t("lip.ll_version_placeholder")}
-                isDisabled={!versionFiltersEnabled}
+                isDisabled={!llFilterEnabled}
                 value={Array.from([selectedLLVersion])[0] ?? null}
                 onChange={(keys) => {
                   const value = keys as string;
@@ -746,7 +710,11 @@ const LIPPage: React.FC = () => {
               <Select
                 placeholder={t("lip.select_sort")}
                 value={Array.from([sort])[0] ?? null}
-                onChange={(e) => handleSortChange(e as LIPSortKey)}
+                onChange={(value) => {
+                  const key = String(value || "");
+                  setSort(isLipSortKey(key) ? key : "relevance");
+                  setPage(1);
+                }}
               >
                 <Label>{t("lip.sort_by")}</Label>
                 <Select.Trigger
@@ -762,76 +730,70 @@ const LIPPage: React.FC = () => {
                   className={COMPONENT_STYLES.select.popoverContent}
                 >
                   <ListBox className={COMPONENT_STYLES.select.listbox}>
-                    <ListBox.Item
-                      key="hotness"
-                      id={"hotness"}
-                      textValue={t("lip.sort_options.hotness")}
-                    >
-                      <Label>{t("lip.sort_options.hotness")}</Label>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                    <ListBox.Item
-                      key="updated"
-                      id={"updated"}
-                      textValue={t("lip.sort_options.updated")}
-                    >
-                      <Label>{t("lip.sort_options.updated")}</Label>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                    <ListBox.Item
-                      key="name"
-                      id={"name"}
-                      textValue={t("lip.sort_options.name")}
-                    >
-                      <Label>{t("lip.sort_options.name")}</Label>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
+                    {LIP_SORTS.map((key) => (
+                      <ListBox.Item
+                        key={key}
+                        id={key}
+                        textValue={t(`lip.sort_options.${key}`)}
+                      >
+                        <Label>{t(`lip.sort_options.${key}`)}</Label>
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
                   </ListBox>
                 </Select.Popover>
               </Select>
 
-              <Select
-                placeholder={t("lip.select_order")}
-                value={Array.from([order])[0] ?? null}
-                onChange={(e) => {
-                  setOrder(e as LIPOrderKey);
-                  setPage(1);
-                }}
-              >
-                <Label>{t("lip.order_by")}</Label>
-                <Select.Trigger
+              <div className="flex min-w-0 flex-col justify-end gap-1">
+                <Button
+                  size="sm"
+                  variant={filtersOpen || activeFilterCount > 0 ? "primary" : "secondary"}
+                  aria-expanded={filtersOpen}
+                  aria-controls="lip-catalog-filters"
+                  onPress={() => setFiltersOpen((open) => !open)}
                   className={cn(
-                    COMPONENT_STYLES.select.trigger,
-                    "min-h-8 text-sm",
+                    "min-h-8 w-full",
+                    (filtersOpen || activeFilterCount > 0) &&
+                      "bg-brand-500 hover:bg-brand-500 brand-primary-foreground",
                   )}
                 >
-                  <Select.Value />
-                  <Select.Indicator />
-                </Select.Trigger>
-                <Select.Popover
-                  className={COMPONENT_STYLES.select.popoverContent}
-                >
-                  <ListBox className={COMPONENT_STYLES.select.listbox}>
-                    <ListBox.Item
-                      key="desc"
-                      id={"desc"}
-                      textValue={t("lip.order_options.desc")}
-                    >
-                      <Label>{t("lip.order_options.desc")}</Label>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                    <ListBox.Item
-                      key="asc"
-                      id={"asc"}
-                      textValue={t("lip.order_options.asc")}
-                    >
-                      <Label>{t("lip.order_options.asc")}</Label>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  </ListBox>
-                </Select.Popover>
-              </Select>
+                  <LuFilter aria-hidden="true" />
+                  {activeFilterCount > 0
+                    ? t("lip.filters.title_count", { count: activeFilterCount })
+                    : t("lip.filters.title")}
+                </Button>
+              </div>
             </div>
+            {activeFilterCount > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <LIPActiveFilters
+                  state={filters}
+                  names={packageNames}
+                  onChange={handleFiltersChange}
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => handleFiltersChange(EMPTY_FILTERS)}
+                >
+                  {t("lip.filters.clear")}
+                </Button>
+              </div>
+            ) : null}
+            {filtersOpen ? (
+              <div
+                id="lip-catalog-filters"
+                className="max-h-[40vh] overflow-y-auto rounded-xl border border-border bg-surface/40 p-3 dark:border-white/5"
+              >
+                <LIPCatalogFilters
+                  state={filters}
+                  options={options}
+                  counts={result.counts}
+                  names={packageNames}
+                  onChange={handleFiltersChange}
+                />
+              </div>
+            ) : null}
             {showMappingUnavailableHint ? (
               <div className="text-sm text-amber-600" role="status">
                 {t("lip.mapping_unavailable_hint")}
@@ -912,9 +874,28 @@ const LIPPage: React.FC = () => {
                             </h3>
                             <span className="text-xs sm:text-sm text-muted dark:text-zinc-400 truncate">
                               <span aria-hidden="true">|</span>{" "}
-                              {t("lip.by_author_inline", {
-                                author: pkg.author || t("common.unknown"),
-                              })}
+                              {pkg.owner ? (
+                                // The author links to its GitHub profile (A1);
+                                // a span, as the row is a link already.
+                                <span
+                                  role="link"
+                                  className="hover:text-brand-600 dark:hover:text-brand-500 hover:underline"
+                                  title={ownerUrl(pkg.owner)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    void Browser.OpenURL(ownerUrl(pkg.owner));
+                                  }}
+                                >
+                                  {t("lip.by_author_inline", {
+                                    author: pkg.owner,
+                                  })}
+                                </span>
+                              ) : (
+                                t("lip.by_author_inline", {
+                                  author: t("common.unknown"),
+                                })
+                              )}
                             </span>
                           </div>
 
@@ -925,35 +906,26 @@ const LIPPage: React.FC = () => {
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted mt-1">
                             <div
                               className="flex items-center gap-1"
-                              title={t("lip.sort_options.hotness")}
+                              title={t("lip.sort_options.stars")}
                             >
-                              <LuFlame className="text-orange-500" />
-                              <span>{pkg.hotness}</span>
+                              <LuStar className="text-amber-500" aria-hidden="true" />
+                              <span>{pkg.stars}</span>
                             </div>
                             <div
                               className="flex items-center gap-1"
                               title={t("lip.sort_options.updated")}
                             >
-                              <LuClock />
+                              <LuClock aria-hidden="true" />
                               <span>{formatDate(pkg.updated)}</span>
                             </div>
                           </div>
 
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {pkg.tags.slice(0, 5).map((tag) => (
-                              <Chip
-                                key={tag}
-                                size="sm"
-                                variant="soft"
-                                className={cn(
-                                  "rounded-sm",
-                                  "h-5 text-[10px] bg-surface-secondary text-muted dark:text-zinc-400 group-hover:bg-surface-tertiary dark:group-hover:bg-surface-tertiary transition-colors",
-                                )}
-                              >
-                                <Chip.Label>{tag}</Chip.Label>
-                              </Chip>
-                            ))}
-                          </div>
+                          <LipTagChips
+                            tags={pkg.tags}
+                            max={5}
+                            className="mt-2"
+                            chipClassName="h-5 text-[10px] bg-surface-secondary text-muted dark:text-zinc-400 group-hover:bg-surface-tertiary dark:group-hover:bg-surface-tertiary transition-colors"
+                          />
                         </div>
                       </Link>
                     </motion.div>

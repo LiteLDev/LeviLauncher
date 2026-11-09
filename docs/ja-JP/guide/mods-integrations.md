@@ -47,6 +47,8 @@ LeviLauncher は、「基本ランチャー」の範囲を超えた Mod 関連�
 
 LeviLauncher には [lip](https://github.com/LiteLDev/lip) 互換のパッケージマネージャーが内蔵されているため、lip や .NET ランタイムを別途インストールする必要はありません。lip に準拠しており、各バージョンはパッケージを `.lip/state.json` に記録し、パッケージは `lip.toml` から読み込まれます（`tooth.json` しかない古いパッケージも引き続き使えます）。以前のランチャーで LeviLamina や LIP パッケージをインストールしたバージョン（`tooth_lock.json`）は、最初のパッケージ操作時に自動的に移行されます。**ミラーソースを使用** がオンのときは、GitHub からのパッケージのダウンロードに[設定](./settings-personalization)の **GitHub プロキシ** が使われます。オフのときは GitHub に直接接続します（システムプロキシが設定されていればそれを経由します）。以前に保存した GitHub プロキシや、lip の `config.toml`（`%APPDATA%\lip` 内。例: `lip config set github_proxy <URL>`）で設定した `github_proxy` はどちらの場合にも適用されます。**キャッシュを削除** でダウンロード済みのパッケージファイルを削除できます。
 
+lip v0.40 以降、`lip.toml` と `.lip/state.json` の各エントリは、実行場所を `side`（`server` または `client`）と `platform`（`win-x64` などの .NET ランタイム識別子）で示します。lip v0.39 以前ではこれらを `platform` と `runtime` と呼んでいました。lip v0.39 以前や以前のランチャーが古いキーで書き込んだ `.lip/state.json` は、必要な変更を示すメッセージとともに拒否されます。`platform` を `side` に、`runtime` を `platform` に名前変更するか、そのバージョンのパッケージを再インストールしてください。
+
 これらの統合は、パッケージ駆動またはローダー駆動のワークフローを使用したい上級ユーザーに最適です。
 
 ベストプラクティス：
@@ -56,6 +58,10 @@ LeviLauncher には [lip](https://github.com/LiteLDev/lip) 互換のパッケー
 - 「最後に正常に動作した」バージョンの組み合わせを記録しておく
 
 クライアントのバージョンに LeviLamina を追加するには、LeviLamina ドキュメントの [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/)（英語）を参照してください。
+
+### LeviMC Mods ページ
+
+**LeviMC Mods** ページには、[levimc.org/mods](https://levimc.org/mods/) の Mod のうち、Windows x64 のクライアント向けビルド（`side = "client"` かつ `platform = "win-x64"` のエントリ）があるものが表示されます。名前、ID、作者、タグ、説明で検索し、関連度、スター、更新順、新着順で並べ替え、ゲームバージョン、LeviLamina バージョン、タグ（ライブラリ / API や経済などの推奨タグが先頭に並び、タグを除外することもできます）、ライセンス（寛容型などの分類または SPDX ID）、依存関係、作者（Mod ページの **… の他の Mod**）で絞り込めます。Mod をインストールすると、`client` バリアント、なければ既定のバリアント、それもなければクライアント向けビルドのある最初の他のバリアントが選ばれます。Mod ページでは、これらのバリアントから別のものを選ぶこともできます。
 
 ## ネイティブ Mod <Badge platform="android" />
 

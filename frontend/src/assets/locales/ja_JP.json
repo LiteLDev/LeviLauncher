@@ -1255,8 +1255,6 @@
     "search_placeholder": "Mod を検索…",
     "sort_by": "並び替え",
     "select_sort": "並び替えを選択",
-    "order_by": "順序",
-    "select_order": "順序を選択",
     "no_description": "説明なし",
     "ll_version_label": "LeviLamina バージョン",
     "ll_version_placeholder": "LeviLamina バージョンを選択",
@@ -1283,7 +1281,6 @@
       "variant_label": "バリアント",
       "variant_hint_keep_default": "ほとんどのパッケージにはバリアントが1つだけです。作者から指定がない限り、既定のままにしてください。",
       "variant_placeholder": "バリアントを選択",
-      "variant_default": "既定",
       "select_version_incompatible_hint": "バージョン {{version}} はゲームバージョン {{gameVersion}} と互換性がありません。",
       "checking_ll_state": "LeviLamina の状態を確認しています…",
       "mapping_unavailable_blocked_hint": "LeviLaminaとこのゲームバージョンの互換性情報を取得できないため、誤ったパッケージのインストールを避けるためインストールをブロックしました。",
@@ -1298,27 +1295,70 @@
       "downgrade_success": "ダウングレードが完了しました",
       "reinstall_success": "再インストールが完了しました",
       "current_installed_version_label": "現在インストール済みのバージョン",
-      "checking_current_installed_version": "現在インストール済みのバージョンを確認しています…"
+      "checking_current_installed_version": "現在インストール済みのバージョンを確認しています…",
+      "prerelease": "プレリリース",
+      "no_client_variant": "この Mod には {{platform}} のクライアント向けバリアントがないため、LeviLauncher ではインストールできません。"
     },
     "guide": {
       "open_button": "開発者ガイド",
       "title": "LeviMC Mods 開発者ガイド",
-      "description": "自分の Mod を LeviLauncher の LeviMC Mods ページに掲載したい場合は、LIP の package_manifest 仕様に従って公開してください。",
-      "manifest_hint": "このダイアログは開発者向けの簡易案内です。フィールド名、必須項目、例、検証ルールの詳細は公式ドキュメントを参照してください。",
-      "variant_hint": "variant の label に client を含む場合に限り、ランチャーに収録されます。デフォルトでは \"label\": \"client\" を使用し、サブ拡張は \"label\": \"client_xxxx\" または \"label\": \"client\\xxxx\" を使用してください。",
+      "description": "自分の Mod を LeviLauncher の LeviMC Mods ページに掲載したい場合は、lip のドキュメントに従って lip.toml を用意して公開してください。",
+      "manifest_hint": "LeviLauncher は、最新バージョンの lip.toml に side = \"client\" かつ platform = \"win-x64\" のエントリがある Mod を掲載し、それに合うバリアントをインストールします（\"client\"、次に既定のバリアント \"\"、その他は名前順）。",
+      "variant_hint": "対応するサイドとプラットフォームごとにエントリを追加してください。例：サーバー用エントリの隣に side = \"client\"、platform = \"win-x64\" の [[variants.\"\"]] エントリを追加します。[info] tags に \"library\" や \"economy\" などの推奨タグを付けると、そのフィルターに表示されます。",
       "docs_button": "完全な仕様を見る",
       "close_button": "閉じる"
     },
     "title": "LeviMC Mods",
     "sort_options": {
-      "hotness": "人気度",
+      "relevance": "関連度",
+      "stars": "スター",
       "updated": "更新順",
-      "name": "名前"
+      "newest": "新着順"
     },
-    "order_options": {
-      "desc": "降順",
-      "asc": "昇順"
+    "filters": {
+      "title": "フィルター",
+      "title_count": "フィルター（{{count}}）",
+      "clear": "すべてのフィルターをクリア",
+      "active": "適用中のフィルター",
+      "tags": "タグ",
+      "other_tags": "その他のタグ",
+      "license": "ライセンス",
+      "dependencies": "依存関係",
+      "exclude": "{{label}} を除外",
+      "not_label": "{{label}} 以外",
+      "remove": "フィルターを解除：{{label}}",
+      "show_more": "さらに {{count}} 件表示",
+      "show_fewer": "表示を減らす",
+      "search_tags": "タグを検索…",
+      "license_ids": "{{family}}のライセンス",
+      "depends_on": "{{name}} に依存",
+      "more_by_owner": "{{owner}} の他の Mod",
+      "more_tags": "他 {{count}} 件"
     },
+    "tags": {
+      "library": "ライブラリ / API",
+      "utility": "ユーティリティ",
+      "management": "サーバー管理",
+      "game-mechanics": "ゲームメカニクス",
+      "adventure": "コンテンツと冒険",
+      "visual": "ビジュアルと HUD",
+      "economy": "経済",
+      "teleport": "テレポート",
+      "anticheat": "アンチチート",
+      "optimization": "最適化",
+      "bugfix": "バグ修正",
+      "technology": "技術とレッドストーン",
+      "protocol": "プロトコルとマルチバージョン"
+    },
+    "license": {
+      "permissive": "寛容型",
+      "weak-copyleft": "弱いコピーレフト",
+      "copyleft": "コピーレフト",
+      "other": "その他",
+      "none": "ライセンスなし"
+    },
+    "variant_default": "既定",
+    "mod_id": "Mod ID",
     "by_author_inline": "作者：{{author}}",
     "package_details_aria_label": "パッケージ詳細",
     "task_console": {

@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Button, Chip } from "@heroui/react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LuChevronDown, LuDownload, LuFileDigit } from "react-icons/lu";
@@ -18,6 +18,8 @@ type Props = {
   mappingAvailable: boolean;
   installDisabled: boolean;
   onInstall: (version: string) => void;
+  /** A dependency key's display name (`<id>[#<variant>]` → the mod's name), when known. */
+  dependencyName?: (key: string) => string;
 };
 
 const ALL = "all";
@@ -29,6 +31,7 @@ export function LIPVersionList({
   mappingAvailable,
   installDisabled,
   onInstall,
+  dependencyName,
 }: Props) {
   const { t } = useTranslation();
   const [selectedGame, setSelectedGame] = useState(ALL);
@@ -165,8 +168,15 @@ export function LIPVersionList({
                     <LuFileDigit size={20} aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground break-words">
-                      {packageName} {file.version}
+                    <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground break-words">
+                      <span>
+                        {packageName} {file.version}
+                      </span>
+                      {file.prerelease ? (
+                        <Chip size="sm" variant="soft" color="warning">
+                          <Chip.Label>{t("lip.files.prerelease")}</Chip.Label>
+                        </Chip>
+                      ) : null}
                     </p>
                     <p className="mt-1 text-xs text-muted break-words">
                       {file.llDependencyRanges.length
@@ -184,7 +194,12 @@ export function LIPVersionList({
                           {Object.entries(file.otherDependencies).map(
                             ([name, range]) => (
                               <li key={name} className="break-all">
-                                {name}: {range}
+                                {dependencyName ? (
+                                  <span title={name}>{dependencyName(name)}</span>
+                                ) : (
+                                  name
+                                )}
+                                : {range}
                               </li>
                             ),
                           )}

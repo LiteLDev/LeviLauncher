@@ -18,34 +18,60 @@ func ids(pkgs []*Package) []string {
 func TestSearch(t *testing.T) {
 	idx := fixtureIndex(t)
 	db := fixtureDB()
-	// CrashLogger is hidden; default sort is stars, most first.
-	got := ids(Search(idx.Packages, Query{Sort: SortStars, Descending: true}))
-	if !reflect.DeepEqual(got, []string{"LegacyScriptEngine", "LegacyMoney", "LHolo"}) {
+	// CrashLogger is hidden; relevance without a search is the index order.
+	got := ids(Search(idx.Packages, Query{}))
+	if !reflect.DeepEqual(got, []string{"LegacyMoney", "LHolo", "LegacyScriptEngine"}) {
 		t.Fatalf("all = %v", got)
 	}
-	// Game filter: needs a LeviLamina range satisfied for that game.
-	got = ids(Search(idx.Packages, Query{GameVersion: "1.26.51.01", DB: db, Sort: SortName}))
+	got = ids(Search(idx.Packages, Query{Sort: SortStars}))
+	if !reflect.DeepEqual(got, []string{"LegacyScriptEngine", "LegacyMoney", "LHolo"}) {
+		t.Fatalf("stars = %v", got)
+	}
+	// Game version: the catalogue's game versions, any of them.
+	got = ids(Search(idx.Packages, Query{GameVersions: []string{"1.26.51"}}))
 	if !reflect.DeepEqual(got, []string{"LegacyMoney", "LHolo"}) {
 		t.Fatalf("game 1.26.51 = %v", got)
 	}
-	got = ids(Search(idx.Packages, Query{LoaderVersion: "v26.60.4", DB: db, Sort: SortName}))
+	// LeviLamina: the preferred variant must accept it.
+	got = ids(Search(idx.Packages, Query{LoaderVersion: "v26.60.4", DB: db}))
 	if !reflect.DeepEqual(got, []string{"LegacyMoney", "LHolo"}) {
 		t.Fatalf("loader 26.60.4 = %v", got)
 	}
-	// Without the database the version filters are off.
-	if n := len(Search(idx.Packages, Query{GameVersion: "1.26.51.01"})); n != 3 {
+	// Without the database the LeviLamina filter is off.
+	if n := len(Search(idx.Packages, Query{LoaderVersion: "26.60.4"})); n != 3 {
 		t.Fatalf("no db: %d results", n)
 	}
 	got = ids(Search(idx.Packages, Query{Text: "ECONOMY"}))
 	if !reflect.DeepEqual(got, []string{"LegacyMoney"}) {
 		t.Fatalf("keyword = %v", got)
 	}
-	got = ids(Search(idx.Packages, Query{Sort: SortUpdated, Descending: true}))
+	got = ids(Search(idx.Packages, Query{Sort: SortUpdated}))
 	if got[0] != "LHolo" {
 		t.Fatalf("updated = %v", got)
 	}
-	if DefaultDescending(SortName) || !DefaultDescending(SortStars) {
-		t.Fatal("name sorts ascending by default, others descending")
+	got = ids(Search(idx.Packages, Query{Tags: TagFacet([]string{"money"})}))
+	if !reflect.DeepEqual(got, []string{"LegacyMoney"}) {
+		t.Fatalf("tag money (economy) = %v", got)
+	}
+	got = ids(Search(idx.Packages, Query{Authors: []string{"liteldev"}}))
+	if !reflect.DeepEqual(got, []string{"LegacyMoney", "LegacyScriptEngine"}) {
+		t.Fatalf("author = %v", got)
+	}
+	got = ids(Search(idx.Packages, Query{License: []string{LicenseCopyleft}}))
+	if !reflect.DeepEqual(got, []string{"LHolo"}) {
+		t.Fatalf("license = %v", got)
+	}
+	if n := len(Search(idx.Packages, Query{Deps: []string{"GITHUB.COM/liteldev/levilamina"}})); n != 3 {
+		t.Fatalf("deps: %d results", n)
+	}
+	// license= reads families in any case and SPDX ids as a mod spells them.
+	known, unknown := LicenseValues([]string{"Permissive", "mit", "MIT", "WTFPL", "NONE"},
+		FacetOptions{License: []LicenseOption{{Family: LicensePermissive, IDs: []string{"MIT"}}, {Family: LicenseNone}}})
+	if !reflect.DeepEqual(known, []string{"permissive", "MIT", "none"}) || !reflect.DeepEqual(unknown, []string{"WTFPL"}) {
+		t.Fatalf("license values = %v %v", known, unknown)
+	}
+	if !reflect.DeepEqual(Sorts, []string{"relevance", "stars", "updated", "newest"}) {
+		t.Fatalf("sorts = %v", Sorts)
 	}
 }
 
@@ -105,8 +131,8 @@ func TestMapperAndListing(t *testing.T) {
 		t.Fatalf("groups with query error = %+v", l.Groups)
 	}
 	// Two packages with one name are ambiguous.
-	dup := Build([]*Detail{detail(t, fixtureMoney), detail(t, `{"tooth":"github.com/Other/LegacyMoney","name":"LegacyMoney",
-		"versions":[{"version":"1.0.0","variants":[{"label":"client"}]}]}`)})
+	dup := Build([]*Detail{detail(t, fixtureMoney), detail(t, `{"id":"github.com/Other/LegacyMoney","name":"LegacyMoney",
+		"versions":[{"version":"1.0.0","variants":{"client":[{"side":"client","platform":"win-x64","deps":{}}]}}]}`)})
 	if st := NewMapper(dup).Map(mods[:1])["LegacyMoney"]; st.Source != SourceAmbiguous {
 		t.Fatalf("ambiguous = %+v", st)
 	}

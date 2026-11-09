@@ -3,8 +3,9 @@ package lipindex
 import (
 	"net/url"
 	"sort"
-	"strconv"
 	"strings"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
 )
 
 // LeviLaminaID is the catalogue identifier of LeviLamina.
@@ -12,22 +13,54 @@ const LeviLaminaID = "github.com/LiteLDev/LeviLamina"
 
 const leviLaminaOwnerRepo = "liteldev/levilamina"
 
+// Sides of an entry of a package file (lip.toml side).
+const (
+	SideServer = "server"
+	SideClient = "client"
+)
+
+// TargetSide is the side the launcher installs for: always the client.
+const TargetSide = SideClient
+
+// TargetPlatform is the platform the launcher installs for, the .NET RID of
+// this process (engine.CurrentPlatform: "win-x64" on Windows x64). Packages
+// and variants without an entry for TargetSide and TargetPlatform are not
+// offered. Tests set it to the platform of their fixtures.
+var TargetPlatform = engine.CurrentPlatform()
+
 // Package is a catalogue package as the launcher sees it: only packages
-// with a "client" variant are kept. Versions, Files and LLRanges describe
-// the preferred (client) variant.
+// with a variant that has an entry for TargetSide and TargetPlatform are
+// kept. Versions, Files and LLRanges describe the preferred variant (rule
+// A2 of the catalogue contract: "client", then "", then the others by
+// name). The JSON names are a contract of `--json` output: keep them.
 type Package struct {
 	// Identifier is the catalogue id ("github.com/owner/repo").
-	Identifier  string   `json:"identifier"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Author      string   `json:"author"`
-	Tags        []string `json:"tags"`
-	AvatarURL   string   `json:"avatarUrl"`
-	ProjectURL  string   `json:"projectUrl"`
-	License     string   `json:"license,omitempty"`
-	// Stars is the GitHub star count ("hotness" in the window).
+	Identifier  string `json:"identifier"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	// Author is the repository owner, the same as Owner (kept for scripts).
+	Author string `json:"author"`
+	// Owner is the repository owner: the author, at https://github.com/<owner>.
+	Owner      string   `json:"owner"`
+	Tags       []string `json:"tags"`
+	AvatarURL  string   `json:"avatarUrl"`
+	ProjectURL string   `json:"projectUrl"`
+	// License is the SPDX id, after the catalogue's overrides (LicenseOf).
+	License       string `json:"license,omitempty"`
+	LicenseFamily string `json:"licenseFamily"`
+	// Stars is the GitHub star count.
 	Stars   float64 `json:"stars"`
 	Updated string  `json:"updated"`
+	Created string  `json:"created,omitempty"`
+	// Side and Platform are what entries of the latest version run on.
+	Side     []string `json:"side"`
+	Platform []string `json:"platform"`
+	// GameVersions are the Minecraft versions any version runs on, newest
+	// first, as the catalogue works them out.
+	GameVersions []string `json:"gameVersions"`
+	// Deps is what the latest version depends on: bare id -> range
+	// (several ranges joined by " || "), the package itself left out.
+	Deps map[string]string `json:"deps"`
 	// Versions are the preferred variant's versions, newest first.
 	Versions []string `json:"versions"`
 	// LLRanges are the LeviLamina ranges any version of the preferred
@@ -37,29 +70,38 @@ type Package struct {
 	Variants         []Variant `json:"variants"`
 	// Files are the preferred variant's versions with their dependencies.
 	Files []File `json:"-"`
+	// Order is the package's position in the catalogue's index (its default
+	// order, "relevance" without a search).
+	Order int `json:"-"`
 }
 
-// Variant is one variant (tooth.json "label") of a package.
+// Variant is a variant of a package that has an entry for TargetSide and
+// TargetPlatform.
 type Variant struct {
-	Key   string `json:"key"`
+	// Key is the variant name; "" is the default variant.
+	Key string `json:"key"`
+	// Label is the variant name too (kept for scripts).
 	Label string `json:"label"`
-	// PackageIdentifier is what installs this variant: "<id>#<key>".
+	// PackageIdentifier is what installs this variant: "<id>#<key>" ("<id>#"
+	// for the default variant).
 	PackageIdentifier string   `json:"packageIdentifier"`
 	Versions          []string `json:"versions"`
 	LLRanges          []string `json:"llRanges"`
 	Files             []File   `json:"files"`
 }
 
-// File is one version of a variant.
+// File is one version of a variant: the dependencies of its entries for
+// TargetSide and TargetPlatform.
 type File struct {
 	Version           string            `json:"version"`
+	Prerelease        bool              `json:"prerelease,omitempty"`
 	Dependencies      map[string]string `json:"dependencies"`
 	LLRanges          []string          `json:"llRanges"`
 	OtherDependencies map[string]string `json:"otherDependencies"`
 }
 
-// SelfVariantRelation lists the "#alias" variants a package's own
-// dependencies name (LegacyScriptEngine#lua...). Installed mods whose
+// SelfVariantRelation lists the "#alias" variants a package's own entries
+// depend on (LegacyScriptEngine#client_lua...). Installed mods whose
 // folder or name is such an alias belong to the package.
 type SelfVariantRelation struct {
 	Identifier  string   `json:"identifier"`
@@ -67,46 +109,25 @@ type SelfVariantRelation struct {
 	Aliases     []string `json:"aliases"`
 }
 
-// IsClientVariant reports whether a variant targets the client (its key
-// contains "client"), the only variants the launcher installs.
-func (v Variant) IsClientVariant() bool {
-	return strings.Contains(strings.ToLower(strings.TrimSpace(v.Key)), "client")
-}
-
-// ClientVariants returns the client variants of p.
-func (p *Package) ClientVariants() []Variant {
-	out := []Variant{}
-	for _, v := range p.Variants {
-		if v.IsClientVariant() {
-			out = append(out, v)
-		}
-	}
-	return out
-}
-
 // DefaultVariant is the variant installed when none is chosen: the
-// preferred variant if it is a client variant, else the first client
-// variant (LIPInstallDialog resolveDefaultLIPVariant).
+// preferred variant (rule A2).
 func (p *Package) DefaultVariant() (Variant, bool) {
-	vs := p.ClientVariants()
-	if len(vs) == 0 {
-		return Variant{}, false
-	}
-	pref := strings.ToLower(strings.TrimSpace(p.PreferredVariant))
-	if pref != "" {
-		for _, v := range vs {
-			if strings.ToLower(strings.TrimSpace(v.Key)) == pref {
-				return v, true
-			}
+	for _, v := range p.Variants {
+		if v.Key == p.PreferredVariant {
+			return v, true
 		}
 	}
-	return vs[0], true
+	if len(p.Variants) > 0 {
+		return p.Variants[0], true
+	}
+	return Variant{}, false
 }
 
-// FindVariant returns the variant with key (case-insensitive).
+// FindVariant returns the variant named key (case-insensitive; "" is the
+// default variant).
 func (p *Package) FindVariant(key string) (Variant, bool) {
 	for _, v := range p.Variants {
-		if strings.EqualFold(strings.TrimSpace(v.Key), strings.TrimSpace(key)) {
+		if strings.EqualFold(v.Key, strings.TrimSpace(key)) {
 			return v, true
 		}
 	}
@@ -137,33 +158,41 @@ func PickTargetVersion(versions []string) string {
 }
 
 // Detail is a levimc.org/mods/<id>/index.json document, reduced to the
-// fields the launcher uses. Values that the window reads loosely are kept
-// as any.
+// fields the launcher uses.
 type Detail struct {
-	Tooth       string          `json:"tooth"`
-	Name        any             `json:"name,omitempty"`
-	Description any             `json:"description,omitempty"`
-	Icon        any             `json:"icon,omitempty"`
-	Stars       any             `json:"stars,omitempty"`
-	Updated     any             `json:"updated,omitempty"`
-	Tags        any             `json:"tags,omitempty"`
-	License     any             `json:"license,omitempty"`
-	Repository  any             `json:"repository,omitempty"`
-	Versions    []DetailVersion `json:"versions"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name,omitempty"`
+	Description  string          `json:"description,omitempty"`
+	Owner        string          `json:"owner,omitempty"`
+	Logo         string          `json:"logo,omitempty"`
+	Repository   string          `json:"repository,omitempty"`
+	Stars        float64         `json:"stars,omitempty"`
+	Updated      string          `json:"updated,omitempty"`
+	Created      string          `json:"created,omitempty"`
+	License      string          `json:"license,omitempty"`
+	Side         []string        `json:"side,omitempty"`
+	Platform     []string        `json:"platform,omitempty"`
+	GameVersions []string        `json:"gameVersions,omitempty"`
+	Tags         []string        `json:"tags,omitempty"`
+	Versions     []DetailVersion `json:"versions"`
 	// Readmes are not cached; only a direct fetch has them.
 	Readmes []Readme `json:"readmes,omitempty"`
 }
 
-// DetailVersion is one version of a Detail.
+// DetailVersion is one version of a Detail, newest first.
 type DetailVersion struct {
-	Version  any             `json:"version"`
-	Variants []DetailVariant `json:"variants"`
+	Version    string `json:"version"`
+	Prerelease bool   `json:"prerelease,omitempty"`
+	// Variants maps a variant name ("" is the default) to its entries.
+	Variants map[string][]Entry `json:"variants"`
 }
 
-// DetailVariant is one variant of a DetailVersion.
-type DetailVariant struct {
-	Label        any            `json:"label"`
-	Dependencies map[string]any `json:"dependencies"`
+// Entry is an entry of a variant: where it runs and what it depends on.
+type Entry struct {
+	Side     string `json:"side"`
+	Platform string `json:"platform"`
+	// Deps maps a dependency key ("<id>[#<variant>]") to a version range.
+	Deps map[string]string `json:"deps"`
 }
 
 // Readme is a README the catalogue extracted from the repository.
@@ -171,43 +200,6 @@ type Readme struct {
 	File string `json:"file"`
 	Lang string `json:"lang"`
 	Text string `json:"text"`
-}
-
-func str(v any) string {
-	s, _ := v.(string)
-	return s
-}
-
-func strList(v any) []string {
-	items, _ := v.([]any)
-	out := []string{}
-	for _, it := range items {
-		if s, ok := it.(string); ok && strings.TrimSpace(s) != "" {
-			out = append(out, strings.TrimSpace(s))
-		}
-	}
-	return out
-}
-
-// number converts a JSON value to a number as JavaScript's Number() does
-// for the values the catalogue uses; ok is false for missing or empty.
-func number(v any) (float64, bool) {
-	switch x := v.(type) {
-	case float64:
-		return x, true
-	case string:
-		if strings.TrimSpace(x) == "" {
-			return 0, false
-		}
-		f, err := strconv.ParseFloat(strings.TrimSpace(x), 64)
-		return f, err == nil
-	case bool:
-		if x {
-			return 1, true
-		}
-		return 0, true
-	}
-	return 0, false
 }
 
 // normalizeIdentifier lowercases an identifier and strips the scheme and
@@ -254,14 +246,71 @@ func splitNonEmpty(s, sep string) []string {
 	return out
 }
 
-func variantRank(key string) int {
-	switch strings.ToLower(strings.TrimSpace(key)) {
-	case "client":
-		return 0
-	case "":
-		return 1
+// compareVariantNames orders variant names as rule A2 prefers them:
+// "client", the default "", then the others by name.
+func compareVariantNames(a, b string) int {
+	rank := func(k string) int {
+		switch k {
+		case "client":
+			return 0
+		case "":
+			return 1
+		}
+		return 2
 	}
-	return 2
+	if d := rank(a) - rank(b); d != 0 {
+		return d
+	}
+	return strings.Compare(a, b)
+}
+
+// QualifyingVariants are the variant names with an entry for side (and
+// platform, when not ""), in rule A2's order.
+func QualifyingVariants(variants map[string][]Entry, side, platform string) []string {
+	out := []string{}
+	for name, entries := range variants {
+		for _, e := range entries {
+			if e.Side == side && (platform == "" || strings.EqualFold(e.Platform, platform)) {
+				out = append(out, name)
+				break
+			}
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return compareVariantNames(out[i], out[j]) < 0 })
+	return out
+}
+
+// PreferredVariant is the variant to install for a side and platform (rule
+// A2): among those with an entry for them, "client", then the default "",
+// then the others by name; ok is false when none has one.
+func PreferredVariant(variants map[string][]Entry, side, platform string) (string, bool) {
+	q := QualifyingVariants(variants, side, platform)
+	if len(q) == 0 {
+		return "", false
+	}
+	return q[0], true
+}
+
+// ChooseVariant is the variant to install from a detail for side and
+// platform: rule A2 over the version named (when the detail has it), else
+// over the newest version that has a qualifying variant.
+func ChooseVariant(d *Detail, version, side, platform string) (string, bool) {
+	if d == nil {
+		return "", false
+	}
+	if want := NormalizeSemverInput(version); want != "" {
+		for _, v := range d.Versions {
+			if strings.EqualFold(NormalizeSemverInput(v.Version), want) {
+				return PreferredVariant(v.Variants, side, platform)
+			}
+		}
+	}
+	for _, v := range d.Versions {
+		if name, ok := PreferredVariant(v.Variants, side, platform); ok {
+			return name, true
+		}
+	}
+	return "", false
 }
 
 func variantPackageIdentifier(identifier, key string) string {
@@ -272,70 +321,70 @@ func variantPackageIdentifier(identifier, key string) string {
 	return base + "#" + strings.TrimSpace(key)
 }
 
-// variantsOf groups a detail's versions by variant label
-// (convertLIPModDetail + parsePackageVariants).
-func variantsOf(d *Detail, identifier string) []Variant {
-	type acc struct {
-		files map[string]File
-		order []string
-	}
-	byKey := map[string]*acc{}
-	var keys []string
+// variantsOf lists the variants of a detail with an entry for side and
+// platform in some version, each with the versions that have one, in rule
+// A2's order.
+func variantsOf(d *Detail, identifier, side, platform string) []Variant {
+	names := []string{}
 	for _, ver := range d.Versions {
-		version := strings.TrimSpace(str(ver.Version))
-		if version == "" {
-			continue
-		}
-		for _, va := range ver.Variants {
-			key := strings.TrimSpace(str(va.Label))
-			a := byKey[key]
-			if a == nil {
-				a = &acc{files: map[string]File{}}
-				byKey[key] = a
-				keys = append(keys, key)
+		for _, n := range QualifyingVariants(ver.Variants, side, platform) {
+			if !contains(names, n) {
+				names = append(names, n)
 			}
-			f := File{Version: version, Dependencies: map[string]string{}, LLRanges: []string{}, OtherDependencies: map[string]string{}}
-			depKeys := make([]string, 0, len(va.Dependencies))
-			for k := range va.Dependencies {
-				depKeys = append(depKeys, k)
-			}
-			sort.Strings(depKeys)
-			for _, k := range depKeys {
-				nk := strings.TrimSpace(k)
-				rng := strings.TrimSpace(str(va.Dependencies[k]))
-				if nk == "" || rng == "" {
-					continue
-				}
-				f.Dependencies[nk] = rng
-				if IsLeviLamina(nk) {
-					if !contains(f.LLRanges, rng) {
-						f.LLRanges = append(f.LLRanges, rng)
-					}
-					continue
-				}
-				f.OtherDependencies[nk] = rng
-			}
-			if _, dup := a.files[version]; !dup {
-				a.order = append(a.order, version)
-			}
-			a.files[version] = f
 		}
 	}
+	sort.Slice(names, func(i, j int) bool { return compareVariantNames(names[i], names[j]) < 0 })
 	out := []Variant{}
-	for _, key := range keys {
-		a := byKey[key]
-		files := make([]File, 0, len(a.order))
-		for _, v := range a.order {
-			files = append(files, a.files[v])
+	for _, key := range names {
+		v := Variant{Key: key, Label: key, PackageIdentifier: variantPackageIdentifier(identifier, key),
+			Versions: []string{}, LLRanges: []string{}, Files: []File{}}
+		for _, ver := range d.Versions {
+			version := strings.TrimSpace(ver.Version)
+			if version == "" || contains(v.Versions, version) {
+				continue
+			}
+			matched := false
+			f := File{Version: version, Prerelease: ver.Prerelease, Dependencies: map[string]string{}, LLRanges: []string{},
+				OtherDependencies: map[string]string{}}
+			for _, e := range ver.Variants[key] {
+				if e.Side != side || !strings.EqualFold(e.Platform, platform) {
+					continue
+				}
+				matched = true
+				depKeys := make([]string, 0, len(e.Deps))
+				for k := range e.Deps {
+					depKeys = append(depKeys, k)
+				}
+				sort.Strings(depKeys)
+				for _, k := range depKeys {
+					nk, rng := strings.TrimSpace(k), strings.TrimSpace(e.Deps[k])
+					if nk == "" || rng == "" {
+						continue
+					}
+					f.Dependencies[nk] = rng
+					if IsLeviLamina(nk) {
+						if !contains(f.LLRanges, rng) {
+							f.LLRanges = append(f.LLRanges, rng)
+						}
+						continue
+					}
+					f.OtherDependencies[nk] = rng
+				}
+			}
+			if !matched {
+				continue
+			}
+			v.Files = append(v.Files, f)
+			v.Versions = append(v.Versions, version)
 		}
-		if len(files) == 0 {
+		if len(v.Files) == 0 {
 			continue
 		}
-		sort.SliceStable(files, func(i, j int) bool { return CompareSemverLike(files[i].Version, files[j].Version) > 0 })
-		v := Variant{Key: key, Label: key, PackageIdentifier: variantPackageIdentifier(identifier, key),
-			Files: files, Versions: []string{}, LLRanges: []string{}}
-		for _, f := range files {
-			v.Versions = append(v.Versions, f.Version)
+		// The catalogue lists versions newest first; keep that order however
+		// a document lists them.
+		sort.SliceStable(v.Files, func(i, j int) bool { return CompareSemverLike(v.Files[i].Version, v.Files[j].Version) > 0 })
+		for i, f := range v.Files {
+			v.Versions[i] = f.Version
 			for _, r := range f.LLRanges {
 				if !contains(v.LLRanges, r) {
 					v.LLRanges = append(v.LLRanges, r)
@@ -344,12 +393,48 @@ func variantsOf(d *Detail, identifier string) []Variant {
 		}
 		out = append(out, v)
 	}
-	sort.SliceStable(out, func(i, j int) bool {
-		if ri, rj := variantRank(out[i].Key), variantRank(out[j].Key); ri != rj {
-			return ri < rj
+	return out
+}
+
+// latestDeps is what the latest version depends on, keyed by bare id, the
+// package itself left out and several ranges joined by " || " (the
+// catalogue index's deps).
+func latestDeps(d *Detail) map[string]string {
+	out := map[string]string{}
+	if len(d.Versions) == 0 {
+		return out
+	}
+	ranges := map[string][]string{}
+	var order []string
+	names := make([]string, 0, len(d.Versions[0].Variants))
+	for n := range d.Versions[0].Variants {
+		names = append(names, n)
+	}
+	sort.Slice(names, func(i, j int) bool { return compareVariantNames(names[i], names[j]) < 0 })
+	for _, n := range names {
+		for _, e := range d.Versions[0].Variants[n] {
+			keys := make([]string, 0, len(e.Deps))
+			for k := range e.Deps {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				id := strings.TrimSpace(strings.SplitN(k, "#", 2)[0])
+				if id == "" || strings.EqualFold(id, d.ID) {
+					continue
+				}
+				if _, ok := ranges[id]; !ok {
+					order = append(order, id)
+				}
+				if r := strings.TrimSpace(e.Deps[k]); r != "" && !contains(ranges[id], r) {
+					ranges[id] = append(ranges[id], r)
+				}
+			}
 		}
-		return localeCompare(out[i].PackageIdentifier, out[j].PackageIdentifier) < 0
-	})
+	}
+	for _, id := range order {
+		out[id] = strings.Join(ranges[id], " || ")
+	}
 	return out
 }
 
@@ -406,46 +491,80 @@ func inferProjectURL(identifier string) string {
 	return normalizeHTTPURL("https://" + n)
 }
 
-// ParsePackage converts a detail into a Package; ok is false when the
-// detail has no "client" variant (the launcher only installs those).
+// OwnerURL is the GitHub page of an owner: the author's link.
+func OwnerURL(owner string) string {
+	if strings.TrimSpace(owner) == "" {
+		return ""
+	}
+	return "https://github.com/" + url.PathEscape(strings.TrimSpace(owner))
+}
+
+// ParsePackage converts a detail into a Package for TargetSide and
+// TargetPlatform; ok is false when no variant of it has an entry for them
+// (the launcher cannot install it).
 func ParsePackage(d *Detail) (*Package, bool) {
+	return ParsePackageFor(d, TargetSide, TargetPlatform)
+}
+
+// ParsePackageFor converts a detail into a Package for side and platform.
+func ParsePackageFor(d *Detail, side, platform string) (*Package, bool) {
 	if d == nil {
 		return nil, false
 	}
-	id := strings.TrimSpace(d.Tooth)
+	id := strings.TrimSpace(d.ID)
 	if id == "" {
 		return nil, false
 	}
-	variants := variantsOf(d, id)
+	variants := variantsOf(d, id, side, platform)
 	if len(variants) == 0 {
 		return nil, false
 	}
-	var preferred *Variant
-	for i := range variants {
-		if strings.ToLower(variants[i].Key) == "client" {
-			preferred = &variants[i]
-			break
+	preferred := variants[0]
+	if key, ok := ChooseVariant(d, "", side, platform); ok {
+		for _, v := range variants {
+			if v.Key == key {
+				preferred = v
+				break
+			}
 		}
 	}
-	if preferred == nil {
-		return nil, false
-	}
-	name := strings.TrimSpace(str(d.Name))
+	name := strings.TrimSpace(d.Name)
 	if name == "" {
 		name = id
 	}
-	stars, _ := number(d.Stars)
+	owner := strings.TrimSpace(d.Owner)
+	if owner == "" {
+		owner = inferAuthor(id)
+	}
+	license := LicenseOf(id, strings.TrimSpace(d.License))
+	project := normalizeHTTPURL(d.Repository)
+	if project == "" {
+		project = inferProjectURL(id)
+	}
+	nonNil := func(s []string) []string {
+		if s == nil {
+			return []string{}
+		}
+		return s
+	}
 	p := &Package{
 		Identifier:       id,
 		Name:             name,
-		Description:      strings.TrimSpace(str(d.Description)),
-		Author:           inferAuthor(id),
-		Tags:             strList(d.Tags),
-		AvatarURL:        normalizeHTTPURL(str(d.Icon)),
-		ProjectURL:       inferProjectURL(id),
-		License:          strings.TrimSpace(str(d.License)),
-		Stars:            stars,
-		Updated:          strings.TrimSpace(str(d.Updated)),
+		Description:      strings.TrimSpace(d.Description),
+		Author:           owner,
+		Owner:            owner,
+		Tags:             nonNil(d.Tags),
+		AvatarURL:        normalizeHTTPURL(d.Logo),
+		ProjectURL:       project,
+		License:          license,
+		LicenseFamily:    LicenseFamily(license),
+		Stars:            d.Stars,
+		Updated:          strings.TrimSpace(d.Updated),
+		Created:          strings.TrimSpace(d.Created),
+		Side:             nonNil(d.Side),
+		Platform:         nonNil(d.Platform),
+		GameVersions:     nonNil(d.GameVersions),
+		Deps:             latestDeps(d),
 		Versions:         preferred.Versions,
 		LLRanges:         preferred.LLRanges,
 		PreferredVariant: preferred.Key,
@@ -455,8 +574,8 @@ func ParsePackage(d *Detail) (*Package, bool) {
 	return p, true
 }
 
-// selfVariantAliases lists the "#alias" suffixes of dependencies that point
-// back to the package itself.
+// selfVariantAliases lists the "#alias" suffixes of the dependencies of a
+// detail's entries that point back to the package itself, lower case.
 func selfVariantAliases(d *Detail, identifier string) []string {
 	base := strings.SplitN(normalizeIdentifier(identifier), "#", 2)[0]
 	if base == "" {
@@ -464,18 +583,17 @@ func selfVariantAliases(d *Detail, identifier string) []string {
 	}
 	set := map[string]bool{}
 	for _, ver := range d.Versions {
-		for _, va := range ver.Variants {
-			for k := range va.Dependencies {
-				n := normalizeIdentifier(k)
-				if n == "" {
-					continue
-				}
-				i := strings.Index(n, "#")
-				if i < 0 || n[:i] != base {
-					continue
-				}
-				if alias := strings.ToLower(strings.TrimSpace(n[i+1:])); alias != "" {
-					set[alias] = true
+		for _, entries := range ver.Variants {
+			for _, e := range entries {
+				for k := range e.Deps {
+					n := normalizeIdentifier(k)
+					i := strings.Index(n, "#")
+					if i < 0 || n[:i] != base {
+						continue
+					}
+					if alias := strings.ToLower(strings.TrimSpace(n[i+1:])); alias != "" {
+						set[alias] = true
+					}
 				}
 			}
 		}
@@ -490,36 +608,37 @@ func selfVariantAliases(d *Detail, identifier string) []string {
 
 // Index is the parsed catalogue.
 type Index struct {
-	// Packages are the packages with a client variant, by identifier.
+	// Packages are the packages the launcher can install, in the order of
+	// the details given to Build (the catalogue index's order).
 	Packages     []*Package
 	SelfVariants []SelfVariantRelation
 	byID         map[string]*Package
 }
 
-// Build parses details into an Index (parseLIPIndexResult). Packages are
-// sorted by identifier so results do not depend on fetch order.
+// Build parses details into an Index (parseLIPIndexResult). Packages keep
+// the order of details, which is the catalogue index's order when they come
+// from FetchDetails or the Cache: "relevance" without a search.
 func Build(details []*Detail) *Index {
-	sorted := append([]*Detail(nil), details...)
-	sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].Tooth < sorted[j].Tooth })
 	idx := &Index{Packages: []*Package{}, SelfVariants: []SelfVariantRelation{}, byID: map[string]*Package{}}
 	rel := map[string]*SelfVariantRelation{}
 	var relOrder []string
-	for _, d := range sorted {
+	for _, d := range details {
 		if d == nil {
 			continue
 		}
 		p, ok := ParsePackage(d)
 		if ok {
 			if _, dup := idx.byID[p.Identifier]; !dup {
+				p.Order = len(idx.Packages)
 				idx.byID[p.Identifier] = p
 				idx.Packages = append(idx.Packages, p)
 			}
 		}
-		aliases := selfVariantAliases(d, d.Tooth)
+		aliases := selfVariantAliases(d, d.ID)
 		if len(aliases) == 0 {
 			continue
 		}
-		id := strings.TrimSpace(d.Tooth)
+		id := strings.TrimSpace(d.ID)
 		if ok {
 			id = p.Identifier
 		}
@@ -641,7 +760,10 @@ type Reference struct {
 	// ID is the catalogue identifier: "github.com/owner/repo".
 	ID      string
 	Variant string
-	Version string
+	// HasVariant is set when the reference names a variant, "" (a "#"
+	// with nothing after it) included.
+	HasVariant bool
+	Version    string
 }
 
 // ParseReference parses a package reference. ok is false when s is not
@@ -658,6 +780,7 @@ func ParseReference(s string) (Reference, bool) {
 	}
 	if i := strings.Index(s, "#"); i >= 0 {
 		r.Variant = strings.TrimSpace(s[i+1:])
+		r.HasVariant = true
 		s = strings.TrimSpace(s[:i])
 	}
 	l := strings.ToLower(s)

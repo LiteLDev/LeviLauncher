@@ -55,7 +55,7 @@ func (h *harness) addLibAndApp(withApp2, hook bool) {
 // place a.dll and b.dll.
 func (h *harness) addVariantsPackage(id string) {
 	entry := func(f string) string {
-		return `[ { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "` +
+		return `[ { "side": "server", "platform": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "` +
 			f + `", "dest": "` + f + `" } ] } ] } ]`
 	}
 	h.addTag(id, "1.0.0", "lip.toml", `{ "format": 4, "id": "`+id+`", "version": "1.0.0", "variants": { "a": `+
@@ -106,8 +106,8 @@ func TestInstallRemoteRepositoryRecordsWorkspaceFile(t *testing.T) {
 		t.Fatalf("lib.dll = %q", got)
 	}
 	lf := h.lock()
-	if lf.Format != 4 || lf.Platform != "server" || lf.Runtime != testRuntime {
-		t.Fatalf("lock = %d %s %s", lf.Format, lf.Platform, lf.Runtime)
+	if lf.Format != 4 || lf.Side != "server" || lf.Platform != testPlatform {
+		t.Fatalf("lock = %d %s %s", lf.Format, lf.Side, lf.Platform)
 	}
 	p := single(t, lf)
 	if stringMember(p.Manifest, "id") != libID || p.Variant != "" || stringMember(p.Manifest, "version") != "1.0.0" ||
@@ -208,7 +208,7 @@ func TestInstallFormatThreeDependencyInstallsBoth(t *testing.T) {
 		t.Fatal("lib not placed")
 	}
 	want, _ := doc.ParseJSON([]byte(`{ "format": 4, "id": "`+libID+`", "version": "1.0.0", "variants": { "": [ {
-	  "platform": "server", "runtime": "win-x64",
+	  "side": "server", "platform": "win-x64",
 	  "assets": [ { "type": "self", "place": [ { "src": "file.dll", "dest": "lib/lib.dll" } ] } ] } ] } }`), "x")
 	if !doc.Equal(want, lf.Packages[0].Manifest) {
 		t.Fatalf("manifest = %s", doc.MarshalJSONCompact(lf.Packages[0].Manifest))
@@ -419,17 +419,17 @@ func TestInstallTagAndRevRefsUsePackageFileVersionAndExactCommit(t *testing.T) {
 	}
 }
 
-func TestInstallRecordedPlatformOfOtherKindFailsWithoutChanges(t *testing.T) {
+func TestInstallRecordedSideOfOtherKindFailsWithoutChanges(t *testing.T) {
 	for _, tc := range []struct{ engine, recorded, says string }{
 		{"server", "client", "lip manages server workspaces only"},
 		{"client", "server", "LeviLauncher manages client workspaces only"},
 	} {
 		t.Run(tc.engine, func(t *testing.T) {
 			h := newHarness(t)
-			h.platform = tc.engine
+			h.side = tc.engine
 			h.restart()
 			h.addLibAndApp(true, false)
-			h.addFile(".lip/state.json", `{ "format": 4, "platform": "`+tc.recorded+`", "runtime": "win-x64", "packages": [] }`)
+			h.addFile(".lip/state.json", `{ "format": 4, "side": "`+tc.recorded+`", "platform": "win-x64", "packages": [] }`)
 			before := h.snapshot()
 			err := h.install(libID)
 			if err == nil || !strings.Contains(err.Error(), tc.says) {
@@ -440,28 +440,28 @@ func TestInstallRecordedPlatformOfOtherKindFailsWithoutChanges(t *testing.T) {
 	}
 }
 
-func TestInstallRuntimeOptionRecordsRuntime(t *testing.T) {
+func TestInstallPlatformOptionRecordsPlatform(t *testing.T) {
 	h := newHarness(t)
 	h.addTag(libID, "1.0.0", "lip.toml", `{ "format": 4, "id": "`+libID+`", "version": "1.0.0", "variants": { "": [
-	  { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "win.dll", "dest": "lib.dll" } ] } ] },
-	  { "platform": "server", "runtime": "linux-x64", "assets": [ { "type": "self", "place": [ { "src": "linux.so", "dest": "lib.so" } ] } ] } ] } }`,
+	  { "side": "server", "platform": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "win.dll", "dest": "lib.dll" } ] } ] },
+	  { "side": "server", "platform": "linux-x64", "assets": [ { "type": "self", "place": [ { "src": "linux.so", "dest": "lib.so" } ] } ] } ] } }`,
 		"win.dll", "win", "linux.so", "linux")
-	h.withRuntime("linux-x64")
+	h.withPlatform("linux-x64")
 	h.must(h.install(libID))
-	if h.read("lib.so") != "linux" || h.exists("lib.dll") || h.lock().Runtime != "linux-x64" {
-		t.Fatal("runtime")
+	if h.read("lib.so") != "linux" || h.exists("lib.dll") || h.lock().Platform != "linux-x64" {
+		t.Fatal("platform")
 	}
 }
 
-func TestInstallClientPlatformByDefault(t *testing.T) {
+func TestInstallClientSideByDefault(t *testing.T) {
 	h := newHarness(t)
-	h.platform = ""
+	h.side = ""
 	h.restart()
 	h.addTag(libID, "1.0.0", "lip.toml", lipJSONFor(libID, "1.0.0", "client", selfAsset("lib.dll", "lib/lib.dll")),
 		"lib.dll", "lib")
 	h.must(h.install(libID))
-	if lf := h.lock(); lf.Platform != "client" {
-		t.Fatal(lf.Platform)
+	if lf := h.lock(); lf.Side != "client" {
+		t.Fatal(lf.Side)
 	}
 }
 
@@ -858,17 +858,17 @@ func TestListNewWorkspaceIsEmpty(t *testing.T) {
 	}
 }
 
-func TestInstallInstalledPackageWithoutEntryForTheRuntimeFailsWithoutChanges(t *testing.T) {
+func TestInstallInstalledPackageWithoutEntryForThePlatformFailsWithoutChanges(t *testing.T) {
 	h := newHarness(t)
 	h.addLib("1.0.0", false)
 	h.must(h.install(libID))
 	h.addTag("example.com/any", "1.0.0", "lip.toml", `{ "format": 4, "id": "example.com/any", "version": "1.0.0",
-	  "variants": { "": [ { "platform": "server", "runtime": "linux-x64" } ] } }`)
+	  "variants": { "": [ { "side": "server", "platform": "linux-x64" } ] } }`)
 	before := h.snapshot()
-	h.withRuntime("linux-x64")
+	h.withPlatform("linux-x64")
 	err := h.install("example.com/any")
 	if err == nil || !strings.Contains(err.Error(), "'"+libID+"'") ||
-		!strings.Contains(err.Error(), "The workspace was installed for the runtime win-x64") {
+		!strings.Contains(err.Error(), "The workspace was installed for the platform win-x64") {
 		t.Fatalf("err = %v", err)
 	}
 	equalMaps(t, h.snapshot(), before)
@@ -876,9 +876,10 @@ func TestInstallInstalledPackageWithoutEntryForTheRuntimeFailsWithoutChanges(t *
 
 func TestOperationsInvalidWorkspaceFileFailWithoutChanges(t *testing.T) {
 	for _, content := range []string{
-		`{ "format": "bf45b1", "platform": "server", "packages": [] }`,
+		`{ "format": "bf45b1", "side": "server", "packages": [] }`,
+		`{ "format": 4, "platform": "server", "runtime": "win-x64", "packages": [] }`,
 		`{ "format_version": 3, "packages": [] }`,
-		`{ "format": 4, "platform": "server", "runtime": "win-x64", "packages": [ { } ] }`,
+		`{ "format": 4, "side": "server", "platform": "win-x64", "packages": [ { } ] }`,
 		"format = 4\n",
 	} {
 		h := newHarness(t)

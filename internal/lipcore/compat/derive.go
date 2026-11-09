@@ -17,16 +17,16 @@ import (
 // Derive reads tooth.json bytes (ParseToothJSON) and derives the package file
 // for the environment (Tooth.Derive): PackageDocument.ParseToothJson(...)
 // .ReadFor(environment, version).
-func Derive(tooth []byte, platform, runtime string, version *semver.Version) (*pkgmodel.Document, error) {
+func Derive(tooth []byte, side, platform string, version *semver.Version) (*pkgmodel.Document, error) {
 	t, err := ParseToothJSON(tooth)
 	if err != nil {
 		return nil, err
 	}
-	return t.Derive(platform, runtime, version)
+	return t.Derive(side, platform, version)
 }
 
 // Derive is ToothCompat.Derive: the package file a tooth.json of format 3 is
-// read as for the environment (platform "server" or "client", runtime a .NET
+// read as for the environment (side "server" or "client", platform a .NET
 // runtime identifier), with version as the version of the package (its tag
 // version), or, when nil, the version of the tooth.json. Its Raw is the
 // derived document (a *doc.Object), and the Raw of each entry is the entry
@@ -35,10 +35,10 @@ func Derive(tooth []byte, platform, runtime string, version *semver.Version) (*p
 // It fails with a *FormatError when the variants of a label cannot be merged
 // (lip v0.37.0 failed on them too), or when a derived entry is not valid in a
 // package file.
-func (t *Tooth) Derive(platform, runtime string, version *semver.Version) (*pkgmodel.Document, error) {
-	if platform != pkgmodel.PlatformServer && platform != pkgmodel.PlatformClient {
-		return nil, fmt.Errorf("compat: platform %q is neither %q nor %q",
-			platform, pkgmodel.PlatformServer, pkgmodel.PlatformClient)
+func (t *Tooth) Derive(side, platform string, version *semver.Version) (*pkgmodel.Document, error) {
+	if side != pkgmodel.SideServer && side != pkgmodel.SideClient {
+		return nil, fmt.Errorf("compat: side %q is neither %q nor %q",
+			side, pkgmodel.SideServer, pkgmodel.SideClient)
 	}
 	if version == nil {
 		if t.nullVersion {
@@ -61,25 +61,25 @@ func (t *Tooth) Derive(platform, runtime string, version *semver.Version) (*pkgm
 			continue
 		}
 		seen[label] = true
-		merged, err := t.getVariant(label, runtime)
+		merged, err := t.getVariant(label, platform)
 		if err != nil {
 			var mf *mergeFailure
 			if errors.As(err, &mf) {
 				return nil, formatErrorf(nil, "The %s of %s %s is not valid: its variants labeled"+
 					" '%s' cannot be merged for %s, because %s. lip v0.37.0 could not install them"+
 					" either; ask the package author to fix %s.",
-					ToothFileName, t.ID, version, label, runtime, mf.reason, ToothFileName)
+					ToothFileName, t.ID, version, label, platform, mf.reason, ToothFileName)
 			}
 			return nil, fmt.Errorf("the %s of %s %s cannot be read for %s: %w",
-				ToothFileName, t.ID, version, runtime, err)
+				ToothFileName, t.ID, version, platform, err)
 		}
 		if merged == nil {
-			continue // no variants for the runtime
+			continue // no variants for the platform
 		}
-		entry, err := convertEntry(merged, platform, runtime)
+		entry, err := convertEntry(merged, side, platform)
 		if err != nil {
 			return nil, fmt.Errorf("the %s of %s %s cannot be read for %s: %w",
-				ToothFileName, t.ID, version, runtime, err)
+				ToothFileName, t.ID, version, platform, err)
 		}
 		derived.Set(label, nilIfNone(entry))
 	}
@@ -117,7 +117,7 @@ func (t *Tooth) Derive(platform, runtime string, version *semver.Version) (*pkgm
 		if err != nil {
 			return nil, formatErrorf(err, "The %s of %s %s cannot be read for %s: its variant"+
 				" '%s' does not convert to a valid variant of %s. Ask the package author to move"+
-				" %s to %s with 'lip migrate'.", ToothFileName, t.ID, version, runtime, label,
+				" %s to %s with 'lip migrate'.", ToothFileName, t.ID, version, platform, label,
 				pkgmodel.PackageFileName, ToothFileName, pkgmodel.PackageFileName)
 		}
 		result.Variants = append(result.Variants,
@@ -276,14 +276,14 @@ func (t *Tooth) getVariant(label, rid string) (*mergedVariant, error) {
 }
 
 // convertEntry is ToothCompat.ConvertEntry: the entry of a package file for
-// the variants of a label merged for a runtime, for a platform and the
-// runtime; nil when an asset has the type tar, tgz or uncompressed, which
+// the variants of a label merged for a platform, for a side and the
+// platform; nil when an asset has the type tar, tgz or uncompressed, which
 // makes the variant absent. Placements and globs that are not valid in a
 // package file are left out.
-func convertEntry(m *mergedVariant, platform, runtime string) (*doc.Object, error) {
+func convertEntry(m *mergedVariant, side, platform string) (*doc.Object, error) {
 	entry := doc.NewObject()
+	entry.Set("side", side)
 	entry.Set("platform", platform)
-	entry.Set("runtime", runtime)
 
 	if len(m.deps) > 0 {
 		deps := doc.NewObject()

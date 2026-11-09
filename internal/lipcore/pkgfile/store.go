@@ -35,8 +35,9 @@ const ToothLockFile = "tooth_lock.json"
 
 // LockFormatError is LockFormatException: a state file exists but cannot
 // be read. Message is lip's message exactly; Err is what is wrong.
-// OtherFormat marks a state file whose "format" is an integer other than
-// 4, written by a different version of lip.
+// OtherFormat marks a state file written by a different version of lip:
+// its "format" is an integer other than 4, or its top level uses the keys
+// of lip before v0.40.
 type LockFormatError struct {
 	Message     string
 	OtherFormat bool
@@ -164,6 +165,10 @@ func ParseWorkspace(data []byte, path string) (*pkgmodel.LockFile, error) {
 			return nil, lockErr(fmt.Sprintf("\"%s\" is %s, but this version of lip reads only %d. If another"+
 				" version of lip wrote the file, use that version.", pkgmodel.FormatKey, is, pkgmodel.Format), nil)
 		}
+		if UsesOldKeys(root) {
+			otherFormat = true
+			return nil, lockErr("The file "+OldKeysMessage+".", nil)
+		}
 
 		// "commit" is omitted, not null, for a package that is not from a remote
 		// repository.
@@ -230,7 +235,7 @@ func valueKind(v any) string {
 }
 
 func (lf *lockFile) toModel() *pkgmodel.LockFile {
-	out := &pkgmodel.LockFile{Format: pkgmodel.Format, Platform: lf.platform, Runtime: lf.runtime,
+	out := &pkgmodel.LockFile{Format: pkgmodel.Format, Side: lf.side, Platform: lf.platform,
 		Packages: make([]pkgmodel.LockedPackage, len(lf.packages))}
 	for i, p := range lf.packages {
 		files := make([]string, len(p.files))
@@ -250,7 +255,7 @@ func (lf *lockFile) toModel() *pkgmodel.LockFile {
 // validateRead is LockStore.Validate on a deserialized state file, which
 // may hold null packages and null files.
 func validateRead(lf *lockFile) error {
-	if err := validateEnvironment(lf.platform, lf.runtime); err != nil {
+	if err := validateEnvironment(lf.side, lf.platform); err != nil {
 		return err
 	}
 	for i, p := range lf.packages {
@@ -270,12 +275,12 @@ func validateRead(lf *lockFile) error {
 	return nil
 }
 
-func validateEnvironment(platform, runtime string) error {
-	if !IsPlatform(platform) {
-		return lockErr(fmt.Sprintf("\"platform\" is \"%s\", but it must be \"server\" or \"client\".", platform), nil)
+func validateEnvironment(side, platform string) error {
+	if !IsSide(side) {
+		return lockErr(fmt.Sprintf("\"side\" is \"%s\", but it must be \"server\" or \"client\".", side), nil)
 	}
-	if runtime == "" {
-		return lockErr("\"runtime\" is missing or empty, but it must be a runtime identifier such as"+
+	if platform == "" {
+		return lockErr("\"platform\" is missing or empty, but it must be a runtime identifier such as"+
 			" \"win-x64\".", nil)
 	}
 	return nil
@@ -309,7 +314,7 @@ func ValidateWorkspace(lf *pkgmodel.LockFile) error {
 		return lockErr(fmt.Sprintf("\"%s\" is %d, but it must be %d.", pkgmodel.FormatKey, lf.Format,
 			pkgmodel.Format), nil)
 	}
-	if err := validateEnvironment(lf.Platform, lf.Runtime); err != nil {
+	if err := validateEnvironment(lf.Side, lf.Platform); err != nil {
 		return err
 	}
 	for i := range lf.Packages {
@@ -348,13 +353,13 @@ func describePackage(manifest any, variant string) string {
 }
 
 // MarshalWorkspace is the bytes LockStore.Stage writes for a state file:
-// format, platform, runtime and packages; for each package its manifest (as
+// format, side, platform and packages; for each package its manifest (as
 // it is), variant, explicit, ref, commit (left out when "") and files.
 func MarshalWorkspace(lf *pkgmodel.LockFile) []byte {
 	root := doc.NewObject()
 	root.Set(pkgmodel.FormatKey, json.Number(fmt.Sprint(lf.Format)))
+	root.Set("side", lf.Side)
 	root.Set("platform", lf.Platform)
-	root.Set("runtime", lf.Runtime)
 	packages := make([]any, len(lf.Packages))
 	for i, p := range lf.Packages {
 		o := doc.NewObject()

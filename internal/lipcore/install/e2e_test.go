@@ -19,7 +19,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/lipcore/txn"
 )
 
-// A differential test against the reference lip 0.38 CLI: every scenario
+// A differential test against the reference lip 0.40 CLI: every scenario
 // runs `lip install/uninstall` in one workspace and this installer, driven
 // as McmodService.Execute drives it, in another; the resulting trees
 // (paths, contents, hidden attributes; .lip excluded) and the success of
@@ -160,7 +160,7 @@ func writeFixture(t *testing.T, dir string, p *e2ePkg) string {
 		URLs  []string    `json:"urls,omitempty"`
 		Place []placeJSON `json:"place,omitempty"`
 	}
-	entry := map[string]any{"platform": "server", "runtime": "win-x64"}
+	entry := map[string]any{"side": "server", "platform": "win-x64"}
 	var assets []assetJSON
 	for _, a := range p.entry.Assets {
 		aj := assetJSON{Type: string(a.Type), URLs: a.URLs}
@@ -294,7 +294,7 @@ func (d *e2eDriver) operation(t *testing.T, plan func(view *View) (*Plan, error)
 	}
 	_, err = tx.Commit(func() error {
 		return os.WriteFile(filepath.Join(d.root, ".lip", "state.json.tmp"),
-			[]byte("format: 4\nplatform: server\nruntime: win-x64\npackages: []\n"), 0o644)
+			[]byte("format: 4\nside: server\nplatform: win-x64\npackages: []\n"), 0o644)
 	})
 	return err
 }
@@ -305,7 +305,7 @@ func (d *e2eDriver) install(t *testing.T, fixture string, p *e2ePkg) error {
 		return err
 	}
 	entry := p.entry
-	entry.Platform, entry.Runtime = pkgmodel.PlatformServer, "win-x64"
+	entry.Side, entry.Platform = pkgmodel.SideServer, "win-x64"
 	pkg := &Package{ID: p.id(), Version: p.version, Entry: &entry, Archive: source,
 		OpenAsset: func([]string) (archive.Source, error) {
 			return nil, &archive.UnavailableError{Message: "no downloads in this test"}
@@ -346,7 +346,7 @@ func (d *e2eDriver) uninstall(t *testing.T, p *e2ePkg) error {
 func TestE2EDifferentialAgainstLip(t *testing.T) {
 	ref := os.Getenv("LIP_REF")
 	if os.Getenv("LIP_E2E") != "1" || ref == "" {
-		t.Skip("set LIP_E2E=1 and LIP_REF to the lip 0.38 executable")
+		t.Skip("set LIP_E2E=1 and LIP_REF to the lip 0.40 executable")
 	}
 	for _, c := range e2eCases() {
 		t.Run(c.name, func(t *testing.T) {
@@ -372,14 +372,14 @@ func TestE2EDifferentialAgainstLip(t *testing.T) {
 					continue
 				case step.install != nil:
 					fixture := writeFixture(t, fixtures, step.install)
-					cmd := exec.Command(ref, "install", fixture, "--rid", "win-x64")
+					cmd := exec.Command(ref, "install", fixture, "--platform", "win-x64")
 					cmd.Dir = wsA
 					var err error
 					refOut, err = cmd.CombinedOutput()
 					refOK = err == nil
 					ourErr = driver.install(t, fixture, step.install)
 				case step.uninstall != nil:
-					cmd := exec.Command(ref, "uninstall", step.uninstall.id(), "--rid", "win-x64")
+					cmd := exec.Command(ref, "uninstall", step.uninstall.id(), "--platform", "win-x64")
 					cmd.Dir = wsA
 					var err error
 					refOut, err = cmd.CombinedOutput()

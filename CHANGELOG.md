@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- The LeviMC Mods page can filter by tags (the featured tags such as Library / API or Economy first, each with its icon; a tag can also be excluded), license (Permissive, Weak copyleft, Copyleft, Other or No license, or an exact license), dependencies and author, shows how many mods each choice leaves, and lists active filters as removable chips; a mod's page has a "More by <author>" link
+- Mod pages show the author as a link to their GitHub profile, the license with its family, and the featured tags with their icons before the other tags; versions list pre-releases as such and name their dependencies
+- `mod search` in the command line takes `--tag`, `--license`, `--dep` and `--author`, and its JSON output includes each mod's owner, license, license family, dependencies and game versions
+
+### Changed
+
+- The built-in package manager follows lip v0.40: an entry of `lip.toml` and `.lip/state.json` says where it runs with `side` (`server` or `client`) and `platform` (a runtime identifier such as `win-x64`), formerly `platform` and `runtime`. A state file with the old keys is refused with a message saying to rename them
+- The LeviMC Mods page reads the new levimc.org/mods catalogue: it lists the mods with a client build for this computer's platform, searches like the site (every word must match, best matches first, in English or Chinese tag names too) and sorts by Relevance, Stars, Updated or Newest; the Name sort, the order switch and "Hotness" are gone. The game version filter uses the game versions the catalogue lists, so it works without the LeviLamina version list
+- Installing a mod without choosing a variant installs its "client" variant, else its default variant, else the first other variant with a client build for this platform, as the catalogue says; an installed mod is still updated in place whatever its variant
+- The developer guide on the LeviMC Mods page explains `side` and `platform` in `lip.toml` and links to lip's guide to creating packages
+- `mod search --sort` takes `relevance` (the default), `stars`, `updated` or `newest`; `--sort name` and `--reverse` are gone, and `--game` matches the catalogue's game versions. The command line caches the catalogue in `lip-catalog.v4.json`
+
 ## [1.1.0-beta.3] - 2026-11-09
 
 ### Changed

@@ -767,7 +767,7 @@ func TestUninstallUsesTheRecordedEntryOnly(t *testing.T) {
 	h.addFile("keep.txt", "k")
 	h.addFile("logs/x.log", "x")
 	entry := &pkgmodel.Entry{
-		Platform: "server", Runtime: "win-x64",
+		Side: "server", Platform: "win-x64",
 		Assets:   []pkgmodel.Asset{{Type: pkgmodel.AssetZip, URLs: []string{"https://example.com/gone.zip"}}},
 		Preserve: []string{"keep.txt"},
 		Purge:    []string{"logs/"},

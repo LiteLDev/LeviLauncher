@@ -123,7 +123,7 @@ type CommitOf func(repo, tag string) (string, error)
 // Members with an invalid variant, a manifest that cannot be read, or no
 // entry for the variant are left out. An error is a commit that cannot be
 // obtained, or a manifest lip v0.38 itself fails on unexpectedly.
-func DeriveWorkspace(tl *ToothLock, root, platform, runtime string, commitOf CommitOf) (*pkgmodel.LockFile, error) {
+func DeriveWorkspace(tl *ToothLock, root, side, platform string, commitOf CommitOf) (*pkgmodel.LockFile, error) {
 	type member struct {
 		locked  pkgmodel.LockedPackage
 		entry   *pkgmodel.Entry
@@ -137,7 +137,7 @@ func DeriveWorkspace(tl *ToothLock, root, platform, runtime string, commitOf Com
 		t, err := ReadToothJSON(m.Manifest)
 		var pf *pkgmodel.Document
 		if err == nil {
-			pf, err = t.Derive(platform, runtime, nil)
+			pf, err = t.Derive(side, platform, nil)
 		}
 		if err != nil {
 			if fe := (*FormatError)(nil); errors.As(err, &fe) {
@@ -145,7 +145,7 @@ func DeriveWorkspace(tl *ToothLock, root, platform, runtime string, commitOf Com
 			}
 			return nil, err
 		}
-		entry := pf.SelectEntry(m.Variant, platform, runtime)
+		entry := pf.SelectEntry(m.Variant, side, platform)
 		if entry == nil {
 			continue
 		}
@@ -217,8 +217,8 @@ func DeriveWorkspace(tl *ToothLock, root, platform, runtime string, commitOf Com
 
 	lf := &pkgmodel.LockFile{
 		Format:   pkgmodel.Format,
+		Side:     side,
 		Platform: platform,
-		Runtime:  runtime,
 		Packages: make([]pkgmodel.LockedPackage, 0, len(order)),
 	}
 	for _, i := range order {

@@ -12,7 +12,7 @@ const exports = {};
 runInNewContext(outputText, {
   exports,
   require(name) {
-    assert.ok(["./fs", "./version", "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice"].includes(name));
+    assert.ok(["./fs", "./version", "./lipCatalog", "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice"].includes(name));
     return {};
   },
 });

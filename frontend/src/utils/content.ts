@@ -1,6 +1,23 @@
 import { listDirectories } from "./fs";
 import { compareVersions } from "./version";
 import { GetUserGamertagMap } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
+import {
+  compareVariantNames,
+  LAUNCHER_PLATFORM,
+  LAUNCHER_SIDE,
+  launcherEntries,
+  parseLipCatalog,
+  parseLipModDetail,
+  preferredVariant,
+  qualifyingVariants,
+  selfVariantAliases,
+  splitDependency,
+  variantFiles,
+  variantIdentifier,
+  type LipCatalogEntry,
+  type LipModDetail,
+  type LipVariantFile,
+} from "./lipCatalog";
 
 export const EMPTY_CONTENT_ROOTS = {
   base: "",
@@ -97,82 +114,69 @@ export function resolvePlayerDisplayName(
   return typeof gt === "string" && gt.trim() ? gt : key;
 }
 
-type UnknownRecord = Record<string, unknown>;
+// ------------------------------------------------------------------ lip catalogue
+//
+// The catalogue is levimc.org/mods: its index (`index.json`) lists every mod
+// with what the filters need, and each mod's detail (`<id>/index.json`) its
+// versions, each with variants of entries {side, platform, deps}. The
+// launcher installs for the client on its platform (lipCatalog.ts
+// LAUNCHER_SIDE / LAUNCHER_PLATFORM): it lists the mods whose latest version
+// has such an entry, and offers the variants that have one (rule A2 picks
+// the default). The pure logic lives in lipCatalog.ts.
 
 const LIP_MODS_BASE_URL = "https://levimc.org/mods/";
 const LIP_INDEX_URL = `${LIP_MODS_BASE_URL}index.json`;
 const LIP_DETAIL_FETCH_CONCURRENCY = 8;
-const LEVI_LAMINA_IDENTIFIER = "liteldev/levilamina";
 
-const normalizeLIPIdentifier = (value: string): string => {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/^\/+/, "")
-    .replace(/\/+$/, "");
-};
-
-const getIdentifierOwnerRepo = (value: string): string => {
-  const normalized = normalizeLIPIdentifier(value);
-  if (!normalized) return "";
-
-  const withoutVariant = normalized.split("#")[0];
-  const parts = withoutVariant.split("/").filter(Boolean);
-  if (parts.length < 2) {
-    return withoutVariant;
-  }
-  return `${parts[parts.length - 2]}/${parts[parts.length - 1]}`;
-};
-
-const isLeviLaminaIdentifier = (value: string): boolean => {
-  const normalized = normalizeLIPIdentifier(value);
-  if (!normalized) return false;
-
-  const withoutVariant = normalized.split("#")[0];
-  if (withoutVariant === LEVI_LAMINA_IDENTIFIER) return true;
-  return getIdentifierOwnerRepo(withoutVariant) === LEVI_LAMINA_IDENTIFIER;
-};
-
-
-export interface LIPPackageBasicInfo {
-  identifier: string;
-  name: string;
-  description: string;
-  author: string;
-  tags: string[];
-  avatarUrl: string;
-  projectUrl: string;
-  hotness: number;
-  updated: string;
-  versions: string[];
-  llDependencyRanges: string[];
-  variants: LIPPackageVariantOption[];
-  preferredVariantKey: string;
-}
-
+/** A variant the launcher can install: `packageIdentifier` is `<id>#<variant>` (`<id>#` for the default `""`). */
 export interface LIPPackageVariantOption {
   key: string;
-  label: string;
   packageIdentifier: string;
 }
 
+/** One version of a variant, for the launcher's side and platform. */
 export interface LIPPackageFileInfo {
   version: string;
+  prerelease: boolean;
+  released?: string;
   dependencies: Record<string, string>;
   llDependencyRanges: string[];
   otherDependencies: Record<string, string>;
 }
 
 export interface LIPPackageVariantDetail extends LIPPackageVariantOption {
+  /** Newest first. */
   files: LIPPackageFileInfo[];
   versions: string[];
   llDependencyRanges: string[];
 }
 
+/**
+ * A catalogue mod as the launcher lists it: the index's entry, and from its
+ * detail the versions and LeviLamina ranges of the preferred variant.
+ */
+export interface LIPPackageBasicInfo extends LipCatalogEntry {
+  /** The catalogue id (`github.com/<owner>/<repo>`), the same as `id`. */
+  identifier: string;
+  /** The repository owner (`owner`). */
+  author: string;
+  avatarUrl: string;
+  projectUrl: string;
+  /** The preferred variant's versions, newest first (empty until the detail is loaded). */
+  versions: string[];
+  /** LeviLamina ranges any version of the installable variants depends on. */
+  llDependencyRanges: string[];
+  /** The variants the launcher can install, preferred first. */
+  variants: LIPPackageVariantOption[];
+  /** Rule A2's choice; "" is the default variant too, so check `variants` for whether there is one. */
+  preferredVariantKey: string;
+}
+
 export interface LIPPackageDetail extends LIPPackageBasicInfo {
   files: LIPPackageFileInfo[];
   variantDetails: LIPPackageVariantDetail[];
+  /** The detail as the catalogue has it (license, side, platform, readmes, dependency names...). */
+  detail: LipModDetail | null;
 }
 
 export interface LIPSelfVariantRelation {
@@ -185,39 +189,6 @@ type ParsedLIPIndexResult = {
   packages: LIPPackageBasicInfo[];
   detailsByIdentifier: Record<string, LIPPackageDetail>;
   selfVariantRelations: LIPSelfVariantRelation[];
-};
-
-const isRecord = (value: unknown): value is UnknownRecord =>
-  Boolean(value) && typeof value === "object" && !Array.isArray(value);
-
-const toSafeString = (value: unknown): string =>
-  typeof value === "string" ? value : "";
-
-const toSafeNumber = (value: unknown): number => {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
-const toOptionalSafeNumber = (value: unknown): number | null => {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-  if (typeof value === "string" && value.trim() === "") {
-    return null;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const toStringArray = (value: unknown): string[] => {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((item): item is string => typeof item === "string")
-    .map((item) => item.trim())
-    .filter(Boolean);
 };
 
 type ParsedSemver = {
@@ -445,148 +416,8 @@ export const resolveSupportedGameVersionsByLLRanges = (
   return unique;
 };
 
-const buildVariantPackageIdentifier = (
-  identifier: string,
-  variantKey: string,
-): string => {
-  const normalizedIdentifier =
-    String(identifier || "")
-      .trim()
-      .split("#")[0] || "";
-  const normalizedVariantKey = String(variantKey || "").trim();
-  if (!normalizedIdentifier) return "";
-  return normalizedVariantKey
-    ? `${normalizedIdentifier}#${normalizedVariantKey}`
-    : `${normalizedIdentifier}#`;
-};
-
-const getVariantSortRank = (variantKey: string): number => {
-  const normalizedVariantKey = String(variantKey || "")
-    .trim()
-    .toLowerCase();
-  if (normalizedVariantKey === "client") return 0;
-  if (!normalizedVariantKey) return 1;
-  return 2;
-};
-
-const resolvePreferredVariantKey = (
-  variants: LIPPackageVariantDetail[],
-): string => {
-  const clientVariant = variants.find(
-    (variant) =>
-      String(variant.key || "")
-        .trim()
-        .toLowerCase() === "client",
-  );
-  if (clientVariant) return clientVariant.key;
-  return "";
-};
-
-const parsePackageVersionsRecord = (
-  versionsValue: UnknownRecord | null,
-): {
-  files: LIPPackageFileInfo[];
-  versions: string[];
-  llDependencyRanges: string[];
-} => {
-  if (!versionsValue) {
-    return { files: [], versions: [], llDependencyRanges: [] };
-  }
-
-  const files: LIPPackageFileInfo[] = [];
-  const packageRangeSet = new Set<string>();
-
-  for (const [version, packageMeta] of Object.entries(versionsValue)) {
-    const normalizedVersion = String(version || "").trim();
-    if (!normalizedVersion) continue;
-
-    const dependencyMap: Record<string, string> = {};
-    const otherDependencies: Record<string, string> = {};
-    const llRangeSet = new Set<string>();
-
-    if (isRecord(packageMeta)) {
-      const dependencies = packageMeta["dependencies"];
-      if (isRecord(dependencies)) {
-        for (const [depKey, depRange] of Object.entries(dependencies)) {
-          const normalizedKey = String(depKey || "").trim();
-          if (!normalizedKey) continue;
-          const normalizedRange = toSafeString(depRange).trim();
-          if (!normalizedRange) continue;
-
-          dependencyMap[normalizedKey] = normalizedRange;
-
-          // LeviLamina with any variant ("#client" in tooth.json, none in
-          // lip.toml).
-          if (isLeviLaminaIdentifier(normalizedKey)) {
-            llRangeSet.add(normalizedRange);
-            packageRangeSet.add(normalizedRange);
-            continue;
-          }
-          otherDependencies[normalizedKey] = normalizedRange;
-        }
-      }
-    }
-
-    files.push({
-      version: normalizedVersion,
-      dependencies: dependencyMap,
-      llDependencyRanges: Array.from(llRangeSet),
-      otherDependencies,
-    });
-  }
-
-  files.sort((a, b) => compareSemverLike(b.version, a.version));
-  const versions = files.map((file) => file.version);
-  return {
-    files,
-    versions,
-    llDependencyRanges: Array.from(packageRangeSet),
-  };
-};
-
-const parsePackageVariants = (
-  value: unknown,
-  identifier: string,
-): LIPPackageVariantDetail[] => {
-  if (!isRecord(value)) return [];
-
-  const variants: LIPPackageVariantDetail[] = [];
-  for (const [variantKey, variantMeta] of Object.entries(value)) {
-    if (!isRecord(variantMeta)) continue;
-
-    const parsed = parsePackageVersionsRecord(
-      isRecord(variantMeta["versions"])
-        ? (variantMeta["versions"] as UnknownRecord)
-        : null,
-    );
-    if (parsed.versions.length === 0) continue;
-
-    const normalizedVariantKey = String(variantKey || "").trim();
-    variants.push({
-      key: normalizedVariantKey,
-      label: toSafeString(variantMeta["label"]).trim(),
-      packageIdentifier: buildVariantPackageIdentifier(
-        identifier,
-        normalizedVariantKey,
-      ),
-      files: parsed.files,
-      versions: parsed.versions,
-      llDependencyRanges: parsed.llDependencyRanges,
-    });
-  }
-
-  return variants.sort((a, b) => {
-    const rankDiff = getVariantSortRank(a.key) - getVariantSortRank(b.key);
-    if (rankDiff !== 0) return rankDiff;
-
-    return a.packageIdentifier.localeCompare(b.packageIdentifier, undefined, {
-      sensitivity: "base",
-    });
-  });
-};
-
 const normalizeHttpUrl = (value: string): string => {
-  const raw = value.trim();
+  const raw = String(value || "").trim();
   if (!raw) return "";
   try {
     const parsed = new URL(raw);
@@ -597,160 +428,121 @@ const normalizeHttpUrl = (value: string): string => {
   }
 };
 
-const inferAuthorFromIdentifier = (identifier: string): string => {
-  const parts = identifier.split("/").filter(Boolean);
-  if (parts.length >= 3 && parts[0].includes(".")) {
-    return parts[1] || "";
-  }
-  if (parts.length >= 2) {
-    return parts[parts.length - 2] || "";
-  }
-  return "";
-};
-
-const inferProjectUrlFromIdentifier = (identifier: string): string => {
-  const direct = normalizeHttpUrl(identifier);
-  if (direct) return direct;
-
-  const normalized = identifier.trim().replace(/^\/+|\/+$/g, "");
-  if (!normalized || !normalized.includes("/")) return "";
-
-  const parts = normalized.split("/").filter(Boolean);
-  if (
-    parts.length === 2 &&
-    !parts[0].includes(".") &&
-    !parts[0].includes(":")
-  ) {
+/** `https://github.com/<owner>/<repo>` for a catalogue id (`https://<id>` for other hosts). */
+const projectUrlOf = (identifier: string): string => {
+  const parts = identifier.trim().replace(/^https?:\/\//, "").split("/").filter(Boolean);
+  if (parts.length === 2 && !parts[0].includes(".")) {
     return normalizeHttpUrl(`https://github.com/${parts[0]}/${parts[1]}`);
   }
-
-  return normalizeHttpUrl(`https://${normalized}`);
+  return parts.length >= 2 ? normalizeHttpUrl(`https://${parts.join("/")}`) : "";
 };
 
-type ParsedLIPPackage = {
-  basic: LIPPackageBasicInfo;
-  detail: LIPPackageDetail;
-};
-
-const extractSelfVariantAliasesFromPackage = (
-  value: unknown,
-  identifier: string,
-): string[] => {
-  if (!isRecord(value)) return [];
-
-  const normalizedIdentifier = normalizeLIPIdentifier(identifier).split("#")[0];
-  if (!normalizedIdentifier) return [];
-
-  const variants = value["variants"];
-  const variantItems: unknown[] = Array.isArray(variants)
-    ? variants
-    : isRecord(variants)
-      ? Object.values(variants)
-      : [];
-  if (variantItems.length === 0) return [];
-
-  const aliasSet = new Set<string>();
-  const collectDependencyKeys = (meta: unknown): string[] => {
-    if (!isRecord(meta)) return [];
-    const dependencies = meta["dependencies"];
-    if (!isRecord(dependencies)) return [];
-    return Object.keys(dependencies);
-  };
-
-  for (const variant of variantItems) {
-    if (!isRecord(variant)) continue;
-    const depKeys: string[] = [];
-
-    depKeys.push(...collectDependencyKeys(variant));
-
-    const versions = variant["versions"];
-    if (isRecord(versions)) {
-      for (const versionMeta of Object.values(versions)) {
-        depKeys.push(...collectDependencyKeys(versionMeta));
+/**
+ * The index entry of a mod known only from its detail (a package page opened
+ * directly, a dependency outside the launcher's list): `deps` is the union
+ * over the latest version's entries keyed by bare id, the mod itself left
+ * out, as the index has it.
+ */
+const entryFromDetail = (detail: LipModDetail): LipCatalogEntry => {
+  const ranges = new Map<string, string[]>();
+  for (const entries of Object.values(detail.versions[0]?.variants ?? {})) {
+    for (const entry of entries) {
+      for (const [key, range] of Object.entries(entry.deps)) {
+        const { id } = splitDependency(key);
+        if (id.toLowerCase() === detail.id.toLowerCase()) continue;
+        const list = ranges.get(id) ?? [];
+        if (!list.includes(range)) list.push(range);
+        ranges.set(id, list);
       }
     }
+  }
+  return {
+    id: detail.id,
+    name: detail.name,
+    description: detail.description,
+    owner: detail.owner,
+    logo: detail.logo,
+    tags: detail.tags,
+    side: detail.side,
+    platform: detail.platform,
+    gameVersions: detail.gameVersions,
+    deps: Object.fromEntries(
+      [...ranges]
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([id, list]) => [id, list.join(" || ")]),
+    ),
+    stars: detail.stars,
+    license: detail.license,
+    updated: detail.updated,
+    created: detail.created,
+    url: detail.url,
+    json: "",
+    requiredBy: detail.requiredBy.length,
+    order: Number.MAX_SAFE_INTEGER,
+  };
+};
 
-    for (const depKey of depKeys) {
-      const normalizedDep = normalizeLIPIdentifier(depKey);
-      if (!normalizedDep) continue;
-      const depBase = normalizedDep.split("#")[0];
-      if (depBase !== normalizedIdentifier) continue;
+const toFileInfo = (file: LipVariantFile): LIPPackageFileInfo => ({
+  version: file.version,
+  prerelease: file.prerelease,
+  released: file.released,
+  dependencies: file.deps,
+  llDependencyRanges: file.llRanges,
+  otherDependencies: file.otherDeps,
+});
 
-      const hashIndex = normalizedDep.indexOf("#");
-      if (hashIndex < 0) continue;
-      const alias = normalizedDep
-        .slice(hashIndex + 1)
-        .trim()
-        .toLowerCase();
-      if (!alias) continue;
-      aliasSet.add(alias);
+/**
+ * A mod as the launcher shows it: its index entry and, from its detail, the
+ * variants with an entry for the launcher's side and platform, preferred
+ * (rule A2) first.
+ */
+const buildLIPPackageDetail = (
+  entry: LipCatalogEntry,
+  detail: LipModDetail | null,
+): LIPPackageDetail => {
+  const names = new Set<string>();
+  for (const version of detail?.versions ?? []) {
+    for (const name of qualifyingVariants(version.variants, LAUNCHER_SIDE, LAUNCHER_PLATFORM)) {
+      names.add(name);
     }
   }
-
-  return Array.from(aliasSet).sort((a, b) => a.localeCompare(b));
-};
-
-const parseLIPPackage = (
-  value: unknown,
-  identifier: string,
-): ParsedLIPPackage | null => {
-  if (!isRecord(value)) return null;
-
-  const normalizedIdentifier = toSafeString(identifier).trim();
-  if (!normalizedIdentifier) return null;
-
-  const info = isRecord(value["info"]) ? value["info"] : {};
-
-  const name = toSafeString(info["name"]).trim() || normalizedIdentifier;
-  const description = toSafeString(info["description"]).trim();
-  const tags = toStringArray(info["tags"]);
-  const avatarUrl = normalizeHttpUrl(toSafeString(info["avatar_url"]));
-  const updated = toSafeString(value["updated_at"]).trim();
-  const variantDetails = parsePackageVariants(
-    value["variants"],
-    normalizedIdentifier,
-  );
-  if (variantDetails.length === 0) return null;
-
-  const preferredVariantKey = resolvePreferredVariantKey(variantDetails);
-  if (!preferredVariantKey) return null;
-  const preferredVariant =
-    variantDetails.find((variant) => variant.key === preferredVariantKey) ||
-    variantDetails[0];
-  if (!preferredVariant) return null;
-  const hotness =
-    toOptionalSafeNumber(value["stargazer_count"]) ??
-    toSafeNumber(value["stars"]);
-
-  const basic: LIPPackageBasicInfo = {
-    identifier: normalizedIdentifier,
-    name,
-    description,
-    author: inferAuthorFromIdentifier(normalizedIdentifier),
-    tags,
-    avatarUrl,
-    projectUrl: inferProjectUrlFromIdentifier(normalizedIdentifier),
-    hotness,
-    updated,
-    versions: preferredVariant.versions,
-    llDependencyRanges: preferredVariant.llDependencyRanges,
-    variants: variantDetails.map((variant) => ({
-      key: variant.key,
-      label: variant.label,
-      packageIdentifier: variant.packageIdentifier,
-    })),
-    preferredVariantKey: preferredVariant.key,
-  };
-
-  const detail: LIPPackageDetail = {
-    ...basic,
-    files: preferredVariant.files,
+  const variantDetails: LIPPackageVariantDetail[] = detail
+    ? [...names].sort(compareVariantNames).map((key) => {
+        const files = variantFiles(detail, key, LAUNCHER_SIDE, LAUNCHER_PLATFORM).map(toFileInfo);
+        return {
+          key,
+          packageIdentifier: variantIdentifier(entry.id, key),
+          files,
+          versions: files.map((file) => file.version),
+          llDependencyRanges: [...new Set(files.flatMap((file) => file.llDependencyRanges))],
+        };
+      })
+    : [];
+  // Rule A2 over the newest version that has an installable variant.
+  let preferredKey: string | undefined;
+  for (const version of detail?.versions ?? []) {
+    preferredKey = preferredVariant(version.variants, LAUNCHER_SIDE, LAUNCHER_PLATFORM);
+    if (preferredKey !== undefined) break;
+  }
+  const preferred =
+    variantDetails.find((variant) => variant.key === preferredKey) ?? variantDetails[0];
+  return {
+    ...entry,
+    identifier: entry.id,
+    author: entry.owner,
+    avatarUrl: normalizeHttpUrl(entry.logo),
+    projectUrl: normalizeHttpUrl(detail?.repository || "") || projectUrlOf(entry.id),
+    versions: preferred?.versions ?? [],
+    llDependencyRanges: preferred?.llDependencyRanges ?? [],
+    variants: variantDetails.map(({ key, packageIdentifier }) => ({ key, packageIdentifier })),
+    preferredVariantKey: preferred?.key ?? "",
+    files: preferred?.files ?? [],
     variantDetails,
+    detail,
   };
-
-  return { basic, detail };
 };
 
+/** The detail document of a catalogue id (`levimc.org/mods/<id>/index.json`). */
 const buildLIPModDetailUrl = (identifier: string): string => {
   const path = String(identifier || "")
     .trim()
@@ -762,54 +554,6 @@ const buildLIPModDetailUrl = (identifier: string): string => {
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/")}/index.json`;
-};
-
-// Converts a levimc.org/mods/<tooth>/index.json document into the
-// identifier-keyed package shape consumed by parseLIPPackage.
-const convertLIPModDetail = (
-  value: unknown,
-): { identifier: string; item: UnknownRecord } | null => {
-  if (!isRecord(value)) return null;
-  const identifier = toSafeString(value["tooth"]).trim();
-  if (!identifier) return null;
-
-  const variants: Record<string, { versions: UnknownRecord }> = {};
-  const versionsValue = Array.isArray(value["versions"])
-    ? value["versions"]
-    : [];
-  for (const versionMeta of versionsValue) {
-    if (!isRecord(versionMeta)) continue;
-    const version = toSafeString(versionMeta["version"]).trim();
-    if (!version) continue;
-    const versionVariants = Array.isArray(versionMeta["variants"])
-      ? versionMeta["variants"]
-      : [];
-    for (const variantMeta of versionVariants) {
-      if (!isRecord(variantMeta)) continue;
-      const variantKey = toSafeString(variantMeta["label"]).trim();
-      const variant = (variants[variantKey] ||= { versions: {} });
-      variant.versions[version] = {
-        dependencies: isRecord(variantMeta["dependencies"])
-          ? variantMeta["dependencies"]
-          : {},
-      };
-    }
-  }
-
-  return {
-    identifier,
-    item: {
-      stargazer_count: value["stars"],
-      updated_at: value["updated"],
-      info: {
-        name: value["name"],
-        description: value["description"],
-        tags: value["tags"],
-        avatar_url: value["icon"],
-      },
-      variants,
-    },
-  };
 };
 
 const fetchLIPJson = async (
@@ -827,19 +571,21 @@ const fetchLIPJson = async (
   return response.json();
 };
 
+/** Details by id; one that fails or is not a detail of this shape is left out. */
 const fetchLIPModDetails = async (
   identifiers: string[],
   signal: AbortSignal,
-): Promise<Record<string, UnknownRecord>> => {
-  const packages: Record<string, UnknownRecord> = {};
+): Promise<Record<string, LipModDetail>> => {
+  const details: Record<string, LipModDetail> = {};
   let nextIndex = 0;
   const worker = async () => {
     while (nextIndex < identifiers.length) {
-      const url = buildLIPModDetailUrl(identifiers[nextIndex++]);
+      const identifier = identifiers[nextIndex++];
+      const url = buildLIPModDetailUrl(identifier);
       if (!url) continue;
       try {
-        const converted = convertLIPModDetail(await fetchLIPJson(url, signal));
-        if (converted) packages[converted.identifier] = converted.item;
+        const detail = parseLipModDetail(await fetchLIPJson(url, signal));
+        if (detail) details[identifier] = detail;
       } catch (error) {
         if (signal.aborted) throw error;
       }
@@ -851,84 +597,43 @@ const fetchLIPModDetails = async (
       worker,
     ),
   );
-  return packages;
+  return details;
 };
 
-// Only mods targeting the client can carry the "client" variant the launcher
-// installs, so skip fetching details for server-only mods.
-const collectLIPClientModIdentifiers = (json: unknown): string[] => {
-  if (!isRecord(json) || !Array.isArray(json["mods"])) return [];
-  const identifiers: string[] = [];
-  for (const mod of json["mods"]) {
-    if (!isRecord(mod)) continue;
-    const identifier = toSafeString(mod["tooth"]).trim();
-    if (!identifier) continue;
-    const env = toStringArray(mod["env"]).map((item) => item.toLowerCase());
-    if (env.length > 0 && !env.includes("client")) continue;
-    identifiers.push(identifier);
-  }
-  return identifiers;
-};
+/**
+ * The `#alias` variants a mod's entries depend on of itself
+ * (LegacyScriptEngine#client_lua): installed mods whose folder or name is
+ * such an alias belong to the package.
+ */
+export const extractSelfVariantAliasesFromPackage = (
+  detail: Pick<LipModDetail, "id" | "versions"> | null | undefined,
+): string[] => (detail ? selfVariantAliases(detail) : []);
 
-const parseLIPIndexResult = (
-  packagesValue: Record<string, UnknownRecord>,
+const buildLIPIndexResult = (
+  entries: LipCatalogEntry[],
+  details: Record<string, LipModDetail>,
 ): ParsedLIPIndexResult => {
-  const deduplicatedPackages = new Map<string, LIPPackageBasicInfo>();
+  const packages: LIPPackageBasicInfo[] = [];
   const detailsByIdentifier: Record<string, LIPPackageDetail> = {};
-  const selfVariantRelationsByIdentifier = new Map<
-    string,
-    LIPSelfVariantRelation
-  >();
-
-  for (const [identifier, item] of Object.entries(packagesValue)) {
-    const parsed = parseLIPPackage(item, identifier);
-    if (parsed && !deduplicatedPackages.has(parsed.basic.identifier)) {
-      deduplicatedPackages.set(parsed.basic.identifier, parsed.basic);
-      detailsByIdentifier[parsed.detail.identifier] = parsed.detail;
+  const relations: LIPSelfVariantRelation[] = [];
+  for (const entry of entries) {
+    if (detailsByIdentifier[entry.id]) continue;
+    const detail = details[entry.id] ?? null;
+    const parsed = buildLIPPackageDetail(entry, detail);
+    detailsByIdentifier[entry.id] = parsed;
+    const { files: _files, variantDetails: _variants, detail: _detail, ...basic } = parsed;
+    packages.push(basic);
+    const aliases = extractSelfVariantAliasesFromPackage(detail);
+    if (aliases.length > 0) {
+      relations.push({ identifier: entry.id, packageName: parsed.name || entry.id, aliases });
     }
-
-    const selfAliases = extractSelfVariantAliasesFromPackage(item, identifier);
-    if (selfAliases.length > 0) {
-      const relationIdentifier =
-        parsed?.basic.identifier || String(identifier || "").trim();
-      if (relationIdentifier) {
-        const existing =
-          selfVariantRelationsByIdentifier.get(relationIdentifier);
-        if (!existing) {
-          selfVariantRelationsByIdentifier.set(relationIdentifier, {
-            identifier: relationIdentifier,
-            packageName: parsed?.basic.name || relationIdentifier,
-            aliases: selfAliases,
-          });
-        } else {
-          const merged = new Set([...existing.aliases, ...selfAliases]);
-          existing.aliases = Array.from(merged).sort((a, b) =>
-            a.localeCompare(b),
-          );
-          if (!existing.packageName && parsed?.basic.name) {
-            existing.packageName = parsed.basic.name;
-          }
-        }
-      }
-    }
-
   }
-
-  const selfVariantRelations = Array.from(
-    selfVariantRelationsByIdentifier.values(),
-  ).sort((a, b) =>
-    (a.packageName || a.identifier).localeCompare(
-      b.packageName || b.identifier,
-      undefined,
-      { sensitivity: "base" },
-    ),
+  relations.sort((a, b) =>
+    (a.packageName || a.identifier).localeCompare(b.packageName || b.identifier, undefined, {
+      sensitivity: "base",
+    }),
   );
-
-  return {
-    packages: Array.from(deduplicatedPackages.values()),
-    detailsByIdentifier,
-    selfVariantRelations,
-  };
+  return { packages, detailsByIdentifier, selfVariantRelations: relations };
 };
 
 let cachedLIPIndexResult: ParsedLIPIndexResult | null = null;
@@ -966,14 +671,19 @@ const fetchLIPIndexResult = async (options?: {
     }
 
     try {
-      const identifiers = collectLIPClientModIdentifiers(
-        await fetchLIPJson(LIP_INDEX_URL, controller.signal),
+      // Only mods whose latest version runs on the launcher's side and
+      // platform are listed, and only theirs are fetched.
+      const entries = launcherEntries(
+        parseLipCatalog(await fetchLIPJson(LIP_INDEX_URL, controller.signal)),
       );
-      const packages = await fetchLIPModDetails(identifiers, controller.signal);
-      if (identifiers.length > 0 && Object.keys(packages).length === 0) {
+      const details = await fetchLIPModDetails(
+        entries.map((entry) => entry.id),
+        controller.signal,
+      );
+      if (entries.length > 0 && Object.keys(details).length === 0) {
         throw new Error("Failed to fetch lip package details");
       }
-      cachedLIPIndexResult = parseLIPIndexResult(packages);
+      cachedLIPIndexResult = buildLIPIndexResult(entries, details);
       return cachedLIPIndexResult;
     } catch (error) {
       if (timeoutTriggered) {
@@ -998,6 +708,7 @@ const fetchLIPIndexResult = async (options?: {
   }
 };
 
+/** The mods the launcher lists, in the index's order. */
 export async function fetchLIPPackagesIndex(options?: {
   forceRefresh?: boolean;
   signal?: AbortSignal;
@@ -1027,22 +738,23 @@ const findLIPPackageDetail = (
     return detailsByIdentifier[targetBase];
   }
 
-  const lowerTarget = target.toLowerCase();
   const lowerTargetBase = targetBase.toLowerCase();
   for (const [candidateIdentifier, detail] of Object.entries(
     detailsByIdentifier,
   )) {
-    const lowerCandidateIdentifier = candidateIdentifier.toLowerCase();
-    if (
-      lowerCandidateIdentifier === lowerTarget ||
-      lowerCandidateIdentifier === lowerTargetBase
-    ) {
+    if (candidateIdentifier.toLowerCase() === lowerTargetBase) {
       return detail;
     }
   }
   return null;
 };
 
+/**
+ * A mod's detail: from the loaded catalogue when it lists the mod (and its
+ * detail loaded), else fetched directly. A mod with no variant for the
+ * launcher's side and platform comes back with no `variantDetails`. Null
+ * when the catalogue has no such mod.
+ */
 export async function fetchLIPPackageDetail(
   identifier: string,
   options?: {
@@ -1052,25 +764,22 @@ export async function fetchLIPPackageDetail(
 ): Promise<LIPPackageDetail | null> {
   const result = await fetchLIPIndexResult(options);
   const cached = findLIPPackageDetail(result.detailsByIdentifier, identifier);
-  if (cached) return cached;
+  if (cached?.detail) return cached;
 
   const url = buildLIPModDetailUrl(identifier);
-  if (!url || options?.signal?.aborted) return null;
+  if (!url || options?.signal?.aborted) return cached;
   const controller = new AbortController();
   const abort = () => controller.abort();
   options?.signal?.addEventListener("abort", abort, { once: true });
   const timeoutId = globalThis.setTimeout(abort, LIP_INDEX_FETCH_TIMEOUT_MS);
   try {
-    const converted = convertLIPModDetail(
-      await fetchLIPJson(url, controller.signal),
-    );
-    if (!converted) return null;
-    const parsed = parseLIPPackage(converted.item, converted.identifier);
-    if (!parsed) return null;
-    result.detailsByIdentifier[parsed.detail.identifier] = parsed.detail;
-    return parsed.detail;
+    const detail = parseLipModDetail(await fetchLIPJson(url, controller.signal));
+    if (!detail) return cached;
+    const parsed = buildLIPPackageDetail(cached ?? entryFromDetail(detail), detail);
+    result.detailsByIdentifier[parsed.identifier] = parsed;
+    return parsed;
   } catch {
-    return null;
+    return cached;
   } finally {
     globalThis.clearTimeout(timeoutId);
     options?.signal?.removeEventListener("abort", abort);

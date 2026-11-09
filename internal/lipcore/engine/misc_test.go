@@ -64,8 +64,8 @@ func TestInstallToothLockWritesDerivedWorkspaceFileAndDeletesToothLock(t *testin
 		t.Fatal("tooth_lock.json kept")
 	}
 	lf := h.lock()
-	if lf.Platform != "server" || lf.Runtime != testRuntime {
-		t.Fatal(lf.Platform, lf.Runtime)
+	if lf.Side != "server" || lf.Platform != testPlatform {
+		t.Fatal(lf.Side, lf.Platform)
 	}
 	var got []string
 	for _, p := range lf.Packages {
@@ -112,7 +112,7 @@ func TestInstallToothLockDryRunWritesNothing(t *testing.T) {
 // its label "" the variant "" (lip 26d8295).
 func TestClientEnvironmentInstallsTheLabelOfTheVariant(t *testing.T) {
 	h := newHarness(t)
-	h.platform = ""
+	h.side = ""
 	h.restart()
 	h.addTag(libID, "1.0.0", "tooth.json", `{ "format_version": 3, "format_uuid": "289f771f-2c9a-4d73-9f3f-8492495a924d",
 	  "tooth": "`+libID+`", "version": "1.0.0", "variants": [

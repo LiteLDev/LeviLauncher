@@ -13,11 +13,11 @@ import (
 )
 
 // This file ports the part of PackageFileParser
-// (src/Lip.Core/Mcmod/Parsing/PackageFileParser.cs, v0.38.0-beta.1) that
+// (src/Lip.Core/Mcmod/Parsing/PackageFileParser.cs, v0.40.0) that
 // ToothCompat.Derive runs on the entries it derives (ParseEntry) and on the
 // placements it converts (IsValidPlacement). A derived entry only holds
 // members of the types the schema wants, so what is left to check are the
-// values: the runtime, the dependency keys and ranges, the URLs of a zip
+// values: the side, the platform, the dependency keys and ranges, the URLs of a zip
 // asset, the placements and the globs.
 
 var (
@@ -141,13 +141,13 @@ func parseEntry(e *doc.Object) (*pkgmodel.Entry, error) {
 		return nil, fmt.Errorf("Invalid package file at $.assets: has more than one asset of type \"mcmod\".")
 	}
 
-	entry.Platform, _ = stringMember(e, "platform")
-	if entry.Platform != pkgmodel.PlatformServer && entry.Platform != pkgmodel.PlatformClient {
-		return nil, fmt.Errorf("Invalid package file at $.platform: must be \"server\" or \"client\".")
+	entry.Side, _ = stringMember(e, "side")
+	if entry.Side != pkgmodel.SideServer && entry.Side != pkgmodel.SideClient {
+		return nil, fmt.Errorf("Invalid package file at $.side: must be \"server\" or \"client\".")
 	}
-	entry.Runtime, _ = stringMember(e, "runtime")
-	if !IsRuntime(entry.Runtime) {
-		return nil, fmt.Errorf("Invalid package file at $.runtime: '%s' is not a runtime identifier.", entry.Runtime)
+	entry.Platform, _ = stringMember(e, "platform")
+	if !IsRuntime(entry.Platform) {
+		return nil, fmt.Errorf("Invalid package file at $.platform: '%s' is not a runtime identifier.", entry.Platform)
 	}
 
 	if v, ok := e.Get("deps"); ok {

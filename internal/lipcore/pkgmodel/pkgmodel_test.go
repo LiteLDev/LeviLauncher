@@ -23,16 +23,16 @@ func TestPlacementForm(t *testing.T) {
 func TestSelectEntry(t *testing.T) {
 	d := &Document{Variants: []VariantEntries{
 		{Name: "", Entries: []Entry{
-			{Platform: PlatformServer, Runtime: "win-x64"},
-			{Platform: PlatformClient, Runtime: "win-x64", Assets: []Asset{{Type: AssetZip}, {Type: AssetMcmod}}},
+			{Side: SideServer, Platform: "win-x64"},
+			{Side: SideClient, Platform: "win-x64", Assets: []Asset{{Type: AssetZip}, {Type: AssetMcmod}}},
 		}},
-		{Name: "lua", Entries: []Entry{{Platform: PlatformClient, Runtime: "linux-x64"}}},
+		{Name: "lua", Entries: []Entry{{Side: SideClient, Platform: "linux-x64"}}},
 	}}
-	e := d.SelectEntry("", PlatformClient, "win-x64")
-	if e == nil || e.Platform != PlatformClient || e.McmodAsset() != 1 {
+	e := d.SelectEntry("", SideClient, "win-x64")
+	if e == nil || e.Side != SideClient || e.McmodAsset() != 1 {
 		t.Errorf("SelectEntry = %+v", e)
 	}
-	if d.SelectEntry("lua", PlatformClient, "win-x64") != nil || d.SelectEntry("x", PlatformClient, "win-x64") != nil {
+	if d.SelectEntry("lua", SideClient, "win-x64") != nil || d.SelectEntry("x", SideClient, "win-x64") != nil {
 		t.Error("SelectEntry matched a wrong entry")
 	}
 	if (&Entry{}).McmodAsset() != -1 {

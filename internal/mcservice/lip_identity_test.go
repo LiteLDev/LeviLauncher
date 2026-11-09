@@ -2,6 +2,7 @@ package mcservice
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
+	"github.com/liteldev/LeviLauncher/internal/lipindex"
 	"github.com/liteldev/LeviLauncher/internal/types"
 )
 
@@ -28,6 +30,14 @@ type fakeLipWorkspace struct {
 func useFakeLipWorkspace(t *testing.T, ws *fakeLipWorkspace) {
 	t.Helper()
 	restoreLipQueryDeps(t)
+	// The catalogue is unreachable unless a test gives details
+	// (useFakeCatalogue).
+	savedFetch, savedPlatform := lipFetchDetail, lipindex.TargetPlatform
+	t.Cleanup(func() { lipFetchDetail, lipindex.TargetPlatform = savedFetch, savedPlatform })
+	lipindex.TargetPlatform = "win-x64"
+	lipFetchDetail = func(ctx context.Context, packageID string) (*lipindex.Detail, error) {
+		return nil, lipindex.ErrIndexUnavailable
+	}
 	lipResolveTargetDir = func(targetName string) (string, string) { return `C:\demo`, "" }
 	lipListPackageStates = func(ctx context.Context, workDir string) (map[string]lip.PackageInstallState, error) {
 		return ws.states, nil
@@ -77,6 +87,23 @@ func (ws *fakeLipWorkspace) expect(t *testing.T, calls []string, args [][]string
 	}
 }
 
+// useFakeCatalogue makes the catalogue answer with detail documents
+// (levimc.org/mods/<id>/index.json) by package id; others are not found.
+func useFakeCatalogue(t *testing.T, docs map[string]string) {
+	t.Helper()
+	lipFetchDetail = func(ctx context.Context, packageID string) (*lipindex.Detail, error) {
+		doc, ok := docs[packageID]
+		if !ok {
+			return nil, lipindex.ErrPackageNotFound
+		}
+		var d lipindex.Detail
+		if err := json.Unmarshal([]byte(doc), &d); err != nil {
+			t.Fatal(err)
+		}
+		return &d, nil
+	}
+}
+
 func migratedState(id, variant, version string, explicit bool) lip.PackageInstallState {
 	identity := id
 	if variant != "" {
@@ -98,12 +125,13 @@ func TestBuildLIPPackageRequest(t *testing.T) {
 		want lipPackageRequest
 		ok   bool
 	}{
-		{in: "LiteLDev/Foo", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo#client", fallbackRef: "github.com/LiteLDev/Foo"}, ok: true},
-		{in: " LiteLDev/Foo#client ", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo#client", fallbackRef: "github.com/LiteLDev/Foo"}, ok: true},
-		{in: "github.com/LiteLDev/Foo#client", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo#client", fallbackRef: "github.com/LiteLDev/Foo"}, ok: true},
-		{in: "https://github.com/LiteLDev/Foo/", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo#client", fallbackRef: "github.com/LiteLDev/Foo"}, ok: true},
-		{in: "LiteLDev/Foo#", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo"}, ok: true},
-		{in: "LiteLDev/Foo#server@1.0.0", want: lipPackageRequest{identifier: "LiteLDev/Foo#server", packageID: "github.com/LiteLDev/Foo", variant: "server", requestRef: "github.com/LiteLDev/Foo#server"}, ok: true},
+		{in: "LiteLDev/Foo", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo"}, ok: true},
+		{in: " LiteLDev/Foo#client ", want: lipPackageRequest{identifier: "LiteLDev/Foo#client", packageID: "github.com/LiteLDev/Foo", variant: "client", named: true, requestRef: "github.com/LiteLDev/Foo#client"}, ok: true},
+		{in: "github.com/LiteLDev/Foo#client", want: lipPackageRequest{identifier: "LiteLDev/Foo#client", packageID: "github.com/LiteLDev/Foo", variant: "client", named: true, requestRef: "github.com/LiteLDev/Foo#client"}, ok: true},
+		{in: "https://github.com/LiteLDev/Foo/", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", requestRef: "github.com/LiteLDev/Foo"}, ok: true},
+		{in: "LiteLDev/Foo#", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", named: true, requestRef: "github.com/LiteLDev/Foo"}, ok: true},
+		{in: "github.com/LiteLDev/Foo#@1.0.0", want: lipPackageRequest{identifier: "LiteLDev/Foo", packageID: "github.com/LiteLDev/Foo", named: true, requestRef: "github.com/LiteLDev/Foo"}, ok: true},
+		{in: "LiteLDev/Foo#server@1.0.0", want: lipPackageRequest{identifier: "LiteLDev/Foo#server", packageID: "github.com/LiteLDev/Foo", variant: "server", named: true, requestRef: "github.com/LiteLDev/Foo#server"}, ok: true},
 		{in: "foo", ok: false},
 		{in: "gitlab.com/a/b", ok: false},
 		{in: "", ok: false},
@@ -116,6 +144,81 @@ func TestBuildLIPPackageRequest(t *testing.T) {
 	}
 }
 
+// Catalogue details for the variant chooser (rule A2: "client", then "",
+// then the others by name, among the variants with a client entry for the
+// platform).
+const (
+	chooserDefaultOnly = `{"id":"github.com/LiteLDev/Foo","versions":[
+		{"version":"1.0.0","variants":{"":[{"side":"server","platform":"win-x64","deps":{}},{"side":"client","platform":"win-x64","deps":{}}]}}]}`
+	chooserClientAndDefault = `{"id":"github.com/LiteLDev/Foo","versions":[
+		{"version":"1.0.0","variants":{"":[{"side":"client","platform":"win-x64","deps":{}}],"client":[{"side":"client","platform":"win-x64","deps":{}}]}}]}`
+	chooserNamed = `{"id":"github.com/LiteLDev/Foo","versions":[
+		{"version":"2.0.0","variants":{"":[{"side":"server","platform":"win-x64","deps":{}}],"zeta":[{"side":"client","platform":"win-x64","deps":{}}],"lua":[{"side":"client","platform":"win-x64","deps":{}}]}},
+		{"version":"1.0.0","variants":{"client":[{"side":"client","platform":"win-x64","deps":{}}]}}]}`
+	chooserServerOnly = `{"id":"github.com/LiteLDev/Foo","versions":[
+		{"version":"1.0.0","variants":{"":[{"side":"server","platform":"win-x64","deps":{}}],"client":[{"side":"client","platform":"linux-x64","deps":{}}]}}]}`
+)
+
+func TestInstallLIPPackageChoosesVariantFromCatalogue(t *testing.T) {
+	for _, tc := range []struct {
+		name, doc, version, want string
+	}{
+		{"default variant for both sides", chooserDefaultOnly, "1.0.0", "github.com/LiteLDev/Foo@1.0.0"},
+		{"client before the default", chooserClientAndDefault, "1.0.0", "github.com/LiteLDev/Foo#client@1.0.0"},
+		{"the others by name", chooserNamed, "2.0.0", "github.com/LiteLDev/Foo#lua@2.0.0"},
+		{"over the version installed", chooserNamed, "1.0.0", "github.com/LiteLDev/Foo#client@1.0.0"},
+		{"no client entry for the platform", chooserServerOnly, "1.0.0", "github.com/LiteLDev/Foo@1.0.0"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{}}
+			useFakeLipWorkspace(t, ws)
+			useFakeCatalogue(t, map[string]string{"github.com/LiteLDev/Foo": tc.doc})
+			if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", tc.version); got != "" {
+				t.Fatalf("unexpected error code: %q", got)
+			}
+			ws.expect(t, []string{"install"}, [][]string{{tc.want}})
+		})
+	}
+}
+
+// A package the catalogue does not list falls back to the conventional
+// client variant, then the variant "".
+func TestInstallLIPPackageUnlistedPackageFallsBack(t *testing.T) {
+	ws := &fakeLipWorkspace{
+		states:     map[string]lip.PackageInstallState{},
+		installErr: []error{wrapNoPackageFound("github.com/LiteLDev/Foo#client@1.0.0")},
+	}
+	useFakeLipWorkspace(t, ws)
+	useFakeCatalogue(t, map[string]string{})
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"install", "install"}, [][]string{
+		{"github.com/LiteLDev/Foo#client@1.0.0"}, {"github.com/LiteLDev/Foo@1.0.0"}})
+}
+
+// An installed package is changed in place whatever its variant, without
+// asking the catalogue; naming another variant installs that one.
+func TestInstallLIPPackageInstalledIdentityWins(t *testing.T) {
+	ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{
+		"github.com/liteldev/foo": migratedState("github.com/LiteLDev/Foo", "lua", "1.0.0", true),
+	}}
+	useFakeLipWorkspace(t, ws)
+	lipFetchDetail = func(ctx context.Context, packageID string) (*lipindex.Detail, error) {
+		t.Fatal("the catalogue is not asked for an installed package")
+		return nil, nil
+	}
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "2.0.0"); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo#", "2.0.0"); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"update", "install"}, [][]string{{"github.com/LiteLDev/Foo#lua@2.0.0"}, {"github.com/LiteLDev/Foo@2.0.0"}})
+}
+
+// Without the catalogue, a request without a variant asks for the client
+// variant; one naming it does so anyway.
 func TestInstallLIPPackageRequestsClientVariant(t *testing.T) {
 	for _, identifier := range []string{"LiteLDev/Foo", "LiteLDev/Foo#client"} {
 		ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{}}
@@ -143,8 +246,8 @@ func wrapNoPackageFound(arg string) error {
 		arg, engine.ErrNoPackageFound)
 }
 
-// A package without a client variant (its variant "" has entries for both
-// platforms) is installed from its variant "".
+// Without the catalogue, a package without a client variant (its variant ""
+// has entries for both sides) is installed from its variant "".
 func TestInstallLIPPackageFallsBackToBareRepositoryWithoutClientVariant(t *testing.T) {
 	ws := &fakeLipWorkspace{
 		states:     map[string]lip.PackageInstallState{},
@@ -337,6 +440,7 @@ func TestGetLIPPackageInstallStatesMatchesAnyVariant(t *testing.T) {
 	useFakeLipWorkspace(t, ws)
 
 	entries := GetLIPPackageInstallStates(context.Background(), "Demo", []string{"LiteLDev/LeviLamina", "liteldev/levilamina#client", "LiteLDev/Other"})
+	// The state of a package is matched by package id, whatever the variant.
 	if len(entries) != 3 {
 		t.Fatalf("unexpected entries: %+v", entries)
 	}
@@ -346,10 +450,10 @@ func TestGetLIPPackageInstallStatesMatchesAnyVariant(t *testing.T) {
 			t.Fatalf("unexpected state for %s: %+v", entry.IdentifierKey, entry.State)
 		}
 	}
-	if entries[1].IdentifierKey != "liteldev/levilamina#client" || entries[1].State.Identifier != "liteldev/levilamina" {
+	if entries[1].IdentifierKey != "liteldev/levilamina#client" || entries[1].State.Identifier != "liteldev/levilamina#client" {
 		t.Fatalf("unexpected entry: %+v", entries[1])
 	}
-	if other := entries[2].State; other.Installed || other.PackageRef != "github.com/LiteLDev/Other#client" {
+	if other := entries[2].State; other.Installed || other.PackageRef != "github.com/LiteLDev/Other" {
 		t.Fatalf("unexpected state: %+v", other)
 	}
 }

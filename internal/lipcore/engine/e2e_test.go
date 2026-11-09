@@ -21,8 +21,8 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/lipcore/txn"
 )
 
-// A differential test against the reference lip 0.38 CLI: every scenario
-// runs lip in one workspace and the engine (server platform, runtime
+// A differential test against the reference lip 0.40 CLI: every scenario
+// runs lip in one workspace and the engine (server side, platform
 // win-x64) in another, step by step; after every step the file trees (paths,
 // contents, hidden attributes; .lip excluded), the bytes of
 // .lip/state.json, the list output and the success of the step must be
@@ -62,8 +62,8 @@ const (
 )
 
 func e2eJSON(id, version, members string) string {
-	return fmt.Sprintf(`{ "format": 4, "id": %q, "version": %q, "variants": { "": [ { "platform": "server",`+
-		` "runtime": "win-x64"%s } ] } }`, id, version, members)
+	return fmt.Sprintf(`{ "format": 4, "id": %q, "version": %q, "variants": { "": [ { "side": "server",`+
+		` "platform": "win-x64"%s } ] } }`, id, version, members)
 }
 
 func e2eScenarios() []e2eScenario {
@@ -85,9 +85,9 @@ func e2eScenarios() []e2eScenario {
 		  "hooks": { "post_install": [ "exit 1" ] }`),
 		files: []string{"f.txt", "f"}}
 	fixVariants := e2eFixture{name: "v", json: `{ "format": 4, "id": "example.com/e2e/v", "version": "2.0.0", "variants": {
-		  "": [ { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "v.txt", "dest": "v/default.txt" } ] } ] } ],
-		  "extra": [ { "platform": "server", "runtime": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "v.txt", "dest": "v/extra.txt" } ] } ] },
-		    { "platform": "server", "runtime": "linux-x64" } ] } }`,
+		  "": [ { "side": "server", "platform": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "v.txt", "dest": "v/default.txt" } ] } ] } ],
+		  "extra": [ { "side": "server", "platform": "win-x64", "assets": [ { "type": "self", "place": [ { "src": "v.txt", "dest": "v/extra.txt" } ] } ] },
+		    { "side": "server", "platform": "linux-x64" } ] } }`,
 		files: []string{"v.txt", "v"}}
 	fixZip := e2eFixture{name: "zipasset", json: e2eJSON("example.com/e2e/zipasset", "1.0.0",
 		`, "assets": [ { "type": "self", "place": [ { "src": "s.txt", "dest": "z/s.txt" } ] },
@@ -356,7 +356,7 @@ func TestE2EDifferentialAgainstLip(t *testing.T) {
 					cliArgs = []string{"list", "--json"}
 				default:
 					cliArgs = append(append([]string{step.op}, args...), step.flags...)
-					cliArgs = append(cliArgs, "--rid", "win-x64")
+					cliArgs = append(cliArgs, "--platform", "win-x64")
 				}
 				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 				cmd := exec.CommandContext(ctx, refLip, cliArgs...)
@@ -365,7 +365,7 @@ func TestE2EDifferentialAgainstLip(t *testing.T) {
 				cancel()
 				refOK := refErr == nil
 
-				e := New(wsB, Options{Platform: "server", Runtime: "win-x64", GithubProxy: proxy}, report.Nop{})
+				e := New(wsB, Options{Side: "server", Platform: "win-x64", GithubProxy: proxy}, report.Nop{})
 				has := func(f string) bool {
 					for _, x := range step.flags {
 						if x == f {

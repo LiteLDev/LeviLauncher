@@ -59,7 +59,7 @@ jobs:
       - name: Generate Wails bindings
         shell: pwsh
         run: |
-          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.77
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0
           wails3 generate bindings -clean=true
 
       - name: Build frontend and enforce bundle budget

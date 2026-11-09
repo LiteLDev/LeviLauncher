@@ -37,7 +37,7 @@ jobs:
           xmake -y native_tests
           xmake run native_tests
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true

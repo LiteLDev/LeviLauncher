@@ -155,6 +155,8 @@ func TestProxySelection(t *testing.T) {
 		{name: "override wins with mirror", override: " https://proxy.example ", mirror: true, wantEffective: "https://proxy.example", wantDisplayed: "https://proxy.example"},
 		{name: "mirror uses default", override: "", mirror: true, wantEffective: defaultLipGithubProxy, wantDisplayed: defaultLipGithubProxy},
 		{name: "no mirror goes direct", override: "", mirror: false, wantEffective: "", wantDisplayed: defaultLipGithubProxy},
+		{name: "saved bare gh-proxy completed", override: "https://gh-proxy.org", mirror: true, wantEffective: "https://gh-proxy.org/https://github.com", wantDisplayed: "https://gh-proxy.org/https://github.com"},
+		{name: "saved bare ghproxy.vip completed", override: "https://ghproxy.vip/", mirror: false, wantEffective: "https://ghproxy.vip/https://github.com", wantDisplayed: "https://ghproxy.vip/https://github.com"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -183,6 +185,9 @@ func TestNormalizeGithubProxy(t *testing.T) {
 		{name: "missing scheme", input: "github.bibk.top", wantErr: true},
 		{name: "unsupported scheme", input: "ftp://example.com", wantErr: true},
 		{name: "missing host", input: "https://", wantErr: true},
+		{name: "bare gh-proxy completed", input: "https://gh-proxy.org", want: "https://gh-proxy.org/https://github.com"},
+		{name: "bare gh-proxy subdomain completed", input: "https://v4.gh-proxy.org/", want: "https://v4.gh-proxy.org/https://github.com"},
+		{name: "complete gh-proxy kept", input: "https://hk.gh-proxy.org/https://github.com/", want: "https://hk.gh-proxy.org/https://github.com"},
 	}
 
 	for _, tt := range tests {
@@ -232,5 +237,26 @@ func TestErrorResultCarriesTheEngineMessage(t *testing.T) {
 	got := ErrorResult("ERR_X", errors.New("network down"))
 	if !strings.HasPrefix(got, "ERR_X: ") || !strings.Contains(got, "network down") {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestCompleteGithubProxy(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"https://gh-proxy.org", "https://gh-proxy.org/https://github.com"},
+		{"https://gh-proxy.org/", "https://gh-proxy.org/https://github.com"},
+		{"https://EdgeOne.GH-Proxy.org", "https://EdgeOne.GH-Proxy.org/https://github.com"},
+		{"https://cdn.gh-proxy.com", "https://cdn.gh-proxy.com/https://github.com"},
+		{"https://ghproxy.vip", "https://ghproxy.vip/https://github.com"},
+		{"https://gh-proxy.org/https://github.com", "https://gh-proxy.org/https://github.com"},
+		{"https://gh-proxy.org/custom", "https://gh-proxy.org/custom"},
+		{"https://github.bibk.top", "https://github.bibk.top"},
+		{"https://notgh-proxy.org", "https://notgh-proxy.org"},
+		{"https://gh-proxy.org.evil.example", "https://gh-proxy.org.evil.example"},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		if got := completeGithubProxy(tt.in); got != tt.want {
+			t.Errorf("completeGithubProxy(%q) = %q, want %q", tt.in, got, tt.want)
+		}
 	}
 }

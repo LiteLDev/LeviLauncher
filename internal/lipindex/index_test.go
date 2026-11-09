@@ -221,7 +221,7 @@ func TestLookupKeyAndReference(t *testing.T) {
 	if !IsLeviLamina("github.com/LiteLDev/LeviLamina#client") || !IsLeviLamina("liteldev/levilamina") || IsLeviLamina("LiteLDev/LegacyMoney") {
 		t.Error("IsLeviLamina")
 	}
-	if u := DetailURL("https://levimc.org/mods/", "github.com/a b/c#client"); u != "https://levimc.org/mods/github.com/a%20b/c/index.json" {
+	if u := DetailURL(DefaultBaseURL, "github.com/a b/c#client"); u != "https://levimc.org/api/v4/mods/github.com/a%20b/c/index.json" {
 		t.Errorf("DetailURL = %q", u)
 	}
 	if u := OwnerURL("LiteLDev"); u != "https://github.com/LiteLDev" {

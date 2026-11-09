@@ -14,7 +14,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// Catalogue documents shaped like levimc.org/mods/<id>/index.json.
+// Catalogue documents shaped like levimc.org/api/v4/mods/<id>/index.json.
 const (
 	fixtureHolo = `{
   "id": "github.com/MarmieQi/LHolo", "name": "LHolo", "description": "Schematic mod", "owner": "MarmieQi",

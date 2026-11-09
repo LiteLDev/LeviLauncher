@@ -162,7 +162,7 @@ func PickTargetVersion(versions []string) string {
 	return first
 }
 
-// Detail is a levimc.org/mods/<id>/index.json document, reduced to the
+// Detail is a levimc.org/api/v4/mods/<id>/index.json document, reduced to the
 // fields the launcher uses.
 type Detail struct {
 	ID           string          `json:"id"`

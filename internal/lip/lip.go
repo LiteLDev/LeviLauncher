@@ -58,9 +58,37 @@ func lipConfigGithubProxy() string {
 // otherwise github_proxy from lip's config.toml.
 func configuredGithubProxy() string {
 	if proxy := strings.TrimSpace(githubProxyOverride()); proxy != "" {
+		return completeGithubProxy(proxy)
+	}
+	return completeGithubProxy(lipConfigGithubProxy())
+}
+
+// fullURLProxyHosts are GitHub proxies that take the whole GitHub URL after
+// their own (https://gh-proxy.org/https://github.com/owner/repo). lip only
+// appends a request's path to the proxy, so these must be configured with
+// "/https://github.com"; without it they answer 404 (gh-proxy.org) or 400
+// (ghproxy.vip).
+var fullURLProxyHosts = []string{"gh-proxy.org", "gh-proxy.com", "ghproxy.vip"}
+
+const githubOrigin = "https://github.com"
+
+// completeGithubProxy adds "/https://github.com" to a bare full-URL proxy
+// (such as "https://gh-proxy.org", the form earlier launcher versions
+// offered and saved) so that lip's path rewrite reaches GitHub through it.
+// Any other proxy is returned unchanged.
+func completeGithubProxy(proxy string) string {
+	parsed, err := url.Parse(proxy)
+	if err != nil || parsed.Host == "" || strings.Trim(parsed.Path, "/") != "" ||
+		parsed.RawQuery != "" || parsed.Fragment != "" {
 		return proxy
 	}
-	return lipConfigGithubProxy()
+	host := strings.ToLower(parsed.Hostname())
+	for _, h := range fullURLProxyHosts {
+		if host == h || strings.HasSuffix(host, "."+h) {
+			return strings.TrimRight(proxy, "/") + "/" + githubOrigin
+		}
+	}
+	return proxy
 }
 
 // GithubProxy returns the GitHub proxy shown in the launcher settings (only
@@ -103,7 +131,7 @@ func normalizeGithubProxy(raw string) (string, error) {
 
 	parsed.Path = strings.TrimRight(parsed.Path, "/")
 	parsed.RawPath = ""
-	return parsed.String(), nil
+	return completeGithubProxy(parsed.String()), nil
 }
 
 // SetGithubProxy validates and persists the GitHub proxy. It applies to the

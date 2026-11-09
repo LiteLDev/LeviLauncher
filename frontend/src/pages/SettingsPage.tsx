@@ -116,16 +116,23 @@ const AppearanceNumberField = ({ label, value, min, max, onChange }: {
 const APPEARANCE_SECTIONS = ["theme", "layout", "wallpaper", "material"] as const;
 type AppearanceSection = typeof APPEARANCE_SECTIONS[number];
 
-// Prefix-style GitHub proxies offered in the LIP GitHub proxy picker; any other
-// URL can still be typed in by hand.
+// GitHub proxies offered in the LIP GitHub proxy picker; any other URL can
+// still be typed in by hand. lip appends the repository path to the proxy, so
+// proxies that take a whole GitHub URL (gh-proxy.org, ghproxy.vip) end in
+// "/https://github.com".
 const LIP_GITHUB_PROXY_PRESETS = [
   "https://github.bibk.top",
-  "https://gh-proxy.org",
-  "https://hk.gh-proxy.org",
-  "https://cdn.gh-proxy.org",
-  "https://edgeone.gh-proxy.org",
-  "https://ghproxy.vip",
+  "https://gh-proxy.org/https://github.com",
+  "https://v4.gh-proxy.org/https://github.com",
+  "https://hk.gh-proxy.org/https://github.com",
+  "https://cdn.gh-proxy.org/https://github.com",
+  "https://edgeone.gh-proxy.org/https://github.com",
+  "https://ghproxy.vip/https://github.com",
 ];
+
+// Picker label of a proxy preset: its host, without the GitHub URL suffix.
+const lipGithubProxyLabel = (url: string) =>
+  url.replace(/^https?:\/\//, "").replace(/\/https:\/\/github\.com$/, "");
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -2665,11 +2672,9 @@ export const SettingsPage: React.FC = () => {
                                   <ListBox.Item
                                     key={url}
                                     id={url}
-                                    textValue={url.replace(/^https?:\/\//, "")}
+                                    textValue={lipGithubProxyLabel(url)}
                                   >
-                                    <Label>
-                                      {url.replace(/^https?:\/\//, "")}
-                                    </Label>
+                                    <Label>{lipGithubProxyLabel(url)}</Label>
                                     <ListBox.ItemIndicator />
                                   </ListBox.Item>
                                 ))}

@@ -18,6 +18,10 @@ All notable changes to this project will be documented in this file.
 - The developer guide on the LeviMC Mods page explains `side` and `platform` in `lip.toml` and links to lip's guide to creating packages
 - `mod search --sort` takes `relevance` (the default), `stars`, `updated` or `newest`; `--sort name` and `--reverse` are gone, and `--game` matches the catalogue's game versions. The command line caches the catalogue in `lip-catalog.v4.json`
 
+### Fixed
+
+- The gh-proxy.org and ghproxy.vip presets of the package manager's GitHub proxy no longer fail with 404: they now end in `/https://github.com` (for example `https://gh-proxy.org/https://github.com`), and a proxy saved in the old form is completed automatically. `v4.gh-proxy.org` is added to the presets
+
 ## [1.1.0-beta.3] - 2026-11-09
 
 ### Changed

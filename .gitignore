@@ -47,3 +47,8 @@ nda
 __pycache__/
 node_modules/
 /.vs
+*.dll
+.gitignore
+build/windows/nsis/wails_tools.nsh
+build/windows/wails.exe.manifest
+build/windows/info.json

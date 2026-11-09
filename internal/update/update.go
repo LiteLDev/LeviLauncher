@@ -174,13 +174,14 @@ func newTimedRequest(parent context.Context, method string, target string, timeo
 }
 
 func getReleaseAPIURLs() []string {
+	const oriUrl = "https://api.github.com/repos/LiteLDev/LeviLauncher/releases"
 	return []string{
-		"https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
-		"https://cdn.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
-		"https://edgeone.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
-		"https://gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
-		"https://hk.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
-		"https://ghproxy.vip/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
+		oriUrl,
+		"https://ghproxy.vip/" + oriUrl,
+		"https://cdn.gh-proxy.org/" + oriUrl,
+		"https://v4.gh-proxy.org/" + oriUrl,
+		"https://v6.gh-proxy.org/" + oriUrl,
+		"https://gh-proxy.org/" + oriUrl,
 	}
 }
 
@@ -381,16 +382,18 @@ func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error 
 }
 
 func buildSelfUpdateCandidateURLs(ver string) []string {
+	oriUrl := "https://github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip"
 	if utils.IsMirrorEnabled() {
 		return []string{
-			"https://gh-proxy.org/github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
-			"https://v4.gh-proxy.org/github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
-			"https://v6.gh-proxy.org/github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
-			"https://gh.bibk.top/github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
+			"https://gh-proxy.org/" + oriUrl,
+			"https://v4.gh-proxy.org/" + oriUrl,
+			"https://v6.gh-proxy.org/" + oriUrl,
+			"https://gh.bibk.top/" + oriUrl,
+			oriUrl,
 		}
 	} else {
 		return []string{
-			"https://github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip",
+			oriUrl,
 		}
 	}
 }

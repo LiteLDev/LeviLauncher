@@ -97,9 +97,13 @@ func findRequestedLeviLaminaVersion(requested string, supported []string) (strin
 
 func FetchLeviLaminaVersionDB() (map[string][]string, error) {
 	urls := []string{
-		"https://gh.bibk.top/https://github.com/LiteLDev/levilamina-client-version-db/raw/refs/heads/main/v2/version-db.json",
-		"https://gh-proxy.org/https://github.com/LiteLDev/levilamina-client-version-db/raw/refs/heads/main/v2/version-db.json",
 		"https://raw.githubusercontent.com/LiteLDev/levilamina-client-version-db/refs/heads/main/v2/version-db.json",
+	}
+	if utils.IsMirrorEnabled() {
+		urls = append([]string{
+			"https://gh-proxy.org/https://github.com/LiteLDev/levilamina-client-version-db/raw/refs/heads/main/v2/version-db.json",
+			"https://gh.bibk.top/https://github.com/LiteLDev/levilamina-client-version-db/raw/refs/heads/main/v2/version-db.json",
+		}, urls...)
 	}
 
 	var lastErr error

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/httpx"
+	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
 const readmeFetchTimeout = 20 * time.Second
@@ -49,14 +50,21 @@ func FetchPackageReadme(projectURL string) (string, error) {
 	}
 
 	candidates := []string{
-		fmt.Sprintf("https://gh-proxy.org/https://github.com/%s/%s/raw/refs/heads/main/README.md", owner, repo),
-		fmt.Sprintf("https://gh-proxy.org/https://github.com/%s/%s/raw/refs/heads/master/README.md", owner, repo),
-		fmt.Sprintf("https://gh-proxy.org/https://github.com/%s/%s/raw/refs/heads/main/readme.md", owner, repo),
-		fmt.Sprintf("https://gh-proxy.org/https://github.com/%s/%s/raw/refs/heads/master/readme.md", owner, repo),
-		fmt.Sprintf("https://gh.bibk.top/https://github.com/%s/%s/raw/refs/heads/main/README.md", owner, repo),
-		fmt.Sprintf("https://gh.bibk.top/https://github.com/%s/%s/raw/refs/heads/master/README.md", owner, repo),
-		fmt.Sprintf("https://gh.bibk.top/https://github.com/%s/%s/raw/refs/heads/main/readme.md", owner, repo),
-		fmt.Sprintf("https://gh.bibk.top/https://github.com/%s/%s/raw/refs/heads/master/readme.md", owner, repo),
+		fmt.Sprintf("https://github.com/%s/%s/raw/refs/heads/main/README.md", owner, repo),
+		fmt.Sprintf("https://github.com/%s/%s/raw/refs/heads/master/README.md", owner, repo),
+		fmt.Sprintf("https://github.com/%s/%s/raw/refs/heads/main/readme.md", owner, repo),
+		fmt.Sprintf("https://github.com/%s/%s/raw/refs/heads/master/readme.md", owner, repo),
+	}
+
+	if utils.IsMirrorEnabled() {
+		proxies := []string{}
+		for _, oriUrl := range candidates {
+			proxies = append(proxies, "https://gh-proxy.org/"+oriUrl)
+		}
+		for _, oriUrl := range candidates {
+			proxies = append(proxies, "https://gh.bibk.top/"+oriUrl)
+		}
+		candidates = append(proxies, candidates...)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), readmeFetchTimeout)

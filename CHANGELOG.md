@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0-beta.6] - 2026-11-10
+
+### Changed
+
+- Renamed settings tab `Third-party Components` to `Package Management`, drop 'lip' wording, make cache cleanup its own item (#269)
+
+### Fixed
+
+- Pass BCP 47 locale tags to Intl formatting (#268)
+  i18next stores languages as app codes like zh_CN, which Intl rejects with
+  RangeError: Invalid language tag, crashing the LIP page. Add toIntlLocale /
+  getIntlLocale and use them for every toLocale* call so numbers, dates and
+  times also follow the launcher's UI language instead of the OS locale.
+
 ## [1.1.0-beta.5] - 2026-11-10
 
 ### Fixed
@@ -381,7 +395,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.5...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.6...HEAD
+[1.1.0-beta.6]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.5...v1.1.0-beta.6
 [1.1.0-beta.5]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.4...v1.1.0-beta.5
 [1.1.0-beta.4]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.3...v1.1.0-beta.4
 [1.1.0-beta.3]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.2...v1.1.0-beta.3

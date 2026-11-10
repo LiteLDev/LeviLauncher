@@ -1,3 +1,5 @@
+import { getIntlLocale } from "@/utils/intlLocale";
+
 export const formatBytes = (n?: number) => {
   const v = typeof n === "number" ? n : 0;
   if (v < 1024) return `${v} B`;
@@ -16,12 +18,12 @@ export const formatDate = (ts?: number) => {
   const v = typeof ts === "number" ? ts : 0;
   if (!v) return "";
   const d = new Date(v * 1000);
-  return d.toLocaleString();
+  return d.toLocaleString(getIntlLocale());
 };
 
 export const formatDateStr = (dateStr: string | undefined) => {
   if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString();
+  return new Date(dateStr).toLocaleDateString(getIntlLocale());
 };
 
 export const formatNumber = (num: number | undefined) => {

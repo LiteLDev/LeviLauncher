@@ -5,6 +5,7 @@ import { LuCheck, LuChevronDown, LuSearch, LuX } from "react-icons/lu";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { LipTagIcon } from "@/components/LipTagIcon";
 import { cn } from "@/utils/cn";
+import { getIntlLocale } from "@/utils/intlLocale";
 import {
   excludeTag,
   FEATURED_BY_ID,
@@ -54,7 +55,7 @@ type OptionProps = {
 };
 
 function Option({ label, text, icon, raw, mono, nested, count, included, excluded, onInclude, onExclude }: OptionProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const dimmed = count === 0 && !included && !excluded;
   return (
     <li className={cn("flex min-w-0 items-center gap-1", nested && "pl-5")}>
@@ -83,7 +84,7 @@ function Option({ label, text, icon, raw, mono, nested, count, included, exclude
           ) : null}
         </span>
         <span className="shrink-0 text-xs tabular-nums text-muted dark:text-zinc-500">
-          {count.toLocaleString(i18n.language)}
+          {count.toLocaleString(getIntlLocale())}
         </span>
       </button>
       {onExclude ? (

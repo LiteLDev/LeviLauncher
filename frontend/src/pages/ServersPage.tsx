@@ -14,6 +14,7 @@ import {
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { getIntlLocale } from "@/utils/intlLocale";
 import { PageHeader } from "@/components/PageHeader";
 import { ModalNotice } from "@/components/ModalPrimitives";
 
@@ -195,7 +196,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
             title={t("common.date")}
           >
             <FaClock className="text-muted" />
-            <span>{new Date(server.timestamp * 1000).toLocaleString()}</span>
+            <span>{new Date(server.timestamp * 1000).toLocaleString(getIntlLocale())}</span>
           </div>
         </div>
       </div>

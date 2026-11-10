@@ -65,6 +65,7 @@ import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { ImportResultModal } from "@/components/ImportResultModal";
 import { useTranslation } from "react-i18next";
+import { getIntlLocale } from "@/utils/intlLocale";
 import { motion } from "framer-motion";
 import DefaultWorldPreview from "@/assets/images/world-preview-default.jpg";
 import {
@@ -949,7 +950,7 @@ export default function WorldsListPage() {
                         <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
                           <FaClock className="text-muted" />
                           <span>
-                            {new Date(w.LastModified * 1000).toLocaleString()}
+                            {new Date(w.LastModified * 1000).toLocaleString(getIntlLocale())}
                           </span>
                         </div>
                       </div>

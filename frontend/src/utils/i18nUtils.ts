@@ -39,3 +39,10 @@ export const normalizeLanguage = (lng: string): string => {
 
   return aliases[normalized] || aliases[normalized.split("-")[0]] || "en_US";
 };
+
+/**
+ * Convert an app language code (e.g. "zh_CN") to a BCP 47 tag ("zh-CN") that
+ * Intl / toLocaleString accept. Passing "zh_CN" directly throws a RangeError.
+ */
+export const toIntlLocale = (lng: string): string =>
+  normalizeLanguage(lng).replace(/_/g, "-");

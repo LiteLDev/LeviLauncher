@@ -29,6 +29,7 @@ import {
 import { LipTagChips } from "@/components/LipTagChips";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { getIntlLocale } from "@/utils/intlLocale";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -530,7 +531,7 @@ const LIPPage: React.FC = () => {
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString();
+    return new Date(dateStr).toLocaleDateString(getIntlLocale());
   };
 
   return (

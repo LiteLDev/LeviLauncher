@@ -30,6 +30,7 @@ import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { normalizeIdentifierLookupKey } from "@/utils/modIntelligenceResolver";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { useTranslation } from "react-i18next";
+import { getIntlLocale } from "@/utils/intlLocale";
 import { ROUTES } from "@/constants/routes";
 import { formatBytes } from "@/utils/formatting";
 import {
@@ -1347,7 +1348,7 @@ export const useInstanceSettings = () => {
     if (!raw) return "";
     const parsed = new Date(raw);
     if (Number.isNaN(parsed.getTime())) return raw;
-    return parsed.toLocaleString();
+    return parsed.toLocaleString(getIntlLocale());
   }, [restoreArchiveInfo]);
 
   const restoreProgressPercent = React.useMemo(() => {

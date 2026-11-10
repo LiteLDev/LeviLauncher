@@ -15,6 +15,7 @@ import React, {
 
 import { Clipboard, Events } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
+import { getIntlLocale } from "@/utils/intlLocale";
 import { LuChevronDown, LuChevronRight, LuTerminal } from "react-icons/lu";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import {
@@ -707,7 +708,7 @@ export const LipTaskConsoleProvider: React.FC<{
     }
     lines.push("");
     for (const item of logs) {
-      const time = new Date(item.timestamp).toLocaleTimeString();
+      const time = new Date(item.timestamp).toLocaleTimeString(getIntlLocale());
       lines.push(`[${time}] [${item.level}] ${item.message}`);
     }
 
@@ -774,7 +775,7 @@ export const LipTaskConsoleProvider: React.FC<{
                       : "text-foreground dark:text-zinc-200"
               }`}
             >
-              [{new Date(item.timestamp).toLocaleTimeString()}]{" "}
+              [{new Date(item.timestamp).toLocaleTimeString(getIntlLocale())}]{" "}
               {item.message}
             </div>
           ))}

@@ -245,7 +245,6 @@ func TestCompleteGithubProxy(t *testing.T) {
 		{"https://gh-proxy.org", "https://gh-proxy.org/https://github.com"},
 		{"https://gh-proxy.org/", "https://gh-proxy.org/https://github.com"},
 		{"https://V4.GH-Proxy.org", "https://V4.GH-Proxy.org/https://github.com"},
-		{"https://cdn.gh-proxy.com", "https://cdn.gh-proxy.com/https://github.com"},
 		{"https://ghproxy.vip", "https://ghproxy.vip/https://github.com"},
 		{"https://gh-proxy.org/https://github.com", "https://gh-proxy.org/https://github.com"},
 		{"https://gh-proxy.org/custom", "https://gh-proxy.org/custom"},

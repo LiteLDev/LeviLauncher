@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Upgrading to the built-in lip that follows lip v0.40 no longer makes package operations fail with `ERR_LIP_INSTALL_FAILED` because the instance's `.lip/state.json` was written with the old keys: before the first package operation on an instance (install, update, uninstall, listing or a backup), the launcher converts `platform` to `side` and `runtime` to `platform`, in the state file and in the package files it records. Only the keys are renamed, the file is replaced atomically, and the conversion is skipped when lip could not read the result
+
 ## [1.1.0-beta.4] - 2026-11-10
 
 ### Added

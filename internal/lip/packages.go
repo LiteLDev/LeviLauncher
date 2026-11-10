@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"runtime"
@@ -238,15 +239,29 @@ func runPackageTask(ctx context.Context, method string, workDir string, packages
 	}
 
 	err = func() error {
-		if !exclusive {
-			return callEngine(ctx, dir, reporter, false, fn)
+		if exclusive {
+			unlock, err := lockDir(ctx, dir)
+			if err != nil {
+				return err
+			}
+			defer unlock()
 		}
-		unlock, err := lockDir(ctx, dir)
+		// An installation written by a launcher whose built-in lip used the
+		// key names of lip before v0.40 is converted before lip reads it.
+		migrated, err := migrateWorkspaceState(dir)
 		if err != nil {
 			return err
 		}
-		defer unlock()
-		return callEngine(ctx, dir, reporter, true, fn)
+		if migrated {
+			message := "Converted the state file of this instance from the keys of lip before v0.40" +
+				" (\"platform\" and \"runtime\") to \"side\" and \"platform\"."
+			if tracker != nil {
+				tracker.Info(message)
+			} else {
+				log.Printf("lip info: %s", message)
+			}
+		}
+		return callEngine(ctx, dir, reporter, exclusive, fn)
 	}()
 
 	if track {

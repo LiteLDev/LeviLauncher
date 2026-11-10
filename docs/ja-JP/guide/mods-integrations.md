@@ -47,7 +47,7 @@ LeviLauncher は、「基本ランチャー」の範囲を超えた Mod 関連�
 
 LeviLauncher には [lip](https://github.com/LiteLDev/lip) 互換のパッケージマネージャーが内蔵されているため、lip や .NET ランタイムを別途インストールする必要はありません。lip に準拠しており、各バージョンはパッケージを `.lip/state.json` に記録し、パッケージは `lip.toml` から読み込まれます（`tooth.json` しかない古いパッケージも引き続き使えます）。以前のランチャーで LeviLamina や LIP パッケージをインストールしたバージョン（`tooth_lock.json`）は、最初のパッケージ操作時に自動的に移行されます。**ミラーソースを使用** がオンのときは、GitHub からのパッケージのダウンロードに[設定](./settings-personalization)の **GitHub プロキシ** が使われます。オフのときは GitHub に直接接続します（システムプロキシが設定されていればそれを経由します）。以前に保存した GitHub プロキシや、lip の `config.toml`（`%APPDATA%\lip` 内。例: `lip config set github_proxy <URL>`）で設定した `github_proxy` はどちらの場合にも適用されます。**キャッシュを削除** でダウンロード済みのパッケージファイルを削除できます。
 
-lip v0.40 以降、`lip.toml` と `.lip/state.json` の各エントリは、実行場所を `side`（`server` または `client`）と `platform`（`win-x64` などの .NET ランタイム識別子）で示します。lip v0.39 以前ではこれらを `platform` と `runtime` と呼んでいました。lip v0.39 以前や以前のランチャーが古いキーで書き込んだ `.lip/state.json` は、必要な変更を示すメッセージとともに拒否されます。`platform` を `side` に、`runtime` を `platform` に名前変更するか、そのバージョンのパッケージを再インストールしてください。
+lip v0.40 以降、`lip.toml` と `.lip/state.json` の各エントリは、実行場所を `side`（`server` または `client`）と `platform`（`win-x64` などの .NET ランタイム識別子）で示します。lip v0.39 以前ではこれらを `platform` と `runtime` と呼んでいました。lip v0.39 以前や以前のランチャーが古いキーで書き込んだ `.lip/state.json` は、次のパッケージ操作の前に自動的に変換されます。`platform` は `side` に、`runtime` は `platform` に名前変更されます。それでも lip が読み取れないファイルは、必要な変更を示すメッセージとともに拒否されます。`platform` を `side` に、`runtime` を `platform` に名前変更するか、そのバージョンのパッケージを再インストールしてください。
 
 これらの統合は、パッケージ駆動またはローダー駆動のワークフローを使用したい上級ユーザーに最適です。
 

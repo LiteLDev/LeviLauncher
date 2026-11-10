@@ -47,7 +47,7 @@ LeviLauncher 支援超出「基礎啟動器」範圍的模組相關工作流程�
 
 LeviLauncher 內置了相容 [lip](https://github.com/LiteLDev/lip) 的套件管理器，毋須另外安裝 lip 或 .NET 執行階段。它遵循 lip：每個版本的套件記錄在 `.lip/state.json` 中，套件從其 `lip.toml` 讀取（只有 `tooth.json` 的舊套件仍可使用）。用舊版啟動器安裝過 LeviLamina 或 LIP 套件的版本（`tooth_lock.json`）會在第一次套件操作時自動遷移。開啟 **使用鏡像來源** 時，從 GitHub 下載套件會經過[設定](./settings-personalization)中的 **GitHub 代理**；否則直接連線 GitHub（如已設定系統代理，則經過系統代理）。之前儲存過的 GitHub 代理，或 lip 的 `config.toml`（位於 `%APPDATA%\lip`，例如透過 `lip config set github_proxy <URL>` 設定）中的 `github_proxy`，在兩種情況下都會生效。**清理快取** 可刪除已下載的套件檔案。
 
-自 lip v0.40 起，`lip.toml` 與 `.lip/state.json` 中的每個條目都用 `side`（`server` 或 `client`）和 `platform`（.NET 執行階段識別碼，例如 `win-x64`）表示其執行位置；lip v0.39 及更早版本把它們叫作 `platform` 和 `runtime`。由 lip v0.39 及更早版本或舊版啟動器寫入、仍使用舊鍵名的 `.lip/state.json` 會被拒絕，並提示需要的修改：把 `platform` 改名為 `side`、把 `runtime` 改名為 `platform`，或重新安裝該版本的套件。
+自 lip v0.40 起，`lip.toml` 與 `.lip/state.json` 中的每個條目都用 `side`（`server` 或 `client`）和 `platform`（.NET 執行階段識別碼，例如 `win-x64`）表示其執行位置；lip v0.39 及更早版本把它們叫作 `platform` 和 `runtime`。由 lip v0.39 及更早版本或舊版啟動器寫入、仍使用舊鍵名的 `.lip/state.json`，會在下一次套件操作前自動轉換：把 `platform` 改名為 `side`、把 `runtime` 改名為 `platform`。lip 仍無法讀取的檔案會被拒絕，並提示需要的修改：把 `platform` 改名為 `side`、把 `runtime` 改名為 `platform`，或重新安裝該版本的套件。
 
 這類集成更適合希望使用包驅動或加載器驅動工作流程的進階用戶。
 

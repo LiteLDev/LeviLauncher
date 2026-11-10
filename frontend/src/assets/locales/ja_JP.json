@@ -333,7 +333,7 @@
     "tabs": {
       "general": "基本設定",
       "personalization": "個人用設定",
-      "components": "サードパーティ製コンポーネント",
+      "components": "パッケージ管理",
       "others": "その他",
       "updates": "アップデート",
       "about": "情報",
@@ -378,14 +378,14 @@
       }
     },
     "lip": {
-      "title": "lip",
-      "desc": "MOD のインストールと更新に使用する内蔵パッケージマネージャーです。パッケージのダウンロードに失敗する場合はキャッシュを削除してください。",
+      "title": "キャッシュを削除",
+      "desc": "パッケージのダウンロードに失敗する場合は、パッケージマネージャーのキャッシュを削除してください。",
       "cache_clean_button": "キャッシュを削除",
       "cache_cleaning": "キャッシュを削除しています…",
-      "cache_clean_success": "lip のキャッシュを削除しました",
+      "cache_clean_success": "キャッシュを削除しました",
       "github_proxy": {
         "title": "GitHub プロキシ",
-        "desc": "LIP パッケージをダウンロードする際に使用する GitHub プロキシです。空欄にすると既定値に戻ります。",
+        "desc": "パッケージをダウンロードする際に使用する GitHub プロキシです。空欄にすると既定値に戻ります。",
         "preset_custom": "カスタム",
         "save_success": "GitHub プロキシを保存しました",
         "save_failed": "GitHub プロキシの保存に失敗しました"
@@ -393,7 +393,7 @@
     },
     "mirror_source": {
       "title": "ミラーソースを使用",
-      "desc": "ランチャーの更新、lip、バージョン一覧で中国本土のミラーを優先します。中国本土のユーザーはデフォルトで有効です。"
+      "desc": "ランチャーの更新、パッケージ、バージョン一覧で中国本土のミラーを優先します。中国本土のユーザーはデフォルトで有効です。"
     },
     "header": {
       "title": "設定",
@@ -801,7 +801,7 @@
         "archive_label": "バックアップファイル",
         "location_label": "保存先",
         "open_dir": "フォルダーを開く",
-        "lip_summary": "lip 管理のパッケージを {{count}} 件検出しました：{{summary}}",
+        "lip_summary": "管理のパッケージを {{count}} 件検出しました：{{summary}}",
         "mode": {
           "safe": {
             "label": "安全モード"
@@ -819,7 +819,7 @@
           "confirm": "復元を開始",
           "scope_section_title": "復元範囲",
           "created_at": "作成日時",
-          "lip_summary": "lip 管理パッケージを {{count}} 件検出しました。復元時に自動で再インストールを試みます。",
+          "lip_summary": "管理パッケージを {{count}} 件検出しました。復元時に自動で再インストールを試みます。",
           "conflict_loading": "復元時の競合を確認しています。しばらくお待ちください…",
           "conflict_summary": "現在のインスタンスと競合する項目が {{count}} 件見つかりました。各項目について、バックアップ版を使うか現在の版を残すか選択してください。",
           "conflict_empty": "選択した範囲では競合が見つかりませんでした。このまま復元できます。",
@@ -961,7 +961,7 @@
     "ERR_LL_NOT_SUPPORTED": "このゲームバージョンでは LeviLamina はサポートされていません",
     "ERR_FETCH_LL_DB": "LeviLamina バージョンデータベースの取得に失敗しました",
     "ERR_INVALID_VERSION_FORMAT": "無効なゲームバージョン形式です",
-    "ERR_LIP_INSTALL_FAILED": "lip を使用した LeviLamina のインストールに失敗しました",
+    "ERR_LIP_INSTALL_FAILED": "LeviLamina のインストールに失敗しました",
     "ERR_NAME_EXISTS": "その名前は既に存在します",
     "ERR_INVALID_NAME": "無効な名前です",
     "ERR_ICON_DECODE": "アイコンのデコードに失敗しました",
@@ -984,12 +984,12 @@
     "ERR_UNREGISTER_FAILED": "登録解除に失敗しました",
     "ERR_NOT_REGISTERED_THIS_VERSION": "このインスタンスはシステムに登録されていません",
     "ERR_DEV_MODE_REQUIRED": "開発者モードが有効になっておらず、自動有効化に失敗しました。手動で開発者モードを有効にして再試行してください。",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "無効な lip パッケージ識別子です",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip パッケージのバージョンが必要です",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "lip パッケージのインストールに失敗しました",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "lip パッケージのアンインストールに失敗しました",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "lip パッケージの状態の照会に失敗しました",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "lip キャッシュの削除に失敗しました",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "無効な パッケージ識別子です",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "パッケージのバージョンが必要です",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "パッケージのインストールに失敗しました",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "パッケージのアンインストールに失敗しました",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "パッケージの状態の照会に失敗しました",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "キャッシュの削除に失敗しました",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "このパッケージは他のインストール済み mod に依存されているため、現在はアンインストールできません",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "このパッケージはほかのインストール済みModから必要とされているため、完全にはアンインストールできません。現在は依存関係としてのみ保持され、不要になった時点で削除されます。",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLaminaはインスタンス設定でのみ管理できます",
@@ -1010,9 +1010,9 @@
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "未解決の復元競合があります。先にすべての処理方法を選択してください。",
     "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "選択された復元競合の処理方法が無効です。内容を見直してください。",
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Minecraft Bedrock の完全バックアップは空の対象ディレクトリにのみ復元できます",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "一部の lip 管理パッケージのインストールに失敗しました",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "一部の lip 管理パッケージを復元できませんでした",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "一部の lip 管理パッケージのバージョンがバックアップと一致しません",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "一部の 管理パッケージのインストールに失敗しました",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "一部の 管理パッケージを復元できませんでした",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "一部の 管理パッケージのバージョンがバックアップと一致しません",
     "ERR_AUTH_FAILED": "現在のアカウントでダウンロードを認証できませんでした。接続を確認し、ランチャーのアバターからアカウントを更新して再試行してください。",
     "ERR_AUTH_TIMEOUT": "サインインがタイムアウトしました。もう一度お試しください。",
     "ERR_AUTH_DEVICE_CACHE": "デバイス認証のキャッシュを読み取れませんでした。現在のWindowsユーザーとファイルのアクセス許可を確認してください。",
@@ -1151,7 +1151,7 @@
     "action_result_title_failed": "操作失敗",
     "tab_all": "すべて",
     "tab_normal": "通常Mod",
-    "tab_lip": "lip Mod",
+    "tab_lip": "パッケージ Mod",
     "lip_children_summary": "含む: {{children}} (+{{count}})",
     "lip_open_package": "パッケージを開く",
     "lip_sync_loading": "ローカルのModを読み込みました。オンライン情報を取得しています…",
@@ -1301,7 +1301,7 @@
     "guide": {
       "open_button": "開発者ガイド",
       "title": "LeviMC Mods 開発者ガイド",
-      "description": "自分の Mod を LeviLauncher の LeviMC Mods ページに掲載したい場合は、lip のドキュメントに従って lip.toml を用意して公開してください。",
+      "description": "自分の Mod を LeviLauncher の LeviMC Mods ページに掲載したい場合は、ドキュメントに従って lip.toml を用意して公開してください。",
       "manifest_hint": "LeviLauncher は、最新バージョンの lip.toml に side = \"client\" かつ platform = \"win-x64\" のエントリがある Mod を掲載し、それに合うバリアントをインストールします（\"client\"、次に既定のバリアント \"\"、その他は名前順）。",
       "variant_hint": "対応するサイドとプラットフォームごとにエントリを追加してください。例：サーバー用エントリの隣に side = \"client\"、platform = \"win-x64\" の [[variants.\"\"]] エントリを追加します。[info] tags に \"library\" や \"economy\" などの推奨タグを付けると、そのフィルターに表示されます。",
       "docs_button": "完全な仕様を見る",
@@ -1367,7 +1367,7 @@
       "title_reinstall": "再インストール中",
       "title_update": "更新中",
       "title_uninstall": "アンインストール中",
-      "title_generic": "lip タスク",
+      "title_generic": "パッケージタスク",
       "status_running": "実行中",
       "status_success": "成功",
       "status_failed": "失敗",

@@ -333,7 +333,7 @@
     "tabs": {
       "general": "Ustawienia podstawowe",
       "personalization": "Personalizacja",
-      "components": "Składniki innych firm",
+      "components": "Zarządzanie pakietami",
       "others": "Inne",
       "updates": "Aktualizacje",
       "about": "O programie",
@@ -378,14 +378,14 @@
       }
     },
     "lip": {
-      "title": "lip",
-      "desc": "Wbudowany menedżer pakietów do instalowania i aktualizowania modów. Wyczyść jego pamięć podręczną, jeśli pobieranie pakietów się nie powiedzie.",
+      "title": "Wyczyść pamięć podręczną",
+      "desc": "Wyczyść pamięć podręczną menedżera pakietów, jeśli pobieranie pakietów nie działa.",
       "cache_clean_button": "Wyczyść pamięć podręczną",
       "cache_cleaning": "Czyszczenie pamięci podręcznej…",
-      "cache_clean_success": "Wyczyszczono pamięć podręczną lip",
+      "cache_clean_success": "Wyczyszczono pamięć podręczną",
       "github_proxy": {
         "title": "Serwer proxy GitHub",
-        "desc": "Serwer proxy GitHuba używany podczas pobierania pakietów LIP. Pozostaw puste, aby przywrócić wartość domyślną.",
+        "desc": "Serwer proxy GitHuba używany podczas pobierania pakietów. Pozostaw puste, aby przywrócić wartość domyślną.",
         "preset_custom": "Własny",
         "save_success": "Zapisano serwer proxy GitHub",
         "save_failed": "Nie udało się zapisać serwera proxy GitHub"
@@ -393,7 +393,7 @@
     },
     "mirror_source": {
       "title": "Używaj serwerów lustrzanych",
-      "desc": "Używaj serwerów lustrzanych hostowanych w Chinach kontynentalnych do aktualizacji, lip i katalogów wersji. Domyślnie włączone dla użytkowników w Chinach kontynentalnych."
+      "desc": "Używaj serwerów lustrzanych hostowanych w Chinach kontynentalnych do aktualizacji, pakietów i katalogów wersji. Domyślnie włączone dla użytkowników w Chinach kontynentalnych."
     },
     "header": {
       "title": "Ustawienia",
@@ -801,7 +801,7 @@
         "archive_label": "Plik kopii zapasowej",
         "location_label": "Zapisano w",
         "open_dir": "Otwórz folder",
-        "lip_summary": "Wykryto pakiety zarządzane przez lip w liczbie {{count}}: {{summary}}",
+        "lip_summary": "Wykryto pakiety zarządzane w liczbie {{count}}: {{summary}}",
         "mode": {
           "safe": {
             "label": "Tryb bezpieczny"
@@ -819,7 +819,7 @@
           "confirm": "Rozpocznij przywracanie",
           "scope_section_title": "Zakresy przywracania",
           "created_at": "Utworzono",
-          "lip_summary": "Wykryto pakiety zarządzane przez lip w liczbie {{count}}. Przywracanie spróbuje zainstalować je ponownie automatycznie.",
+          "lip_summary": "Wykryto pakiety zarządzane w liczbie {{count}}. Przywracanie spróbuje zainstalować je ponownie automatycznie.",
           "conflict_loading": "Trwa skanowanie konfliktów przywracania. Proszę czekać…",
           "conflict_summary": "Wykryto konflikty z bieżącą instancją w liczbie {{count}}. Dla każdego elementu wybierz, czy zachować wersję z kopii zapasowej, czy bieżącą.",
           "conflict_empty": "Nie wykryto konfliktów dla wybranych zakresów. Możesz przywracać od razu.",
@@ -961,7 +961,7 @@
     "ERR_LL_NOT_SUPPORTED": "LeviLamina nie jest obsługiwana dla tej wersji gry",
     "ERR_FETCH_LL_DB": "Nie udało się pobrać bazy wersji LeviLamina",
     "ERR_INVALID_VERSION_FORMAT": "Nieprawidłowy format wersji gry",
-    "ERR_LIP_INSTALL_FAILED": "Nie udało się zainstalować LeviLamina przez lip",
+    "ERR_LIP_INSTALL_FAILED": "Nie udało się zainstalować LeviLamina",
     "ERR_NAME_EXISTS": "Taka nazwa już istnieje",
     "ERR_INVALID_NAME": "Nieprawidłowa nazwa",
     "ERR_ICON_DECODE": "Dekodowanie ikony nie powiodło się",
@@ -984,12 +984,12 @@
     "ERR_UNREGISTER_FAILED": "Wyrejestrowanie nie powiodło się",
     "ERR_NOT_REGISTERED_THIS_VERSION": "Ta instancja nie jest zarejestrowana w systemie",
     "ERR_DEV_MODE_REQUIRED": "Tryb dewelopera nie jest włączony, a automatyczne włączenie nie powiodło się. Włącz tryb dewelopera ręcznie i spróbuj ponownie.",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Nieprawidłowy identyfikator pakietu lip",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "Wersja pakietu lip jest wymagana",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Nie udało się zainstalować pakietu lip",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Nie udało się odinstalować pakietu lip",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "Nie udało się odczytać stanu pakietu lip",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "Nie udało się wyczyścić pamięci podręcznej lip",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Nieprawidłowy identyfikator pakietu",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "Wersja pakietu jest wymagana",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Nie udało się zainstalować pakietu",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Nie udało się odinstalować pakietu",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "Nie udało się odczytać stanu pakietu",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Nie udało się wyczyścić pamięci podręcznej",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "Ten pakiet jest wymagany przez inne zainstalowane mody i nie można go teraz odinstalować",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "Ten pakiet jest nadal wymagany przez inne zainstalowane mody, więc nie można go całkowicie odinstalować. Pozostaje teraz wyłącznie jako zależność i zostanie usunięty, gdy przestanie być potrzebny.",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina można konfigurować wyłącznie w ustawieniach instancji",
@@ -1010,9 +1010,9 @@
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "Część konfliktów przywracania pozostaje nierozwiązana. Najpierw wybierz sposób rozwiązania każdego konfliktu.",
     "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "Wybrany sposób rozwiązania konfliktu przywracania jest nieprawidłowy. Sprawdź swoje wybory.",
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Pełne kopie zapasowe Minecraft Bedrock można przywracać wyłącznie do pustego katalogu docelowego",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Nie udało się zainstalować części pakietów zarządzanych przez lip",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Część pakietów zarządzanych przez lip nie została przywrócona",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Wersje części pakietów zarządzanych przez lip nie zgadzają się z kopią zapasową",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Nie udało się zainstalować części pakietów zarządzanych",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Część pakietów zarządzanych nie została przywrócona",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Wersje części pakietów zarządzanych nie zgadzają się z kopią zapasową",
     "ERR_AUTH_FAILED": "Logowanie lub autoryzacja konta Microsoft nie powiodła się. Sprawdź połączenie i spróbuj ponownie.",
     "ERR_AUTH_TIMEOUT": "Przekroczono czas logowania. Spróbuj ponownie.",
     "ERR_AUTH_DEVICE_CACHE": "Nie udało się odczytać pamięci podręcznej autoryzacji urządzenia. Sprawdź użytkownika systemu Windows i uprawnienia do plików.",
@@ -1151,7 +1151,7 @@
     "action_result_title_failed": "Operacja nie powiodła się",
     "tab_all": "Wszystkie",
     "tab_normal": "Zwykłe mody",
-    "tab_lip": "Mody lip",
+    "tab_lip": "Mody pakietów",
     "lip_children_summary": "Zawiera: {{children}} (+{{count}})",
     "lip_open_package": "Otwórz pakiet",
     "lip_sync_loading": "Lokalne mody są gotowe. Wczytywanie szczegółów online…",
@@ -1301,7 +1301,7 @@
     "guide": {
       "open_button": "Przewodnik dewelopera",
       "title": "Przewodnik dewelopera LeviMC Mods",
-      "description": "Jeśli chcesz, aby Twój mod pojawił się na stronie LeviMC Mods w LeviLauncher, opublikuj go z plikiem lip.toml zgodnie z dokumentacją lip.",
+      "description": "Jeśli chcesz, aby Twój mod pojawił się na stronie LeviMC Mods w LeviLauncher, opublikuj go z plikiem lip.toml zgodnie z dokumentacją.",
       "manifest_hint": "LeviLauncher wyświetla mod, gdy lip.toml jego najnowszej wersji ma wpis z side = \"client\" i platform = \"win-x64\", i instaluje wybrany dla nich wariant: najpierw \"client\", potem domyślny wariant \"\", a następnie pozostałe według nazwy.",
       "variant_hint": "Dodaj wpis dla każdej obsługiwanej strony i platformy, np. wpis [[variants.\"\"]] z side = \"client\" i platform = \"win-x64\" obok wpisu serwera. Z zalecanymi tagami, takimi jak \"library\" lub \"economy\", w [info] tags mod pojawi się w tych filtrach.",
       "docs_button": "Zobacz pełną specyfikację",
@@ -1367,7 +1367,7 @@
       "title_reinstall": "Ponowne instalowanie",
       "title_update": "Aktualizowanie",
       "title_uninstall": "Odinstalowywanie",
-      "title_generic": "Zadanie lip",
+      "title_generic": "Zadanie pakietów",
       "status_running": "W toku",
       "status_success": "Powodzenie",
       "status_failed": "Niepowodzenie",

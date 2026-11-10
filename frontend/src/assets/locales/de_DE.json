@@ -333,7 +333,7 @@
     "tabs": {
       "general": "Allgemeine Einstellungen",
       "personalization": "Personalisierung",
-      "components": "Drittanbieter-Komponenten",
+      "components": "Paketverwaltung",
       "others": "Sonstiges",
       "updates": "Updates",
       "about": "Über",
@@ -378,14 +378,14 @@
       }
     },
     "lip": {
-      "title": "lip",
-      "desc": "Integrierte Paketverwaltung zum Installieren und Aktualisieren von Mods. Leere den Cache, wenn Paket-Downloads fehlschlagen.",
+      "title": "Cache leeren",
+      "desc": "Leeren Sie den Cache der Paketverwaltung, wenn Paket-Downloads fehlschlagen.",
       "cache_clean_button": "Cache leeren",
       "cache_cleaning": "Cache wird geleert…",
-      "cache_clean_success": "lip-Cache bereinigt",
+      "cache_clean_success": "Cache bereinigt",
       "github_proxy": {
         "title": "GitHub-Proxy",
-        "desc": "GitHub-Proxy, der beim Herunterladen von LIP-Paketen verwendet wird. Leer lassen, um den Standard wiederherzustellen.",
+        "desc": "GitHub-Proxy, der beim Herunterladen von Paketen verwendet wird. Leer lassen, um den Standard wiederherzustellen.",
         "preset_custom": "Benutzerdefiniert",
         "save_success": "GitHub-Proxy gespeichert",
         "save_failed": "GitHub-Proxy konnte nicht gespeichert werden"
@@ -393,7 +393,7 @@
     },
     "mirror_source": {
       "title": "Mirror-Quellen verwenden",
-      "desc": "In Festlandchina gehostete Mirrors für Launcher-Updates, lip und Versionskataloge verwenden. Für Nutzer in Festlandchina standardmäßig aktiviert."
+      "desc": "In Festlandchina gehostete Mirrors für Launcher-Updates, Pakete und Versionskataloge verwenden. Für Nutzer in Festlandchina standardmäßig aktiviert."
     },
     "header": {
       "title": "Einstellungen",
@@ -801,7 +801,7 @@
         "archive_label": "Backup-Datei",
         "location_label": "Gespeichert in",
         "open_dir": "Ordner öffnen",
-        "lip_summary": "{{count}} von lip verwaltete Pakete erkannt: {{summary}}",
+        "lip_summary": "{{count}} verwaltete Pakete erkannt: {{summary}}",
         "mode": {
           "safe": {
             "label": "Sicherer Modus"
@@ -819,7 +819,7 @@
           "confirm": "Wiederherstellung starten",
           "scope_section_title": "Bereiche wiederherstellen",
           "created_at": "Erstellt am",
-          "lip_summary": "{{count}} von lip verwaltete Pakete erkannt. Die Wiederherstellung versucht, sie automatisch neu zu installieren.",
+          "lip_summary": "{{count}} verwaltete Pakete erkannt. Die Wiederherstellung versucht, sie automatisch neu zu installieren.",
           "conflict_loading": "Wiederherstellungskonflikte werden gescannt. Bitte warten…",
           "conflict_summary": "{{count}} Konflikte wurden mit der aktuellen Instanz gefunden. Wählen Sie für jedes Element, ob die Backup-Version oder die aktuelle Version behalten werden soll.",
           "conflict_empty": "Keine Konflikte wurden für die ausgewählten Bereiche gefunden. Sie können direkt wiederherstellen.",
@@ -961,7 +961,7 @@
     "ERR_LL_NOT_SUPPORTED": "LeviLamina wird für diese Spielversion nicht unterstützt",
     "ERR_FETCH_LL_DB": "Abrufen der LeviLamina-Versionsdatenbank fehlgeschlagen",
     "ERR_INVALID_VERSION_FORMAT": "Ungültiges Spielversionsformat",
-    "ERR_LIP_INSTALL_FAILED": "Installieren von LeviLamina über lip fehlgeschlagen",
+    "ERR_LIP_INSTALL_FAILED": "Installieren von LeviLamina fehlgeschlagen",
     "ERR_NAME_EXISTS": "Name existiert bereits",
     "ERR_INVALID_NAME": "Ungültiger Name",
     "ERR_ICON_DECODE": "Icon-Dekodierung fehlgeschlagen",
@@ -984,12 +984,12 @@
     "ERR_UNREGISTER_FAILED": "Registrierungsaufhebung fehlgeschlagen",
     "ERR_NOT_REGISTERED_THIS_VERSION": "Diese Instanz ist nicht im System registriert",
     "ERR_DEV_MODE_REQUIRED": "Entwicklermodus ist nicht aktiviert und automatische Aktivierung fehlgeschlagen. Bitte aktivieren Sie den Entwicklermodus manuell und versuchen Sie es erneut.",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Ungültiger lip-Paket-Identifier",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip-Paketversion ist erforderlich",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Installieren des lip-Pakets fehlgeschlagen",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Deinstallieren des lip-Pakets fehlgeschlagen",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "Abfragen des lip-Paketzustands fehlgeschlagen",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "Der lip-Cache konnte nicht geleert werden",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Ungültiger Paket-Identifier",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "Paketversion ist erforderlich",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Installieren des Pakets fehlgeschlagen",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Deinstallieren des Pakets fehlgeschlagen",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "Abfragen des Paketzustands fehlgeschlagen",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Der Cache konnte nicht geleert werden",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "Dieses Paket wird von anderen installierten Mods benötigt und kann jetzt nicht deinstalliert werden",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "Dieses Paket wird weiterhin von anderen installierten Mods benötigt und kann daher nicht vollständig deinstalliert werden. Es bleibt nur noch als Abhängigkeit erhalten und wird entfernt, sobald es nicht mehr benötigt wird.",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina kann nur in den Instanz-Einstellungen verwaltet werden",
@@ -1010,9 +1010,9 @@
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "Einige Wiederherstellungskonflikte sind noch ungelöst. Beenden Sie zuerst die Auswahl einer Auflösung für jeden Konflikt.",
     "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "Die ausgewählte Auflösung für Wiederherstellungskonflikte ist ungültig. Bitte überprüfen Sie Ihre Auswahl.",
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Vollständige Minecraft Bedrock-Backups können nur in ein leeres Zielverzeichnis wiederhergestellt werden",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Einige von lip verwaltete Pakete konnten nicht installiert werden",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Einige von lip verwaltete Pakete wurden nicht wiederhergestellt",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Einige Versionen von lip-verwalteten Paketen stimmen nicht mit dem Backup überein",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Einige verwaltete Pakete konnten nicht installiert werden",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Einige verwaltete Pakete wurden nicht wiederhergestellt",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Einige Versionen von verwalteten Paketen stimmen nicht mit dem Backup überein",
     "ERR_AUTH_FAILED": "Die Download-Autorisierung für das aktuelle Konto ist fehlgeschlagen. Prüfe die Verbindung, aktualisiere das Konto über den Launcher-Avatar und versuche es erneut.",
     "ERR_AUTH_TIMEOUT": "Zeitüberschreitung bei der Anmeldung. Bitte versuche es erneut.",
     "ERR_AUTH_DEVICE_CACHE": "Der Cache der Geräteautorisierung konnte nicht gelesen werden. Prüfe den aktuellen Windows-Benutzer und die Dateiberechtigungen.",
@@ -1151,7 +1151,7 @@
     "action_result_title_failed": "Vorgang fehlgeschlagen",
     "tab_all": "Alle",
     "tab_normal": "Normale Mods",
-    "tab_lip": "lip-Mods",
+    "tab_lip": "Paket-Mods",
     "lip_children_summary": "Enthält: {{children}} (+{{count}})",
     "lip_open_package": "Paket öffnen",
     "lip_sync_loading": "Lokale Mods sind geladen. Online-Details werden abgerufen…",
@@ -1301,7 +1301,7 @@
     "guide": {
       "open_button": "Entwickler-Leitfaden",
       "title": "LeviMC-Mods-Entwickler-Leitfaden",
-      "description": "Damit Ihre Mod auf der LeviMC-Mods-Seite von LeviLauncher erscheint, veröffentlichen Sie sie mit einer lip.toml, wie in der lip-Dokumentation beschrieben.",
+      "description": "Damit Ihre Mod auf der LeviMC-Mods-Seite von LeviLauncher erscheint, veröffentlichen Sie sie mit einer lip.toml, wie in der Dokumentation beschrieben.",
       "manifest_hint": "LeviLauncher listet eine Mod, wenn die lip.toml ihrer neuesten Version einen Eintrag mit side = \"client\" und platform = \"win-x64\" hat, und installiert die dafür gewählte Variante: zuerst \"client\", dann die Standardvariante \"\", dann die übrigen nach Name.",
       "variant_hint": "Fügen Sie für jede unterstützte Seite und Plattform einen Eintrag hinzu, z. B. einen [[variants.\"\"]]-Eintrag mit side = \"client\" und platform = \"win-x64\" neben dem Eintrag für den Server. Mit empfohlenen Tags wie \"library\" oder \"economy\" in [info] tags erscheint die Mod unter diesen Filtern.",
       "docs_button": "Vollständige Spezifikation anzeigen",
@@ -1367,7 +1367,7 @@
       "title_reinstall": "Wird neu installiert",
       "title_update": "Wird aktualisiert",
       "title_uninstall": "Wird deinstalliert",
-      "title_generic": "lip-Aufgabe",
+      "title_generic": "Paketaufgabe",
       "status_running": "Läuft",
       "status_success": "Erfolg",
       "status_failed": "Fehlgeschlagen",

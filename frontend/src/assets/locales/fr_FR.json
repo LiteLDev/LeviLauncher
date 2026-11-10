@@ -333,7 +333,7 @@
     "tabs": {
       "general": "Paramètres généraux",
       "personalization": "Personnalisation",
-      "components": "Composants tiers",
+      "components": "Gestion des paquets",
       "others": "Autres",
       "updates": "Mises à jour",
       "about": "À propos",
@@ -378,14 +378,14 @@
       }
     },
     "lip": {
-      "title": "lip",
-      "desc": "Gestionnaire de paquets intégré pour installer et mettre à jour les mods. Videz son cache si le téléchargement des paquets échoue.",
+      "title": "Nettoyer le cache",
+      "desc": "Nettoyez le cache du gestionnaire de paquets si le téléchargement de paquets échoue.",
       "cache_clean_button": "Nettoyer le cache",
       "cache_cleaning": "Nettoyage du cache…",
-      "cache_clean_success": "Cache lip nettoyé",
+      "cache_clean_success": "Cache nettoyé",
       "github_proxy": {
         "title": "Proxy GitHub",
-        "desc": "Proxy GitHub utilisé pour télécharger les paquets LIP. Laissez vide pour rétablir la valeur par défaut.",
+        "desc": "Proxy GitHub utilisé pour télécharger les paquets. Laissez vide pour rétablir la valeur par défaut.",
         "preset_custom": "Personnalisé",
         "save_success": "Proxy GitHub enregistré",
         "save_failed": "Échec de l'enregistrement du proxy GitHub"
@@ -393,7 +393,7 @@
     },
     "mirror_source": {
       "title": "Utiliser des miroirs",
-      "desc": "Utiliser les miroirs hébergés en Chine continentale pour les mises à jour, lip et les catalogues de versions. Activé par défaut pour les utilisateurs de Chine continentale."
+      "desc": "Utiliser les miroirs hébergés en Chine continentale pour les mises à jour, paquets et les catalogues de versions. Activé par défaut pour les utilisateurs de Chine continentale."
     },
     "header": {
       "title": "Paramètres",
@@ -801,7 +801,7 @@
         "archive_label": "Fichier de sauvegarde",
         "location_label": "Enregistré dans",
         "open_dir": "Ouvrir le dossier",
-        "lip_summary": "{{count}} paquets gérés par lip détectés : {{summary}}",
+        "lip_summary": "{{count}} paquets gérés détectés : {{summary}}",
         "mode": {
           "safe": {
             "label": "Mode sécurisé"
@@ -819,7 +819,7 @@
           "confirm": "Démarrer la restauration",
           "scope_section_title": "Restaurer les étendues",
           "created_at": "Créé le",
-          "lip_summary": "{{count}} paquets gérés par lip détectés. La restauration tentera de les réinstaller automatiquement.",
+          "lip_summary": "{{count}} paquets gérés détectés. La restauration tentera de les réinstaller automatiquement.",
           "conflict_loading": "Analyse des conflits de restauration. Veuillez patienter…",
           "conflict_summary": "{{count}} conflits ont été trouvés avec l'instance actuelle. Choisissez pour chaque élément de conserver la version de sauvegarde ou la version actuelle.",
           "conflict_empty": "Aucun conflit trouvé pour les étendues sélectionnées. Vous pouvez restaurer directement.",
@@ -961,7 +961,7 @@
     "ERR_LL_NOT_SUPPORTED": "LeviLamina n'est pas pris en charge pour cette version du jeu",
     "ERR_FETCH_LL_DB": "Échec de la récupération de la base de données des versions de LeviLamina",
     "ERR_INVALID_VERSION_FORMAT": "Format de version du jeu invalide",
-    "ERR_LIP_INSTALL_FAILED": "Échec de l'installation de LeviLamina via lip",
+    "ERR_LIP_INSTALL_FAILED": "Échec de l'installation de LeviLamina",
     "ERR_NAME_EXISTS": "Le nom existe déjà",
     "ERR_INVALID_NAME": "Nom invalide",
     "ERR_ICON_DECODE": "Échec du décodage de l'icône",
@@ -984,12 +984,12 @@
     "ERR_UNREGISTER_FAILED": "Échec du désenregistrement",
     "ERR_NOT_REGISTERED_THIS_VERSION": "Cette instance n'est pas enregistrée dans le système",
     "ERR_DEV_MODE_REQUIRED": "Le mode Développeur n'est pas activé, et l'activation automatique a échoué. Veuillez activer le mode Développeur manuellement et réessayer.",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Identifiant de paquet lip invalide",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "La version du paquet lip est requise",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Échec de l'installation du paquet lip",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Échec de la désinstallation du paquet lip",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "Échec de la requête de l'état du paquet lip",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "Échec du nettoyage du cache lip",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Identifiant de paquet invalide",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "La version du paquet est requise",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Échec de l'installation du paquet",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Échec de la désinstallation du paquet",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "Échec de la requête de l'état du paquet",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Échec du nettoyage du cache",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "Ce paquet est requis par d'autres mods installés et ne peut pas être désinstallé maintenant",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "D'autres mods installés ont encore besoin de ce paquet : il ne peut pas être complètement désinstallé. Il est désormais conservé uniquement comme dépendance et sera supprimé lorsqu'il ne sera plus requis.",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina se gère uniquement dans les paramètres de l'instance",
@@ -1010,9 +1010,9 @@
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "Certains conflits de restauration ne sont pas encore résolus. Terminez d'abord de choisir une résolution pour chaque conflit.",
     "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "La résolution de conflit de restauration sélectionnée est invalide. Veuillez vérifier vos choix.",
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Les sauvegardes complètes de Minecraft Bedrock ne peuvent être restaurées que dans un répertoire cible vide",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Certains paquets gérés par lip n'ont pas pu être installés",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Certains paquets gérés par lip n'ont pas été restaurés",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Certaines versions de paquets gérés par lip ne correspondent pas à la sauvegarde",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Certains paquets gérés n'ont pas pu être installés",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Certains paquets gérés n'ont pas été restaurés",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Certaines versions de paquets gérés ne correspondent pas à la sauvegarde",
     "ERR_AUTH_FAILED": "Impossible d’autoriser les téléchargements pour le compte actuel. Vérifiez votre connexion, actualisez le compte depuis l’avatar du lanceur et réessayez.",
     "ERR_AUTH_TIMEOUT": "Délai de connexion dépassé. Réessaie.",
     "ERR_AUTH_DEVICE_CACHE": "Impossible de lire le cache d'autorisation de l'appareil. Vérifie l'utilisateur Windows actuel et les autorisations de fichier.",
@@ -1151,7 +1151,7 @@
     "action_result_title_failed": "Échec de l'opération",
     "tab_all": "Tous",
     "tab_normal": "Mods normaux",
-    "tab_lip": "Mods lip",
+    "tab_lip": "Mods de paquets",
     "lip_children_summary": "Comprend : {{children}} (+{{count}})",
     "lip_open_package": "Ouvrir le paquet",
     "lip_sync_loading": "Les mods locaux sont chargés. Récupération des informations en ligne…",
@@ -1301,7 +1301,7 @@
     "guide": {
       "open_button": "Guide du développeur",
       "title": "Guide du développeur LeviMC Mods",
-      "description": "Si vous souhaitez que votre mod apparaisse sur la page LeviMC Mods de LeviLauncher, publiez-le avec un lip.toml comme décrit dans la documentation de lip.",
+      "description": "Si vous souhaitez que votre mod apparaisse sur la page LeviMC Mods de LeviLauncher, publiez-le avec un lip.toml comme décrit dans la documentation.",
       "manifest_hint": "LeviLauncher affiche un mod lorsque le lip.toml de sa dernière version contient une entrée avec side = \"client\" et platform = \"win-x64\", et installe la variante choisie pour ceux-ci : d'abord \"client\", puis la variante par défaut \"\", puis les autres par nom.",
       "variant_hint": "Ajoutez une entrée par côté et par plateforme pris en charge, p. ex. une entrée [[variants.\"\"]] avec side = \"client\" et platform = \"win-x64\" à côté de l'entrée du serveur. Avec des étiquettes recommandées comme \"library\" ou \"economy\" dans [info] tags, le mod apparaît sous ces filtres.",
       "docs_button": "Voir la spécification complète",
@@ -1367,7 +1367,7 @@
       "title_reinstall": "Réinstallation en cours",
       "title_update": "Mise à jour en cours",
       "title_uninstall": "Désinstallation en cours",
-      "title_generic": "Tâche lip",
+      "title_generic": "Tâche de paquets",
       "status_running": "En cours d'exécution",
       "status_success": "Succès",
       "status_failed": "Échec",

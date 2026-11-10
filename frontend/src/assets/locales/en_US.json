@@ -333,7 +333,7 @@
     "tabs": {
       "general": "Basic Settings",
       "personalization": "Personalization",
-      "components": "Third-party Components",
+      "components": "Package Management",
       "others": "Others",
       "updates": "Updates",
       "about": "About",
@@ -378,14 +378,14 @@
       }
     },
     "lip": {
-      "title": "lip",
-      "desc": "Built-in package manager used to install and update mods. Clean its cache if package downloads fail.",
+      "title": "Clear cache",
+      "desc": "Clear the package manager's cache if package downloads fail.",
       "cache_clean_button": "Clean Cache",
       "cache_cleaning": "Cleaning Cache…",
-      "cache_clean_success": "lip cache cleaned",
+      "cache_clean_success": "Cache cleaned",
       "github_proxy": {
         "title": "GitHub proxy",
-        "desc": "GitHub proxy used when downloading LIP packages. Leave empty to restore the default.",
+        "desc": "GitHub proxy used when downloading packages. Leave empty to restore the default.",
         "preset_custom": "Custom",
         "save_success": "GitHub proxy saved",
         "save_failed": "Failed to save the GitHub proxy"
@@ -393,7 +393,7 @@
     },
     "mirror_source": {
       "title": "Use mirror sources",
-      "desc": "Use mirrors hosted in mainland China for launcher updates, lip and version catalogs. Enabled by default for users in mainland China."
+      "desc": "Use mirrors hosted in mainland China for launcher updates, packages and version catalogs. Enabled by default for users in mainland China."
     },
     "header": {
       "title": "Settings",
@@ -801,7 +801,7 @@
         "archive_label": "Backup file",
         "location_label": "Saved in",
         "open_dir": "Open folder",
-        "lip_summary": "{{count}} lip-managed packages detected: {{summary}}",
+        "lip_summary": "{{count}} managed packages detected: {{summary}}",
         "mode": {
           "safe": {
             "label": "Safe mode"
@@ -819,7 +819,7 @@
           "confirm": "Start restore",
           "scope_section_title": "Restore scopes",
           "created_at": "Created at",
-          "lip_summary": "Detected {{count}} lip-managed packages. Restore will try to reinstall them automatically.",
+          "lip_summary": "Detected {{count}} managed packages. Restore will try to reinstall them automatically.",
           "conflict_loading": "Scanning restore conflicts. Please wait…",
           "conflict_summary": "{{count}} conflicts were found with the current instance. Choose whether to keep the backup version or the current version for each item.",
           "conflict_empty": "No conflicts were found for the selected scopes. You can restore directly.",
@@ -994,7 +994,7 @@
     "ERR_LL_NOT_SUPPORTED": "LeviLamina is not supported for this game version",
     "ERR_FETCH_LL_DB": "Failed to fetch LeviLamina version database",
     "ERR_INVALID_VERSION_FORMAT": "Invalid game version format",
-    "ERR_LIP_INSTALL_FAILED": "Failed to install LeviLamina via lip",
+    "ERR_LIP_INSTALL_FAILED": "Failed to install LeviLamina",
     "ERR_NAME_EXISTS": "Name already exists",
     "ERR_INVALID_NAME": "Invalid name",
     "ERR_ICON_DECODE": "Icon decode failed",
@@ -1017,12 +1017,12 @@
     "ERR_UNREGISTER_FAILED": "Unregister failed",
     "ERR_NOT_REGISTERED_THIS_VERSION": "This instance is not registered with the system",
     "ERR_DEV_MODE_REQUIRED": "Developer Mode is not enabled, and auto-enable failed. Please enable Developer Mode manually and retry.",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Invalid lip package identifier",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip package version is required",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean lip cache",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Invalid package identifier",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "Package version is required",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install package",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall package",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query package state",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean cache",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "This package is required by other installed mods and cannot be uninstalled now",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "This package is still required by other installed mods, so it cannot be fully uninstalled. It is now kept only as a dependency and will be removed once nothing needs it.",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Instance Settings",
@@ -1043,9 +1043,9 @@
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "Some restore conflicts are still unresolved. Finish choosing a resolution for each conflict first.",
     "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "The selected restore conflict resolution is invalid. Please review your choices.",
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Full Minecraft Bedrock backups can only be restored into an empty target directory",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Some lip-managed packages failed to install",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Some lip-managed packages were not restored",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Some lip-managed package versions do not match the backup",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Some managed packages failed to install",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Some managed packages were not restored",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Some managed package versions do not match the backup",
     "ERR_AUTH_FAILED": "Microsoft sign-in or authorization failed. Check your connection and retry.",
     "ERR_AUTH_TIMEOUT": "Sign-in timed out. Please try again.",
     "ERR_AUTH_DEVICE_CACHE": "The device authorization cache could not be read. Check the Windows user and file permissions.",
@@ -1184,7 +1184,7 @@
     "action_result_title_failed": "Operation Failed",
     "tab_all": "All",
     "tab_normal": "Normal Mods",
-    "tab_lip": "lip Mods",
+    "tab_lip": "Package Mods",
     "lip_children_summary": "Includes: {{children}} (+{{count}})",
     "lip_open_package": "Open Package",
     "lip_sync_loading": "Local mods are ready. Loading online details…",
@@ -1334,7 +1334,7 @@
     "guide": {
       "open_button": "Developer Guide",
       "title": "LeviMC Mods Developer Guide",
-      "description": "If you want your mod to appear on LeviLauncher's LeviMC Mods page, publish it with a lip.toml as described in the lip documentation.",
+      "description": "If you want your mod to appear on LeviLauncher's LeviMC Mods page, publish it with a lip.toml as described in the documentation.",
       "manifest_hint": "LeviLauncher lists a mod when the lip.toml of its latest version has an entry with side = \"client\" and platform = \"win-x64\", and installs the variant chosen for them: \"client\" first, then the default variant \"\", then the others by name.",
       "variant_hint": "Add one entry for each side and platform the mod supports, e.g. a [[variants.\"\"]] entry with side = \"client\" and platform = \"win-x64\" next to the server's entry. With recommended tags such as \"library\" or \"economy\" in [info] tags, the mod shows up under those filters.",
       "docs_button": "View Full Spec",
@@ -1400,7 +1400,7 @@
       "title_reinstall": "Reinstalling",
       "title_update": "Updating",
       "title_uninstall": "Uninstalling",
-      "title_generic": "lip Task",
+      "title_generic": "Package Task",
       "status_running": "Running",
       "status_success": "Success",
       "status_failed": "Failed",

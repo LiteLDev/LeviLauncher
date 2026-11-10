@@ -333,7 +333,7 @@
     "tabs": {
       "general": "基礎設定",
       "personalization": "個性化",
-      "components": "第三方元件",
+      "components": "套件管理",
       "others": "其他設定",
       "updates": "軟體更新",
       "about": "關於",
@@ -378,14 +378,14 @@
       }
     },
     "lip": {
-      "title": "lip",
-      "desc": "內置的套件管理員，用於安裝和更新模組。若套件下載失敗，可清理其快取。",
+      "title": "清理快取",
+      "desc": "若套件下載失敗，可清理套件管理器的快取。",
       "cache_clean_button": "清理快取",
       "cache_cleaning": "正在清理快取…",
-      "cache_clean_success": "lip 快取清理完成",
+      "cache_clean_success": "快取清理完成",
       "github_proxy": {
         "title": "GitHub 代理",
-        "desc": "下載 LIP 套件時使用的 GitHub 代理，留空可恢復預設值。",
+        "desc": "下載套件時使用的 GitHub 代理，留空可恢復預設值。",
         "preset_custom": "自訂",
         "save_success": "GitHub 代理已儲存",
         "save_failed": "儲存 GitHub 代理失敗"
@@ -393,7 +393,7 @@
     },
     "mirror_source": {
       "title": "使用鏡像來源",
-      "desc": "為啟動器更新、lip 和版本清單優先使用中國大陸的鏡像來源。中國大陸使用者預設開啟。"
+      "desc": "為啟動器更新、套件和版本清單優先使用中國大陸的鏡像來源。中國大陸使用者預設開啟。"
     },
     "header": {
       "title": "設定",
@@ -801,7 +801,7 @@
         "archive_label": "備份檔案",
         "location_label": "保存位置",
         "open_dir": "打開目錄",
-        "lip_summary": "已識別 {{count}} 個由 lip 管理的模組套件：{{summary}}",
+        "lip_summary": "已識別 {{count}} 個由套件管理器管理的模組套件：{{summary}}",
         "mode": {
           "safe": {
             "label": "安全模式"
@@ -819,7 +819,7 @@
           "confirm": "開始還原",
           "scope_section_title": "還原範圍",
           "created_at": "建立時間",
-          "lip_summary": "偵測到 {{count}} 個 lip 模組套件，還原時會嘗試自動補裝。",
+          "lip_summary": "偵測到 {{count}} 個模組套件，還原時會嘗試自動補裝。",
           "conflict_loading": "正在掃描還原衝突，請稍候…",
           "conflict_summary": "發現 {{count}} 處與目前實例衝突的內容，請逐項選擇要保留備份版本還是目前版本。",
           "conflict_empty": "目前所選範圍沒有發現衝突，可以直接還原。",
@@ -961,7 +961,7 @@
     "ERR_LL_NOT_SUPPORTED": "目前的遊戲版本不支援 LeviLamina",
     "ERR_FETCH_LL_DB": "取得 LeviLamina 版本資料失敗",
     "ERR_INVALID_VERSION_FORMAT": "遊戲版本格式無效",
-    "ERR_LIP_INSTALL_FAILED": "透過 lip 安裝 LeviLamina 失敗",
+    "ERR_LIP_INSTALL_FAILED": "安裝 LeviLamina 失敗",
     "ERR_NAME_EXISTS": "名稱已存在",
     "ERR_INVALID_NAME": "無效的名稱",
     "ERR_ICON_DECODE": "圖示解析失敗",
@@ -984,12 +984,12 @@
     "ERR_UNREGISTER_FAILED": "取消註冊失敗",
     "ERR_NOT_REGISTERED_THIS_VERSION": "此實例尚未註冊到系統",
     "ERR_DEV_MODE_REQUIRED": "系統未開啟開發者模式，且自動開啟失敗。請手動開啟開發者模式後重試。",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "lip 套件識別碼無效",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "必須指定 lip 套件的版本",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "安裝 lip 套件失敗",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "解除安裝 lip 套件失敗",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "查詢 lip 套件狀態失敗",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 快取失敗",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "套件識別碼無效",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "必須指定套件的版本",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "安裝套件失敗",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "解除安裝套件失敗",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "查詢套件狀態失敗",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "清理快取失敗",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "此套件被其他已安裝 mod 依賴，暫時無法卸載",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "此套件仍被其他已安裝的模組依賴，無法完全解除安裝；目前僅作為依賴保留，待不再被需要時會自動清理。",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina 只能在實例設定中管理",
@@ -1010,9 +1010,9 @@
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "仍有還原衝突尚未處理，請先完成選擇。",
     "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "還原衝突處理方式無效，請重新檢查選擇。",
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Minecraft Bedrock 完整備份只能還原到空白目標目錄",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "部分由 lip 管理的模組套件安裝失敗",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "部分由 lip 管理的模組套件未能還原",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "部分由 lip 管理的模組套件版本與備份不一致",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "部分由套件管理器管理的模組套件安裝失敗",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "部分由套件管理器管理的模組套件未能還原",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "部分由套件管理器管理的模組套件版本與備份不一致",
     "ERR_AUTH_FAILED": "無法取得目前帳戶的下載授權。請檢查網路，並透過啟動器頭像重新整理帳戶後重試。",
     "ERR_AUTH_TIMEOUT": "登入逾時，請重試。",
     "ERR_AUTH_DEVICE_CACHE": "無法讀取裝置授權快取，請檢查目前 Windows 使用者與檔案權限。",
@@ -1151,7 +1151,7 @@
     "action_result_title_failed": "操作失敗",
     "tab_all": "全部",
     "tab_normal": "普通模組",
-    "tab_lip": "lip 模組",
+    "tab_lip": "套件管理模組",
     "lip_children_summary": "包含：{{children}}（+{{count}}）",
     "lip_open_package": "打開套件詳情",
     "lip_sync_loading": "本機模組已載入，正在取得線上資訊…",
@@ -1301,7 +1301,7 @@
     "guide": {
       "open_button": "開發者指南",
       "title": "LeviMC 模組開發者指南",
-      "description": "如果你希望自己的模組出現在 LeviLauncher 的 LeviMC 模組頁面中，請按照 lip 文件在倉庫中提供 lip.toml 並發佈。",
+      "description": "如果你希望自己的模組出現在 LeviLauncher 的 LeviMC 模組頁面中，請按照文件在倉庫中提供 lip.toml 並發佈。",
       "manifest_hint": "當模組最新版本的 lip.toml 中有 side = \"client\" 且 platform = \"win-x64\" 的條目時，LeviLauncher 才會收錄它，並安裝與之相符的變體：優先 \"client\"，其次預設變體 \"\"，其餘按名稱排序。",
       "variant_hint": "請為每個支援的執行端和平台各新增一個條目，例如在伺服器端條目旁新增 side = \"client\"、platform = \"win-x64\" 的 [[variants.\"\"]] 條目。在 [info] tags 中使用 \"library\"、\"economy\" 等推薦標籤，模組就會出現在對應的篩選中。",
       "docs_button": "查看完整規範",
@@ -1367,7 +1367,7 @@
       "title_reinstall": "重裝中",
       "title_update": "更新中",
       "title_uninstall": "卸載中",
-      "title_generic": "lip 任務",
+      "title_generic": "套件管理任務",
       "status_running": "執行中",
       "status_success": "成功",
       "status_failed": "失敗",

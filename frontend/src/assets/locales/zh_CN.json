@@ -333,7 +333,7 @@
     "tabs": {
       "general": "基础设置",
       "personalization": "个性化",
-      "components": "第三方组件",
+      "components": "包管理",
       "others": "其他设置",
       "updates": "软件更新",
       "about": "关于",
@@ -378,14 +378,14 @@
       }
     },
     "lip": {
-      "title": "lip",
-      "desc": "内置的包管理器，用于安装和更新模组。若软件包下载失败，可清理其缓存。",
+      "title": "清理缓存",
+      "desc": "若软件包下载失败，可清理包管理器的缓存。",
       "cache_clean_button": "清理缓存",
       "cache_cleaning": "正在清理缓存…",
-      "cache_clean_success": "lip 缓存清理完成",
+      "cache_clean_success": "缓存清理完成",
       "github_proxy": {
         "title": "GitHub 代理",
-        "desc": "下载 LIP 软件包时使用的 GitHub 代理，留空可恢复默认值。",
+        "desc": "下载软件包时使用的 GitHub 代理，留空可恢复默认值。",
         "preset_custom": "自定义",
         "save_success": "GitHub 代理已保存",
         "save_failed": "保存 GitHub 代理失败"
@@ -393,7 +393,7 @@
     },
     "mirror_source": {
       "title": "使用镜像源",
-      "desc": "为启动器更新、lip 和版本列表优先使用中国大陆的镜像源。中国大陆用户默认开启。"
+      "desc": "为启动器更新、软件包和版本列表优先使用中国大陆的镜像源。中国大陆用户默认开启。"
     },
     "header": {
       "title": "设置",
@@ -801,7 +801,7 @@
         "archive_label": "备份文件",
         "location_label": "保存位置",
         "open_dir": "打开目录",
-        "lip_summary": "已识别 {{count}} 个由 lip 管理的模组包：{{summary}}",
+        "lip_summary": "已识别 {{count}} 个由包管理器管理的模组包：{{summary}}",
         "mode": {
           "safe": {
             "label": "安全模式"
@@ -819,7 +819,7 @@
           "confirm": "开始恢复",
           "scope_section_title": "恢复范围",
           "created_at": "创建时间",
-          "lip_summary": "检测到 {{count}} 个 lip 模组包，恢复时会尝试自动补装。",
+          "lip_summary": "检测到 {{count}} 个模组包，恢复时会尝试自动补装。",
           "conflict_loading": "正在扫描恢复冲突，请稍候…",
           "conflict_summary": "发现 {{count}} 处与当前实例冲突的内容，请逐项选择保留备份版本还是当前版本。",
           "conflict_empty": "当前所选范围没有发现冲突，可以直接恢复。",
@@ -994,7 +994,7 @@
     "ERR_LL_NOT_SUPPORTED": "当前游戏版本不支持 LeviLamina",
     "ERR_FETCH_LL_DB": "获取 LeviLamina 版本数据失败",
     "ERR_INVALID_VERSION_FORMAT": "游戏版本格式无效",
-    "ERR_LIP_INSTALL_FAILED": "通过 lip 安装 LeviLamina 失败",
+    "ERR_LIP_INSTALL_FAILED": "安装 LeviLamina 失败",
     "ERR_NAME_EXISTS": "名称已存在",
     "ERR_INVALID_NAME": "无效的名称",
     "ERR_ICON_DECODE": "图标解析失败",
@@ -1017,12 +1017,12 @@
     "ERR_UNREGISTER_FAILED": "取消注册失败",
     "ERR_NOT_REGISTERED_THIS_VERSION": "该实例未注册到系统",
     "ERR_DEV_MODE_REQUIRED": "系统未开启开发者模式，且自动开启失败。请手动开启开发者模式后重试。",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "lip 包标识无效",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "需要指定 lip 包的版本",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "安装 lip 包失败",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "卸载 lip 包失败",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "查询 lip 包状态失败",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 缓存失败",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "包标识无效",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "需要指定包的版本",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "安装包失败",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "卸载包失败",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "查询包状态失败",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "清理缓存失败",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "该包仍被其他已安装的模组依赖，暂时无法卸载",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "该包仍被其他已安装的模组依赖，无法完全卸载；现在仅作为依赖保留，等不再被需要时会自动清理。",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina 只能在实例设置中管理",
@@ -1043,9 +1043,9 @@
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "仍有恢复冲突未处理，请先完成选择。",
     "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "恢复冲突处理方式无效，请重新检查选择。",
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "全量 Minecraft Bedrock 备份只能恢复到空目标目录",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "部分 lip 模组包安装失败",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "部分 lip 模组包未能恢复",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "部分 lip 模组包版本与备份不一致",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "部分模组包安装失败",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "部分模组包未能恢复",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "部分模组包版本与备份不一致",
     "ERR_AUTH_FAILED": "微软账户登录或授权失败，请检查网络后重试。",
     "ERR_AUTH_TIMEOUT": "登录已超时，请重试。",
     "ERR_AUTH_DEVICE_CACHE": "无法读取设备授权缓存，请检查当前 Windows 用户和文件权限。",
@@ -1184,7 +1184,7 @@
     "action_result_title_failed": "操作失败",
     "tab_all": "全部",
     "tab_normal": "普通模组",
-    "tab_lip": "lip 模组",
+    "tab_lip": "包管理模组",
     "lip_children_summary": "包含：{{children}}（+{{count}}）",
     "lip_open_package": "打开包详情",
     "lip_sync_loading": "本地模组已加载，正在获取在线信息…",
@@ -1334,7 +1334,7 @@
     "guide": {
       "open_button": "开发者指南",
       "title": "LeviMC 模组开发者指南",
-      "description": "如果你希望自己的模组出现在 LeviLauncher 的 LeviMC 模组页面中，请按照 lip 文档在仓库中提供 lip.toml 并发布。",
+      "description": "如果你希望自己的模组出现在 LeviLauncher 的 LeviMC 模组页面中，请按照文档在仓库中提供 lip.toml 并发布。",
       "manifest_hint": "当模组最新版本的 lip.toml 中有 side = \"client\" 且 platform = \"win-x64\" 的条目时，LeviLauncher 才会收录它，并安装与之匹配的变体：优先 \"client\"，其次默认变体 \"\"，其余按名称排序。",
       "variant_hint": "请为每个支持的运行端和平台各添加一个条目，例如在服务端条目旁添加 side = \"client\"、platform = \"win-x64\" 的 [[variants.\"\"]] 条目。在 [info] tags 中使用 \"library\"、\"economy\" 等推荐标签，模组就会出现在对应的筛选中。",
       "docs_button": "查看完整规范",
@@ -1400,7 +1400,7 @@
       "title_reinstall": "重装中",
       "title_update": "更新中",
       "title_uninstall": "卸载中",
-      "title_generic": "lip 任务",
+      "title_generic": "包管理任务",
       "status_running": "运行中",
       "status_success": "成功",
       "status_failed": "失败",

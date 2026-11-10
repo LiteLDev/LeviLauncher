@@ -333,7 +333,7 @@
     "tabs": {
       "general": "Definições gerais",
       "personalization": "Personalização",
-      "components": "Componentes de terceiros",
+      "components": "Gestão de pacotes",
       "others": "Outros",
       "updates": "Atualizações",
       "about": "Sobre",
@@ -378,14 +378,14 @@
       }
     },
     "lip": {
-      "title": "lip",
-      "desc": "Gestor de pacotes integrado usado para instalar e atualizar mods. Limpe a cache se as transferências de pacotes falharem.",
+      "title": "Limpar cache",
+      "desc": "Limpe a cache do gestor de pacotes se as transferências de pacotes falharem.",
       "cache_clean_button": "Limpar cache",
       "cache_cleaning": "A limpar cache…",
-      "cache_clean_success": "Cache do lip limpa",
+      "cache_clean_success": "Cache limpa",
       "github_proxy": {
         "title": "Proxy do GitHub",
-        "desc": "Proxy do GitHub usado ao transferir pacotes LIP. Deixe vazio para restaurar o padrão.",
+        "desc": "Proxy do GitHub usado ao transferir pacotes. Deixe vazio para restaurar o padrão.",
         "preset_custom": "Personalizado",
         "save_success": "Proxy do GitHub salvo",
         "save_failed": "Falha ao salvar o proxy do GitHub"
@@ -393,7 +393,7 @@
     },
     "mirror_source": {
       "title": "Usar espelhos",
-      "desc": "Usar espelhos alojados na China continental para atualizações, lip e catálogos de versões. Ativado por predefinição para utilizadores da China continental."
+      "desc": "Usar espelhos alojados na China continental para atualizações, pacotes e catálogos de versões. Ativado por predefinição para utilizadores da China continental."
     },
     "header": {
       "title": "Definições",
@@ -801,7 +801,7 @@
         "archive_label": "Ficheiro de backup",
         "location_label": "Guardado em",
         "open_dir": "Abrir pasta",
-        "lip_summary": "{{count}} pacotes geridos por lip detetados: {{summary}}",
+        "lip_summary": "{{count}} pacotes geridos detetados: {{summary}}",
         "mode": {
           "safe": {
             "label": "Modo seguro"
@@ -819,7 +819,7 @@
           "confirm": "Iniciar restauro",
           "scope_section_title": "Restaurar âmbitos",
           "created_at": "Criado em",
-          "lip_summary": "{{count}} pacotes geridos por lip detetados. O restauro tentará reinstalá-los automaticamente.",
+          "lip_summary": "{{count}} pacotes geridos detetados. O restauro tentará reinstalá-los automaticamente.",
           "conflict_loading": "A analisar conflitos de restauro. Aguarde…",
           "conflict_summary": "{{count}} conflitos encontrados com a instância atual. Escolha para cada item se mantém a versão de backup ou a versão atual.",
           "conflict_empty": "Nenhum conflito encontrado para os âmbitos selecionados. Pode restaurar diretamente.",
@@ -961,7 +961,7 @@
     "ERR_LL_NOT_SUPPORTED": "LeviLamina não é suportado para esta versão do jogo",
     "ERR_FETCH_LL_DB": "Falha ao obter base de dados de versões do LeviLamina",
     "ERR_INVALID_VERSION_FORMAT": "Formato de versão do jogo inválido",
-    "ERR_LIP_INSTALL_FAILED": "Falha na instalação do LeviLamina via lip",
+    "ERR_LIP_INSTALL_FAILED": "Falha na instalação do LeviLamina",
     "ERR_NAME_EXISTS": "O nome já existe",
     "ERR_INVALID_NAME": "Nome inválido",
     "ERR_ICON_DECODE": "Falha ao descodificar ícone",
@@ -984,12 +984,12 @@
     "ERR_UNREGISTER_FAILED": "Falha ao cancelar registo",
     "ERR_NOT_REGISTERED_THIS_VERSION": "Esta instância não está registada no sistema",
     "ERR_DEV_MODE_REQUIRED": "O Modo de Programador não está ativado e a ativação automática falhou. Ative manualmente o Modo de Programador e tente novamente.",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Identificador de pacote lip inválido",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "Versão do pacote lip obrigatória",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Falha na instalação do pacote lip",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Falha na desinstalação do pacote lip",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "Falha na consulta do estado do pacote lip",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "Não foi possível limpar a cache do lip",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Identificador de pacote inválido",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "Versão do pacote obrigatória",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Falha na instalação do pacote",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Falha na desinstalação do pacote",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "Falha na consulta do estado do pacote",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Não foi possível limpar a cache",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "Este pacote é exigido por outros mods instalados e não pode ser desinstalado agora",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "Outros mods instalados ainda precisam deste pacote, por isso não pode ser totalmente desinstalado. Passa a ser mantido apenas como dependência e será removido assim que deixar de ser necessário.",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "O LeviLamina só pode ser gerido nas definições da instância",
@@ -1010,9 +1010,9 @@
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "Alguns conflitos de restauro ainda não foram resolvidos. Termine primeiro de escolher uma resolução para cada conflito.",
     "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "A resolução de conflito de restauro selecionada é inválida. Verifique as suas escolhas.",
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Backups completos do Minecraft Bedrock só podem ser restaurados num diretório de destino vazio",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Alguns pacotes geridos por lip não puderam ser instalados",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Alguns pacotes geridos por lip não foram restaurados",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Algumas versões de pacotes geridos por lip não correspondem ao backup",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Alguns pacotes geridos não puderam ser instalados",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Alguns pacotes geridos não foram restaurados",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Algumas versões de pacotes geridos não correspondem ao backup",
     "ERR_AUTH_FAILED": "Não foi possível autorizar as transferências para a conta atual. Verifique a ligação, atualize a conta através do avatar do iniciador e tente novamente.",
     "ERR_AUTH_TIMEOUT": "O início de sessão expirou. Tenta novamente.",
     "ERR_AUTH_DEVICE_CACHE": "Não foi possível ler a cache de autorização do dispositivo. Verifica o utilizador do Windows e as permissões dos ficheiros.",
@@ -1151,7 +1151,7 @@
     "action_result_title_failed": "Operação falhada",
     "tab_all": "Todos",
     "tab_normal": "Mods normais",
-    "tab_lip": "Mods lip",
+    "tab_lip": "Mods de pacotes",
     "lip_children_summary": "Inclui: {{children}} (+{{count}})",
     "lip_open_package": "Abrir pacote",
     "lip_sync_loading": "Os mods locais estão prontos. A carregar as informações online…",
@@ -1301,7 +1301,7 @@
     "guide": {
       "open_button": "Guia do programador",
       "title": "Guia do programador LeviMC Mods",
-      "description": "Se deseja que o seu mod apareça na página LeviMC Mods do LeviLauncher, publique-o com um lip.toml conforme descrito na documentação do lip.",
+      "description": "Se deseja que o seu mod apareça na página LeviMC Mods do LeviLauncher, publique-o com um lip.toml conforme descrito na documentação.",
       "manifest_hint": "O LeviLauncher lista um mod quando o lip.toml da sua versão mais recente tem uma entrada com side = \"client\" e platform = \"win-x64\", e instala a variante escolhida para eles: primeiro \"client\", depois a variante predefinida \"\" e depois as restantes por nome.",
       "variant_hint": "Adicione uma entrada por cada lado e plataforma suportados, p. ex. uma entrada [[variants.\"\"]] com side = \"client\" e platform = \"win-x64\" ao lado da entrada do servidor. Com etiquetas recomendadas como \"library\" ou \"economy\" em [info] tags, o mod aparece nesses filtros.",
       "docs_button": "Ver especificações completas",
@@ -1367,7 +1367,7 @@
       "title_reinstall": "A reinstalar",
       "title_update": "A atualizar",
       "title_uninstall": "A desinstalar",
-      "title_generic": "Tarefa lip",
+      "title_generic": "Tarefa de pacotes",
       "status_running": "Em execução",
       "status_success": "Sucesso",
       "status_failed": "Falha",

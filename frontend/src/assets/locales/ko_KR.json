@@ -333,7 +333,7 @@
     "tabs": {
       "general": "일반 설정",
       "personalization": "개인화",
-      "components": "타사 구성 요소",
+      "components": "패키지 관리",
       "others": "기타",
       "updates": "업데이트",
       "about": "정보",
@@ -378,14 +378,14 @@
       }
     },
     "lip": {
-      "title": "lip",
-      "desc": "모드를 설치하고 업데이트하는 데 사용하는 내장 패키지 관리자입니다. 패키지 다운로드에 실패하면 캐시를 정리하세요.",
+      "title": "캐시 지우기",
+      "desc": "패키지 다운로드에 실패하면 패키지 관리자의 캐시를 지우세요.",
       "cache_clean_button": "캐시 지우기",
       "cache_cleaning": "캐시 지우는 중…",
-      "cache_clean_success": "lip 캐시 정리 완료",
+      "cache_clean_success": "캐시 정리 완료",
       "github_proxy": {
         "title": "GitHub 프록시",
-        "desc": "LIP 패키지를 다운로드할 때 사용하는 GitHub 프록시입니다. 비워 두면 기본값으로 복원됩니다.",
+        "desc": "패키지를 다운로드할 때 사용하는 GitHub 프록시입니다. 비워 두면 기본값으로 복원됩니다.",
         "preset_custom": "사용자 지정",
         "save_success": "GitHub 프록시가 저장되었습니다",
         "save_failed": "GitHub 프록시 저장에 실패했습니다"
@@ -393,7 +393,7 @@
     },
     "mirror_source": {
       "title": "미러 소스 사용",
-      "desc": "런처 업데이트, lip, 버전 목록에 중국 본토 미러를 우선 사용합니다. 중국 본토 사용자는 기본적으로 켜져 있습니다."
+      "desc": "런처 업데이트, 패키지, 버전 목록에 중국 본토 미러를 우선 사용합니다. 중국 본토 사용자는 기본적으로 켜져 있습니다."
     },
     "header": {
       "title": "설정",
@@ -801,7 +801,7 @@
         "archive_label": "백업 파일",
         "location_label": "저장 위치",
         "open_dir": "폴더 열기",
-        "lip_summary": "{{count}} 개의 lip 관리 패키지 감지됨: {{summary}}",
+        "lip_summary": "{{count}} 개의 관리 패키지 감지됨: {{summary}}",
         "mode": {
           "safe": {
             "label": "안전 모드"
@@ -819,7 +819,7 @@
           "confirm": "복원 시작",
           "scope_section_title": "범위 복원",
           "created_at": "생성일",
-          "lip_summary": "{{count}} 개의 lip 관리 패키지가 감지되었습니다. 복원은 이를 자동으로 다시 설치하려고 시도합니다.",
+          "lip_summary": "{{count}} 개의 관리 패키지가 감지되었습니다. 복원은 이를 자동으로 다시 설치하려고 시도합니다.",
           "conflict_loading": "복원 충돌을 스캔 중입니다. 잠시만 기다려 주세요…",
           "conflict_summary": "현재 인스턴스와 {{count}} 개의 충돌이 발견되었습니다. 각 항목에 대해 백업 버전 또는 현재 버전 유지 여부를 선택하세요.",
           "conflict_empty": "선택한 범위에 대한 충돌이 발견되지 않았습니다. 직접 복원할 수 있습니다.",
@@ -961,7 +961,7 @@
     "ERR_LL_NOT_SUPPORTED": "LeviLamina 는 이 게임 버전에서 지원되지 않습니다",
     "ERR_FETCH_LL_DB": "LeviLamina 버전 데이터베이스 가져오기 실패",
     "ERR_INVALID_VERSION_FORMAT": "잘못된 게임 버전 형식",
-    "ERR_LIP_INSTALL_FAILED": "lip 를 통한 LeviLamina 설치 실패",
+    "ERR_LIP_INSTALL_FAILED": "LeviLamina 설치 실패",
     "ERR_NAME_EXISTS": "이름이 이미 존재합니다",
     "ERR_INVALID_NAME": "잘못된 이름",
     "ERR_ICON_DECODE": "아이콘 디코딩 실패",
@@ -984,12 +984,12 @@
     "ERR_UNREGISTER_FAILED": "등록 해제 실패",
     "ERR_NOT_REGISTERED_THIS_VERSION": "이 인스턴스는 시스템에 등록되어 있지 않습니다",
     "ERR_DEV_MODE_REQUIRED": "개발자 모드가 활성화되지 않았으며 자동 활성화도 실패했습니다. 개발자 모드를 수동으로 활성화하고 다시 시도해 주세요.",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "잘못된 lip 패키지 식별자",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip 패키지 버전이 필요합니다",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "lip 패키지 설치 실패",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "lip 패키지 제거 실패",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "lip 패키지 상태 쿼리 실패",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "lip 캐시를 정리하지 못했습니다",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "잘못된 패키지 식별자",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "패키지 버전이 필요합니다",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "패키지 설치 실패",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "패키지 제거 실패",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "패키지 상태 쿼리 실패",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "캐시를 정리하지 못했습니다",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "이 패키지는 다른 설치된 모드에서 필요로 하며 현재 제거할 수 없습니다",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "이 패키지는 설치된 다른 모드가 여전히 필요로 하므로 완전히 제거할 수 없습니다. 지금은 종속 항목으로만 유지되며, 더 이상 필요하지 않으면 자동으로 제거됩니다.",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina는 인스턴스 설정에서만 관리할 수 있습니다",
@@ -1010,9 +1010,9 @@
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "일부 복원 충돌이 아직 해결되지 않았습니다. 먼저 각 충돌에 대한 해결 방법을 선택하세요.",
     "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "선택한 복원 충돌 해결 방법이 잘못되었습니다. 선택 사항을 확인해 주세요.",
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "완전한 Minecraft Bedrock 백업은 빈 대상 디렉토리로만 복원할 수 있습니다",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "일부 lip 관리 패키지를 설치하지 못했습니다",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "일부 lip 관리 패키지가 복원되지 않았습니다",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "일부 lip 관리 패키지 버전이 백업과 일치하지 않습니다",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "일부 관리 패키지를 설치하지 못했습니다",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "일부 관리 패키지가 복원되지 않았습니다",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "일부 관리 패키지 버전이 백업과 일치하지 않습니다",
     "ERR_AUTH_FAILED": "현재 계정의 다운로드를 인증할 수 없습니다. 연결을 확인하고 런처 아바타에서 계정을 새로 고친 후 다시 시도하세요.",
     "ERR_AUTH_TIMEOUT": "로그인 시간이 초과되었습니다. 다시 시도하세요.",
     "ERR_AUTH_DEVICE_CACHE": "장치 인증 캐시를 읽을 수 없습니다. 현재 Windows 사용자와 파일 권한을 확인하세요.",
@@ -1151,7 +1151,7 @@
     "action_result_title_failed": "작업 실패",
     "tab_all": "전체",
     "tab_normal": "일반 모드",
-    "tab_lip": "lip 모드",
+    "tab_lip": "패키지 모드",
     "lip_children_summary": "포함: {{children}} (+{{count}})",
     "lip_open_package": "패키지 열기",
     "lip_sync_loading": "로컬 모드를 불러왔습니다. 온라인 정보를 가져오는 중…",
@@ -1301,7 +1301,7 @@
     "guide": {
       "open_button": "개발자 가이드",
       "title": "LeviMC Mods 개발자 가이드",
-      "description": "모드가 LeviLauncher의 LeviMC Mods 페이지에 나타나도록 하려면 lip 문서에 설명된 대로 lip.toml과 함께 게시하세요.",
+      "description": "모드가 LeviLauncher의 LeviMC Mods 페이지에 나타나도록 하려면 문서에 설명된 대로 lip.toml과 함께 게시하세요.",
       "manifest_hint": "LeviLauncher는 최신 버전의 lip.toml에 side = \"client\", platform = \"win-x64\"인 엔트리가 있는 모드를 표시하고, 이에 맞는 변형을 설치합니다. \"client\"가 먼저, 그다음 기본 변형 \"\", 나머지는 이름순입니다.",
       "variant_hint": "지원하는 사이드와 플랫폼마다 엔트리를 하나씩 추가하세요. 예: 서버용 엔트리 옆에 side = \"client\", platform = \"win-x64\"인 [[variants.\"\"]] 엔트리를 추가합니다. [info] tags에 \"library\"나 \"economy\" 같은 권장 태그를 넣으면 해당 필터에 모드가 표시됩니다.",
       "docs_button": "전체 사양 보기",
@@ -1367,7 +1367,7 @@
       "title_reinstall": "재설치 중",
       "title_update": "업데이트 중",
       "title_uninstall": "제거 중",
-      "title_generic": "lip 작업",
+      "title_generic": "패키지 작업",
       "status_running": "실행 중",
       "status_success": "성공",
       "status_failed": "실패",

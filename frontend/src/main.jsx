@@ -9,6 +9,7 @@ import {
   measureStartupPhase,
   useStartupVisualReady,
 } from "./utils/startupState";
+import { toIntlLocale } from "./utils/i18nUtils";
 
 const container = document.getElementById("root");
 
@@ -53,7 +54,7 @@ const startupLanguage = (() => {
   }
 })();
 
-document.documentElement.lang = String(startupLanguage).replace("_", "-");
+document.documentElement.lang = toIntlLocale(String(startupLanguage));
 
 const startupCopy = (() => {
   const language = String(startupLanguage).toLowerCase();

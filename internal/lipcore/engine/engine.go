@@ -826,6 +826,9 @@ func (e *Engine) requestedCandidates(ctx context.Context, ws *workspace, request
 		if err != nil {
 			return nil, err
 		}
+		if err := ws.checkClientBuild(r, c); err != nil { // compat_legacy_variants.go
+			return nil, err
+		}
 		identity := c.Identity()
 		earlier := -1
 		for i, o := range out {
@@ -1231,7 +1234,7 @@ type orderNode struct {
 //
 // (ws, not env, as the receiver, and fromTooth: compat_legacy_variants.go.)
 func (ws *workspace) lockedOrderNode(p *pkgmodel.LockedPackage) orderNode {
-	n := orderNode{identity: install.LockedIdentity(p), locked: p, fromTooth: ws.recordFromTooth(p)}
+	n := orderNode{identity: install.LockedIdentity(p), locked: p, fromTooth: ws.orderFromTooth(p)}
 	if entry, err := lockedEntry(p, ws.env); err == nil {
 		n.dependencies = entry.Deps
 	}
@@ -1585,11 +1588,13 @@ func (e *Engine) pinnedCandidate(ctx context.Context, ws *workspace, p *pkgmodel
 			return h.Source, nil
 		})
 		a := &archiveHandle{Key: p.Ref + " (installed)", Source: src, Commit: commit}
-		// fromTooth: compat_legacy_variants.go (false without it); it may
-		// mark p.Manifest, so it comes first.
-		fromTooth := ws.recordFromTooth(p)
-		return ws.resolver.newCandidate(stringMember(p.Manifest, "id"), p.Variant, version, entry, p.Manifest, a,
-			source, fromTooth), nil
+		// fromTooth and pinnedOrigin: compat_legacy_variants.go (false and
+		// nothing without it); it may mark p.Manifest, so it comes first.
+		fromTooth, origin := ws.pinnedOrigin(p)
+		c := ws.resolver.newCandidate(stringMember(p.Manifest, "id"), p.Variant, version, entry, p.Manifest, a,
+			source, fromTooth)
+		c.installed, c.origin = true, origin // compat_legacy_variants.go
+		return c, nil
 	}()
 	if err == nil {
 		return c, nil

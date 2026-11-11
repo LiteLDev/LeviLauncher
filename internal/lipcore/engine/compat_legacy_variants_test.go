@@ -663,3 +663,187 @@ func TestMissingClientVariantKinds(t *testing.T) {
 		t.Fatal("kind without the layer")
 	}
 }
+
+// addThirdParty tags a lip.toml release of a third-party package with its
+// own client variant (other content than "").
+func (h *harness) addThirdParty(version string) {
+	h.addTag(llID, version, "lip.toml", lipVariants(llID, version,
+		"", "["+entry("client", "s.dll", "ll/plain-"+version+".dll", "")+"]",
+		"client", "["+entry("client", "c.dll", "ll/client-"+version+".dll", "")+"]"), "s.dll", "s", "c.dll", "c")
+}
+
+// Requests of an installed identity stay literal: a third-party lip.toml
+// "X" with its own client variant, explicit or a dependency, and a
+// tooth.json "X" (its ""), are updated as they are.
+func TestInstalledIdentityRequestsStayLiteral(t *testing.T) {
+	h := compatHarness(t, true)
+	h.addThirdParty("1.0.0")
+	h.must(h.install(llID + "@1.0.0"))
+	h.addThirdParty("2.0.0")
+	h.setCompat(true)
+	h.must(h.update(llID + "@2.0.0"))
+	equal(t, h.summary(), []string{llID + "@2.0.0 explicit"})
+	equal(t, h.files(), []string{"ll/plain-2.0.0.dll"})
+
+	h = compatHarness(t, true)
+	h.addThirdParty("1.0.0")
+	h.addLipMod(newID, "1.0.0", dep(llID, ">=1.0.0"))
+	h.must(h.install(newID))
+	h.addThirdParty("2.0.0")
+	h.setCompat(true)
+	h.must(h.install(llID + "@2.0.0"))
+	equal(t, h.summary(), []string{llID + "@2.0.0 explicit", newID + "@1.0.0 explicit"})
+
+	h = compatHarness(t, true)
+	h.addToothLL("1.0.0")
+	h.must(h.install(llID + "@1.0.0"))
+	h.addToothLL("1.1.0")
+	h.setCompat(true)
+	h.must(h.update(llID + "@1.1.0"))
+	equal(t, h.summary(), []string{llID + "@1.1.0 explicit"})
+}
+
+// A request "X" over an installed lip.toml "X" whose release is a
+// tooth.json keeping its client build in "X#client" fails with
+// ErrClientBuildInRoleVariant instead of installing that release's "" (the
+// server build); without the layer it is lip.
+func TestClientBuildInRoleVariant(t *testing.T) {
+	h := mixedLL(t, true)
+	h.must(h.install(llID + "@2.0.0"))
+	h.setCompat(true)
+	before := h.snapshot()
+	err := h.update(llID + "@1.0.0")
+	if !errors.Is(err, ErrClientBuildInRoleVariant) || !strings.Contains(FormatError(err), "'"+llID+"@1.0.0'") {
+		t.Fatalf("%v", err)
+	}
+	equalMaps(t, h.snapshot(), before)
+	h.setCompat(false)
+	h.must(h.update(llID + "@1.0.0"))
+	if h.read("ll/LeviLamina.dll") != "server 1.0.0" {
+		t.Fatal(h.snapshot())
+	}
+}
+
+// A workspace that already holds both builds (written without the layer)
+// keeps working with it: the solver does not block two installed packages.
+func TestExistingBothBuildsKeepWorking(t *testing.T) {
+	for _, op := range []string{"install unrelated", "update", "uninstall tooth mod", "uninstall lip mod", "update lip mod"} {
+		t.Run(op, func(t *testing.T) {
+			h := compatHarness(t, false)
+			h.addToothLL("1.0.0")
+			h.addLipLL("2.0.0")
+			h.addToothMod(modID, "1.0.0", dep(llID+"#client", "1.*"))
+			h.addLipMod(newID, "1.0.0", dep(llID, "2.*"))
+			h.must(h.install(modID, newID))
+			h.addLipMod("github.com/compat/other", "1.0.0", "")
+			h.setCompat(true)
+			switch op {
+			case "install unrelated":
+				h.must(h.install("github.com/compat/other"))
+			case "update":
+				h.must(h.update())
+			case "uninstall tooth mod":
+				h.must(h.uninstall(modID))
+				equal(t, h.summary(), []string{llID + "@2.0.0 dep", newID + "@1.0.0 explicit"})
+			case "uninstall lip mod":
+				h.must(h.uninstall(newID))
+				equal(t, h.summary(), []string{llID + "#client@1.0.0 dep", modID + "@1.0.0 explicit"})
+			case "update lip mod":
+				h.must(h.update(newID))
+			}
+		})
+	}
+}
+
+// ErrClientVariantNotInLipToml only for a lip.toml without that variant at
+// all: one whose client variant has no entry for this platform is not.
+func TestMissingClientVariantOtherPlatform(t *testing.T) {
+	h := mixedLL(t, true)
+	h.addTag(llID, "3.0.0", "lip.toml", fmt.Sprintf(`{ "format": 4, "id": %q, "version": "3.0.0", "variants": {
+	  "": [ { "side": "client", "platform": %q, "deps": {}, %s } ],
+	  "client": [ { "side": "client", "platform": "win-arm64", "deps": {}, %s } ] } }`, llID, testPlatform,
+		selfAsset("s.dll", "ll/plain.dll"), selfAsset("c.dll", "ll/client.dll")), "s.dll", "s", "c.dll", "c")
+	err := h.install(llID + "#client@3.0.0")
+	if !errors.Is(err, ErrNoPackageFound) || errors.Is(err, ErrClientVariantNotInLipToml) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// Old records are read from their archive only when needed, once, and an
+// unreadable archive (offline) leaves the operation working, literally.
+func TestOldRecordsReadLazily(t *testing.T) {
+	h := compatHarness(t, false)
+	h.addToothLL("1.0.0")
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+	h.addLipMod("github.com/compat/other", "1.0.0", "")
+	h.addLipMod("github.com/compat/other2", "1.0.0", "")
+	h.must(h.install(modID))
+	h.setCompat(true)
+	n0 := len(h.git.treesListed())
+	h.must(h.install("github.com/compat/other"))
+	if h.marker(modID) != "tooth.json" {
+		t.Fatalf("marker %v", h.marker(modID))
+	}
+	n1 := len(h.git.treesListed())
+	h.setCompat(true)
+	h.must(h.install("github.com/compat/other2"))
+	if n2 := len(h.git.treesListed()); n2-n1 >= n1-n0 { // the first read the old records, once
+		t.Fatalf("trees listed: %d then %d", n1-n0, n2-n1)
+	}
+
+	// Offline (the archives gone), an old record is taken literally, with a
+	// warning: the operation goes as without the layer.
+	var outcomes []string
+	for _, on := range []bool{false, true} {
+		h = compatHarness(t, false)
+		h.addToothLL("1.0.0")
+		h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+		h.addLipMod("github.com/compat/other", "1.0.0", "")
+		h.must(h.install(modID, "github.com/compat/other"))
+		h.setCompat(on)
+		h.git.mu.Lock()
+		for k := range h.git.trees {
+			delete(h.git.trees, k)
+		}
+		h.git.mu.Unlock()
+		err := h.uninstall("github.com/compat/other")
+		outcomes = append(outcomes, fmt.Sprint(err != nil, h.summary()))
+		if on && !h.rec.hasWarning("its archive cannot be read") {
+			t.Fatal("no warning")
+		}
+	}
+	equal(t, outcomes[1:], outcomes[:1])
+}
+
+// The pin the launcher adds ("LeviLamina#client@<installed>"): a mod
+// needing another tooth.json version fails normally, not with
+// ErrRoleBuildClash (the launcher keeps the pin); a mod needing the
+// lip.toml build fails with ErrRoleBuildClash (the launcher drops it).
+func TestPinnedClientBuildFailures(t *testing.T) {
+	h := compatHarness(t, true)
+	h.addToothLL("1.0.0")
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", "1.*"))
+	h.must(h.install(modID))
+	h.addToothLL("1.1.0")
+	h.addToothMod(newID, "1.0.0", dep(llID+"#client", "1.1.*"))
+	h.setCompat(true)
+	err := h.install(newID+"@1.0.0", llID+"#client@1.0.0")
+	if err == nil || errors.Is(err, ErrRoleBuildClash) {
+		t.Fatalf("%v", err)
+	}
+
+	h = compatHarness(t, false)
+	h.addToothLLSame("1.0.0")
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+	h.must(h.install(modID))
+	h.addLipLLSame("2.0.0")
+	h.addLipMod(newID, "1.0.0", dep(llID, "2.*"))
+	h.setCompat(true)
+	err = h.install(newID+"@1.0.0", llID+"#client@1.0.0")
+	if !errors.Is(err, ErrRoleBuildClash) {
+		t.Fatalf("%v", err)
+	}
+	h.setCompat(true)
+	h.must(h.install(newID + "@1.0.0"))
+	equal(t, h.summary(), []string{llID + "@2.0.0 dep", modID + "@1.0.0 explicit", newID + "@1.0.0 explicit"})
+}

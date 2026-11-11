@@ -67,8 +67,9 @@ type candidate struct {
 	// candidate (withSource), as Candidate.GetModManifest is by records
 	// copied with "with".
 	mod *modState
-	// compat and fromTooth: compat_legacy_variants.go.
-	compat, fromTooth bool
+	// compat, fromTooth, installed and origin: compat_legacy_variants.go.
+	compat, fromTooth, installed bool
+	origin                       *lazyOrigin
 }
 
 type modState struct {
@@ -83,7 +84,7 @@ func (c *candidate) withSource(r *resolver, source ref.Ref) *candidate {
 	copied := &candidate{id: c.id, variant: c.variant, version: c.version, entry: c.entry,
 		manifest: c.manifest, archive: c.archive, source: source, gsource: r.graphRef(source),
 		assets: c.assets, deps: c.deps, mod: c.mod,
-		compat: c.compat, fromTooth: c.fromTooth} // compat, fromTooth: compat_legacy_variants.go
+		compat: c.compat, fromTooth: c.fromTooth, installed: c.installed, origin: c.origin} // compat_legacy_variants.go: from compat on
 	return copied
 }
 
@@ -502,7 +503,7 @@ func (r *resolver) resolveArchive(w *walk, a *archiveHandle, tagVersion *semver.
 	variant := source.Variant
 	entry := pf.SelectEntry(variant, r.env.Side, r.env.Platform)
 	if entry == nil {
-		r.noteMissingRole(w, d, variant) // compat_legacy_variants.go
+		r.noteMissingRole(w, d, pf, variant) // compat_legacy_variants.go
 		r.reportNoEntry(w, a, pf, fileName, variant)
 		return nil, nil
 	}

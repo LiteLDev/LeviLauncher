@@ -489,18 +489,31 @@ func IsAlreadyExplicitlyInstalled(err error) bool {
 	return isAlreadyExplicitlyInstalled(err)
 }
 
-// IsClientVariantNotInLipToml reports whether err is lip's failure to find a
-// package for a request "X#client" ("X#client_<y>") because the release is
-// read from a lip.toml, which keeps the client build in "X" ("X#<y>").
-// IsClientVariantNotInToothJSON is the same for a release read from a
-// tooth.json without that label. (The engine's compatibility layer,
-// internal/lipcore/engine/compat_legacy_variants.go, tells them.)
+// The checks of LeviLauncher's compatibility with tooth.json packages
+// (internal/lipcore/engine/compat_legacy_variants.go):
+//   - IsClientVariantNotInLipToml: a request "X#client" ("X#client_<y>")
+//     found nothing because the release is read from a lip.toml, which keeps
+//     the client build in "X" ("X#<y>"); IsClientVariantNotInToothJSON: a
+//     tooth.json release without that label.
+//   - IsClientBuildInRoleVariant: a request "X" over an installed lip.toml
+//     "X" whose release is read from a tooth.json keeping its client build
+//     in "X#client".
+//   - IsRoleBuildClash: a failure to solve because a tooth.json "X#client"
+//     and a lip.toml "X" cannot both be installed.
 func IsClientVariantNotInLipToml(err error) bool {
 	return errors.Is(err, engine.ErrClientVariantNotInLipToml)
 }
 
 func IsClientVariantNotInToothJSON(err error) bool {
 	return errors.Is(err, engine.ErrClientVariantNotInToothJSON)
+}
+
+func IsClientBuildInRoleVariant(err error) bool {
+	return errors.Is(err, engine.ErrClientBuildInRoleVariant)
+}
+
+func IsRoleBuildClash(err error) bool {
+	return errors.Is(err, engine.ErrRoleBuildClash)
 }
 
 // IsNoPackageFound reports whether err is lip's failure to find a package

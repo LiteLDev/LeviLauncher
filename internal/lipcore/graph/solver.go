@@ -56,10 +56,15 @@ type Solution struct {
 type ResolutionError struct {
 	Message string
 	Causes  []error
+	// buildClash: clashBlocker (compat_legacy_variants.go of engine).
+	buildClash bool
 }
 
 func (e *ResolutionError) Error() string   { return e.Message }
 func (e *ResolutionError) Unwrap() []error { return e.Causes }
+
+// Is matches ErrBuildClash (clashBlocker).
+func (e *ResolutionError) Is(target error) bool { return e.buildClash && target == ErrBuildClash }
 
 // Solve finds the package set S of protocol/workspace.md §3 and returns it in
 // the installation order of §5 (GraphSolver.SolveGraph). It fails with
@@ -324,6 +329,8 @@ type search struct {
 	unresolvable []string
 	reported     map[string]bool
 	causes       []error
+	// clashReasons: clashBlocker (compat_legacy_variants.go of engine).
+	clashReasons map[string]bool
 }
 
 func (s *search) traceLine(message string) {
@@ -411,7 +418,8 @@ func (s *search) run(requests []Request, pinned []Candidate) (*Solution, error) 
 		if len(lines) > MaxReportedFailures {
 			fmt.Fprintf(&b, "\n  ... and %d more reasons", len(lines)-MaxReportedFailures)
 		}
-		return nil, &ResolutionError{Message: b.String(), Causes: s.causes}
+		// buildClash: clashBlocker (compat_legacy_variants.go of engine).
+		return nil, &ResolutionError{Message: b.String(), Causes: s.causes, buildClash: s.reportsClash(lines)}
 	}
 
 	// On success the agenda holds exactly the requests and the dependencies of every
@@ -709,8 +717,16 @@ func (s *search) blocker(c Candidate, key PackageKey) (level int, reason string,
 // compatibility layer (engine, compat_legacy_variants.go): candidates of
 // different identities with the same non-empty ClashKey are two builds of
 // one package (a tooth.json "X#client" and a lip.toml "X"), which cannot
-// both be members. Without the layer, ClashKey is always "".
-type clashKeyer interface{ ClashKey() string }
+// both be members, unless both are installed already. Without the layer,
+// ClashKey is always "".
+type clashKeyer interface {
+	ClashKey() string
+	Installed() bool
+}
+
+// ErrBuildClash matches (errors.Is) a ResolutionError whose reasons include
+// a clash of clashKeyer.
+var ErrBuildClash = errors.New("graph: two builds of one package")
 
 func clashKeyOf(c Candidate) string {
 	if k, ok := c.(clashKeyer); ok {
@@ -719,24 +735,64 @@ func clashKeyOf(c Candidate) string {
 	return ""
 }
 
+func isInstalled(c Candidate) bool {
+	k, ok := c.(clashKeyer)
+	return ok && k.Installed()
+}
+
 // clashBlocker is blocker's test for clashKeyer: the member of the lowest
-// level whose ClashKey is the candidate's, under another identity.
+// level of the same package id whose ClashKey is the candidate's, under
+// another identity.
 func (s *search) clashBlocker(c Candidate) (level int, reason string, isBlocked bool) {
-	key := clashKeyOf(c)
-	if key == "" {
-		return 0, "", false
-	}
+	id := packageIDOf(c)
+	key := ""
 	for _, m := range s.members.values() {
 		if isBlocked && m.level >= level {
 			continue
 		}
-		if clashKeyOf(m.candidate) == key && !namesEqual(m.candidate.Identity(), c.Identity()) {
+		if namesEqual(m.candidate.Identity(), c.Identity()) || !namesEqual(packageIDOf(m.candidate), id) ||
+			isInstalled(c) && isInstalled(m.candidate) {
+			continue
+		}
+		if key == "" {
+			if key = clashKeyOf(c); key == "" {
+				return 0, "", false
+			}
+		}
+		if clashKeyOf(m.candidate) == key {
 			isBlocked, level = true, m.level
 			reason = fmt.Sprintf("%s is another build of the same package as %s%s (LeviLauncher installs one"+
 				" of them)", showSource(c), showSource(m.candidate), installedSuffix(m.level))
 		}
 	}
+	if isBlocked {
+		if s.clashReasons == nil {
+			s.clashReasons = map[string]bool{}
+		}
+		s.clashReasons[reason] = true
+	}
 	return level, reason, isBlocked
+}
+
+// packageIDOf is the package id of a candidate: its identity without the
+// variant.
+func packageIDOf(c Candidate) string {
+	if v := c.Variant(); v != "" {
+		return strings.TrimSuffix(c.Identity(), "#"+v)
+	}
+	return c.Identity()
+}
+
+// reportsClash reports whether failure lines include a clashBlocker reason.
+func (s *search) reportsClash(lines []string) bool {
+	for reason := range s.clashReasons {
+		for _, l := range lines {
+			if strings.Contains(l, reason) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // satisfyingMember returns the member that satisfies a requirement

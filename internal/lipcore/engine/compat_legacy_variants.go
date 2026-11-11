@@ -34,9 +34,12 @@ package engine
 //     installed lip.toml "X" (roleRecordsReplacedBy): install (also with
 //     --no-dependencies) and update unpin it and drop it from the explicit
 //     packages, so the plan uninstalls it unless something still needs it.
-//   - An installed "X#client" read from a lip.toml (a real client variant)
-//     is never replaced; a request for it whose release has no client
-//     variant fails as in lip, with a note to uninstall it and install "X".
+//   - An installed "X#client" read from a lip.toml (a real client variant),
+//     or one whose archive cannot be read, is never replaced; a request
+//     for it whose release has no client variant fails as in lip, without
+//     the switch signal, with a note to uninstall it and install "X".
+//   - Plan: a dry run returning the planned packages, with which the
+//     launcher checks its pin retry before it runs it.
 //   - Typed failures for the launcher's choice of identity
 //     (internal/mcservice): a request "X#client" whose releases are all
 //     read from a lip.toml without that variant fails with
@@ -75,7 +78,7 @@ package engine
 //       origin; inInstallationOrder and lockedOrderNode take env again
 //       (inInstallationOrder(remaining, ws.env), lockedOrderNode(p,
 //       ws.env)); orderNode loses fromTooth and installationOrder the
-//       stripped test.
+//       stripped test; Engine loses onPlan, and execute its call.
 //     - errors.go: Error loses compatKind.
 //     - resolver.go: candidate loses compat, fromTooth, installed and
 //       origin, walk loses toothDependent and failures (and report its
@@ -89,14 +92,16 @@ package engine
 //     its call in blocker, packageIDOf, noteClashFailure and its call in
 //     recordFailure, reportsClash, search.clashReasons and clashFailures,
 //     and ResolutionError.buildClash and Is.
-//  4. internal/lip: newEngine without LegacyRoleVariants, and the helpers
+//  4. internal/lip: newEngine without LegacyRoleVariants, the helpers
 //     IsClientVariantNotInLipToml, IsClientVariantNotInToothJSON,
-//     IsClientBuildInRoleVariant and IsRoleBuildClash.
+//     IsClientBuildInRoleVariant and IsRoleBuildClash, and PlanPackages,
+//     PlannedPackage and planner (the dry run, Plan here).
 //  5. internal/mcservice:
 //     - lip_package.go: delete lipRoleCanonical, lipSwitchedIdentity and
 //       lipRunSwitching. InstallLIPPackage calls lipInstallPackages /
 //       lipUpdatePackages directly again (no run wrapper, no pin retry on
-//       IsRoleBuildClash), with main's "#client" -> bare fallback on
+//       IsRoleBuildClash, no lipUnpinnedKeepsLeviLamina dry run and no
+//       lipPlanPackages), with main's "#client" -> bare fallback on
 //       isLipNoPackageFoundFor for the request made when the catalogue
 //       cannot say (git show 12c663e:internal/mcservice/lip_package.go).
 //     - levilamina.go: InstallLeviLamina loses its run wrapper and calls
@@ -116,6 +121,7 @@ package engine
 // the variant installed.
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -296,15 +302,68 @@ func (ws *workspace) missingRoleKind(w *walk, source ref.Ref) (error, string) {
 	default:
 		return nil, ""
 	}
+	// The launcher switches to "X" on the lip.toml sentinel, which replaces
+	// an installed "X#client" only when it was read from a tooth.json.
 	identity := ref.Identity(source.Target, source.Variant)
-	if p := installedPackage(ws.lock, identity); kind == ErrClientVariantNotInLipToml && p != nil &&
-		ws.readOrigin(p) == originLipToml {
-		canonical := ref.Identity(source.Target, roleCanonical(source.Variant))
-		return nil, fmt.Sprintf("\nThe installed '%s' is read from a lip.toml, so LeviLauncher does not replace"+
-			" it with '%s'. To move to that release, uninstall '%s' and install '%s'.", install.LockedIdentity(p),
-			canonical, install.LockedIdentity(p), canonical)
+	p := installedPackage(ws.lock, identity)
+	if kind != ErrClientVariantNotInLipToml || p == nil {
+		return kind, ""
 	}
-	return kind, ""
+	why := ""
+	switch ws.readOrigin(p) {
+	case originTooth:
+		return kind, ""
+	case originLipToml:
+		why = "is read from a lip.toml"
+	default:
+		why = "cannot be told to be read from a tooth.json (its archive cannot be read)"
+	}
+	canonical := ref.Identity(source.Target, roleCanonical(source.Variant))
+	return nil, fmt.Sprintf("\nThe installed '%s' %s, so LeviLauncher does not replace it with '%s'. To move"+
+		" to that release, uninstall '%s' and install '%s'.", install.LockedIdentity(p), why, canonical,
+		install.LockedIdentity(p), canonical)
+}
+
+// PlannedPackage is a package of the state file an operation would write
+// (Plan): an InstalledPackage, and whether it is read from a tooth.json.
+type PlannedPackage struct {
+	InstalledPackage
+	FromToothJSON bool
+}
+
+// Plan runs Install (or, with update, Update) of packages as a dry run and
+// returns the packages of the state file it would write, so that the
+// launcher can check what a retry would do before it runs it (its pin
+// retry, internal/mcservice). It fails as the operation would.
+func (e *Engine) Plan(ctx context.Context, update bool, packages []string) ([]PlannedPackage, error) {
+	var out []PlannedPackage
+	planned := false
+	e.onPlan = func(lf *pkgmodel.LockFile) {
+		planned = true
+		for i := range lf.Packages {
+			p := &lf.Packages[i]
+			fromTooth := false
+			if o, ok := p.Manifest.(*doc.Object); ok {
+				if v, ok := o.Get(markerKey); ok {
+					fromTooth = v == compat.ToothFileName
+				}
+			}
+			out = append(out, PlannedPackage{InstalledPackage: InstalledPackage{Identity: install.LockedIdentity(p),
+				ID: stringMember(p.Manifest, "id"), Variant: p.Variant, Version: install.LockedVersion(p),
+				Explicit: p.Explicit, Ref: p.Ref}, FromToothJSON: fromTooth})
+		}
+	}
+	defer func() { e.onPlan = nil }()
+	var err error
+	if update {
+		err = e.Update(ctx, packages, true, false)
+	} else {
+		err = e.Install(ctx, packages, true, false, false)
+	}
+	if err == nil && !planned {
+		err = &Error{Msg: "internal error: the dry run planned nothing"}
+	}
+	return out, err
 }
 
 // #endregion

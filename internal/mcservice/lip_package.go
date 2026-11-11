@@ -38,6 +38,7 @@ var (
 	lipListPackageStates = lip.ListPackageStates
 	lipInstallPackages   = lip.InstallPackages
 	lipUpdatePackages    = lip.UpdatePackages
+	lipPlanPackages      = lip.PlanPackages
 	lipUninstallPackages = lip.UninstallPackages
 	lipResolveTargetDir  = resolveLIPTargetDir
 	// lipFetchDetail fetches a package's catalogue detail (levimc.org/api/v4/mods).
@@ -251,6 +252,36 @@ func lipSwitchedIdentity(err error, pkg, packageRef string, orNoLabel bool) stri
 	return ""
 }
 
+// lipUnpinnedKeepsLeviLamina reports whether the operation (an update, or
+// an install) of pkg without the LeviLamina pin (pinned, a
+// "LeviLamina#client") would leave LeviLamina as pinned, or as the bare
+// identity read from a lip.toml (the build the pin clashed with). It asks
+// lip for a dry run (lipPlanPackages); anything else, such as another
+// tooth.json version, keeps the pin and its failure.
+func lipUnpinnedKeepsLeviLamina(ctx context.Context, targetDir string, update bool, pkg string,
+	pinned lip.PackageInstallState) bool {
+	planned, err := lipPlanPackages(ctx, targetDir, update, []string{pkg})
+	if err != nil {
+		log.Printf("InstallLIPPackage: dry run of %s without the LeviLamina pin failed: %s", pkg, lip.ErrorMessage(err))
+		return false
+	}
+	for _, p := range planned {
+		if lip.PackageKey(p.ID) != lip.PackageKey(leviLaminaPackageID) {
+			continue
+		}
+		if strings.EqualFold(p.Identity, pinned.Identity) && p.Version == strings.TrimSpace(pinned.InstalledVersion) {
+			return true
+		}
+		if p.Variant == "" && !p.FromToothJSON {
+			return true
+		}
+		log.Printf("InstallLIPPackage: without the pin, %s would change LeviLamina to %s %s; keeping the pin",
+			pkg, p.Identity, p.Version)
+		return false
+	}
+	return false
+}
+
 // lipRunSwitching runs op for packageRef at version (with the other
 // packages), and once more under lipSwitchedIdentity when that names one;
 // pkg is the package argument run last.
@@ -443,6 +474,7 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	}
 
 	var pin []string
+	var pinState lip.PackageInstallState
 	// Pin existing LeviLamina version to avoid dependency solver switching LL
 	// or fetching a large set of LL candidates from wide ranges (e.g. 1.9.*).
 	if lip.PackageKey(req.packageID) != lip.PackageKey(leviLaminaPackageID) {
@@ -450,6 +482,7 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 			pinnedLLVersion := strings.TrimSpace(llState.InstalledVersion)
 			if pinnedLLVersion != "" {
 				pin = []string{withLIPVersion(llState.Identity, pinnedLLVersion)}
+				pinState = llState
 			}
 		}
 	}
@@ -458,10 +491,11 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	// (lipRunSwitching); and without the pin when the pinned
 	// "LeviLamina#client" is a tooth.json build the package cannot have next
 	// to the lip.toml LeviLamina it needs.
-	run := func(op func(context.Context, string, []string) error) error {
+	run := func(op func(context.Context, string, []string) error, update bool) error {
 		var err error
 		pkg, err = lipRunSwitching(ctx, "InstallLIPPackage", op, targetDir, ref, normalizedVersion, pin, orNoLabel)
-		if err != nil && len(pin) > 0 && lip.IsRoleBuildClash(err) {
+		if err != nil && len(pin) > 0 && lip.IsRoleBuildClash(err) &&
+			lipUnpinnedKeepsLeviLamina(ctx, targetDir, update, pkg, pinState) {
 			log.Printf("InstallLIPPackage: %s cannot stay pinned for %s: %s", pin[0], pkg, lip.ErrorMessage(err))
 			err = op(ctx, targetDir, []string{pkg})
 		}
@@ -469,14 +503,14 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	}
 
 	if state.ExplicitInstalled {
-		if err := run(lipUpdatePackages); err != nil {
+		if err := run(lipUpdatePackages, true); err != nil {
 			log.Printf("InstallLIPPackage: lip update failed for %s: %s", pkg, lip.ErrorMessage(err))
 			return lip.ErrorResult("ERR_LIP_PACKAGE_INSTALL_FAILED", err)
 		}
 		return ""
 	}
 
-	err := run(lipInstallPackages)
+	err := run(lipInstallPackages, false)
 	if err != nil {
 		targetOnlyPkgs := []string{pkg}
 		// If the pinned LeviLamina package is already installed and blocks install,

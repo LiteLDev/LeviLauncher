@@ -516,6 +516,41 @@ func IsRoleBuildClash(err error) bool {
 	return errors.Is(err, engine.ErrRoleBuildClash)
 }
 
+// PlannedPackage is a package an install or update would leave installed
+// (PlanPackages).
+type PlannedPackage struct {
+	Identity, ID, Variant, Version string
+	// FromToothJSON: read from a tooth.json (as LeviLauncher's compatibility
+	// layer records it).
+	FromToothJSON bool
+}
+
+// planner is the dry run of LeviLauncher's compatibility layer
+// (internal/lipcore/engine/compat_legacy_variants.go).
+type planner interface {
+	Plan(ctx context.Context, update bool, packages []string) ([]engine.PlannedPackage, error)
+}
+
+// PlanPackages runs an install (or, with update, an update) of packages in
+// workDir as a dry run and returns the packages it would leave installed.
+func PlanPackages(ctx context.Context, workDir string, update bool, packages []string) ([]PlannedPackage, error) {
+	pkgs := normalizePackages(packages)
+	var out []PlannedPackage
+	err := runPackageTask(ctx, "Plan", workDir, pkgs, false, true, func(ctx context.Context, e packageEngine) error {
+		p, ok := e.(planner)
+		if !ok {
+			return errors.New("lip: the engine cannot plan")
+		}
+		planned, err := p.Plan(ctx, update, pkgs)
+		for _, pp := range planned {
+			out = append(out, PlannedPackage{Identity: pp.Identity, ID: pp.ID, Variant: pp.Variant,
+				Version: pp.Version, FromToothJSON: pp.FromToothJSON})
+		}
+		return err
+	})
+	return out, err
+}
+
 // IsNoPackageFound reports whether err is lip's failure to find a package
 // that can be installed in the workspace for a package argument (for
 // example a variant the package does not have).

@@ -81,6 +81,8 @@ type Engine struct {
 	inst   *install.Installer
 	// newID returns the id of a new progress bar.
 	newID func() string
+	// onPlan: compat_legacy_variants.go (Plan).
+	onPlan func(*pkgmodel.LockFile)
 }
 
 // New returns an engine for the workspace dir.
@@ -1408,6 +1410,9 @@ func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs ch
 		finalPackages = cs.finish(finalPackages)
 	}
 	final := lockWith(ws, finalPackages)
+	if e.onPlan != nil && op.dryRun { // compat_legacy_variants.go
+		e.onPlan(final)
+	}
 	if op.dryRun {
 		return nil
 	}

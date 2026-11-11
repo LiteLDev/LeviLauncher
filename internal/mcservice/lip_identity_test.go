@@ -25,6 +25,8 @@ type fakeLipWorkspace struct {
 	installErr []error                            // returned by successive Install calls
 	updateErr  error
 	updateErrs []error // returned by successive Update calls before updateErr
+	planned    []lip.PlannedPackage // what a dry run (lipPlanPackages) returns
+	planErr    error
 	calls      []string
 	args       [][]string
 }
@@ -77,6 +79,11 @@ func useFakeLipWorkspace(t *testing.T, ws *fakeLipWorkspace) {
 		}
 		done()
 		return nil
+	}
+	lipPlanPackages = func(ctx context.Context, workDir string, update bool, packages []string) ([]lip.PlannedPackage, error) {
+		ws.calls = append(ws.calls, "plan")
+		ws.args = append(ws.args, append([]string{}, packages...))
+		return ws.planned, ws.planErr
 	}
 	lipUninstallPackages = func(ctx context.Context, workDir string, packages []string, noDependencies bool) error {
 		if noDependencies {
@@ -706,22 +713,46 @@ func TestInstallLIPPackageRetriesWithoutClientVariantPin(t *testing.T) {
 	pinned := map[string]lip.PackageInstallState{
 		"github.com/liteldev/levilamina": migratedState("github.com/LiteLDev/LeviLamina", "client", "1.2.3", false),
 	}
-	ws := &fakeLipWorkspace{states: pinned, installErr: []error{roleBuildClash()}}
-	useFakeLipWorkspace(t, ws)
-	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo#", "1.0.0"); got != "" {
-		t.Fatalf("unexpected error code: %q", got)
+	// The retry runs only when its dry run leaves LeviLamina as pinned or
+	// as the bare lip.toml identity; otherwise the pinned failure stands.
+	for _, tc := range []struct {
+		name    string
+		planned []lip.PlannedPackage
+		planErr error
+		retried bool
+	}{
+		{"lip.toml LeviLamina", []lip.PlannedPackage{{Identity: leviLaminaPackageID, ID: leviLaminaPackageID, Version: "2.0.0"}}, nil, true},
+		{"kept as pinned", []lip.PlannedPackage{{Identity: leviLaminaPackageID + "#client", ID: leviLaminaPackageID, Variant: "client", Version: "1.2.3", FromToothJSON: true}}, nil, true},
+		{"another tooth.json version", []lip.PlannedPackage{{Identity: leviLaminaPackageID + "#client", ID: leviLaminaPackageID, Variant: "client", Version: "1.3.0", FromToothJSON: true}}, nil, false},
+		{"tooth.json server build", []lip.PlannedPackage{{Identity: leviLaminaPackageID, ID: leviLaminaPackageID, Version: "1.3.0", FromToothJSON: true}}, nil, false},
+		{"no LeviLamina", []lip.PlannedPackage{{Identity: "github.com/LiteLDev/Foo", ID: "github.com/LiteLDev/Foo", Version: "1.0.0"}}, nil, false},
+		{"dry run fails", nil, errors.New("Cannot find versions"), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ws := &fakeLipWorkspace{states: pinned, installErr: []error{roleBuildClash()}, planned: tc.planned, planErr: tc.planErr}
+			useFakeLipWorkspace(t, ws)
+			got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo#", "1.0.0")
+			calls := []string{"install", "plan"}
+			args := [][]string{{"github.com/LiteLDev/Foo@1.0.0", "github.com/LiteLDev/LeviLamina#client@1.2.3"},
+				{"github.com/LiteLDev/Foo@1.0.0"}}
+			if tc.retried {
+				calls, args = append(calls, "install"), append(args, []string{"github.com/LiteLDev/Foo@1.0.0"})
+				if got != "" {
+					t.Fatalf("unexpected error code: %q", got)
+				}
+			} else if !strings.Contains(got, "another build of the same package") {
+				t.Fatalf("not the pinned failure: %q", got)
+			}
+			ws.expect(t, calls, args)
+		})
 	}
-	ws.expect(t, []string{"install", "install"}, [][]string{
-		{"github.com/LiteLDev/Foo@1.0.0", "github.com/LiteLDev/LeviLamina#client@1.2.3"},
-		{"github.com/LiteLDev/Foo@1.0.0"},
-	})
 
 	for _, err := range []error{
 		errors.New("Cannot find versions of the requested packages and their dependencies"),
 		errors.New("In the post_install hook of github.com/LiteLDev/Foo, the command 'x' failed."),
 		wrapNoPackageFound("github.com/LiteLDev/Foo@1.0.0"),
 	} {
-		ws = &fakeLipWorkspace{states: pinned, installErr: []error{err}}
+		ws := &fakeLipWorkspace{states: pinned, installErr: []error{err}}
 		useFakeLipWorkspace(t, ws)
 		if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo#", "1.0.0"); got == "" {
 			t.Fatalf("%v: succeeded", err)

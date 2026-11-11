@@ -908,3 +908,132 @@ func TestLipTomlClientRecordGetsNoSwitchSignal(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+const compatLibID = "github.com/compat/lib"
+
+// launcherPinnedInstall is InstallLIPPackage's pin retry over the engine:
+// install target with the pin; on ErrRoleBuildClash, a dry run (Plan)
+// without the pin, and the install without it only when LeviLamina stays
+// as pinned or becomes the bare lip.toml identity; otherwise the pinned
+// failure stands. It returns the error the launcher reports.
+func launcherPinnedInstall(t *testing.T, h *harness, target, pinIdentity, pinVersion string) error {
+	t.Helper()
+	h.setCompat(true)
+	err := h.install(target, pinIdentity+"@"+pinVersion)
+	if !errors.Is(err, ErrRoleBuildClash) {
+		return err
+	}
+	h.setCompat(true)
+	planned, perr := h.e.Plan(context.Background(), false, []string{target})
+	if perr != nil {
+		return err
+	}
+	for _, p := range planned {
+		if !strings.EqualFold(p.ID, llID) {
+			continue
+		}
+		if (strings.EqualFold(p.Identity, pinIdentity) && p.Version == pinVersion) || (p.Variant == "" && !p.FromToothJSON) {
+			h.setCompat(true)
+			return h.install(target)
+		}
+		return err
+	}
+	return err
+}
+
+// The pin retry never moves a pinned "X#client" to another tooth.json
+// version, also through a transitive dependency with alternatives, or a
+// wide range: the launcher keeps the pinned failure (the workspace is
+// unchanged), or the retry ends with the lip.toml "X".
+func TestPinRetryKeepsPinnedOrLipToml(t *testing.T) {
+	setup := func(t *testing.T) *harness {
+		h := compatHarness(t, false)
+		h.addToothLL("1.0.0")
+		h.addToothMod(modID, "1.0.0", dep(llID+"#client", "1.*"))
+		h.must(h.install(modID))
+		h.addToothLL("1.1.0")
+		h.addLipLL("2.0.0")
+		return h
+	}
+	check := func(t *testing.T, h *harness, before map[string]string, err error) {
+		t.Helper()
+		for _, s := range h.summary() {
+			if strings.HasPrefix(s, llID+"#client@") && !strings.HasPrefix(s, llID+"#client@1.0.0 ") {
+				t.Fatalf("LeviLamina moved to another tooth.json version: %v", h.summary())
+			}
+		}
+		if err != nil {
+			equalMaps(t, h.snapshot(), before)
+		}
+	}
+	t.Run("transitive", func(t *testing.T) {
+		h := setup(t)
+		h.addLipMod(compatLibID, "1.0.0", dep(llID+"#client", "1.1.*"))
+		h.addLipMod(compatLibID, "1.1.0", dep(llID, "2.*"))
+		h.addLipMod(newID, "1.0.0", dep(compatLibID, ">=1.0.0"))
+		before := h.snapshot()
+		check(t, h, before, launcherPinnedInstall(t, h, newID+"@1.0.0", llID+"#client", "1.0.0"))
+	})
+	t.Run("two requirements", func(t *testing.T) {
+		h := setup(t)
+		h.addLipMod(compatLibID, "1.0.0", dep(llID+"#client", "1.1.*"))
+		h.addTag(newID, "1.0.0", "lip.toml", lipVariants(newID, "1.0.0", "", "["+
+			entry("client", "m.dll", "mods/new.dll", `{ "`+llID+`": "2.*", "`+compatLibID+`": "1.*" }`)+"]"), "m.dll", "mod")
+		before := h.snapshot()
+		check(t, h, before, launcherPinnedInstall(t, h, newID+"@1.0.0", llID+"#client", "1.0.0"))
+	})
+	t.Run("wide range", func(t *testing.T) {
+		h := setup(t)
+		h.addToothLL("1.2.0")
+		h.addLipLL("2.1.0")
+		h.addLipMod(compatLibID, "1.0.0", dep(llID+"#client", ">=1.1.0"))
+		h.addLipMod(compatLibID, "2.0.0", dep(llID, ">=2.0.0"))
+		h.addLipMod(newID, "1.0.0", dep(compatLibID, "*"))
+		before := h.snapshot()
+		check(t, h, before, launcherPinnedInstall(t, h, newID+"@1.0.0", llID+"#client", "1.0.0"))
+	})
+	// The case the retry is for: a mod on the lip.toml build.
+	t.Run("lip.toml build", func(t *testing.T) {
+		h := setup(t)
+		h.addLipMod(newID, "1.0.0", dep(llID, "2.*"))
+		err := launcherPinnedInstall(t, h, newID+"@1.0.0", llID+"#client", "1.0.0")
+		if err == nil {
+			t.Fatal("the tooth.json mod on 1.* still needs the tooth.json build")
+		}
+	})
+}
+
+// Plan is a dry run: it changes nothing and returns the planned packages.
+func TestPlanIsDryRun(t *testing.T) {
+	h := compatHarness(t, true)
+	h.addLipLL("2.0.0")
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", "2.*"))
+	before := h.snapshot()
+	planned, err := h.e.Plan(context.Background(), false, []string{modID})
+	h.must(err)
+	equalMaps(t, h.snapshot(), before)
+	var got []string
+	for _, p := range planned {
+		got = append(got, fmt.Sprint(p.Identity, "@", p.Version, " ", p.FromToothJSON))
+	}
+	equal(t, got, []string{llID + "@2.0.0 false", modID + "@1.0.0 true"})
+}
+
+// A tooth.json "X#client" record whose archive cannot be read is not known
+// to be replaceable: no switch signal, and a note.
+func TestUnreadableClientRecordGetsNoSwitchSignal(t *testing.T) {
+	h := compatHarness(t, false)
+	h.addToothLLSame("1.0.0")
+	h.must(h.install(llID + "#client@1.0.0"))
+	old := h.recorded(llID + "#client").Commit
+	h.addLipLLSame("2.0.0")
+	h.git.mu.Lock()
+	delete(h.git.trees, old)
+	h.git.mu.Unlock()
+	h.setCompat(true)
+	err := h.update(llID + "#client@2.0.0")
+	if !errors.Is(err, ErrNoPackageFound) || errors.Is(err, ErrClientVariantNotInLipToml) ||
+		!strings.Contains(FormatError(err), "its archive cannot be read") {
+		t.Fatalf("%v", err)
+	}
+}

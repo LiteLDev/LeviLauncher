@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0-beta.7] - 2026-11-12
+
+### Added
+
+- Packages released with `tooth.json` keep working once the packages they depend on are released with `lip.toml`: on a client instance, a `tooth.json` dependency such as `LeviLamina#client` or `LegacyScriptEngine#client_lua` is looked up as `LeviLamina` or `LegacyScriptEngine#lua` when the release found is a `lip.toml` one, which no longer has `client` variants (#270). Dependencies written in a `lip.toml` are never changed: a `lip.toml` package that needs the client build of a package still released with `tooth.json` must name `X#client` itself
+
+### Changed
+
+- An instance never ends up with both the old `tooth.json` client build (`X#client`) and the new `lip.toml` package (`X`) of the same package: installing or updating to a `lip.toml` release replaces `X#client` in place, and moving back to a `tooth.json` release replaces `X` with `X#client` (#270)
+- Installing or updating LeviLamina and catalogue mods picks `X#client` or `X` from the release being installed, and the LeviLamina version that matches the game is only moved when the move is to its `lip.toml` release (#270)
+- When the catalogue cannot be reached, a mod is installed as `X` instead of `X#client` only when its release has no `client` variant, no longer after any download error (#270)
+
 ## [1.1.0-beta.6] - 2026-11-10
 
 ### Changed
@@ -395,7 +407,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.6...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.7...HEAD
+[1.1.0-beta.7]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.6...v1.1.0-beta.7
 [1.1.0-beta.6]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.5...v1.1.0-beta.6
 [1.1.0-beta.5]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.4...v1.1.0-beta.5
 [1.1.0-beta.4]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.3...v1.1.0-beta.4

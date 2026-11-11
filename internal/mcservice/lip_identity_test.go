@@ -23,6 +23,7 @@ type fakeLipWorkspace struct {
 	postStates map[string]lip.PackageInstallState // states after a successful operation, when set
 	installErr []error                            // returned by successive Install calls
 	updateErr  error
+	updateErrs []error // returned by successive Update calls before updateErr
 	calls      []string
 	args       [][]string
 }
@@ -63,6 +64,13 @@ func useFakeLipWorkspace(t *testing.T, ws *fakeLipWorkspace) {
 	lipUpdatePackages = func(ctx context.Context, workDir string, packages []string) error {
 		ws.calls = append(ws.calls, "update")
 		ws.args = append(ws.args, append([]string{}, packages...))
+		if len(ws.updateErrs) > 0 {
+			err := ws.updateErrs[0]
+			ws.updateErrs = ws.updateErrs[1:]
+			if err != nil {
+				return err
+			}
+		}
 		if ws.updateErr != nil {
 			return ws.updateErr
 		}
@@ -476,4 +484,89 @@ func TestInstanceBackupLIPRestoreIdentifier(t *testing.T) {
 			t.Fatalf("restore identifier of %+v does not name the package: %+v", tt.item, req)
 		}
 	}
+}
+
+func TestLipRoleFallback(t *testing.T) {
+	for in, want := range map[string]string{
+		"github.com/LiteLDev/Foo#client":     "github.com/LiteLDev/Foo",
+		"github.com/LiteLDev/Foo#client_lua": "github.com/LiteLDev/Foo#lua",
+		"github.com/LiteLDev/Foo":            "",
+		"github.com/LiteLDev/Foo#lua":        "",
+		"github.com/LiteLDev/Foo#client_":    "",
+		"github.com/LiteLDev/Foo#clientx":    "",
+	} {
+		if got := lipRoleFallback(in); got != want {
+			t.Errorf("lipRoleFallback(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// Rule 5: the identity follows the target release. An installed
+// "#client" whose new version has no client variant (a release read from a
+// lip.toml) is changed to the bare id, which lip installs in its place;
+// explicit (update) or a dependency (install).
+func TestInstallLIPPackageMovesClientIdentityToLipTomlRelease(t *testing.T) {
+	ws := &fakeLipWorkspace{
+		states: map[string]lip.PackageInstallState{
+			"github.com/liteldev/foo": migratedState("github.com/LiteLDev/Foo", "client", "1.0.0", true),
+		},
+		updateErrs: []error{wrapNoPackageFound("github.com/LiteLDev/Foo#client@2.0.0")},
+	}
+	useFakeLipWorkspace(t, ws)
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "2.0.0"); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"update", "update"}, [][]string{
+		{"github.com/LiteLDev/Foo#client@2.0.0"}, {"github.com/LiteLDev/Foo@2.0.0"}})
+
+	ws = &fakeLipWorkspace{
+		states: map[string]lip.PackageInstallState{
+			"github.com/liteldev/foo": migratedState("github.com/LiteLDev/Foo", "client_lua", "1.0.0", false),
+		},
+		installErr: []error{wrapNoPackageFound("github.com/LiteLDev/Foo#client_lua@2.0.0")},
+	}
+	useFakeLipWorkspace(t, ws)
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "2.0.0"); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"install", "install"}, [][]string{
+		{"github.com/LiteLDev/Foo#client_lua@2.0.0"}, {"github.com/LiteLDev/Foo#lua@2.0.0"}})
+}
+
+// A release read from a tooth.json keeps "#client": no fallback is tried.
+func TestInstallLIPPackageKeepsClientIdentityForToothJSONRelease(t *testing.T) {
+	ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{
+		"github.com/liteldev/foo": migratedState("github.com/LiteLDev/Foo", "client", "1.0.0", true),
+	}}
+	useFakeLipWorkspace(t, ws)
+	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.1.0"); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"update"}, [][]string{{"github.com/LiteLDev/Foo#client@1.1.0"}})
+}
+
+// A backup restore requests the recorded identity ("#client" of an old
+// record) at the recorded version, and falls back to the bare id only when
+// that version has no client variant.
+func TestRestoreOldClientRecord(t *testing.T) {
+	item := types.InstanceBackupModsLIPPackage{Identifier: "LiteLDev/Foo", PackageID: "github.com/LiteLDev/Foo",
+		Identity: "github.com/LiteLDev/Foo#client", Version: "1.0.0", ExplicitInstalled: true}
+	ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{}}
+	useFakeLipWorkspace(t, ws)
+	if got := InstallLIPPackage(context.Background(), "Demo", instanceBackupLIPRestoreIdentifier(item), item.Version); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"install"}, [][]string{{"github.com/LiteLDev/Foo#client@1.0.0"}})
+
+	ws = &fakeLipWorkspace{
+		states:     map[string]lip.PackageInstallState{},
+		installErr: []error{wrapNoPackageFound("github.com/LiteLDev/Foo#client@2.0.0")},
+	}
+	useFakeLipWorkspace(t, ws)
+	item.Version = "2.0.0"
+	if got := InstallLIPPackage(context.Background(), "Demo", instanceBackupLIPRestoreIdentifier(item), item.Version); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"install", "install"}, [][]string{
+		{"github.com/LiteLDev/Foo#client@2.0.0"}, {"github.com/LiteLDev/Foo@2.0.0"}})
 }

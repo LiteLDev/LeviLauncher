@@ -206,6 +206,29 @@ func withLIPVersion(packageRef, version string) string {
 	return fmt.Sprintf("%s@%s", packageRef, version)
 }
 
+// lipRoleFallback is the package to request instead of packageRef (without a
+// version) when lip finds no package for it: for the client variant
+// "<id>#client" ("<id>#client_<y>"), "<id>" ("<id>#<y>"); otherwise "". The
+// identity follows the release installed: a release read from a tooth.json
+// keeps its client build in the variant "client", one read from a lip.toml
+// (which has no client variants) in the variant "" (rule 5 of LeviLauncher's
+// compatibility with tooth.json packages). With an installed "<id>#client",
+// lip (internal/lipcore/engine/compat_legacy_variants.go) installs "<id>" in
+// its place.
+func lipRoleFallback(packageRef string) string {
+	id, variant, ok := strings.Cut(packageRef, "#")
+	if !ok {
+		return ""
+	}
+	if variant == lipClientVariant {
+		return id
+	}
+	if rest, ok := strings.CutPrefix(variant, lipClientVariant+"_"); ok && rest != "" {
+		return id + "#" + rest
+	}
+	return ""
+}
+
 // isLipNoPackageFoundFor reports whether err is lip's failure to find a
 // package for the package argument arg.
 func isLipNoPackageFoundFor(err error, arg string) bool {
@@ -368,7 +391,6 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	}
 
 	ref := req.requestRef
-	fallbackRef := ""
 	switch {
 	case installed && strings.TrimSpace(state.Identity) != "":
 		ref = state.Identity
@@ -382,9 +404,11 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 			}
 		} else {
 			ref = req.packageID + "#" + lipClientVariant
-			fallbackRef = req.packageID
 		}
 	}
+	// A client variant the release does not have (a release read from a
+	// lip.toml): its variant "" ("<y>").
+	fallbackRef := lipRoleFallback(ref)
 
 	pkg := withLIPVersion(ref, normalizedVersion)
 	targetOnlyPkgs := []string{pkg}
@@ -404,7 +428,14 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	}
 
 	if state.ExplicitInstalled {
-		if err := lipUpdatePackages(ctx, targetDir, installPkgs); err != nil {
+		err := lipUpdatePackages(ctx, targetDir, installPkgs)
+		if err != nil && fallbackRef != "" && isLipNoPackageFoundFor(err, pkg) {
+			log.Printf("InstallLIPPackage: no package for %s, trying %s", pkg, fallbackRef)
+			pkg = withLIPVersion(fallbackRef, normalizedVersion)
+			installPkgs[0] = pkg
+			err = lipUpdatePackages(ctx, targetDir, installPkgs)
+		}
+		if err != nil {
 			log.Printf("InstallLIPPackage: lip update failed for %s: %s", pkg, lip.ErrorMessage(err))
 			return lip.ErrorResult("ERR_LIP_PACKAGE_INSTALL_FAILED", err)
 		}
@@ -413,7 +444,6 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 
 	err := lipInstallPackages(ctx, targetDir, installPkgs)
 	if err != nil && fallbackRef != "" && isLipNoPackageFoundFor(err, pkg) {
-		// No client variant: the variant "" holds the client build.
 		log.Printf("InstallLIPPackage: no package for %s, trying %s", pkg, fallbackRef)
 		pkg = withLIPVersion(fallbackRef, normalizedVersion)
 		installPkgs[0] = pkg

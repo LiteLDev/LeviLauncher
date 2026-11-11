@@ -176,6 +176,35 @@ func TestInstallLeviLaminaFallsBackToBareRepositoryWithoutClientVariant(t *testi
 	})
 }
 
+// Rule 5: an installed LeviLamina#client updated to a version without a
+// client variant (a release read from a lip.toml) becomes LeviLamina.
+func TestInstallLeviLaminaMovesClientIdentityToLipTomlRelease(t *testing.T) {
+	restoreLeviLaminaTestDeps(t)
+	versionsDir := setupLeviLaminaTestVersionsDir(t)
+	if err := os.MkdirAll(filepath.Join(versionsDir, "Demo"), 0o755); err != nil {
+		t.Fatalf("mkdir target dir: %v", err)
+	}
+	fetchLeviLaminaVersionDB = func() (map[string][]string, error) {
+		return map[string][]string{"1.21.80.03": {"0.13.0", "0.14.0"}}, nil
+	}
+	ws := &fakeLipWorkspace{
+		states: map[string]lip.PackageInstallState{
+			"github.com/liteldev/levilamina": migratedState("github.com/LiteLDev/LeviLamina", "client", "0.13.0", true),
+		},
+		updateErrs: []error{wrapNoPackageFound("github.com/LiteLDev/LeviLamina#client@0.14.0")},
+	}
+	useFakeLipWorkspace(t, ws)
+	lipResolveTargetDir = resolveLIPTargetDir
+
+	if got := InstallLeviLamina(context.Background(), "1.21.80.03", "Demo", "0.14.0"); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"update", "update"}, [][]string{
+		{"github.com/LiteLDev/LeviLamina#client@0.14.0"},
+		{"github.com/LiteLDev/LeviLamina@0.14.0"},
+	})
+}
+
 func TestInstanceBackupSupportsLeviLaminaRejectsLegacyThreePartVersion(t *testing.T) {
 	restoreFetchLLDB := instanceBackupFetchLeviLaminaVersionDB
 	instanceBackupFetchLeviLaminaVersionDB = func() (map[string][]string, error) {

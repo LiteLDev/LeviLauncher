@@ -196,9 +196,22 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 	pkg := withLIPVersion(lipOperationRef(states, leviLaminaPackageID, "", leviLaminaPackageID+"#"+lipClientVariant),
 		llVersion)
 
+	// A release without the client variant (read from a lip.toml) has the
+	// client build in its variant "", and replaces an installed
+	// "LeviLamina#client" in place (lipRoleFallback).
+	fallback := ""
+	if ref := lipRoleFallback(strings.TrimSuffix(pkg, "@"+llVersion)); ref != "" {
+		fallback = withLIPVersion(ref, llVersion)
+	}
+
 	if state.ExplicitInstalled {
 		log.Printf("Updating LeviLamina %s for %s using LIP", llVersion, targetName)
-		if err := lipUpdatePackages(ctx, targetDir, []string{pkg}); err != nil {
+		err := lipUpdatePackages(ctx, targetDir, []string{pkg})
+		if err != nil && fallback != "" && isLipNoPackageFoundFor(err, pkg) {
+			log.Printf("InstallLeviLamina: no package for %s, trying %s", pkg, fallback)
+			err = lipUpdatePackages(ctx, targetDir, []string{fallback})
+		}
+		if err != nil {
 			log.Printf("InstallLeviLamina: lip update failed: %s", lip.ErrorMessage(err))
 			return "ERR_LIP_INSTALL_FAILED"
 		}
@@ -207,10 +220,9 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 
 	log.Printf("Installing LeviLamina %s for %s using LIP", llVersion, targetName)
 	err = lipInstallPackages(ctx, targetDir, []string{pkg})
-	if bare := withLIPVersion(leviLaminaPackageID, llVersion); err != nil && pkg != bare && isLipNoPackageFoundFor(err, pkg) {
-		// No client variant: the variant "" holds the client build.
-		log.Printf("InstallLeviLamina: no package for %s, trying %s", pkg, bare)
-		pkg = bare
+	if err != nil && fallback != "" && isLipNoPackageFoundFor(err, pkg) {
+		log.Printf("InstallLeviLamina: no package for %s, trying %s", pkg, fallback)
+		pkg = fallback
 		err = lipInstallPackages(ctx, targetDir, []string{pkg})
 	}
 	if err != nil {

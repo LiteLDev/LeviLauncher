@@ -934,7 +934,7 @@ func launcherPinnedInstall(t *testing.T, h *harness, target, pinIdentity, pinVer
 		}
 		if (strings.EqualFold(p.Identity, pinIdentity) && p.Version == pinVersion) || (p.Variant == "" && !p.FromToothJSON) {
 			h.setCompat(true)
-			return h.install(target)
+			return h.install(target, p.Identity+"@"+p.Version)
 		}
 		return err
 	}
@@ -1036,4 +1036,35 @@ func TestUnreadableClientRecordGetsNoSwitchSignal(t *testing.T) {
 		!strings.Contains(FormatError(err), "its archive cannot be read") {
 		t.Fatalf("%v", err)
 	}
+}
+
+// The retry requests the LeviLamina the dry run planned: a release tagged
+// between the dry run and the retry does not change what it installs.
+func TestPinRetryRequestsPlannedLeviLamina(t *testing.T) {
+	h := compatHarness(t, false)
+	h.addToothLLSame("1.0.0")
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+	h.must(h.install(modID))
+	h.addLipLLSame("2.0.0")
+	h.addLipMod(newID, "1.0.0", dep(llID, "2.*"))
+	h.setCompat(true)
+	if err := h.install(newID+"@1.0.0", llID+"#client@1.0.0"); !errors.Is(err, ErrRoleBuildClash) {
+		t.Fatalf("%v", err)
+	}
+	h.setCompat(true)
+	planned, err := h.e.Plan(context.Background(), false, []string{newID + "@1.0.0"})
+	h.must(err)
+	var ll string
+	for _, p := range planned {
+		if strings.EqualFold(p.ID, llID) {
+			ll = p.Identity + "@" + p.Version
+		}
+	}
+	if ll != llID+"@2.0.0" {
+		t.Fatalf("planned %q", ll)
+	}
+	h.addLipLLSame("2.1.0") // tagged in between
+	h.setCompat(true)
+	h.must(h.install(newID+"@1.0.0", ll))
+	equal(t, h.summary(), []string{llID + "@2.0.0 explicit", modID + "@1.0.0 explicit", newID + "@1.0.0 explicit"})
 }

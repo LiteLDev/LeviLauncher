@@ -252,34 +252,33 @@ func lipSwitchedIdentity(err error, pkg, packageRef string, orNoLabel bool) stri
 	return ""
 }
 
-// lipUnpinnedKeepsLeviLamina reports whether the operation (an update, or
-// an install) of pkg without the LeviLamina pin (pinned, a
-// "LeviLamina#client") would leave LeviLamina as pinned, or as the bare
-// identity read from a lip.toml (the build the pin clashed with). It asks
-// lip for a dry run (lipPlanPackages); anything else, such as another
-// tooth.json version, keeps the pin and its failure.
-func lipUnpinnedKeepsLeviLamina(ctx context.Context, targetDir string, update bool, pkg string,
-	pinned lip.PackageInstallState) bool {
+// lipUnpinnedLeviLamina is the LeviLamina ("<identity>@<version>") the
+// operation (an update, or an install) of pkg without the LeviLamina pin
+// (pinned, a "LeviLamina#client") would leave, when that is the pinned one
+// or the bare identity read from a lip.toml (the build the pin clashed
+// with); ok is false otherwise. It asks lip for a dry run
+// (lipPlanPackages); anything else, such as another tooth.json version,
+// keeps the pin and its failure.
+func lipUnpinnedLeviLamina(ctx context.Context, targetDir string, update bool, pkg string,
+	pinned lip.PackageInstallState) (string, bool) {
 	planned, err := lipPlanPackages(ctx, targetDir, update, []string{pkg})
 	if err != nil {
 		log.Printf("InstallLIPPackage: dry run of %s without the LeviLamina pin failed: %s", pkg, lip.ErrorMessage(err))
-		return false
+		return "", false
 	}
 	for _, p := range planned {
 		if lip.PackageKey(p.ID) != lip.PackageKey(leviLaminaPackageID) {
 			continue
 		}
-		if strings.EqualFold(p.Identity, pinned.Identity) && p.Version == strings.TrimSpace(pinned.InstalledVersion) {
-			return true
-		}
-		if p.Variant == "" && !p.FromToothJSON {
-			return true
+		if (strings.EqualFold(p.Identity, pinned.Identity) && p.Version == strings.TrimSpace(pinned.InstalledVersion)) ||
+			(p.Variant == "" && !p.FromToothJSON) {
+			return withLIPVersion(p.Identity, p.Version), true
 		}
 		log.Printf("InstallLIPPackage: without the pin, %s would change LeviLamina to %s %s; keeping the pin",
 			pkg, p.Identity, p.Version)
-		return false
+		return "", false
 	}
-	return false
+	return "", false
 }
 
 // lipRunSwitching runs op for packageRef at version (with the other
@@ -494,10 +493,14 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	run := func(op func(context.Context, string, []string) error, update bool) error {
 		var err error
 		pkg, err = lipRunSwitching(ctx, "InstallLIPPackage", op, targetDir, ref, normalizedVersion, pin, orNoLabel)
-		if err != nil && len(pin) > 0 && lip.IsRoleBuildClash(err) &&
-			lipUnpinnedKeepsLeviLamina(ctx, targetDir, update, pkg, pinState) {
-			log.Printf("InstallLIPPackage: %s cannot stay pinned for %s: %s", pin[0], pkg, lip.ErrorMessage(err))
-			err = op(ctx, targetDir, []string{pkg})
+		if err != nil && len(pin) > 0 && lip.IsRoleBuildClash(err) {
+			if planned, ok := lipUnpinnedLeviLamina(ctx, targetDir, update, pkg, pinState); ok {
+				// The retry requests the LeviLamina the dry run planned, so a tag
+				// or an operation in between cannot make it another one.
+				log.Printf("InstallLIPPackage: %s cannot stay pinned for %s; using %s: %s", pin[0], pkg, planned,
+					lip.ErrorMessage(err))
+				err = op(ctx, targetDir, []string{pkg, planned})
+			}
 		}
 		return err
 	}

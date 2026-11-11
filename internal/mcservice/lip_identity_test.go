@@ -736,7 +736,9 @@ func TestInstallLIPPackageRetriesWithoutClientVariantPin(t *testing.T) {
 			args := [][]string{{"github.com/LiteLDev/Foo@1.0.0", "github.com/LiteLDev/LeviLamina#client@1.2.3"},
 				{"github.com/LiteLDev/Foo@1.0.0"}}
 			if tc.retried {
-				calls, args = append(calls, "install"), append(args, []string{"github.com/LiteLDev/Foo@1.0.0"})
+				// The retry requests the LeviLamina the dry run planned.
+				planned := tc.planned[0].Identity + "@" + tc.planned[0].Version
+				calls, args = append(calls, "install"), append(args, []string{"github.com/LiteLDev/Foo@1.0.0", planned})
 				if got != "" {
 					t.Fatalf("unexpected error code: %q", got)
 				}

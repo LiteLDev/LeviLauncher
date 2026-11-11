@@ -100,7 +100,7 @@ package engine
 //     - lip_package.go: delete lipRoleCanonical, lipSwitchedIdentity and
 //       lipRunSwitching. InstallLIPPackage calls lipInstallPackages /
 //       lipUpdatePackages directly again (no run wrapper, no pin retry on
-//       IsRoleBuildClash, no lipUnpinnedKeepsLeviLamina dry run and no
+//       IsRoleBuildClash, no lipUnpinnedLeviLamina dry run and no
 //       lipPlanPackages), with main's "#client" -> bare fallback on
 //       isLipNoPackageFoundFor for the request made when the catalogue
 //       cannot say (git show 12c663e:internal/mcservice/lip_package.go).

@@ -45,6 +45,10 @@ type Options struct {
 	// environment (lip's --platform); "" is the platform the state file
 	// records, else CurrentPlatform().
 	Platform string
+	// LegacyRoleVariants turns on LeviLauncher's temporary compatibility
+	// layer for tooth.json dependencies on "X#client" (client workspaces
+	// only; see compat_legacy_variants.go). Off by default: the engine is lip.
+	LegacyRoleVariants bool
 }
 
 // InstalledPackage is a package of the state file.
@@ -77,6 +81,8 @@ type Engine struct {
 	inst   *install.Installer
 	// newID returns the id of a new progress bar.
 	newID func() string
+	// onPlan: compat_legacy_variants.go (Plan).
+	onPlan func(*pkgmodel.LockFile)
 }
 
 // New returns an engine for the workspace dir.
@@ -280,7 +286,11 @@ func (e *Engine) Install(ctx context.Context, packages []string, dryRun, ignoreS
 		}
 	}
 
-	p, err := e.makePlan(ctx, ws, requests, unpinned, explicitIdentities(ws.lock), requested, false)
+	// compat_legacy_variants.go: without it, explicitIdentities(ws.lock) and
+	// no replacedRoles.
+	replacedRoles := ws.roleRecordsReplacedBy(candidates)
+	p, err := e.makePlan(ctx, ws, requests, append(unpinned, replacedRoles...),
+		withoutIdentities(explicitIdentities(ws.lock), replacedRoles), requested, false)
 	if err != nil {
 		return err
 	}
@@ -339,7 +349,7 @@ func (e *Engine) Uninstall(ctx context.Context, packages []string, dryRun, ignor
 		// (protocol/workspace.md §5, §7.1).
 		return e.execute(ctx, ws, op, changeSet{changes: changes,
 			finish: func(remaining []pkgmodel.LockedPackage) []pkgmodel.LockedPackage {
-				return inInstallationOrder(remaining, ws.env)
+				return ws.inInstallationOrder(remaining)
 			}})
 	}
 
@@ -443,7 +453,8 @@ func (e *Engine) Update(ctx context.Context, packages []string, dryRun, ignoreSc
 			if !ref.NamesEqual(requests[i].arg, identity) {
 				replaced = append(replaced, requests[i].arg)
 			}
-		} else if installedPackage(ws.lock, identity) == nil {
+		} else if installedPackage(ws.lock, identity) == nil && len(ws.roleRecordsReplacedBy([]*candidate{c})) == 0 {
+			// (compat_legacy_variants.go: the second test.)
 			return &Error{Msg: fmt.Sprintf("Cannot update '%s': package '%s' is not installed in this"+
 				" workspace. To install it, run 'lip install %s'.", requests[i].arg, identity, requests[i].arg)}
 		}
@@ -456,6 +467,9 @@ func (e *Engine) Update(ctx context.Context, packages []string, dryRun, ignoreSc
 		requested = append(requested, requests[i])
 	}
 
+	// compat_legacy_variants.go: without it, no replacedRoles.
+	replacedRoles := ws.roleRecordsReplacedBy(candidates)
+	replaced = append(replaced, replacedRoles...)
 	var explicit []string
 	for _, id := range explicitIdentities(ws.lock) {
 		if !containsIdentity(replaced, id) {
@@ -609,6 +623,7 @@ func (e *Engine) openWorkspace(ctx context.Context) (*workspace, error) {
 		lf = &pkgmodel.LockFile{Format: pkgmodel.Format, Side: env.Side, Platform: env.Platform}
 	}
 	res := newResolver(ctx, p, env, e.warning)
+	res.compat = e.legacyVariantsOn(env) // compat_legacy_variants.go
 	for i := range lf.Packages {
 		pkg := &lf.Packages[i]
 		if pkg.Commit == "" {
@@ -813,6 +828,9 @@ func (e *Engine) requestedCandidates(ctx context.Context, ws *workspace, request
 		if err != nil {
 			return nil, err
 		}
+		if err := ws.checkClientBuild(r, c); err != nil { // compat_legacy_variants.go
+			return nil, err
+		}
 		identity := c.Identity()
 		earlier := -1
 		for i, o := range out {
@@ -844,6 +862,7 @@ func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (
 	if c != nil {
 		return c, nil
 	}
+	missingRole, roleNote := ws.missingRoleKind(&seq.w, r.source) // compat_legacy_variants.go
 
 	const shown = 10
 	summary := fmt.Sprintf("No package found for '%s' that can be installed in this workspace (%s, %s).",
@@ -880,7 +899,8 @@ func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (
 		if notFound {
 			message += "\nCheck the spelling of the package and the version you asked for."
 		}
-		return nil, &Error{Msg: message, kind: ErrNoPackageFound}
+		// compatKind: compat_legacy_variants.go.
+		return nil, &Error{Msg: message + roleNote, kind: ErrNoPackageFound, compatKind: missingRole}
 	}
 	return nil, &Error{Msg: message, Err: &fetch.AggregateError{Message: summary, Errs: causes},
 		kind: ErrNoPackageFound}
@@ -1130,18 +1150,19 @@ func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, 
 	// afterwards records it: the order of the requested packages among every
 	// package installed then, so that a cycle through an installed package
 	// counts too.
+	replacedRoles := ws.roleRecordsReplacedBy(requested) // compat_legacy_variants.go
 	var nodes []orderNode
 	for i := range ws.lock.Packages {
 		p := &ws.lock.Packages[i]
 		if !slices.ContainsFunc(requested, func(c *candidate) bool {
 			return ref.NamesEqual(c.Identity(), install.LockedIdentity(p))
-		}) {
-			nodes = append(nodes, lockedOrderNode(p, ws.env))
+		}) && !containsIdentity(replacedRoles, install.LockedIdentity(p)) { // compat_legacy_variants.go: the second test
+			nodes = append(nodes, ws.lockedOrderNode(p))
 		}
 	}
 	for _, c := range requested {
 		nodes = append(nodes, orderNode{identity: c.Identity(), version: &c.version,
-			dependencies: c.entry.Deps, candidate: c})
+			dependencies: c.entry.Deps, candidate: c, fromTooth: c.fromTooth})
 	}
 	var candidates []*candidate
 	for _, n := range installationOrder(nodes) {
@@ -1150,6 +1171,12 @@ func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, 
 		}
 	}
 	var changes []change
+	// compat_legacy_variants.go: uninstall the records replacedRoles names.
+	for i := len(ws.lock.Packages) - 1; i >= 0; i-- {
+		if containsIdentity(replacedRoles, install.LockedIdentity(&ws.lock.Packages[i])) {
+			changes = append(changes, change{kind: uninstallChange, origin: i})
+		}
+	}
 	for _, c := range candidates {
 		existing := -1
 		for i := range ws.lock.Packages {
@@ -1169,7 +1196,7 @@ func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, 
 	}
 	return e.execute(ctx, ws, op, changeSet{changes: changes,
 		finish: func(remaining []pkgmodel.LockedPackage) []pkgmodel.LockedPackage {
-			return inInstallationOrder(remaining, ws.env)
+			return ws.inInstallationOrder(remaining)
 		}})
 }
 
@@ -1178,10 +1205,12 @@ func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, 
 // packages that satisfy its dependencies, and a cycle in ascending order of
 // identities with A-Z replaced by a-z. A package without an entry for the
 // environment has no dependencies here.
-func inInstallationOrder(packages []pkgmodel.LockedPackage, env environment) []pkgmodel.LockedPackage {
+//
+// (ws, not env, as the receiver: compat_legacy_variants.go.)
+func (ws *workspace) inInstallationOrder(packages []pkgmodel.LockedPackage) []pkgmodel.LockedPackage {
 	nodes := make([]orderNode, len(packages))
 	for i := range packages {
-		nodes[i] = lockedOrderNode(&packages[i], env)
+		nodes[i] = ws.lockedOrderNode(&packages[i])
 	}
 	out := make([]pkgmodel.LockedPackage, 0, len(packages))
 	for _, n := range installationOrder(nodes) {
@@ -1198,13 +1227,17 @@ type orderNode struct {
 	dependencies []pkgmodel.Dep
 	candidate    *candidate
 	locked       *pkgmodel.LockedPackage
+	// fromTooth: compat_legacy_variants.go.
+	fromTooth bool
 }
 
 // lockedOrderNode is OrderNode.Of: an installed package; one without an
 // entry for the environment has no dependencies here.
-func lockedOrderNode(p *pkgmodel.LockedPackage, env environment) orderNode {
-	n := orderNode{identity: install.LockedIdentity(p), locked: p}
-	if entry, err := lockedEntry(p, env); err == nil {
+//
+// (ws, not env, as the receiver, and fromTooth: compat_legacy_variants.go.)
+func (ws *workspace) lockedOrderNode(p *pkgmodel.LockedPackage) orderNode {
+	n := orderNode{identity: install.LockedIdentity(p), locked: p, fromTooth: ws.orderFromTooth(p)}
+	if entry, err := lockedEntry(p, ws.env); err == nil {
 		n.dependencies = entry.Deps
 	}
 	if v, err := semver.ParseStrict(install.LockedVersion(p)); err == nil {
@@ -1234,9 +1267,10 @@ func installationOrder(nodes []orderNode) []orderNode {
 				continue
 			}
 			identity := ref.Identity(source.Target, source.Variant)
+			stripped := sorted[i].strippedIdentity(source) // compat_legacy_variants.go
 			for j := range sorted {
-				if ref.NamesEqual(sorted[j].identity, identity) && sorted[j].version != nil &&
-					rng.Contains(*sorted[j].version) {
+				if (ref.NamesEqual(sorted[j].identity, identity) || sorted[j].isStripped(stripped)) &&
+					sorted[j].version != nil && rng.Contains(*sorted[j].version) {
 					deps = append(deps, j)
 				}
 			}
@@ -1376,6 +1410,9 @@ func (e *Engine) execute(ctx context.Context, ws *workspace, op operation, cs ch
 		finalPackages = cs.finish(finalPackages)
 	}
 	final := lockWith(ws, finalPackages)
+	if e.onPlan != nil && op.dryRun { // compat_legacy_variants.go
+		e.onPlan(final)
+	}
 	if op.dryRun {
 		return nil
 	}
@@ -1556,7 +1593,13 @@ func (e *Engine) pinnedCandidate(ctx context.Context, ws *workspace, p *pkgmodel
 			return h.Source, nil
 		})
 		a := &archiveHandle{Key: p.Ref + " (installed)", Source: src, Commit: commit}
-		return ws.resolver.newCandidate(stringMember(p.Manifest, "id"), p.Variant, version, entry, p.Manifest, a, source), nil
+		// fromTooth and pinnedOrigin: compat_legacy_variants.go (false and
+		// nothing without it); it may mark p.Manifest, so it comes first.
+		fromTooth, origin := ws.pinnedOrigin(p)
+		c := ws.resolver.newCandidate(stringMember(p.Manifest, "id"), p.Variant, version, entry, p.Manifest, a,
+			source, fromTooth)
+		c.installed, c.origin = true, origin // compat_legacy_variants.go
+		return c, nil
 	}()
 	if err == nil {
 		return c, nil

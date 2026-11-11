@@ -35,8 +35,11 @@ var _ packageEngine = (*engine.Engine)(nil)
 
 // newEngine builds the engine for an absolute workspace directory (empty
 // for directory-independent calls such as CacheClean); replaced in tests.
+// It turns on the engine's temporary compatibility layer for tooth.json
+// dependencies on "X#client" (internal/lipcore/engine/compat_legacy_variants.go).
 var newEngine = func(workDir string, r report.Reporter) packageEngine {
-	return engine.New(workDir, engine.Options{GithubProxy: EffectiveGithubProxy(), HTTPClient: engineHTTPClient}, r)
+	return engine.New(workDir, engine.Options{GithubProxy: EffectiveGithubProxy(), HTTPClient: engineHTTPClient,
+		LegacyRoleVariants: true}, r)
 }
 
 // engineHTTPClient carries the engine's git requests and downloads. Its
@@ -484,6 +487,68 @@ func isAlreadyExplicitlyInstalled(err error) bool {
 // update instead).
 func IsAlreadyExplicitlyInstalled(err error) bool {
 	return isAlreadyExplicitlyInstalled(err)
+}
+
+// The checks of LeviLauncher's compatibility with tooth.json packages
+// (internal/lipcore/engine/compat_legacy_variants.go):
+//   - IsClientVariantNotInLipToml: a request "X#client" ("X#client_<y>")
+//     found nothing because the release is read from a lip.toml, which keeps
+//     the client build in "X" ("X#<y>"); IsClientVariantNotInToothJSON: a
+//     tooth.json release without that label.
+//   - IsClientBuildInRoleVariant: a request "X" over an installed lip.toml
+//     "X" whose release is read from a tooth.json keeping its client build
+//     in "X#client".
+//   - IsRoleBuildClash: a failure to solve because a tooth.json "X#client"
+//     and a lip.toml "X" cannot both be installed.
+func IsClientVariantNotInLipToml(err error) bool {
+	return errors.Is(err, engine.ErrClientVariantNotInLipToml)
+}
+
+func IsClientVariantNotInToothJSON(err error) bool {
+	return errors.Is(err, engine.ErrClientVariantNotInToothJSON)
+}
+
+func IsClientBuildInRoleVariant(err error) bool {
+	return errors.Is(err, engine.ErrClientBuildInRoleVariant)
+}
+
+func IsRoleBuildClash(err error) bool {
+	return errors.Is(err, engine.ErrRoleBuildClash)
+}
+
+// PlannedPackage is a package an install or update would leave installed
+// (PlanPackages).
+type PlannedPackage struct {
+	Identity, ID, Variant, Version string
+	// FromToothJSON: read from a tooth.json (as LeviLauncher's compatibility
+	// layer records it).
+	FromToothJSON bool
+}
+
+// planner is the dry run of LeviLauncher's compatibility layer
+// (internal/lipcore/engine/compat_legacy_variants.go).
+type planner interface {
+	Plan(ctx context.Context, update bool, packages []string) ([]engine.PlannedPackage, error)
+}
+
+// PlanPackages runs an install (or, with update, an update) of packages in
+// workDir as a dry run and returns the packages it would leave installed.
+func PlanPackages(ctx context.Context, workDir string, update bool, packages []string) ([]PlannedPackage, error) {
+	pkgs := normalizePackages(packages)
+	var out []PlannedPackage
+	err := runPackageTask(ctx, "Plan", workDir, pkgs, false, true, func(ctx context.Context, e packageEngine) error {
+		p, ok := e.(planner)
+		if !ok {
+			return errors.New("lip: the engine cannot plan")
+		}
+		planned, err := p.Plan(ctx, update, pkgs)
+		for _, pp := range planned {
+			out = append(out, PlannedPackage{Identity: pp.Identity, ID: pp.ID, Variant: pp.Variant,
+				Version: pp.Version, FromToothJSON: pp.FromToothJSON})
+		}
+		return err
+	})
+	return out, err
 }
 
 // IsNoPackageFound reports whether err is lip's failure to find a package

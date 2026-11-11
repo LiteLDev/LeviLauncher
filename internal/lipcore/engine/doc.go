@@ -26,7 +26,9 @@
 // The engine follows lip exactly, with one parameter: the side of the
 // workspaces it manages. lip manages server workspaces only; LeviLauncher's
 // workspaces are client workspaces (Options.Side defaults to "client"),
-// with every other protocol rule unchanged.
+// with every other protocol rule unchanged. The one exception is opt-in and
+// temporary: Options.LegacyRoleVariants, LeviLauncher's compatibility layer
+// for tooth.json dependencies on "X#client" (compat_legacy_variants.go).
 //
 // Archives: remote repositories are read through the git smart-HTTP protocol
 // (gitproto.RemoteClient, packs written to lip's cache directory), URLs and

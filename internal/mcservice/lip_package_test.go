@@ -103,7 +103,9 @@ func restoreLipQueryDeps(t *testing.T) {
 	originalInstall := lipInstallPackages
 	originalUpdate := lipUpdatePackages
 	originalUninstall := lipUninstallPackages
+	originalPlan := lipPlanPackages
 	t.Cleanup(func() {
+		lipPlanPackages = originalPlan
 		lipListPackageStates = originalList
 		lipResolveTargetDir = originalResolve
 		lipInstallPackages = originalInstall

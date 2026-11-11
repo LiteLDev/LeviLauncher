@@ -11,6 +11,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/lip"
+	lipref "github.com/liteldev/LeviLauncher/internal/lipcore/ref"
 	"github.com/liteldev/LeviLauncher/internal/lipindex"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
@@ -37,6 +38,7 @@ var (
 	lipListPackageStates = lip.ListPackageStates
 	lipInstallPackages   = lip.InstallPackages
 	lipUpdatePackages    = lip.UpdatePackages
+	lipPlanPackages      = lip.PlanPackages
 	lipUninstallPackages = lip.UninstallPackages
 	lipResolveTargetDir  = resolveLIPTargetDir
 	// lipFetchDetail fetches a package's catalogue detail (levimc.org/api/v4/mods).
@@ -206,6 +208,94 @@ func withLIPVersion(packageRef, version string) string {
 	return fmt.Sprintf("%s@%s", packageRef, version)
 }
 
+// lipRoleCanonical is the variant a release read from a lip.toml has for a
+// client variant ("client" -> "", "client_<y>" -> "<y>"), as lip's
+// compatibility layer reads it; ok is false for other variants.
+func lipRoleCanonical(variant string) (string, bool) {
+	if variant == lipClientVariant {
+		return "", true
+	}
+	if rest, ok := strings.CutPrefix(variant, lipClientVariant+"_"); ok && lipref.IsValidVariant(rest) {
+		return rest, true
+	}
+	return "", false
+}
+
+// lipSwitchedIdentity is the identity to request instead of packageRef (an
+// identity without a version) when lip failed the request for pkg because
+// the target release keeps its client build under the other identity (rule
+// 5 of LeviLauncher's compatibility with tooth.json packages,
+// internal/lipcore/engine/compat_legacy_variants.go): "X#client" of a
+// release read from a lip.toml is "X"; "X" over an installed lip.toml "X",
+// of a release read from a tooth.json with a client label, is "X#client".
+// orNoLabel also switches "X#client" to "X" for a tooth.json release
+// without the label (for a request nothing named or installed). Otherwise
+// "".
+func lipSwitchedIdentity(err error, pkg, packageRef string, orNoLabel bool) string {
+	if err == nil || !strings.Contains(strings.ToLower(lip.ErrorMessage(err)), "'"+strings.ToLower(pkg)+"'") {
+		return ""
+	}
+	id, variant, _ := strings.Cut(packageRef, "#")
+	if canonical, ok := lipRoleCanonical(variant); ok {
+		if lip.IsClientVariantNotInLipToml(err) || orNoLabel && lip.IsClientVariantNotInToothJSON(err) {
+			return lipref.Identity(id, canonical)
+		}
+		return ""
+	}
+	if lip.IsClientBuildInRoleVariant(err) {
+		role := lipClientVariant
+		if variant != "" {
+			role += "_" + variant
+		}
+		return lipref.Identity(id, role)
+	}
+	return ""
+}
+
+// lipUnpinnedLeviLamina is the LeviLamina ("<identity>@<version>") the
+// operation (an update, or an install) of pkg without the LeviLamina pin
+// (pinned, a "LeviLamina#client") would leave, when that is the pinned one
+// or the bare identity read from a lip.toml (the build the pin clashed
+// with); ok is false otherwise. It asks lip for a dry run
+// (lipPlanPackages); anything else, such as another tooth.json version,
+// keeps the pin and its failure.
+func lipUnpinnedLeviLamina(ctx context.Context, targetDir string, update bool, pkg string,
+	pinned lip.PackageInstallState) (string, bool) {
+	planned, err := lipPlanPackages(ctx, targetDir, update, []string{pkg})
+	if err != nil {
+		log.Printf("InstallLIPPackage: dry run of %s without the LeviLamina pin failed: %s", pkg, lip.ErrorMessage(err))
+		return "", false
+	}
+	for _, p := range planned {
+		if lip.PackageKey(p.ID) != lip.PackageKey(leviLaminaPackageID) {
+			continue
+		}
+		if (strings.EqualFold(p.Identity, pinned.Identity) && p.Version == strings.TrimSpace(pinned.InstalledVersion)) ||
+			(p.Variant == "" && !p.FromToothJSON) {
+			return withLIPVersion(p.Identity, p.Version), true
+		}
+		log.Printf("InstallLIPPackage: without the pin, %s would change LeviLamina to %s %s; keeping the pin",
+			pkg, p.Identity, p.Version)
+		return "", false
+	}
+	return "", false
+}
+
+// lipRunSwitching runs op for packageRef at version (with the other
+// packages), and once more under lipSwitchedIdentity when that names one;
+// pkg is the package argument run last.
+func lipRunSwitching(ctx context.Context, caller string, op func(context.Context, string, []string) error,
+	targetDir, packageRef, version string, others []string, orNoLabel bool) (pkg string, err error) {
+	pkg = withLIPVersion(packageRef, version)
+	err = op(ctx, targetDir, append([]string{pkg}, others...))
+	if other := lipSwitchedIdentity(err, pkg, packageRef, orNoLabel); other != "" {
+		log.Printf("%s: the release keeps its client build in %s, not %s: %s", caller, other, packageRef, lip.ErrorMessage(err))
+		pkg = withLIPVersion(other, version)
+		err = op(ctx, targetDir, append([]string{pkg}, others...))
+	}
+	return pkg, err
+}
+
 // isLipNoPackageFoundFor reports whether err is lip's failure to find a
 // package for the package argument arg.
 func isLipNoPackageFoundFor(err error, arg string) bool {
@@ -367,63 +457,68 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 		state, installed = lip.PackageInstallState{}, false
 	}
 
-	ref := req.requestRef
-	fallbackRef := ""
+	ref, orNoLabel := req.requestRef, false
 	switch {
 	case installed && strings.TrimSpace(state.Identity) != "":
 		ref = state.Identity
 	case !req.named:
 		// No variant named: the catalogue says which one has a client entry
 		// for this platform. When it cannot, ask for the conventional
-		// client variant and fall back to the variant "".
+		// client variant, and for "" when the release has none.
 		if variant, ok := chooseLIPVariant(ctx, req.packageID, normalizedVersion); ok {
-			if variant != "" {
-				ref = req.packageID + "#" + variant
-			}
+			ref = lipref.Identity(req.packageID, variant)
 		} else {
-			ref = req.packageID + "#" + lipClientVariant
-			fallbackRef = req.packageID
+			ref, orNoLabel = req.packageID+"#"+lipClientVariant, true
 		}
 	}
 
-	pkg := withLIPVersion(ref, normalizedVersion)
-	targetOnlyPkgs := []string{pkg}
-	installPkgs := []string{pkg}
-	hasPinnedLL := false
-
+	var pin []string
+	var pinState lip.PackageInstallState
 	// Pin existing LeviLamina version to avoid dependency solver switching LL
 	// or fetching a large set of LL candidates from wide ranges (e.g. 1.9.*).
 	if lip.PackageKey(req.packageID) != lip.PackageKey(leviLaminaPackageID) {
 		if llState, ok := lipPackageStateFor(states, leviLaminaPackageID); ok && !llState.ExplicitInstalled {
 			pinnedLLVersion := strings.TrimSpace(llState.InstalledVersion)
 			if pinnedLLVersion != "" {
-				installPkgs = append(installPkgs, withLIPVersion(llState.Identity, pinnedLLVersion))
-				hasPinnedLL = true
+				pin = []string{withLIPVersion(llState.Identity, pinnedLLVersion)}
+				pinState = llState
 			}
 		}
 	}
+	pkg := withLIPVersion(ref, normalizedVersion)
+	// run runs op with the pin, under the identity of the target release
+	// (lipRunSwitching); and without the pin when the pinned
+	// "LeviLamina#client" is a tooth.json build the package cannot have next
+	// to the lip.toml LeviLamina it needs.
+	run := func(op func(context.Context, string, []string) error, update bool) error {
+		var err error
+		pkg, err = lipRunSwitching(ctx, "InstallLIPPackage", op, targetDir, ref, normalizedVersion, pin, orNoLabel)
+		if err != nil && len(pin) > 0 && lip.IsRoleBuildClash(err) {
+			if planned, ok := lipUnpinnedLeviLamina(ctx, targetDir, update, pkg, pinState); ok {
+				// The retry requests the LeviLamina the dry run planned, so a tag
+				// or an operation in between cannot make it another one.
+				log.Printf("InstallLIPPackage: %s cannot stay pinned for %s; using %s: %s", pin[0], pkg, planned,
+					lip.ErrorMessage(err))
+				err = op(ctx, targetDir, []string{pkg, planned})
+			}
+		}
+		return err
+	}
 
 	if state.ExplicitInstalled {
-		if err := lipUpdatePackages(ctx, targetDir, installPkgs); err != nil {
+		if err := run(lipUpdatePackages, true); err != nil {
 			log.Printf("InstallLIPPackage: lip update failed for %s: %s", pkg, lip.ErrorMessage(err))
 			return lip.ErrorResult("ERR_LIP_PACKAGE_INSTALL_FAILED", err)
 		}
 		return ""
 	}
 
-	err := lipInstallPackages(ctx, targetDir, installPkgs)
-	if err != nil && fallbackRef != "" && isLipNoPackageFoundFor(err, pkg) {
-		// No client variant: the variant "" holds the client build.
-		log.Printf("InstallLIPPackage: no package for %s, trying %s", pkg, fallbackRef)
-		pkg = withLIPVersion(fallbackRef, normalizedVersion)
-		installPkgs[0] = pkg
-		targetOnlyPkgs = []string{pkg}
-		err = lipInstallPackages(ctx, targetDir, installPkgs)
-	}
+	err := run(lipInstallPackages, false)
 	if err != nil {
+		targetOnlyPkgs := []string{pkg}
 		// If the pinned LeviLamina package is already installed and blocks install,
 		// retry with target package only.
-		if hasPinnedLL && isLipAlreadyExplicitlyInstalledFor(err, leviLaminaPackageID) {
+		if len(pin) > 0 && isLipAlreadyExplicitlyInstalledFor(err, leviLaminaPackageID) {
 			retryErr := lipInstallPackages(ctx, targetDir, targetOnlyPkgs)
 			if retryErr == nil {
 				return ""

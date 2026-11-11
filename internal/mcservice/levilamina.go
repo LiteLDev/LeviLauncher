@@ -192,13 +192,24 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 	if listErr != nil {
 		log.Printf("InstallLeviLamina: lip list failed, fallback to install-first strategy: %v", listErr)
 	}
-	state, _ := lipInstalledFor(states, leviLaminaPackageID, "")
-	pkg := withLIPVersion(lipOperationRef(states, leviLaminaPackageID, "", leviLaminaPackageID+"#"+lipClientVariant),
-		llVersion)
+	// The identity follows the target release (lipRunSwitching); a tooth.json release
+	// without the client label holds only a server build, which is not
+	// installed on a client.
+	state, installed := lipInstalledFor(states, leviLaminaPackageID, "")
+	ref := leviLaminaPackageID + "#" + lipClientVariant
+	if installed && strings.TrimSpace(state.Identity) != "" {
+		ref = state.Identity
+	}
+	var pkg string
+	run := func(op func(context.Context, string, []string) error) error {
+		var err error
+		pkg, err = lipRunSwitching(ctx, "InstallLeviLamina", op, targetDir, ref, llVersion, nil, false)
+		return err
+	}
 
 	if state.ExplicitInstalled {
 		log.Printf("Updating LeviLamina %s for %s using LIP", llVersion, targetName)
-		if err := lipUpdatePackages(ctx, targetDir, []string{pkg}); err != nil {
+		if err := run(lipUpdatePackages); err != nil {
 			log.Printf("InstallLeviLamina: lip update failed: %s", lip.ErrorMessage(err))
 			return "ERR_LIP_INSTALL_FAILED"
 		}
@@ -206,13 +217,7 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 	}
 
 	log.Printf("Installing LeviLamina %s for %s using LIP", llVersion, targetName)
-	err = lipInstallPackages(ctx, targetDir, []string{pkg})
-	if bare := withLIPVersion(leviLaminaPackageID, llVersion); err != nil && pkg != bare && isLipNoPackageFoundFor(err, pkg) {
-		// No client variant: the variant "" holds the client build.
-		log.Printf("InstallLeviLamina: no package for %s, trying %s", pkg, bare)
-		pkg = bare
-		err = lipInstallPackages(ctx, targetDir, []string{pkg})
-	}
+	err = run(lipInstallPackages)
 	if err != nil {
 		if !isLipAlreadyExplicitlyInstalledFor(err, leviLaminaPackageID) {
 			log.Printf("InstallLeviLamina: lip install failed: %s", lip.ErrorMessage(err))

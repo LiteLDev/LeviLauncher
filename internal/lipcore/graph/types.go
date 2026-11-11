@@ -26,6 +26,11 @@ type Ref struct {
 	Target string
 	// Variant is the variant the ref names ("" for the default variant).
 	Variant string
+	// Compat tells apart refs of the same text that LeviLauncher's
+	// temporary compatibility layer (engine, compat_legacy_variants.go)
+	// resolves differently; candidate sequences are keyed by it too. Always
+	// "" without that layer.
+	Compat string
 }
 
 func (r Ref) String() string { return r.Text }

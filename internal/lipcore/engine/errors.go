@@ -36,13 +36,18 @@ type Error struct {
 	Err error
 	// kind is the sentinel the error matches with errors.Is, if any.
 	kind error
+	// compatKind: compat_legacy_variants.go.
+	compatKind error
 }
 
 func (e *Error) Error() string { return e.Msg }
 
 func (e *Error) Unwrap() error { return e.Err }
 
-func (e *Error) Is(target error) bool { return e.kind != nil && target == e.kind }
+// Is: e.compatKind is compat_legacy_variants.go.
+func (e *Error) Is(target error) bool {
+	return e.kind != nil && target == e.kind || e.compatKind != nil && target == e.compatKind
+}
 
 // FormatError tells why an operation failed in plain words, as lip's
 // ErrorReporter (src/Lip.Cli/ErrorReporter.cs) prints it: the message of each

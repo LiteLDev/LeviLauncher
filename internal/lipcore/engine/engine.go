@@ -860,7 +860,7 @@ func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (
 	if c != nil {
 		return c, nil
 	}
-	missingRole := ws.resolver.missingRoleKind(&seq.w, r.source) // compat_legacy_variants.go
+	missingRole, roleNote := ws.missingRoleKind(&seq.w, r.source) // compat_legacy_variants.go
 
 	const shown = 10
 	summary := fmt.Sprintf("No package found for '%s' that can be installed in this workspace (%s, %s).",
@@ -898,7 +898,7 @@ func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (
 			message += "\nCheck the spelling of the package and the version you asked for."
 		}
 		// compatKind: compat_legacy_variants.go.
-		return nil, &Error{Msg: message, kind: ErrNoPackageFound, compatKind: missingRole}
+		return nil, &Error{Msg: message + roleNote, kind: ErrNoPackageFound, compatKind: missingRole}
 	}
 	return nil, &Error{Msg: message, Err: &fetch.AggregateError{Message: summary, Errs: causes},
 		kind: ErrNoPackageFound}

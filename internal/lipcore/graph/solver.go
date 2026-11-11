@@ -329,8 +329,9 @@ type search struct {
 	unresolvable []string
 	reported     map[string]bool
 	causes       []error
-	// clashReasons: clashBlocker (compat_legacy_variants.go of engine).
-	clashReasons map[string]bool
+	// clashReasons and clashFailures: clashBlocker (compat_legacy_variants.go
+	// of engine).
+	clashReasons, clashFailures map[string]bool
 }
 
 func (s *search) traceLine(message string) {
@@ -783,13 +784,30 @@ func packageIDOf(c Candidate) string {
 	return c.Identity()
 }
 
-// reportsClash reports whether failure lines include a clashBlocker reason.
+// noteClashFailure remembers a failure line of a requirement whose every
+// candidate was blocked by clashBlocker (none for another reason, none
+// failing deeper): the clash alone made it fail.
+func (s *search) noteClashFailure(line string, blocked []string, failedDeeper int) {
+	if failedDeeper > 0 || len(blocked) == 0 {
+		return
+	}
+	for _, b := range blocked {
+		if !s.clashReasons[b] {
+			return
+		}
+	}
+	if s.clashFailures == nil {
+		s.clashFailures = map[string]bool{}
+	}
+	s.clashFailures[line] = true
+}
+
+// reportsClash reports whether failure lines include a requirement that
+// only clashBlocker made fail (noteClashFailure).
 func (s *search) reportsClash(lines []string) bool {
-	for reason := range s.clashReasons {
-		for _, l := range lines {
-			if strings.Contains(l, reason) {
-				return true
-			}
+	for _, l := range lines {
+		if s.clashFailures[l] {
+			return true
 		}
 	}
 	return false
@@ -1083,8 +1101,9 @@ func (s *search) recordFailure(r *requirement, ch *choices, blocked []string, fa
 				" installed with them", failedDeeper))
 		}
 	}
-	s.addFailure(fmt.Sprintf("%s, but no version of it fits: %s.", r.description,
-		strings.Join(reasons, "; ")))
+	line := fmt.Sprintf("%s, but no version of it fits: %s.", r.description, strings.Join(reasons, "; "))
+	s.noteClashFailure(line, blocked, failedDeeper) // compat_legacy_variants.go of engine
+	s.addFailure(line)
 }
 
 // addCause keeps an error behind a failure, once.

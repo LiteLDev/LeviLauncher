@@ -27,13 +27,16 @@ package engine
 //     of one package, so the solver never adds one next to the other
 //     (candidate.ClashKey, graph's clashKeyer); it backtracks to another
 //     version instead. Two such packages installed already stay. A failure
-//     to solve because of it matches ErrRoleBuildClash.
+//     to solve because of it alone matches ErrRoleBuildClash.
 //   - In place: a request whose candidate is a lip.toml "X" ("X#<y>")
 //     replaces an installed tooth.json "X#client" ("X#client_<y>"), and a
 //     request whose candidate is a tooth.json "X#client" replaces an
 //     installed lip.toml "X" (roleRecordsReplacedBy): install (also with
 //     --no-dependencies) and update unpin it and drop it from the explicit
 //     packages, so the plan uninstalls it unless something still needs it.
+//   - An installed "X#client" read from a lip.toml (a real client variant)
+//     is never replaced; a request for it whose release has no client
+//     variant fails as in lip, with a note to uninstall it and install "X".
 //   - Typed failures for the launcher's choice of identity
 //     (internal/mcservice): a request "X#client" whose releases are all
 //     read from a lip.toml without that variant fails with
@@ -83,7 +86,8 @@ package engine
 //     - doc.go: the sentence on this layer.
 //  3. In internal/lipcore/graph: delete Ref.Compat, resolveKey.compat,
 //     clashKeyer, ErrBuildClash, clashKeyOf, isInstalled, clashBlocker and
-//     its call in blocker, packageIDOf, reportsClash, search.clashReasons,
+//     its call in blocker, packageIDOf, noteClashFailure and its call in
+//     recordFailure, reportsClash, search.clashReasons and clashFailures,
 //     and ResolutionError.buildClash and Is.
 //  4. internal/lip: newEngine without LegacyRoleVariants, and the helpers
 //     IsClientVariantNotInLipToml, IsClientVariantNotInToothJSON,
@@ -155,9 +159,11 @@ var ErrClientVariantNotInToothJSON = errors.New("engine: the tooth.json release 
 // request that instead (checkClientBuild).
 var ErrClientBuildInRoleVariant = errors.New("engine: the tooth.json release keeps its client build in a client variant")
 
-// ErrRoleBuildClash matches (errors.Is) a failure to solve whose reasons
-// include a tooth.json "X#client" and a lip.toml "X" that cannot both be
-// installed (graph's clashKeyer).
+// ErrRoleBuildClash matches (errors.Is) a failure to solve with a
+// requirement whose every candidate was refused only because a tooth.json
+// "X#client" and a lip.toml "X" cannot both be installed (graph's
+// clashKeyer): dropping the "X#client" that blocked them lets the
+// requirement have its lip.toml "X".
 var ErrRoleBuildClash = graph.ErrBuildClash
 
 // legacyVariantsOn reports whether the layer applies to an environment.
@@ -272,19 +278,33 @@ func (r *resolver) noteMissingRole(w *walk, d *packageDocument, pf *pkgmodel.Doc
 // missingRoleKind is the compatKind of firstCandidate's ErrNoPackageFound
 // for a request (source) whose walk found nothing: one of the sentinels
 // when every report was a release without the role variant asked for, of
-// one file; otherwise nil.
-func (r *resolver) missingRoleKind(w *walk, source ref.Ref) error {
+// one file; otherwise nil. A request for an installed "X#client" read from
+// a lip.toml (a package with a real client variant, such as a third-party
+// one) gets no sentinel, as nothing replaces such a record, but a note
+// (appended to the message) on what to do instead.
+func (ws *workspace) missingRoleKind(w *walk, source ref.Ref) (error, string) {
 	f := w.failures
-	if !r.compat || !isRoleVariant(source.Variant) || f.reports == 0 {
-		return nil
+	if !ws.resolver.compat || !isRoleVariant(source.Variant) || f.reports == 0 {
+		return nil, ""
 	}
+	var kind error
 	switch f.reports {
 	case f.lipToml:
-		return ErrClientVariantNotInLipToml
+		kind = ErrClientVariantNotInLipToml
 	case f.toothJSON:
-		return ErrClientVariantNotInToothJSON
+		kind = ErrClientVariantNotInToothJSON
+	default:
+		return nil, ""
 	}
-	return nil
+	identity := ref.Identity(source.Target, source.Variant)
+	if p := installedPackage(ws.lock, identity); kind == ErrClientVariantNotInLipToml && p != nil &&
+		ws.readOrigin(p) == originLipToml {
+		canonical := ref.Identity(source.Target, roleCanonical(source.Variant))
+		return nil, fmt.Sprintf("\nThe installed '%s' is read from a lip.toml, so LeviLauncher does not replace"+
+			" it with '%s'. To move to that release, uninstall '%s' and install '%s'.", install.LockedIdentity(p),
+			canonical, install.LockedIdentity(p), canonical)
+	}
+	return kind, ""
 }
 
 // #endregion

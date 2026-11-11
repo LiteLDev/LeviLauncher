@@ -847,3 +847,64 @@ func TestPinnedClientBuildFailures(t *testing.T) {
 	h.must(h.install(newID + "@1.0.0"))
 	equal(t, h.summary(), []string{llID + "@2.0.0 dep", modID + "@1.0.0 explicit", newID + "@1.0.0 explicit"})
 }
+
+// The pin retry signal: ErrRoleBuildClash only when the clash alone made a
+// requirement fail. A pinned "X#client" 1.0.0 with a mod needing ">=1.1.0"
+// (1.1.0 a tooth.json, 2.0.0 a lip.toml) fails for the pinned version, not
+// for the clash, so the launcher keeps the pin and the error, as main.
+func TestPinnedClientBuildClashOnlyWhenClashAlone(t *testing.T) {
+	h := compatHarness(t, false)
+	h.addToothLL("1.0.0")
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", "1.*"))
+	h.must(h.install(modID))
+	h.addToothLL("1.1.0")
+	h.addLipLL("2.0.0")
+	h.addToothMod(newID, "1.0.0", dep(llID+"#client", ">=1.1.0"))
+	h.setCompat(true)
+	before := h.snapshot()
+	err := h.install(newID+"@1.0.0", llID+"#client@1.0.0")
+	if err == nil || errors.Is(err, ErrRoleBuildClash) {
+		t.Fatalf("%v", err)
+	}
+	equalMaps(t, h.snapshot(), before)
+}
+
+// An installed "X#client" read from a lip.toml (a package with a real
+// client variant) whose next release has none: the request fails as lip
+// does, without the signal that makes the launcher switch to "X" (nothing
+// would replace the record, so "X" would be installed next to it), and the
+// message says what to do.
+func TestLipTomlClientRecordGetsNoSwitchSignal(t *testing.T) {
+	for _, explicit := range []bool{true, false} {
+		h := compatHarness(t, true)
+		h.addThirdParty("1.0.0")
+		if explicit {
+			h.must(h.install(llID + "#client@1.0.0"))
+		} else {
+			h.addLipMod(newID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+			h.must(h.install(newID))
+		}
+		h.addTag(llID, "2.0.0", "lip.toml", lipVariants(llID, "2.0.0",
+			"", "["+entry("client", "s.dll", "ll/plain-2.0.0.dll", "")+"]"), "s.dll", "s")
+		h.setCompat(true)
+		before := h.snapshot()
+		var err error
+		if explicit {
+			err = h.update(llID + "#client@2.0.0")
+		} else {
+			err = h.install(llID + "#client@2.0.0")
+		}
+		if !errors.Is(err, ErrNoPackageFound) || errors.Is(err, ErrClientVariantNotInLipToml) ||
+			!strings.Contains(FormatError(err), "uninstall '"+llID+"#client' and install '"+llID+"'") {
+			t.Fatalf("%v", err)
+		}
+		equalMaps(t, h.snapshot(), before)
+	}
+	// A tooth.json "X#client" record gets the signal.
+	h := mixedLL(t, true)
+	h.must(h.install(llID + "#client@1.0.0"))
+	h.setCompat(true)
+	if err := h.update(llID + "#client@2.0.0"); !errors.Is(err, ErrClientVariantNotInLipToml) {
+		t.Fatalf("%v", err)
+	}
+}

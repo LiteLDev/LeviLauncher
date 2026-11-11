@@ -626,6 +626,11 @@ func TestInstallLIPPackageFallbackOnlyForLipTomlRelease(t *testing.T) {
 		{"catalogue unknown, tooth.json without the label", "LiteLDev/Foo", map[string]lip.PackageInstallState{},
 			wrapNoClientVariant("github.com/LiteLDev/Foo#client@1.1.0", engine.ErrClientVariantNotInToothJSON), false,
 			[][]string{{"github.com/LiteLDev/Foo#client@1.1.0"}, {"github.com/LiteLDev/Foo@1.1.0"}}},
+		{"installed client variant of a lip.toml (lip gives no signal)", "LiteLDev/Foo",
+			map[string]lip.PackageInstallState{"github.com/liteldev/foo": migratedState("github.com/LiteLDev/Foo", "client", "1.0.0", false)},
+			fmt.Errorf("No package found for 'github.com/LiteLDev/Foo#client@1.1.0' ... The installed"+
+				" 'github.com/LiteLDev/Foo#client' is read from a lip.toml ... %w", engine.ErrNoPackageFound), true,
+			[][]string{{"github.com/LiteLDev/Foo#client@1.1.0"}}},
 		{"catalogue unknown, download error", "LiteLDev/Foo", map[string]lip.PackageInstallState{},
 			wrapNoPackageFound("github.com/LiteLDev/Foo#client@1.1.0"), true,
 			[][]string{{"github.com/LiteLDev/Foo#client@1.1.0"}}},

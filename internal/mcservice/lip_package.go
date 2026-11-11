@@ -207,24 +207,6 @@ func withLIPVersion(packageRef, version string) string {
 	return fmt.Sprintf("%s@%s", packageRef, version)
 }
 
-// lipRoleRequest is the package an operation requests (ref, without a
-// version) and the one it requests instead (fallback) when the target
-// release turns out to keep its client build elsewhere: the identity
-// follows the target release (rule 5 of LeviLauncher's compatibility with
-// tooth.json packages). A release read from a tooth.json keeps its client
-// build in the variant "client" ("client_<y>"); one read from a lip.toml,
-// which has no client variants, in "" ("<y>"). lip
-// (internal/lipcore/engine/compat_legacy_variants.go) replaces the
-// installed package of the other identity in place, and tells why a
-// request for a client variant found nothing.
-type lipRoleRequest struct {
-	ref, fallback string
-	// onToothJSON: fall back also when the target is a tooth.json release
-	// without the client label (its "" is then the only build); otherwise
-	// only when it is a lip.toml release.
-	onToothJSON bool
-}
-
 // lipRoleCanonical is the variant a release read from a lip.toml has for a
 // client variant ("client" -> "", "client_<y>" -> "<y>"), as lip's
 // compatibility layer reads it; ok is false for other variants.
@@ -238,41 +220,50 @@ func lipRoleCanonical(variant string) (string, bool) {
 	return "", false
 }
 
-// lipRoleRequestFor is the request for packageRef (an identity, without a
-// version): a client variant falls back to its lip.toml name; an installed
-// identity without one first asks for its client variant, in case the
-// target is a tooth.json release with that label, and falls back to itself.
-func lipRoleRequestFor(packageRef string, installed bool) lipRoleRequest {
+// lipSwitchedIdentity is the identity to request instead of packageRef (an
+// identity without a version) when lip failed the request for pkg because
+// the target release keeps its client build under the other identity (rule
+// 5 of LeviLauncher's compatibility with tooth.json packages,
+// internal/lipcore/engine/compat_legacy_variants.go): "X#client" of a
+// release read from a lip.toml is "X"; "X" over an installed lip.toml "X",
+// of a release read from a tooth.json with a client label, is "X#client".
+// orNoLabel also switches "X#client" to "X" for a tooth.json release
+// without the label (for a request nothing named or installed). Otherwise
+// "".
+func lipSwitchedIdentity(err error, pkg, packageRef string, orNoLabel bool) string {
+	if err == nil || !strings.Contains(strings.ToLower(lip.ErrorMessage(err)), "'"+strings.ToLower(pkg)+"'") {
+		return ""
+	}
 	id, variant, _ := strings.Cut(packageRef, "#")
 	if canonical, ok := lipRoleCanonical(variant); ok {
-		return lipRoleRequest{ref: packageRef, fallback: lipref.Identity(id, canonical)}
+		if lip.IsClientVariantNotInLipToml(err) || orNoLabel && lip.IsClientVariantNotInToothJSON(err) {
+			return lipref.Identity(id, canonical)
+		}
+		return ""
 	}
-	if installed {
+	if lip.IsClientBuildInRoleVariant(err) {
 		role := lipClientVariant
 		if variant != "" {
 			role += "_" + variant
 		}
-		if lipref.IsValidVariant(role) {
-			return lipRoleRequest{ref: lipref.Identity(id, role), fallback: packageRef, onToothJSON: true}
-		}
+		return lipref.Identity(id, role)
 	}
-	return lipRoleRequest{ref: packageRef}
+	return ""
 }
 
-// fallsBack reports whether a failed request for pkg (q.ref at a version)
-// is retried with q.fallback.
-func (q lipRoleRequest) fallsBack(err error, pkg string) bool {
-	if err == nil || q.fallback == "" || !isLipNoPackageFoundFor(err, pkg) {
-		return false
+// lipRunSwitching runs op for packageRef at version (with the other
+// packages), and once more under lipSwitchedIdentity when that names one;
+// pkg is the package argument run last.
+func lipRunSwitching(ctx context.Context, caller string, op func(context.Context, string, []string) error,
+	targetDir, packageRef, version string, others []string, orNoLabel bool) (pkg string, err error) {
+	pkg = withLIPVersion(packageRef, version)
+	err = op(ctx, targetDir, append([]string{pkg}, others...))
+	if other := lipSwitchedIdentity(err, pkg, packageRef, orNoLabel); other != "" {
+		log.Printf("%s: the release keeps its client build in %s, not %s: %s", caller, other, packageRef, lip.ErrorMessage(err))
+		pkg = withLIPVersion(other, version)
+		err = op(ctx, targetDir, append([]string{pkg}, others...))
 	}
-	return lip.IsClientVariantNotInLipToml(err) || q.onToothJSON && lip.IsClientVariantNotInToothJSON(err)
-}
-
-// isLipRoleIdentity reports whether an identity names a client variant.
-func isLipRoleIdentity(identity string) bool {
-	_, variant, _ := strings.Cut(identity, "#")
-	_, ok := lipRoleCanonical(variant)
-	return ok
+	return pkg, err
 }
 
 // isLipNoPackageFoundFor reports whether err is lip's failure to find a
@@ -436,79 +427,61 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 		state, installed = lip.PackageInstallState{}, false
 	}
 
-	var roleReq lipRoleRequest
+	ref, orNoLabel := req.requestRef, false
 	switch {
 	case installed && strings.TrimSpace(state.Identity) != "":
-		// A named variant is kept, unless it is a client variant.
-		roleReq = lipRoleRequestFor(state.Identity, !req.named)
+		ref = state.Identity
 	case !req.named:
 		// No variant named: the catalogue says which one has a client entry
 		// for this platform. When it cannot, ask for the conventional
-		// client variant and fall back to the variant "" when the release
-		// has none (also a tooth.json release without the label).
+		// client variant, and for "" when the release has none.
 		if variant, ok := chooseLIPVariant(ctx, req.packageID, normalizedVersion); ok {
-			roleReq = lipRoleRequestFor(lipref.Identity(req.packageID, variant), false)
+			ref = lipref.Identity(req.packageID, variant)
 		} else {
-			roleReq = lipRoleRequestFor(req.packageID+"#"+lipClientVariant, false)
-			roleReq.onToothJSON = true
+			ref, orNoLabel = req.packageID+"#"+lipClientVariant, true
 		}
-	default:
-		roleReq = lipRoleRequestFor(req.requestRef, false)
 	}
 
-	pkg := withLIPVersion(roleReq.ref, normalizedVersion)
-	var pin, pinIdentity string
-
+	var pin []string
 	// Pin existing LeviLamina version to avoid dependency solver switching LL
 	// or fetching a large set of LL candidates from wide ranges (e.g. 1.9.*).
 	if lip.PackageKey(req.packageID) != lip.PackageKey(leviLaminaPackageID) {
 		if llState, ok := lipPackageStateFor(states, leviLaminaPackageID); ok && !llState.ExplicitInstalled {
 			pinnedLLVersion := strings.TrimSpace(llState.InstalledVersion)
 			if pinnedLLVersion != "" {
-				pin, pinIdentity = withLIPVersion(llState.Identity, pinnedLLVersion), llState.Identity
+				pin = []string{withLIPVersion(llState.Identity, pinnedLLVersion)}
 			}
 		}
 	}
-	withPin := func(pkg string) []string {
-		if pin == "" {
-			return []string{pkg}
-		}
-		return []string{pkg, pin}
-	}
-	// run runs op for pkg with the pin, then for the fallback of the
-	// identity (lipRoleRequest) when the release keeps its client build
-	// under the other one; and without the pin when it fails and the pin
-	// is a client variant ("LeviLamina#client", which the package may need
-	// replaced by the release read from a lip.toml).
-	run := func(op func(context.Context, string, []string) error, verb string) error {
-		err := op(ctx, targetDir, withPin(pkg))
-		if roleReq.fallsBack(err, pkg) {
-			fallback := withLIPVersion(roleReq.fallback, normalizedVersion)
-			log.Printf("InstallLIPPackage: no package for %s, trying %s", pkg, fallback)
-			pkg = fallback
-			err = op(ctx, targetDir, withPin(pkg))
-		}
-		if err != nil && pin != "" && isLipRoleIdentity(pinIdentity) && !lip.IsAlreadyExplicitlyInstalled(err) {
-			log.Printf("InstallLIPPackage: lip %s failed with %s pinned, trying without: %s", verb, pin, lip.ErrorMessage(err))
+	pkg := withLIPVersion(ref, normalizedVersion)
+	// run runs op with the pin, under the identity of the target release
+	// (lipRunSwitching); and without the pin when the pinned
+	// "LeviLamina#client" is a tooth.json build the package cannot have next
+	// to the lip.toml LeviLamina it needs.
+	run := func(op func(context.Context, string, []string) error) error {
+		var err error
+		pkg, err = lipRunSwitching(ctx, "InstallLIPPackage", op, targetDir, ref, normalizedVersion, pin, orNoLabel)
+		if err != nil && len(pin) > 0 && lip.IsRoleBuildClash(err) {
+			log.Printf("InstallLIPPackage: %s cannot stay pinned for %s: %s", pin[0], pkg, lip.ErrorMessage(err))
 			err = op(ctx, targetDir, []string{pkg})
 		}
 		return err
 	}
 
 	if state.ExplicitInstalled {
-		if err := run(lipUpdatePackages, "update"); err != nil {
+		if err := run(lipUpdatePackages); err != nil {
 			log.Printf("InstallLIPPackage: lip update failed for %s: %s", pkg, lip.ErrorMessage(err))
 			return lip.ErrorResult("ERR_LIP_PACKAGE_INSTALL_FAILED", err)
 		}
 		return ""
 	}
 
-	err := run(lipInstallPackages, "install")
+	err := run(lipInstallPackages)
 	if err != nil {
 		targetOnlyPkgs := []string{pkg}
 		// If the pinned LeviLamina package is already installed and blocks install,
 		// retry with target package only.
-		if pin != "" && isLipAlreadyExplicitlyInstalledFor(err, leviLaminaPackageID) {
+		if len(pin) > 0 && isLipAlreadyExplicitlyInstalledFor(err, leviLaminaPackageID) {
 			retryErr := lipInstallPackages(ctx, targetDir, targetOnlyPkgs)
 			if retryErr == nil {
 				return ""

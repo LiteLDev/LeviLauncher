@@ -192,26 +192,18 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 	if listErr != nil {
 		log.Printf("InstallLeviLamina: lip list failed, fallback to install-first strategy: %v", listErr)
 	}
-	// The identity follows the target release (lipRoleRequest): the client
-	// variant of a release read from a tooth.json, "" of one read from a
-	// lip.toml, which replaces the installed one in place. A tooth.json
-	// release without the client label holds only a server build, which is
-	// never installed on a client.
+	// The identity follows the target release (lipRunSwitching); a tooth.json release
+	// without the client label holds only a server build, which is not
+	// installed on a client.
 	state, installed := lipInstalledFor(states, leviLaminaPackageID, "")
-	roleReq := lipRoleRequestFor(leviLaminaPackageID+"#"+lipClientVariant, false)
+	ref := leviLaminaPackageID + "#" + lipClientVariant
 	if installed && strings.TrimSpace(state.Identity) != "" {
-		roleReq = lipRoleRequestFor(state.Identity, true)
-		roleReq.onToothJSON = false
+		ref = state.Identity
 	}
-	pkg := withLIPVersion(roleReq.ref, llVersion)
+	var pkg string
 	run := func(op func(context.Context, string, []string) error) error {
-		err := op(ctx, targetDir, []string{pkg})
-		if roleReq.fallsBack(err, pkg) {
-			fallback := withLIPVersion(roleReq.fallback, llVersion)
-			log.Printf("InstallLeviLamina: no package for %s, trying %s", pkg, fallback)
-			pkg = fallback
-			err = op(ctx, targetDir, []string{pkg})
-		}
+		var err error
+		pkg, err = lipRunSwitching(ctx, "InstallLeviLamina", op, targetDir, ref, llVersion, nil, false)
 		return err
 	}
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
+	lipref "github.com/liteldev/LeviLauncher/internal/lipcore/ref"
 	"github.com/liteldev/LeviLauncher/internal/lipindex"
 	"github.com/liteldev/LeviLauncher/internal/types"
 )
@@ -216,17 +217,13 @@ func TestInstallLIPPackageInstalledIdentityWins(t *testing.T) {
 		t.Fatal("the catalogue is not asked for an installed package")
 		return nil, nil
 	}
-	// The installed "lua" is asked as "client_lua" first (a tooth.json
-	// release would have that label), and as itself in a lip.toml release.
-	ws.updateErrs = []error{wrapNoClientVariant("github.com/LiteLDev/Foo#client_lua@2.0.0", engine.ErrClientVariantNotInLipToml)}
 	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "2.0.0"); got != "" {
 		t.Fatalf("unexpected error code: %q", got)
 	}
 	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo#", "2.0.0"); got != "" {
 		t.Fatalf("unexpected error code: %q", got)
 	}
-	ws.expect(t, []string{"update", "update", "install"}, [][]string{{"github.com/LiteLDev/Foo#client_lua@2.0.0"},
-		{"github.com/LiteLDev/Foo#lua@2.0.0"}, {"github.com/LiteLDev/Foo@2.0.0"}})
+	ws.expect(t, []string{"update", "install"}, [][]string{{"github.com/LiteLDev/Foo#lua@2.0.0"}, {"github.com/LiteLDev/Foo@2.0.0"}})
 }
 
 // Without the catalogue, a request without a variant asks for the client
@@ -497,30 +494,46 @@ func TestInstanceBackupLIPRestoreIdentifier(t *testing.T) {
 	}
 }
 
-func TestLipRoleRequestFor(t *testing.T) {
+// clientBuildInRoleVariant is the engine's refusal of a request "X" over an
+// installed lip.toml "X" whose release is a tooth.json with a client label.
+func clientBuildInRoleVariant(arg string) error {
+	return fmt.Errorf("Cannot use '%s': ... is read from a tooth.json, which keeps its client build in"+
+		" '...#client'. %w", arg, engine.ErrClientBuildInRoleVariant)
+}
+
+func roleBuildClash() error {
+	return fmt.Errorf("Cannot find versions of the requested packages and their dependencies that can all be"+
+		" installed together: ... is another build of the same package as ... %w", engine.ErrRoleBuildClash)
+}
+
+func TestLipSwitchedIdentity(t *testing.T) {
+	const foo = "github.com/LiteLDev/Foo"
+	lipToml := func(ref string) error { return wrapNoClientVariant(ref+"@1.0.0", engine.ErrClientVariantNotInLipToml) }
+	tooth := func(ref string) error { return wrapNoClientVariant(ref+"@1.0.0", engine.ErrClientVariantNotInToothJSON) }
 	for _, tc := range []struct {
-		in        string
-		installed bool
-		want      lipRoleRequest
+		err       error
+		ref       string
+		orNoLabel bool
+		want      string
 	}{
-		{"github.com/LiteLDev/Foo#client", false, lipRoleRequest{ref: "github.com/LiteLDev/Foo#client", fallback: "github.com/LiteLDev/Foo"}},
-		{"github.com/LiteLDev/Foo#client_lua", true, lipRoleRequest{ref: "github.com/LiteLDev/Foo#client_lua", fallback: "github.com/LiteLDev/Foo#lua"}},
-		{"github.com/LiteLDev/Foo", false, lipRoleRequest{ref: "github.com/LiteLDev/Foo"}},
-		{"github.com/LiteLDev/Foo", true, lipRoleRequest{ref: "github.com/LiteLDev/Foo#client", fallback: "github.com/LiteLDev/Foo", onToothJSON: true}},
-		{"github.com/LiteLDev/Foo#lua", true, lipRoleRequest{ref: "github.com/LiteLDev/Foo#client_lua", fallback: "github.com/LiteLDev/Foo#lua", onToothJSON: true}},
-		{"github.com/LiteLDev/Foo#client_", false, lipRoleRequest{ref: "github.com/LiteLDev/Foo#client_"}},
-		{"github.com/LiteLDev/Foo#clientx", false, lipRoleRequest{ref: "github.com/LiteLDev/Foo#clientx"}},
+		{lipToml(foo + "#client"), foo + "#client", false, foo},
+		{lipToml(foo + "#client_lua"), foo + "#client_lua", false, foo + "#lua"},
+		{tooth(foo + "#client"), foo + "#client", false, ""},
+		{tooth(foo + "#client"), foo + "#client", true, foo},
+		{wrapNoPackageFound(foo + "#client@1.0.0"), foo + "#client", true, ""},
+		{lipToml(foo + "#client"), foo + "#lua", false, ""},
+		{lipToml("github.com/LiteLDev/Bar#client"), foo + "#client", false, ""},
+		{clientBuildInRoleVariant(foo + "@1.0.0"), foo, false, foo + "#client"},
+		{clientBuildInRoleVariant(foo + "#lua@1.0.0"), foo + "#lua", false, foo + "#client_lua"},
+		{roleBuildClash(), foo, false, ""},
+		{nil, foo + "#client", true, ""},
 	} {
-		if got := lipRoleRequestFor(tc.in, tc.installed); got != tc.want {
-			t.Errorf("lipRoleRequestFor(%q, %v) = %+v, want %+v", tc.in, tc.installed, got, tc.want)
+		if got := lipSwitchedIdentity(tc.err, tc.ref+"@1.0.0", tc.ref, tc.orNoLabel); got != tc.want {
+			t.Errorf("lipSwitchedIdentity(%v, %q, %v) = %q, want %q", tc.err, tc.ref, tc.orNoLabel, got, tc.want)
 		}
 	}
 }
 
-// Rule 5: the identity follows the target release. An installed
-// "#client" whose new version has no client variant (a release read from a
-// lip.toml) is changed to the bare id, which lip installs in its place;
-// explicit (update) or a dependency (install).
 func TestInstallLIPPackageMovesClientIdentityToLipTomlRelease(t *testing.T) {
 	ws := &fakeLipWorkspace{
 		states: map[string]lip.PackageInstallState{
@@ -633,42 +646,62 @@ func TestInstallLIPPackageFallbackOnlyForLipTomlRelease(t *testing.T) {
 	}
 }
 
-// Rule 5 the other way: an installed package without a client variant (a
-// release read from a lip.toml) asks for the client variant first, which a
-// tooth.json release of the version has; lip replaces it in place.
+// Rule 5 the other way: an installed package without a client variant is
+// requested as it is (main's behaviour: a third-party lip.toml "X" with its
+// own client variant, a tooth.json "X", an installed "X#lua" stay as they
+// are), and as "X#client" only when lip reports that the target release is
+// a tooth.json keeping its client build there while the installed one is a
+// lip.toml; lip replaces it in place.
 func TestInstallLIPPackageMovesToToothJSONClientVariant(t *testing.T) {
-	ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{
-		"github.com/liteldev/foo": migratedState("github.com/LiteLDev/Foo", "", "2.0.0", true),
-	}}
-	useFakeLipWorkspace(t, ws)
-	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "" {
-		t.Fatalf("unexpected error code: %q", got)
+	for _, variant := range []string{"", "lua"} {
+		ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{
+			"github.com/liteldev/foo": migratedState("github.com/LiteLDev/Foo", variant, "2.0.0", true),
+		}}
+		useFakeLipWorkspace(t, ws)
+		ref := lipref.Identity("github.com/LiteLDev/Foo", variant)
+		if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "" {
+			t.Fatalf("unexpected error code: %q", got)
+		}
+		ws.expect(t, []string{"update"}, [][]string{{ref + "@1.0.0"}})
 	}
-	ws.expect(t, []string{"update"}, [][]string{{"github.com/LiteLDev/Foo#client@1.0.0"}})
 
-	// A tooth.json release without the label: its "", as before.
-	ws = &fakeLipWorkspace{
+	ws := &fakeLipWorkspace{
 		states: map[string]lip.PackageInstallState{
 			"github.com/liteldev/foo": migratedState("github.com/LiteLDev/Foo", "", "2.0.0", true),
 		},
-		updateErrs: []error{wrapNoClientVariant("github.com/LiteLDev/Foo#client@1.0.0", engine.ErrClientVariantNotInToothJSON)},
+		updateErrs: []error{clientBuildInRoleVariant("github.com/LiteLDev/Foo@1.0.0")},
 	}
 	useFakeLipWorkspace(t, ws)
 	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo", "1.0.0"); got != "" {
 		t.Fatalf("unexpected error code: %q", got)
 	}
-	ws.expect(t, []string{"update", "update"}, [][]string{{"github.com/LiteLDev/Foo#client@1.0.0"}, {"github.com/LiteLDev/Foo@1.0.0"}})
+	ws.expect(t, []string{"update", "update"}, [][]string{{"github.com/LiteLDev/Foo@1.0.0"}, {"github.com/LiteLDev/Foo#client@1.0.0"}})
+
+	// A dependency (install), and a backup restore of the recorded identity.
+	ws = &fakeLipWorkspace{
+		states: map[string]lip.PackageInstallState{
+			"github.com/liteldev/foo": migratedState("github.com/LiteLDev/Foo", "", "2.0.0", false),
+		},
+		installErr: []error{clientBuildInRoleVariant("github.com/LiteLDev/Foo@1.0.0")},
+	}
+	useFakeLipWorkspace(t, ws)
+	item := types.InstanceBackupModsLIPPackage{Identifier: "LiteLDev/Foo", PackageID: "github.com/LiteLDev/Foo",
+		Identity: "github.com/LiteLDev/Foo", Version: "1.0.0", ExplicitInstalled: true}
+	if got := InstallLIPPackage(context.Background(), "Demo", instanceBackupLIPRestoreIdentifier(item), item.Version); got != "" {
+		t.Fatalf("unexpected error code: %q", got)
+	}
+	ws.expect(t, []string{"install", "install"}, [][]string{{"github.com/LiteLDev/Foo@1.0.0"}, {"github.com/LiteLDev/Foo#client@1.0.0"}})
 }
 
-// A pinned "LeviLamina#client" is dropped when the request fails with it:
-// the package may need the release read from a lip.toml, which replaces it.
+// A pinned "LeviLamina#client" is dropped only when lip fails to solve
+// because of it and the lip.toml LeviLamina the package needs
+// (ErrRoleBuildClash); any other failure (another LeviLamina#client version
+// needed, a hook or a download) keeps it and fails.
 func TestInstallLIPPackageRetriesWithoutClientVariantPin(t *testing.T) {
-	ws := &fakeLipWorkspace{
-		states: map[string]lip.PackageInstallState{
-			"github.com/liteldev/levilamina": migratedState("github.com/LiteLDev/LeviLamina", "client", "1.2.3", false),
-		},
-		installErr: []error{errors.New("Cannot find versions of the requested packages and their dependencies")},
+	pinned := map[string]lip.PackageInstallState{
+		"github.com/liteldev/levilamina": migratedState("github.com/LiteLDev/LeviLamina", "client", "1.2.3", false),
 	}
+	ws := &fakeLipWorkspace{states: pinned, installErr: []error{roleBuildClash()}}
 	useFakeLipWorkspace(t, ws)
 	if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo#", "1.0.0"); got != "" {
 		t.Fatalf("unexpected error code: %q", got)
@@ -677,4 +710,18 @@ func TestInstallLIPPackageRetriesWithoutClientVariantPin(t *testing.T) {
 		{"github.com/LiteLDev/Foo@1.0.0", "github.com/LiteLDev/LeviLamina#client@1.2.3"},
 		{"github.com/LiteLDev/Foo@1.0.0"},
 	})
+
+	for _, err := range []error{
+		errors.New("Cannot find versions of the requested packages and their dependencies"),
+		errors.New("In the post_install hook of github.com/LiteLDev/Foo, the command 'x' failed."),
+		wrapNoPackageFound("github.com/LiteLDev/Foo@1.0.0"),
+	} {
+		ws = &fakeLipWorkspace{states: pinned, installErr: []error{err}}
+		useFakeLipWorkspace(t, ws)
+		if got := InstallLIPPackage(context.Background(), "Demo", "LiteLDev/Foo#", "1.0.0"); got == "" {
+			t.Fatalf("%v: succeeded", err)
+		}
+		ws.expect(t, []string{"install"}, [][]string{
+			{"github.com/LiteLDev/Foo@1.0.0", "github.com/LiteLDev/LeviLamina#client@1.2.3"}})
+	}
 }

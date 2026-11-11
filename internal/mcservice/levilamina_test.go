@@ -206,7 +206,8 @@ func TestInstallLeviLaminaMovesClientIdentityToLipTomlRelease(t *testing.T) {
 }
 
 // Rule 5 the other way: an installed LeviLamina (a release read from a
-// lip.toml) changed to a tooth.json release asks for its client variant;
+// lip.toml) changed to a tooth.json release is asked for as it is, then, as
+// lip reports, as its client variant;
 // a tooth.json release without it (a server build only) is not installed.
 func TestInstallLeviLaminaMovesToToothJSONClientVariant(t *testing.T) {
 	restoreLeviLaminaTestDeps(t)
@@ -217,15 +218,19 @@ func TestInstallLeviLaminaMovesToToothJSONClientVariant(t *testing.T) {
 	fetchLeviLaminaVersionDB = func() (map[string][]string, error) {
 		return map[string][]string{"1.21.80.03": {"0.13.0", "0.14.0"}}, nil
 	}
-	ws := &fakeLipWorkspace{states: map[string]lip.PackageInstallState{
-		"github.com/liteldev/levilamina": migratedState("github.com/LiteLDev/LeviLamina", "", "0.14.0", true),
-	}}
+	ws := &fakeLipWorkspace{
+		states: map[string]lip.PackageInstallState{
+			"github.com/liteldev/levilamina": migratedState("github.com/LiteLDev/LeviLamina", "", "0.14.0", true),
+		},
+		updateErrs: []error{clientBuildInRoleVariant("github.com/LiteLDev/LeviLamina@0.13.0")},
+	}
 	useFakeLipWorkspace(t, ws)
 	lipResolveTargetDir = resolveLIPTargetDir
 	if got := InstallLeviLamina(context.Background(), "1.21.80.03", "Demo", "0.13.0"); got != "" {
 		t.Fatalf("unexpected error code: %q", got)
 	}
-	ws.expect(t, []string{"update"}, [][]string{{"github.com/LiteLDev/LeviLamina#client@0.13.0"}})
+	ws.expect(t, []string{"update", "update"}, [][]string{{"github.com/LiteLDev/LeviLamina@0.13.0"},
+		{"github.com/LiteLDev/LeviLamina#client@0.13.0"}})
 
 	ws = &fakeLipWorkspace{
 		states:     map[string]lip.PackageInstallState{},

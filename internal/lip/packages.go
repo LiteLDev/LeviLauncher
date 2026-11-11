@@ -489,6 +489,20 @@ func IsAlreadyExplicitlyInstalled(err error) bool {
 	return isAlreadyExplicitlyInstalled(err)
 }
 
+// IsClientVariantNotInLipToml reports whether err is lip's failure to find a
+// package for a request "X#client" ("X#client_<y>") because the release is
+// read from a lip.toml, which keeps the client build in "X" ("X#<y>").
+// IsClientVariantNotInToothJSON is the same for a release read from a
+// tooth.json without that label. (The engine's compatibility layer,
+// internal/lipcore/engine/compat_legacy_variants.go, tells them.)
+func IsClientVariantNotInLipToml(err error) bool {
+	return errors.Is(err, engine.ErrClientVariantNotInLipToml)
+}
+
+func IsClientVariantNotInToothJSON(err error) bool {
+	return errors.Is(err, engine.ErrClientVariantNotInToothJSON)
+}
+
 // IsNoPackageFound reports whether err is lip's failure to find a package
 // that can be installed in the workspace for a package argument (for
 // example a variant the package does not have).

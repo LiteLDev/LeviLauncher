@@ -666,6 +666,11 @@ func (s *search) blocker(c Candidate, key PackageKey) (level int, reason string,
 		return same.level, fmt.Sprintf("%s has the same identity as %s%s", showSource(c),
 			showSource(same.candidate), installedSuffix(same.level)), true, nil
 	}
+	// LeviLauncher's compatibility layer (engine, compat_legacy_variants.go):
+	// two builds of one package under different identities.
+	if level, reason, isBlocked := s.clashBlocker(c); isBlocked {
+		return level, reason, true, nil
+	}
 
 	modName, err := c.ModName(s.ctx)
 	if err != nil {
@@ -698,6 +703,40 @@ func (s *search) blocker(c Candidate, key PackageKey) (level int, reason string,
 		}
 	}
 	return level, reason, found, nil
+}
+
+// clashKeyer is implemented by the candidates of LeviLauncher's temporary
+// compatibility layer (engine, compat_legacy_variants.go): candidates of
+// different identities with the same non-empty ClashKey are two builds of
+// one package (a tooth.json "X#client" and a lip.toml "X"), which cannot
+// both be members. Without the layer, ClashKey is always "".
+type clashKeyer interface{ ClashKey() string }
+
+func clashKeyOf(c Candidate) string {
+	if k, ok := c.(clashKeyer); ok {
+		return k.ClashKey()
+	}
+	return ""
+}
+
+// clashBlocker is blocker's test for clashKeyer: the member of the lowest
+// level whose ClashKey is the candidate's, under another identity.
+func (s *search) clashBlocker(c Candidate) (level int, reason string, isBlocked bool) {
+	key := clashKeyOf(c)
+	if key == "" {
+		return 0, "", false
+	}
+	for _, m := range s.members.values() {
+		if isBlocked && m.level >= level {
+			continue
+		}
+		if clashKeyOf(m.candidate) == key && !namesEqual(m.candidate.Identity(), c.Identity()) {
+			isBlocked, level = true, m.level
+			reason = fmt.Sprintf("%s is another build of the same package as %s%s (LeviLauncher installs one"+
+				" of them)", showSource(c), showSource(m.candidate), installedSuffix(m.level))
+		}
+	}
+	return level, reason, isBlocked
 }
 
 // satisfyingMember returns the member that satisfies a requirement

@@ -5,6 +5,7 @@ package engine
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -195,7 +196,7 @@ func TestR1AgainstLipTomlRelease(t *testing.T) {
 	if p := h.recorded(llID); p.Ref != llID || p.Variant != "" {
 		t.Fatalf("recorded %q %q", p.Ref, p.Variant)
 	}
-	if h.marker(modID) != "tooth.json" || h.marker(llID) != nil {
+	if h.marker(modID) != "tooth.json" || h.marker(llID) != "lip.toml" {
 		t.Fatalf("markers %v %v", h.marker(modID), h.marker(llID))
 	}
 	// Planning again (a new process: the mod is a record now) keeps it.
@@ -270,13 +271,13 @@ func TestLipTomlClientDependencyIsLiteral(t *testing.T) {
 		t.Fatalf("marker %v", h.marker(newID))
 	}
 	// A lip.toml release of X appears: the lip.toml mod still needs the
-	// client variant, so X#client cannot be replaced by it (lip would install
-	// both, whose files would clash).
+	// client variant, so X#client cannot be replaced by it, and the two
+	// builds are never installed together.
 	h.addLipLL("2.0.0")
 	h.setCompat(true)
 	before := h.snapshot()
-	mustFail(t, h.update(llID+"@2.0.0"), "still need it")
-	mustFail(t, h.install(llID+"@2.0.0"), "still need it")
+	mustFail(t, h.update(llID+"@2.0.0"), "another build of the same package")
+	mustFail(t, h.install(llID+"@2.0.0"), "another build of the same package")
 	equalMaps(t, h.snapshot(), before)
 }
 
@@ -444,4 +445,221 @@ func TestShapedDerived(t *testing.T) {
 		entry("client", "c.dll", "c.dll", "")+"]"), false)
 	check(strings.Replace(lipVariants(llID, "1.0.0", "", "["+entry("client", "s.dll", "s.dll", "")+"]"),
 		`"format": 4,`, `"format": 4, "x": 1,`, 1), false)
+}
+
+// addToothLLSame and addLipLLSame are addToothLL and addLipLL whose builds
+// share their files, as LeviLamina's do.
+func (h *harness) addToothLLSame(version string) {
+	h.addTag(llID, version, "tooth.json", toothLabels(llID, version,
+		"", "", "s.dll", "ll/LeviLamina.dll",
+		"client", "", "c.dll", "ll/LeviLamina.dll"), "s.dll", "server "+version, "c.dll", "client "+version)
+}
+
+func (h *harness) addLipLLSame(version string) {
+	h.addTag(llID, version, "lip.toml", lipVariants(llID, version, "", "["+
+		entry("server", "s.dll", "ll/LeviLamina.dll", "")+", "+
+		entry("client", "c.dll", "ll/LeviLamina.dll", "")+"]"), "s.dll", "server "+version, "c.dll", "client "+version)
+}
+
+// mixedLL is a client workspace with LeviLamina-like releases 1.0.0
+// (tooth.json) and 2.0.0 (lip.toml) whose builds share their files.
+func mixedLL(t *testing.T, on bool) *harness {
+	h := compatHarness(t, on)
+	h.addToothLLSame("1.0.0")
+	h.addLipLLSame("2.0.0")
+	return h
+}
+
+// One build over a range with tooth.json and lip.toml releases: whatever
+// the dependents, the solver takes one of the two builds, and what succeeds
+// without the layer succeeds with it.
+func TestMixedRangeOneBuild(t *testing.T) {
+	// A tooth.json mod alone: the newest release, through R1.
+	h := mixedLL(t, true)
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+	h.must(h.install(modID))
+	equal(t, h.summary(), []string{llID + "@2.0.0 dep", modID + "@1.0.0 explicit"})
+	if h.read("ll/LeviLamina.dll") != "client 2.0.0" {
+		t.Fatal(h.snapshot())
+	}
+
+	// With a lip.toml mod on "X#client" literally: both on the tooth.json
+	// client build, as without the layer.
+	for _, on := range []bool{false, true} {
+		h = mixedLL(t, on)
+		h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+		h.addLipMod(newID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+		h.must(h.install(modID, newID))
+		equal(t, h.summary(), []string{llID + "#client@1.0.0 dep", modID + "@1.0.0 explicit", newID + "@1.0.0 explicit"})
+	}
+
+	// Two tooth.json mods, one limited to the tooth.json releases.
+	h = mixedLL(t, true)
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+	h.addToothMod("github.com/compat/old", "1.0.0", dep(llID+"#client", "1.*"))
+	h.must(h.install(modID, "github.com/compat/old"))
+	equal(t, h.summary(), []string{llID + "#client@1.0.0 dep", modID + "@1.0.0 explicit",
+		"github.com/compat/old@1.0.0 explicit"})
+
+	// No version fits both builds: a solver failure, nothing installed.
+	h = mixedLL(t, true)
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", "1.*"))
+	h.addLipMod(newID, "1.0.0", dep(llID, "2.*"))
+	mustFail(t, h.install(modID, newID), "another build of the same package")
+	if h.hasLock() && len(h.lock().Packages) > 0 {
+		t.Fatal(h.summary())
+	}
+}
+
+// An explicit tooth.json "X#client" with a mod over the mixed range: update
+// with no arguments, and updating the mod, keep it as it is, as without the
+// layer, instead of adding the lip.toml build next to it.
+func TestMixedRangeExplicitClientRecord(t *testing.T) {
+	for _, op := range []string{"update", "update mod"} {
+		for _, on := range []bool{false, true} {
+			t.Run(fmt.Sprint(op, " ", on), func(t *testing.T) {
+				h := compatHarness(t, false)
+				h.addToothLLSame("1.0.0")
+				h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+				h.must(h.install(llID+"#client", modID))
+				h.addToothMod(modID, "1.1.0", dep(llID+"#client", ">=1.0.0"))
+				h.addLipLLSame("2.0.0")
+				h.setCompat(on)
+				if op == "update" {
+					h.must(h.update())
+				} else {
+					h.must(h.update(modID + "@1.1.0"))
+				}
+				equal(t, h.summary(), []string{llID + "#client@1.0.0 explicit", modID + "@1.1.0 explicit"})
+				if h.read("ll/LeviLamina.dll") != "client 1.0.0" {
+					t.Fatal(h.snapshot())
+				}
+			})
+		}
+	}
+	// A new lip.toml mod on bare X over it fails to solve, instead of
+	// failing on the shared files.
+	h := compatHarness(t, false)
+	h.addToothLLSame("1.0.0")
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+	h.must(h.install(llID+"#client", modID))
+	h.addLipLLSame("2.0.0")
+	h.addLipMod(newID, "1.0.0", dep(llID, "2.*"))
+	h.setCompat(true)
+	before := h.snapshot()
+	mustFail(t, h.install(newID), "another build of the same package")
+	equalMaps(t, h.snapshot(), before)
+	// Installed as a dependency only, it gives way to the lip.toml build.
+	h = compatHarness(t, false)
+	h.addToothLLSame("1.0.0")
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+	h.must(h.install(modID))
+	h.addLipLLSame("2.0.0")
+	h.addLipMod(newID, "1.0.0", dep(llID, "2.*"))
+	h.setCompat(true)
+	h.must(h.install(newID))
+	equal(t, h.summary(), []string{llID + "@2.0.0 dep", modID + "@1.0.0 explicit", newID + "@1.0.0 explicit"})
+}
+
+// Every record the layer writes is marked; an old record shaped like a
+// derived one whose origin matters is looked up in its archive, so an old
+// lip.toml mod on "X#client" stays literal.
+func TestRecordOrigins(t *testing.T) {
+	h := compatHarness(t, true)
+	h.addToothLL("1.0.0")
+	h.addLipMod(newID, "1.0.0", "")
+	h.must(h.install(llID+"#client", newID))
+	if h.marker(llID+"#client") != "tooth.json" || h.marker(newID) != "lip.toml" {
+		t.Fatalf("markers %v %v", h.marker(llID+"#client"), h.marker(newID))
+	}
+
+	h = compatHarness(t, false)
+	h.addToothLL("1.0.0")
+	h.addLipMod(newID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+	h.must(h.install(llID+"#client", newID))
+	h.addLipLL("2.0.0")
+	h.setCompat(true)
+	mustFail(t, h.update(llID+"@2.0.0"), "another build of the same package")
+	// An operation that writes the state file records what it found.
+	h.addLipMod(newID, "1.1.0", dep(llID+"#client", ">=1.0.0"))
+	h.setCompat(true)
+	h.must(h.update(newID))
+	if h.marker(newID) != "lip.toml" || h.marker(llID+"#client") != "tooth.json" {
+		t.Fatalf("markers %v %v", h.marker(newID), h.marker(llID+"#client"))
+	}
+}
+
+// A lip.toml "X#client" (a third-party package with a real client variant)
+// is not replaced by "X": only a tooth.json record is.
+func TestLipTomlClientRecordNotReplaced(t *testing.T) {
+	h := compatHarness(t, true)
+	h.addTag(llID, "2.0.0", "lip.toml", lipVariants(llID, "2.0.0",
+		"", "["+entry("client", "s.dll", "ll/plain.dll", "")+"]",
+		"client", "["+entry("client", "c.dll", "ll/client.dll", "")+"]"), "s.dll", "s", "c.dll", "c")
+	h.must(h.install(llID + "#client"))
+	h.setCompat(true)
+	h.must(h.install(llID))
+	equal(t, h.summary(), []string{llID + "@2.0.0 explicit", llID + "#client@2.0.0 explicit"})
+}
+
+// --no-dependencies replaces in place too.
+func TestNoDependenciesReplacesInPlace(t *testing.T) {
+	h := compatHarness(t, false)
+	h.addToothLLSame("1.0.0")
+	h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+	h.must(h.install(modID))
+	h.addLipLLSame("2.0.0")
+	h.setCompat(true)
+	h.must(h.e.Install(context.Background(), []string{llID + "@2.0.0"}, false, false, true))
+	equal(t, h.summary(), []string{llID + "@2.0.0 explicit", modID + "@1.0.0 explicit"})
+	if h.read("ll/LeviLamina.dll") != "client 2.0.0" {
+		t.Fatal(h.snapshot())
+	}
+}
+
+// Rule 5 the other way: a tooth.json "X#client" requested over an installed
+// lip.toml "X" replaces it in place.
+func TestClientRequestReplacesLipTomlRecord(t *testing.T) {
+	for _, op := range []string{"update", "install"} {
+		t.Run(op, func(t *testing.T) {
+			h := mixedLL(t, true)
+			h.addToothMod(modID, "1.0.0", dep(llID+"#client", ">=1.0.0"))
+			h.must(h.install(llID+"@2.0.0", modID))
+			h.setCompat(true)
+			if op == "update" {
+				h.must(h.update(llID + "#client@1.0.0"))
+			} else {
+				h.must(h.install(llID + "#client@1.0.0"))
+			}
+			equal(t, h.summary(), []string{llID + "#client@1.0.0 explicit", modID + "@1.0.0 explicit"})
+			if h.read("ll/LeviLamina.dll") != "client 1.0.0" {
+				t.Fatal(h.snapshot())
+			}
+		})
+	}
+}
+
+// Why a request for "X#client" found nothing, for the launcher.
+func TestMissingClientVariantKinds(t *testing.T) {
+	h := mixedLL(t, true)
+	h.addTag(llID, "1.1.0", "tooth.json", toothLabels(llID, "1.1.0", "", "", "s.dll", "ll/server.dll"), "s.dll", "s")
+	for _, tc := range []struct {
+		arg        string
+		lip, tooth bool
+	}{
+		{llID + "#client@2.0.0", true, false},
+		{llID + "#client@1.1.0", false, true},
+		{llID + "#client@9.0.0", false, false},
+		{llID + "#lua@2.0.0", false, false},
+	} {
+		err := h.install(tc.arg)
+		if !errors.Is(err, ErrNoPackageFound) || errors.Is(err, ErrClientVariantNotInLipToml) != tc.lip ||
+			errors.Is(err, ErrClientVariantNotInToothJSON) != tc.tooth {
+			t.Errorf("%s: %v", tc.arg, err)
+		}
+	}
+	h.setCompat(false)
+	if err := h.install(llID + "#client@2.0.0"); errors.Is(err, ErrClientVariantNotInLipToml) {
+		t.Fatal("kind without the layer")
+	}
 }

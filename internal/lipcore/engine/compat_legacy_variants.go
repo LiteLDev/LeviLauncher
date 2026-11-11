@@ -19,23 +19,37 @@ package engine
 //     read from a tooth.json is taken literally (its "client" label), with
 //     no fallback either way. The candidate then has the identity "X", and
 //     its recorded source is "X", so it unifies with the bare "X" other
-//     packages depend on: one package is installed.
+//     packages depend on.
 //   - Nothing else is rewritten. A dependency written in a lip.toml, and a
 //     request, are literal: a lip.toml on a package released with a
 //     tooth.json writes "X#client" itself, and a bare "X" gets the label "".
-//   - A request whose candidate, read from a lip.toml, has the identity "X"
-//     ("X#<y>") replaces an installed "X#client" ("X#client_<y>") in place
-//     (roleRecordsReplacedBy): install and update unpin it and drop it from
-//     the explicit packages, so the plan uninstalls it and installs "X".
-//     When packages still need "X#client" literally (a lip.toml on it), it
-//     fails instead of installing both builds (checkReplacedRoles).
+//   - One build: a tooth.json "X#client" and a lip.toml "X" are two builds
+//     of one package, so the solver never takes both (candidate.ClashKey,
+//     graph's clashKeyer); it backtracks to another version instead, e.g.
+//     to the tooth.json release for every dependent of a mixed range.
+//   - In place: a request whose candidate is a lip.toml "X" ("X#<y>")
+//     replaces an installed tooth.json "X#client" ("X#client_<y>"), and a
+//     request whose candidate is a tooth.json "X#client" replaces an
+//     installed lip.toml "X" (roleRecordsReplacedBy): install (also with
+//     --no-dependencies) and update unpin it and drop it from the explicit
+//     packages, so the plan uninstalls it unless something still needs it.
+//   - The launcher's choice of identity (internal/mcservice) learns from
+//     firstCandidate why a request "X#client" found nothing: every release
+//     looked at is a lip.toml without that variant
+//     (ErrClientVariantNotInLipToml), or a tooth.json without it
+//     (ErrClientVariantNotInToothJSON).
 //
-// Which installed packages were read from a tooth.json: a package file the
-// layer records with a dependency on a role variant carries markerKey
-// naming the file it was read from (package files ignore unknown keys).
-// A record written without the layer is taken as read from a tooth.json
-// when its package file has only what compat.Derive writes for the
-// environment (shapedDerived).
+// Which installed packages were read from a tooth.json: every package file
+// the layer records carries markerKey naming the file it was read from
+// (package files ignore unknown keys). A record written without the layer
+// (recordFromTooth): a package file that is not shaped like compat.Derive's
+// output is a lip.toml; one that is, and whose origin matters (a role
+// variant or a dependency on one), is looked up in its archive (the
+// recorded commit, or its local source), and marked in the state file the
+// operation writes; when that archive cannot be read it is taken literally
+// (as a lip.toml), with a warning. The remaining guess: a derived-shaped
+// record whose origin does not matter for R1 (no role variant, no role
+// dependency) counts as a tooth.json, so it has no ClashKey.
 //
 // It can go once no published tooth.json package needs a client build of a
 // package released with a lip.toml. To remove it:
@@ -44,29 +58,39 @@ package engine
 //     "compat_legacy_variants.go" (search for it):
 //     - engine.go: delete Options.LegacyRoleVariants and the res.compat line
 //       of openWorkspace; Install passes unpinned and
-//       explicitIdentities(ws.lock) to makePlan again; Install and Update
-//       lose replacedRoles, the checkReplacedRoles calls and the second test
-//       of Update's "not installed" check;
-//       pinnedCandidate passes no fromTooth; inInstallationOrder and
-//       lockedOrderNode take env again (inInstallationOrder(remaining,
-//       ws.env), lockedOrderNode(p, ws.env)); orderNode loses fromTooth and
-//       installationOrder the stripped test.
-//     - resolver.go: candidate and walk lose fromTooth and toothDependent,
-//       resolver loses compat; newCandidate loses fromTooth and uses
+//       explicitIdentities(ws.lock) to makePlan again; Install, Update and
+//       installWithoutDependencies lose replacedRoles (and Update the
+//       second test of its "not installed" check); firstCandidate loses
+//       missingRole; pinnedCandidate passes no fromTooth;
+//       inInstallationOrder and lockedOrderNode take env again
+//       (inInstallationOrder(remaining, ws.env), lockedOrderNode(p,
+//       ws.env)); orderNode loses fromTooth and installationOrder the
+//       stripped test.
+//     - errors.go: Error loses compatKind.
+//     - resolver.go: candidate loses compat and fromTooth, walk loses
+//       toothDependent and failures (and report its count), resolver loses
+//       compat and origins; newCandidate loses fromTooth and uses
 //       r.graphRef(dep); ResolveLazy returns r.resolve(...);
-//       resolveArchive loses the stripRole line and records pf.Raw.
+//       resolveArchive loses the stripRole and noteMissingRole lines and
+//       records pf.Raw.
 //     - doc.go: the sentence on this layer.
-//  3. In internal/lipcore/graph, delete Ref.Compat and resolveKey.compat.
-//  4. internal/lip/packages.go: newEngine without LegacyRoleVariants.
-//  5. The launcher's fallback from "X#client" to "X" (internal/mcservice
-//     lipRoleFallback and its uses) is not part of this layer: it picks
-//     the identity by the target release and stays.
-// State files written with the layer stay valid lip state files: the
-// marker is an unknown key, and a dependency it resolved records "X". A
-// tooth.json mod whose "X#client" was satisfied by a lip.toml "X" then
-// needs "X#client" again, as in lip.
+//  3. In internal/lipcore/graph: delete Ref.Compat, resolveKey.compat,
+//     clashKeyer, clashKeyOf, clashBlocker and its call in blocker.
+//  4. internal/lip: newEngine without LegacyRoleVariants, and the helpers
+//     IsClientVariantNotInLipToml / IsClientVariantNotInToothJSON.
+//  5. internal/mcservice: lipRoleRequest falls back to nothing (request
+//     the installed identity, or the catalogue's variant, as before).
+// WARNING: removing the layer breaks workspaces where R1 satisfied a
+// tooth.json mod's "X#client" with a lip.toml "X": lip then needs
+// "X#client" again, which no lip.toml release has, so every operation on
+// such a workspace fails to solve. Before removing it, make sure no such
+// mod is in use (its author moved it to a lip.toml depending on bare "X"),
+// or have the launcher tell users to update or uninstall those mods. State
+// files stay readable: the marker is an unknown key, and the records name
+// the variant installed.
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -90,6 +114,18 @@ const markerKey = "x-levilauncher-read-from"
 // variant, of a package read from a tooth.json: R1 applies to it.
 const compatToothDependent = "tooth.json"
 
+// ErrClientVariantNotInLipToml matches (errors.Is), with the layer on, the
+// ErrNoPackageFound of a request for a role variant ("X#client",
+// "X#client_<y>") when every release looked at is read from a lip.toml
+// without an entry of that variant for the environment: the release keeps
+// the client build in "X" ("X#<y>").
+var ErrClientVariantNotInLipToml = errors.New("engine: the lip.toml release has no client variant")
+
+// ErrClientVariantNotInToothJSON is ErrClientVariantNotInLipToml for
+// releases read from a tooth.json without that label: their "" may well be
+// a server build.
+var ErrClientVariantNotInToothJSON = errors.New("engine: the tooth.json release has no client label")
+
 // legacyVariantsOn reports whether the layer applies to an environment.
 func (e *Engine) legacyVariantsOn(env environment) bool {
 	return e.opts.LegacyRoleVariants && env.Side == pkgmodel.SideClient
@@ -99,7 +135,8 @@ func (e *Engine) legacyVariantsOn(env environment) bool {
 func isRoleVariant(variant string) bool { return roleCanonical(variant) != variant }
 
 // roleCanonical is the variant R1 looks up for a role variant: "client" ->
-// "", "client_<y>" -> "<y>"; any other variant is itself.
+// "", "client_<y>" -> "<y>" (a valid variant name); any other variant is
+// itself.
 func roleCanonical(variant string) string {
 	if variant == roleVariantName {
 		return ""
@@ -146,10 +183,9 @@ func (r *resolver) stripRole(w *walk, d *packageDocument, source ref.Ref) ref.Re
 }
 
 // recordedManifest is the package file the state file records for a
-// candidate: with the layer, a copy carrying markerKey when the package file
-// depends on a role variant (the only case where its origin matters).
+// candidate: with the layer, a copy carrying markerKey.
 func (r *resolver) recordedManifest(d *packageDocument, pf *pkgmodel.Document) any {
-	if !r.compat || !dependsOnRole(pf) {
+	if !r.compat {
 		return pf.Raw
 	}
 	o, ok := pf.Raw.(*doc.Object)
@@ -176,16 +212,73 @@ func dependsOnRole(pf *pkgmodel.Document) bool {
 	return false
 }
 
+// roleFailures counts, for one walk, the reports and those that are a
+// release without an entry of the role variant asked for, by file.
+type roleFailures struct{ reports, lipToml, toothJSON int }
+
+// noteMissingRole counts a release (d) without an entry of the variant
+// asked for, when that is a role variant.
+func (r *resolver) noteMissingRole(w *walk, d *packageDocument, variant string) {
+	if !r.compat || !isRoleVariant(variant) {
+		return
+	}
+	if d.isLegacy() {
+		w.failures.toothJSON++
+	} else {
+		w.failures.lipToml++
+	}
+}
+
+// missingRoleKind is the compatKind of firstCandidate's ErrNoPackageFound
+// for a request (source) whose walk found nothing: one of the sentinels
+// when every report was a release without the role variant asked for, of
+// one file; otherwise nil.
+func (r *resolver) missingRoleKind(w *walk, source ref.Ref) error {
+	f := w.failures
+	if !r.compat || !isRoleVariant(source.Variant) || f.reports == 0 {
+		return nil
+	}
+	switch f.reports {
+	case f.lipToml:
+		return ErrClientVariantNotInLipToml
+	case f.toothJSON:
+		return ErrClientVariantNotInToothJSON
+	}
+	return nil
+}
+
+// #endregion
+
+// #region One build (graph's clashKeyer)
+
+// ClashKey is the package of a tooth.json client build ("X" for a role
+// variant "X#client" read from a tooth.json) or of a lip.toml package
+// without a role variant (its identity), folded; otherwise "", as always
+// without the layer.
+func (c *candidate) ClashKey() string {
+	if !c.compat {
+		return ""
+	}
+	switch role := isRoleVariant(c.variant); {
+	case c.fromTooth && role:
+		return ref.Fold(ref.Identity(c.id, roleCanonical(c.variant)))
+	case !c.fromTooth && !role:
+		return ref.Fold(c.Identity())
+	}
+	return ""
+}
+
 // #endregion
 
 // #region Installed packages
 
 // recordFromTooth reports whether an installed package was read from a
-// tooth.json, as far as the layer needs to know: as its markerKey says; for
-// a record without it whose package file depends on a role variant, when
-// its package file looks derived (shapedDerived); otherwise false.
+// tooth.json: as its markerKey says, else as found out once (see the file
+// comment), and false without the layer. A record found out from its
+// archive is marked.
 func (ws *workspace) recordFromTooth(p *pkgmodel.LockedPackage) bool {
-	if !ws.resolver.compat {
+	r := ws.resolver
+	if !r.compat {
 		return false
 	}
 	o, ok := p.Manifest.(*doc.Object)
@@ -196,11 +289,76 @@ func (ws *workspace) recordFromTooth(p *pkgmodel.LockedPackage) bool {
 		s, _ := v.(string)
 		return s == compat.ToothFileName
 	}
-	pf, err := pkgfile.Parse(o)
-	if err != nil || !dependsOnRole(pf) {
-		return false
+	if v, ok := r.origins.Load(o); ok {
+		return v.(bool)
 	}
-	return shapedDerived(o, pf, ws.env)
+	fromTooth, read := ws.classifyRecord(p, o)
+	if read {
+		m := o.Clone()
+		if fromTooth {
+			m.Set(markerKey, compat.ToothFileName)
+		} else {
+			m.Set(markerKey, pkgmodel.PackageFileName)
+		}
+		p.Manifest = m
+	}
+	r.origins.Store(o, fromTooth)
+	return fromTooth
+}
+
+// classifyRecord tells whether a record without markerKey was read from a
+// tooth.json, and whether that was read from its archive.
+func (ws *workspace) classifyRecord(p *pkgmodel.LockedPackage, o *doc.Object) (fromTooth, read bool) {
+	pf, err := pkgfile.Parse(o)
+	if err != nil || !shapedDerived(o, pf, ws.env) {
+		return false, false
+	}
+	if !isRoleVariant(p.Variant) && !dependsOnRole(pf) {
+		return true, false
+	}
+	switch d := ws.readRecordArchive(p); {
+	case d != nil:
+		return d.isLegacy(), true
+	default:
+		r := ws.resolver
+		if r.warnOnce("origin " + install.LockedIdentity(p)) {
+			r.onWarning(fmt.Sprintf("Cannot tell whether the installed package '%s' version %s was read from a"+
+				" tooth.json: its archive cannot be read. LeviLauncher takes it as written.",
+				install.LockedIdentity(p), install.LockedVersion(p)))
+		}
+		return false, false
+	}
+}
+
+// readRecordArchive reads the package document of the archive a record was
+// installed from (its recorded commit, or its local source), or nil.
+func (ws *workspace) readRecordArchive(p *pkgmodel.LockedPackage) *packageDocument {
+	r := ws.resolver
+	source, err := parseRecordedSource(p)
+	if err != nil {
+		return nil
+	}
+	var h *archiveHandle
+	if source.Kind == ref.KindSpec {
+		if p.Commit == "" {
+			return nil
+		}
+		h, err = ws.provider.OpenCommit(r.ctx, source.Target, p.Commit)
+	} else {
+		plain, perr := source.WithVariant("")
+		if perr != nil {
+			return nil
+		}
+		h, err = ws.provider.Open(r.ctx, plain)
+	}
+	if err != nil {
+		return nil
+	}
+	d, err := r.documents.do(h.Key, func() (*packageDocument, error) { return readArchive(h) })
+	if err != nil || !ref.NamesEqual(d.id(), stringMember(p.Manifest, "id")) {
+		return nil
+	}
+	return d
 }
 
 // shapedDerived reports whether a package file has only what compat.Derive
@@ -227,56 +385,41 @@ func shapedDerived(o *doc.Object, pf *pkgmodel.Document, env environment) bool {
 }
 
 // roleRecordsReplacedBy are the identities of the installed packages that
-// requested candidates replace in place: for a candidate read from a
-// lip.toml of identity "X" ("X#<y>") that is not installed, an installed
-// "X#client" ("X#client_<y>").
+// requested candidates replace in place, for a candidate whose identity is
+// not installed: for a lip.toml "X" ("X#<y>"), an installed "X#client"
+// ("X#client_<y>") read from a tooth.json; for a tooth.json "X#client"
+// ("X#client_<y>"), an installed "X" ("X#<y>") read from a lip.toml.
 func (ws *workspace) roleRecordsReplacedBy(candidates []*candidate) []string {
 	if !ws.resolver.compat {
 		return nil
 	}
 	var out []string
 	for _, c := range candidates {
-		if c.fromTooth || isRoleVariant(c.variant) || installedPackage(ws.lock, c.Identity()) != nil {
+		if installedPackage(ws.lock, c.Identity()) != nil {
 			continue
 		}
-		role := roleOf(c.variant)
-		if !ref.IsValidVariant(role) {
+		var other string
+		switch role := isRoleVariant(c.variant); {
+		case !c.fromTooth && !role:
+			other = roleOf(c.variant)
+		case c.fromTooth && role:
+			other = roleCanonical(c.variant)
+		default:
 			continue
 		}
-		if p := installedPackage(ws.lock, ref.Identity(c.id, role)); p != nil {
-			if identity := install.LockedIdentity(p); !containsIdentity(out, identity) {
-				out = append(out, identity)
-			}
+		if !ref.IsValidVariant(other) && other != "" {
+			continue
+		}
+		p := installedPackage(ws.lock, ref.Identity(c.id, other))
+		// Only across files: a tooth.json "X#client" and a lip.toml "X".
+		if p == nil || ws.recordFromTooth(p) == c.fromTooth {
+			continue
+		}
+		if identity := install.LockedIdentity(p); !containsIdentity(out, identity) {
+			out = append(out, identity)
 		}
 	}
 	return out
-}
-
-// checkReplacedRoles fails when a plan keeps a record that requests were to
-// replace in place (roleRecordsReplacedBy): installed packages still depend
-// on it literally (a lip.toml on "X#client"), and lip would install both
-// builds, whose files clash.
-func (ws *workspace) checkReplacedRoles(p *plan, replaced []string) error {
-	for _, identity := range replaced {
-		for _, m := range p.members {
-			if !ref.NamesEqual(m.Identity(), identity) {
-				continue
-			}
-			var dependents []string
-			for _, d := range p.members {
-				for _, dep := range d.deps {
-					if dep.Source.Spec && ref.NamesEqual(ref.Identity(dep.Source.Target, dep.Source.Variant), identity) &&
-						dep.Source.Compat == "" {
-						dependents = append(dependents, "'"+d.Identity()+"'")
-					}
-				}
-			}
-			return &Error{Msg: fmt.Sprintf("Cannot replace '%s' with the requested package of the same id:"+
-				" installed packages (%s) depend on '%s' itself and still need it. Update or uninstall them"+
-				" first.", identity, strings.Join(dependents, ", "), identity)}
-		}
-	}
-	return nil
 }
 
 // withoutIdentities is list without the identities of remove.

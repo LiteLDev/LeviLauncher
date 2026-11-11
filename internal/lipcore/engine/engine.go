@@ -292,9 +292,6 @@ func (e *Engine) Install(ctx context.Context, packages []string, dryRun, ignoreS
 	if err != nil {
 		return err
 	}
-	if err := ws.checkReplacedRoles(p, replacedRoles); err != nil { // compat_legacy_variants.go
-		return err
-	}
 	return e.execute(ctx, ws, op, e.changes(ws, op, p))
 }
 
@@ -483,9 +480,6 @@ func (e *Engine) Update(ctx context.Context, packages []string, dryRun, ignoreSc
 	// §5.3).
 	p, err := e.makePlan(ctx, ws, requested, append(identities, replaced...), explicit, nil, true)
 	if err != nil {
-		return err
-	}
-	if err := ws.checkReplacedRoles(p, replacedRoles); err != nil { // compat_legacy_variants.go
 		return err
 	}
 
@@ -863,6 +857,7 @@ func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (
 	if c != nil {
 		return c, nil
 	}
+	missingRole := ws.resolver.missingRoleKind(&seq.w, r.source) // compat_legacy_variants.go
 
 	const shown = 10
 	summary := fmt.Sprintf("No package found for '%s' that can be installed in this workspace (%s, %s).",
@@ -899,7 +894,8 @@ func (e *Engine) firstCandidate(ctx context.Context, ws *workspace, r request) (
 		if notFound {
 			message += "\nCheck the spelling of the package and the version you asked for."
 		}
-		return nil, &Error{Msg: message, kind: ErrNoPackageFound}
+		// compatKind: compat_legacy_variants.go.
+		return nil, &Error{Msg: message, kind: ErrNoPackageFound, compatKind: missingRole}
 	}
 	return nil, &Error{Msg: message, Err: &fetch.AggregateError{Message: summary, Errs: causes},
 		kind: ErrNoPackageFound}
@@ -1149,12 +1145,13 @@ func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, 
 	// afterwards records it: the order of the requested packages among every
 	// package installed then, so that a cycle through an installed package
 	// counts too.
+	replacedRoles := ws.roleRecordsReplacedBy(requested) // compat_legacy_variants.go
 	var nodes []orderNode
 	for i := range ws.lock.Packages {
 		p := &ws.lock.Packages[i]
 		if !slices.ContainsFunc(requested, func(c *candidate) bool {
 			return ref.NamesEqual(c.Identity(), install.LockedIdentity(p))
-		}) {
+		}) && !containsIdentity(replacedRoles, install.LockedIdentity(p)) { // compat_legacy_variants.go: the second test
 			nodes = append(nodes, ws.lockedOrderNode(p))
 		}
 	}
@@ -1169,6 +1166,12 @@ func (e *Engine) installWithoutDependencies(ctx context.Context, ws *workspace, 
 		}
 	}
 	var changes []change
+	// compat_legacy_variants.go: uninstall the records replacedRoles names.
+	for i := len(ws.lock.Packages) - 1; i >= 0; i-- {
+		if containsIdentity(replacedRoles, install.LockedIdentity(&ws.lock.Packages[i])) {
+			changes = append(changes, change{kind: uninstallChange, origin: i})
+		}
+	}
 	for _, c := range candidates {
 		existing := -1
 		for i := range ws.lock.Packages {
@@ -1582,9 +1585,11 @@ func (e *Engine) pinnedCandidate(ctx context.Context, ws *workspace, p *pkgmodel
 			return h.Source, nil
 		})
 		a := &archiveHandle{Key: p.Ref + " (installed)", Source: src, Commit: commit}
-		// ws.recordFromTooth(p): compat_legacy_variants.go (false without it).
+		// fromTooth: compat_legacy_variants.go (false without it); it may
+		// mark p.Manifest, so it comes first.
+		fromTooth := ws.recordFromTooth(p)
 		return ws.resolver.newCandidate(stringMember(p.Manifest, "id"), p.Variant, version, entry, p.Manifest, a,
-			source, ws.recordFromTooth(p)), nil
+			source, fromTooth), nil
 	}()
 	if err == nil {
 		return c, nil

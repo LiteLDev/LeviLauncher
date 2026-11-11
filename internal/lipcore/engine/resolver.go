@@ -67,8 +67,8 @@ type candidate struct {
 	// candidate (withSource), as Candidate.GetModManifest is by records
 	// copied with "with".
 	mod *modState
-	// fromTooth: compat_legacy_variants.go.
-	fromTooth bool
+	// compat and fromTooth: compat_legacy_variants.go.
+	compat, fromTooth bool
 }
 
 type modState struct {
@@ -82,7 +82,8 @@ type modState struct {
 func (c *candidate) withSource(r *resolver, source ref.Ref) *candidate {
 	copied := &candidate{id: c.id, variant: c.variant, version: c.version, entry: c.entry,
 		manifest: c.manifest, archive: c.archive, source: source, gsource: r.graphRef(source),
-		assets: c.assets, deps: c.deps, mod: c.mod, fromTooth: c.fromTooth} // fromTooth: compat_legacy_variants.go
+		assets: c.assets, deps: c.deps, mod: c.mod,
+		compat: c.compat, fromTooth: c.fromTooth} // compat, fromTooth: compat_legacy_variants.go
 	return copied
 }
 
@@ -148,7 +149,7 @@ func (r *resolver) newCandidate(id, variant string, version semver.Version, entr
 	c := &candidate{
 		id: id, variant: variant, version: version, entry: entry, manifest: manifest,
 		archive: a, source: source, gsource: r.graphRef(source), mod: &modState{},
-		fromTooth: fromTooth && r.compat,
+		compat: r.compat, fromTooth: fromTooth && r.compat,
 	}
 	for _, asset := range entry.Assets {
 		h := &assetHandle{urls: asset.URLs}
@@ -201,8 +202,9 @@ type resolver struct {
 	refsMu sync.Mutex
 	refs   map[string]ref.Ref
 
-	// compat: compat_legacy_variants.go.
-	compat bool
+	// compat and origins: compat_legacy_variants.go.
+	compat  bool
+	origins sync.Map
 }
 
 func newResolver(ctx context.Context, p archiveProvider, env environment, onWarning func(string)) *resolver {
@@ -267,11 +269,13 @@ type walk struct {
 	source ref.Ref
 	rng    graph.Constraint
 	sink   func(graph.Diagnostic)
-	// toothDependent: compat_legacy_variants.go.
+	// toothDependent and failures: compat_legacy_variants.go.
 	toothDependent bool
+	failures       roleFailures
 }
 
 func (w *walk) report(archiveName, reason string, cause error) {
+	w.failures.reports++ // compat_legacy_variants.go
 	if w.sink != nil {
 		w.sink(graph.Diagnostic{Message: archiveName + ": " + reason, Cause: cause})
 	}
@@ -498,6 +502,7 @@ func (r *resolver) resolveArchive(w *walk, a *archiveHandle, tagVersion *semver.
 	variant := source.Variant
 	entry := pf.SelectEntry(variant, r.env.Side, r.env.Platform)
 	if entry == nil {
+		r.noteMissingRole(w, d, variant) // compat_legacy_variants.go
 		r.reportNoEntry(w, a, pf, fileName, variant)
 		return nil, nil
 	}

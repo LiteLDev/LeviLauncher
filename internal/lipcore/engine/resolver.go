@@ -67,6 +67,8 @@ type candidate struct {
 	// candidate (withSource), as Candidate.GetModManifest is by records
 	// copied with "with".
 	mod *modState
+	// fromTooth: compat_legacy_variants.go.
+	fromTooth bool
 }
 
 type modState struct {
@@ -80,7 +82,7 @@ type modState struct {
 func (c *candidate) withSource(r *resolver, source ref.Ref) *candidate {
 	copied := &candidate{id: c.id, variant: c.variant, version: c.version, entry: c.entry,
 		manifest: c.manifest, archive: c.archive, source: source, gsource: r.graphRef(source),
-		assets: c.assets, deps: c.deps, mod: c.mod}
+		assets: c.assets, deps: c.deps, mod: c.mod, fromTooth: c.fromTooth} // fromTooth: compat_legacy_variants.go
 	return copied
 }
 
@@ -139,12 +141,14 @@ func (c *candidate) installPackage() *install.Package {
 }
 
 // newCandidate is Candidate.Create: the candidate of a package in an
-// archive, whose assets are downloaded when first needed.
+// archive, whose assets are downloaded when first needed. fromTooth:
+// compat_legacy_variants.go.
 func (r *resolver) newCandidate(id, variant string, version semver.Version, entry *pkgmodel.Entry,
-	manifest any, a *archiveHandle, source ref.Ref) *candidate {
+	manifest any, a *archiveHandle, source ref.Ref, fromTooth bool) *candidate {
 	c := &candidate{
 		id: id, variant: variant, version: version, entry: entry, manifest: manifest,
 		archive: a, source: source, gsource: r.graphRef(source), mod: &modState{},
+		fromTooth: fromTooth && r.compat,
 	}
 	for _, asset := range entry.Assets {
 		h := &assetHandle{urls: asset.URLs}
@@ -167,7 +171,7 @@ func (r *resolver) newCandidate(id, variant string, version semver.Version, entr
 			continue
 		}
 		c.deps = append(c.deps, graph.Dependency{
-			Source: r.graphRef(dep), Range: versionRange{rng}})
+			Source: r.dependencyRef(dep, c.fromTooth), Range: versionRange{rng}}) // r.graphRef(dep) without compat_legacy_variants.go
 	}
 	return c
 }
@@ -196,6 +200,9 @@ type resolver struct {
 
 	refsMu sync.Mutex
 	refs   map[string]ref.Ref
+
+	// compat: compat_legacy_variants.go.
+	compat bool
 }
 
 func newResolver(ctx context.Context, p archiveProvider, env environment, onWarning func(string)) *resolver {
@@ -246,7 +253,9 @@ func (r *resolver) ResolveLazy(ctx context.Context, source graph.Ref, rng graph.
 	if err != nil {
 		return &errSequence{err}
 	}
-	return r.resolve(s, rng, onDiagnostic)
+	seq := r.resolve(s, rng, onDiagnostic)
+	seq.w.toothDependent = r.compat && source.Compat == compatToothDependent // compat_legacy_variants.go
+	return seq
 }
 
 type errSequence struct{ err error }
@@ -258,6 +267,8 @@ type walk struct {
 	source ref.Ref
 	rng    graph.Constraint
 	sink   func(graph.Diagnostic)
+	// toothDependent: compat_legacy_variants.go.
+	toothDependent bool
 }
 
 func (w *walk) report(archiveName, reason string, cause error) {
@@ -483,6 +494,7 @@ func (r *resolver) resolveArchive(w *walk, a *archiveHandle, tagVersion *semver.
 		return nil, nil
 	}
 
+	source = r.stripRole(w, d, source) // compat_legacy_variants.go
 	variant := source.Variant
 	entry := pf.SelectEntry(variant, r.env.Side, r.env.Platform)
 	if entry == nil {
@@ -495,7 +507,8 @@ func (r *resolver) resolveArchive(w *walk, a *archiveHandle, tagVersion *semver.
 		return nil, nil
 	}
 
-	return r.newCandidate(pf.ID, variant, version, entry, pf.Raw, a, source), nil
+	// compat_legacy_variants.go: pf.Raw and no fromTooth without it.
+	return r.newCandidate(pf.ID, variant, version, entry, r.recordedManifest(d, pf), a, source, d.isLegacy()), nil
 }
 
 func (r *resolver) warnOnce(key string) bool {

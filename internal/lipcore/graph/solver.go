@@ -135,6 +135,8 @@ func requestRequirement(r Request) *requirement {
 type resolveKey struct {
 	ref string
 	rng string
+	// compat is Ref.Compat (engine, compat_legacy_variants.go).
+	compat string
 }
 
 func keyOf(source Ref, rng Constraint) resolveKey {
@@ -142,7 +144,7 @@ func keyOf(source Ref, rng Constraint) resolveKey {
 	if rng != nil {
 		k = rng.Key()
 	}
-	return resolveKey{source.Text, k}
+	return resolveKey{source.Text, k, source.Compat}
 }
 
 // requirement is an open obligation: a request (owner nil), or a dependency

@@ -35,8 +35,11 @@ var _ packageEngine = (*engine.Engine)(nil)
 
 // newEngine builds the engine for an absolute workspace directory (empty
 // for directory-independent calls such as CacheClean); replaced in tests.
+// It turns on the engine's temporary compatibility layer for tooth.json
+// dependencies on "X#client" (internal/lipcore/engine/compat_legacy_variants.go).
 var newEngine = func(workDir string, r report.Reporter) packageEngine {
-	return engine.New(workDir, engine.Options{GithubProxy: EffectiveGithubProxy(), HTTPClient: engineHTTPClient}, r)
+	return engine.New(workDir, engine.Options{GithubProxy: EffectiveGithubProxy(), HTTPClient: engineHTTPClient,
+		LegacyRoleVariants: true}, r)
 }
 
 // engineHTTPClient carries the engine's git requests and downloads. Its

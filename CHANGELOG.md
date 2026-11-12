@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-12
+
+### Added
+
+- Added a command-line mode: `LeviLauncher.exe` with a `<noun> <verb>` command (for example `play`, `install`, `instance list`, `mod install`, `mod search`, `curseforge search`) runs in the terminal and exits; without arguments the launcher window opens as before
+- The LeviMC Mods page can filter by tags, license, dependencies and author, shows how many mods each choice leaves, and lists active filters as removable chips; mod pages show the author's GitHub profile, the license, the featured tags, pre-release versions and each version's dependencies. `mod search` takes the same filters with `--tag`, `--license`, `--dep` and `--author`
+- Added a preset picker next to the package manager's GitHub proxy field in Settings; a custom proxy URL can still be typed in
+- Launch, register, mod install/uninstall and cache-clean error dialogs show the likeliest causes in plain words, the technical detail, a copy button and a button to open the launcher logs folder
+
+### Changed
+
+- Replaced the external lip with a built-in lip-compatible package manager, so lip and the .NET runtime no longer need to be installed. It follows lip v0.40: packages are read from `lip.toml` and recorded in `.lip/state.json` with `side` and `platform`. Existing `tooth_lock.json` installs and older `state.json` files are migrated automatically, and packages with only a `tooth.json` keep working, including their `X#client` dependencies on packages now released with `lip.toml` (#270)
+- Packages, LeviLamina included, are installed from the variant their release provides for this platform (`client`, else the default variant), and are updated and uninstalled in place; an instance never ends up with both the old `X#client` and the new `X` of the same package (#270)
+- Renamed the `Third-party Components` settings tab to `Package Management`, with cache cleanup as its own item (#269)
+- The LeviMC Mods page reads the new levimc.org/mods catalogue: it lists mods with a client build for this platform, searches like the site, and sorts by Relevance, Stars, Updated or Newest
+- Unified the storage layout: settings live in `%APPDATA%\LeviLauncher`, while logs, accounts, instances, backups and cache live in `%LOCALAPPDATA%\LeviLauncher`; existing data is migrated once at startup without deleting anything
+- The launcher updates itself from the `LeviLauncher.zip` asset of the GitHub release; with the mirror source on, it tries gh-proxy.org mirrors first and falls back to GitHub
+- Nothing is fetched from jsDelivr any more, and the default GitHub proxy is now `https://gh-proxy.org/https://github.com`
+- The automatic theme works out sunrise and sunset on the device instead of looking up the location by IP, and the default package icon and the RhyMC logo are bundled with the launcher
+- On the install page the "Install LeviLamina" switch starts on, the default instance name is "My <version> Instance", and the installing card goes straight to the progress details
+- Search, sort and filter bars of list pages and the headers of scrolling dialogs stay in place while only the list scrolls
+- Renamed the close-to-tray setting to "Hide to tray on close"; closing the window while an install or update is running hides the launcher to the tray instead of quitting
+
+### Fixed
+
+- In GDK versions started by the launcher, in-game buttons that open a file dialog (choosing a skin, importing a world, exporting a structure) work again instead of freezing the game or doing nothing
+- Installing a GDK version no longer fails over and over with `ERR_NATIVE_MSIXVC: missing device STS`; when the device token still cannot be obtained, the error is `ERR_AUTH_DEVICE_TOKEN` with the step that failed, and GDK install errors in the GUI and CLI include the reason after the code
+- The package page no longer crashes with `RangeError: Invalid language tag` for languages such as `zh_CN`, and numbers, dates and times follow the launcher's UI language (#268)
+- The gh-proxy.org and ghproxy.vip GitHub proxy presets no longer fail with 404, and a proxy saved in the old form is completed automatically
+- Removed duplicate busy indicators and empty progress tracks, aligned simultaneous lip task progress bars, and fixed CurseForge download progress mixing in other downloads and the launcher update bar animating after the download finished
+- Package and CurseForge detail pages no longer scroll when their content is short, Gaming Services is no longer checked when only UWP instances are used, and the saved window size is no longer overwritten with a minimized or maximized size
+- Brought the built-in lip in line with lip's package-engine fixes for quoted script paths, preserved files, dependency versions, the `mods` folder and local paths with special characters
+
 ## [1.1.0-beta.7] - 2026-11-12
 
 ### Added
@@ -407,7 +440,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.7...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.7...v1.1.0
 [1.1.0-beta.7]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.6...v1.1.0-beta.7
 [1.1.0-beta.6]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.5...v1.1.0-beta.6
 [1.1.0-beta.5]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.4...v1.1.0-beta.5

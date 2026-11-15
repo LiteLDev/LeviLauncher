@@ -23,7 +23,7 @@ LeviLauncher 支援超出「基礎啟動器」範圍的模組相關工作流程�
     - 向遊戲載入原生模組（`.so` 程式庫）
     - 在隔離版本中維護帶模組的環境
 
-    想開發原生模組？請參閱 LeviLamina 文檔中的 [Android 原生模組](https://docs.levimc.org/LeviLamina/zh-Hant/developer_guides/android/)。
+    想開發原生模組？請參閱 LeviLamina 文檔中的 [Android 原生模組](https://levimc.org/LeviLamina/zh-Hant/developer_guides/android/)。
 
 ## 建議的模組工作流程
 
@@ -57,7 +57,7 @@ LeviLauncher 內置了相容 [lip](https://github.com/LiteLDev/lip) 的套件管
 - 不要一次變更多個高風險因素
 - 記錄下「最後一次成功運作」的版本組合
 
-要為用戶端版本加入 LeviLamina，請參閱 LeviLamina 文檔中的[在Windows上安裝用戶端](https://docs.levimc.org/LeviLamina/zh-Hant/user_guides/install_on_client/)。
+要為用戶端版本加入 LeviLamina，請參閱 LeviLamina 文檔中的[在Windows上安裝用戶端](https://levimc.org/LeviLamina/zh-Hant/user_guides/install_on_client/)。
 
 ### LeviMC 模組頁面
 
@@ -67,7 +67,7 @@ LeviLauncher 內置了相容 [lip](https://github.com/LiteLDev/lip) 的套件管
 
 原生模組會在遊戲程序中執行原生程式碼。只安裝來自可信來源的模組，並先在隔離版本中測試。
 
-如果要自己開發，請參閱 LeviLamina 文檔中的 [Android 原生模組](https://docs.levimc.org/LeviLamina/zh-Hant/developer_guides/android/)。
+如果要自己開發，請參閱 LeviLamina 文檔中的 [Android 原生模組](https://levimc.org/LeviLamina/zh-Hant/developer_guides/android/)。
 
 ## 如果加了模組後出錯
 

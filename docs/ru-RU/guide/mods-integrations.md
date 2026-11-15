@@ -23,7 +23,7 @@ LeviLauncher поддерживает рабочие процессы, связ�
     - загружать в игру нативные моды (библиотеки `.so`)
     - держать конфигурации с модами в изолированных версиях
 
-    Создаёте нативные моды? См. [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/) в документации LeviLamina (на английском).
+    Создаёте нативные моды? См. [Android native mods](https://levimc.org/LeviLamina/developer_guides/android/) в документации LeviLamina (на английском).
 
 ## Рекомендуемый рабочий процесс для модов
 
@@ -57,7 +57,7 @@ LeviLauncher поддерживает рабочие процессы, связ�
 - избегайте одновременного изменения слишком многих переменных
 - записывайте точную версию, которая была успешно протестирована
 
-Чтобы добавить LeviLamina в клиентскую версию, см. [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/) в документации LeviLamina (на английском).
+Чтобы добавить LeviLamina в клиентскую версию, см. [Install client on Windows](https://levimc.org/LeviLamina/user_guides/install_on_client/) в документации LeviLamina (на английском).
 
 ### Страница LeviMC Mods
 
@@ -67,7 +67,7 @@ LeviLauncher поддерживает рабочие процессы, связ�
 
 Нативные моды выполняют нативный код в процессе игры. Устанавливайте только моды из надёжных источников и сначала проверяйте их в изолированной версии.
 
-Чтобы создать свой мод, следуйте [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/) в документации LeviLamina (на английском).
+Чтобы создать свой мод, следуйте [Android native mods](https://levimc.org/LeviLamina/developer_guides/android/) в документации LeviLamina (на английском).
 
 ## Если что-то сломалось после добавления модов
 

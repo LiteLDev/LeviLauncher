@@ -23,7 +23,7 @@ LeviLauncher 支持超出“基础启动器”范围的模组相关工作流。
     - 向游戏加载原生模组（`.so` 库）
     - 在隔离版本中维护带模组的环境
 
-    想开发原生模组？请参阅 LeviLamina 文档中的 [Android 原生模组](https://docs.levimc.org/LeviLamina/zh/developer_guides/android/)。
+    想开发原生模组？请参阅 LeviLamina 文档中的 [Android 原生模组](https://levimc.org/LeviLamina/zh/developer_guides/android/)。
 
 ## 推荐的模组工作流
 
@@ -57,7 +57,7 @@ LeviLauncher 内置了兼容 [lip](https://github.com/LiteLDev/lip) 的包管理
 - 不要一次变更多个高风险因素
 - 记录下“最后一次成功工作”的版本组合
 
-要为客户端版本添加 LeviLamina，请参阅 LeviLamina 文档中的[在Windows上安装客户端](https://docs.levimc.org/LeviLamina/zh/user_guides/install_on_client/)。
+要为客户端版本添加 LeviLamina，请参阅 LeviLamina 文档中的[在Windows上安装客户端](https://levimc.org/LeviLamina/zh/user_guides/install_on_client/)。
 
 ### LeviMC 模组页面
 
@@ -67,7 +67,7 @@ LeviLauncher 内置了兼容 [lip](https://github.com/LiteLDev/lip) 的包管理
 
 原生模组会在游戏进程中运行原生代码。只安装来自可信来源的模组，并先在隔离版本中测试。
 
-如果要自己开发，请参阅 LeviLamina 文档中的 [Android 原生模组](https://docs.levimc.org/LeviLamina/zh/developer_guides/android/)。
+如果要自己开发，请参阅 LeviLamina 文档中的 [Android 原生模组](https://levimc.org/LeviLamina/zh/developer_guides/android/)。
 
 ## 如果加了模组后出错
 

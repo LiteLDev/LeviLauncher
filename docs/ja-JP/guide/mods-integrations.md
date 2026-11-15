@@ -23,7 +23,7 @@ LeviLauncher は、「基本ランチャー」の範囲を超えた Mod 関連�
     - ネイティブ Mod（`.so` ライブラリ）をゲームに読み込む
     - Mod 入りの環境を分離したバージョンで保つ
 
-    ネイティブ Mod を作りたい場合は、LeviLamina ドキュメントの [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/)（英語）を参照してください。
+    ネイティブ Mod を作りたい場合は、LeviLamina ドキュメントの [Android native mods](https://levimc.org/LeviLamina/developer_guides/android/)（英語）を参照してください。
 
 ## 推奨される Mod ワークフロー
 
@@ -57,7 +57,7 @@ lip v0.40 以降、`lip.toml` と `.lip/state.json` の各エントリは、実�
 - 一度に複数の高リスク要素を変更しない
 - 「最後に正常に動作した」バージョンの組み合わせを記録しておく
 
-クライアントのバージョンに LeviLamina を追加するには、LeviLamina ドキュメントの [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/)（英語）を参照してください。
+クライアントのバージョンに LeviLamina を追加するには、LeviLamina ドキュメントの [Install client on Windows](https://levimc.org/LeviLamina/user_guides/install_on_client/)（英語）を参照してください。
 
 ### LeviMC Mods ページ
 
@@ -67,7 +67,7 @@ lip v0.40 以降、`lip.toml` と `.lip/state.json` の各エントリは、実�
 
 ネイティブ Mod はゲームのプロセス内でネイティブコードを実行します。信頼できる入手元の Mod だけをインストールし、まず分離したバージョンで試してください。
 
-自分で作る場合は、LeviLamina ドキュメントの [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/)（英語）に従ってください。
+自分で作る場合は、LeviLamina ドキュメントの [Android native mods](https://levimc.org/LeviLamina/developer_guides/android/)（英語）に従ってください。
 
 ## Mod 追加後にエラーが発生した場合
 

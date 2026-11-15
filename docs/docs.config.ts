@@ -314,9 +314,9 @@ const UI: Record<string, UiLabels> = {
 // The separate Android section (android/, live 2026-10-29) became part of the guide; its developer docs moved to
 // LeviLamina's (developer_guides/android/). Old URLs → their new place.
 const LEVILAMINA_ANDROID: Record<string, string> = {
-  '': 'https://docs.levimc.org/LeviLamina/developer_guides/android/',
-  'zh-CN/': 'https://docs.levimc.org/LeviLamina/zh/developer_guides/android/',
-  'zh-HK/': 'https://docs.levimc.org/LeviLamina/zh-Hant/developer_guides/android/',
+  '': 'https://levimc.org/LeviLamina/developer_guides/android/',
+  'zh-CN/': 'https://levimc.org/LeviLamina/zh/developer_guides/android/',
+  'zh-HK/': 'https://levimc.org/LeviLamina/zh-Hant/developer_guides/android/',
 };
 const ANDROID_API = ['mod', 'mod-menu', 'config', 'input', 'hook', 'signature', 'patch', 'memory-hook-macros', 'types-and-macros'];
 const REDIRECTS: Record<string, string> = Object.fromEntries(
@@ -359,8 +359,8 @@ export default defineDocsConfig({
   markdown: { compat: 'commonmark', lineNumbers: true, containers: { vitepress: true, mkdocs: true } },
   outline: [2, 3],
   lastUpdated: true,
-  hostname: 'https://docs.levimc.org',
-  sitemap: { hostname: 'https://docs.levimc.org' },
+  hostname: 'https://levimc.org',
+  sitemap: { hostname: 'https://levimc.org' },
   sidebar: 'tabs',
   nav: perLocale((code, prefix) => buildNav(prefix, SIDEBAR[code]!, NAV[code]!)),
   // the resources slot: Download (this site's page, in the visitor's locale), then the repository's GitHub icon

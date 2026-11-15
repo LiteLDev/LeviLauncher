@@ -23,7 +23,7 @@ LeviLauncher prend en charge des workflows liés aux Mods qui vont au-delà des 
     - charger des Mods natifs (bibliothèques `.so`) dans le jeu
     - garder les configurations moddées dans des versions isolées
 
-    Vous créez des Mods natifs ? Consultez [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/) dans la documentation de LeviLamina (en anglais).
+    Vous créez des Mods natifs ? Consultez [Android native mods](https://levimc.org/LeviLamina/developer_guides/android/) dans la documentation de LeviLamina (en anglais).
 
 ## Workflow recommandé pour les Mods
 
@@ -57,7 +57,7 @@ Bonnes pratiques :
 - Ne modifiez pas plusieurs facteurs à haut risque en même temps
 - Notez la combinaison de versions qui « fonctionnait correctement la dernière fois »
 
-Pour ajouter LeviLamina à une version client, consultez [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/) dans la documentation de LeviLamina (en anglais).
+Pour ajouter LeviLamina à une version client, consultez [Install client on Windows](https://levimc.org/LeviLamina/user_guides/install_on_client/) dans la documentation de LeviLamina (en anglais).
 
 ### Page LeviMC Mods
 
@@ -67,7 +67,7 @@ La page **LeviMC Mods** liste les mods de [levimc.org/mods](https://levimc.org/m
 
 Les Mods natifs exécutent du code natif dans le processus du jeu. N'installez que des Mods de sources fiables, et testez-les d'abord dans une version isolée.
 
-Pour créer les vôtres, suivez [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/) dans la documentation de LeviLamina (en anglais).
+Pour créer les vôtres, suivez [Android native mods](https://levimc.org/LeviLamina/developer_guides/android/) dans la documentation de LeviLamina (en anglais).
 
 ## Si une erreur survient après avoir ajouté des Mods
 

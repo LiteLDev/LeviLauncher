@@ -23,7 +23,7 @@ LeviLauncher는 "기본 런처" 범위를 넘어서는 모드 관련 작업 흐�
     - 네이티브 모드(`.so` 라이브러리)를 게임에 로드
     - 모드를 적용한 환경을 격리된 버전에서 유지
 
-    네이티브 모드를 만들고 싶다면 LeviLamina 문서의 [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/)(영어)를 참고하세요.
+    네이티브 모드를 만들고 싶다면 LeviLamina 문서의 [Android native mods](https://levimc.org/LeviLamina/developer_guides/android/)(영어)를 참고하세요.
 
 ## 권장 모드 작업 흐름
 
@@ -57,7 +57,7 @@ lip v0.40부터 `lip.toml`과 `.lip/state.json`의 각 엔트리는 실행 위�
 - 한 번에 여러 고위험 요소를 변경하지 않음
 - "마지막으로 성공적으로 작동한" 버전 조합을 기록
 
-클라이언트 버전에 LeviLamina를 추가하려면 LeviLamina 문서의 [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/)(영어)를 참고하세요.
+클라이언트 버전에 LeviLamina를 추가하려면 LeviLamina 문서의 [Install client on Windows](https://levimc.org/LeviLamina/user_guides/install_on_client/)(영어)를 참고하세요.
 
 ### LeviMC Mods 페이지
 
@@ -67,7 +67,7 @@ lip v0.40부터 `lip.toml`과 `.lip/state.json`의 각 엔트리는 실행 위�
 
 네이티브 모드는 게임 프로세스 안에서 네이티브 코드를 실행합니다. 신뢰할 수 있는 출처의 모드만 설치하고, 먼저 격리된 버전에서 테스트하세요.
 
-직접 만들려면 LeviLamina 문서의 [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/)(영어)를 따르세요.
+직접 만들려면 LeviLamina 문서의 [Android native mods](https://levimc.org/LeviLamina/developer_guides/android/)(영어)를 따르세요.
 
 ## 모드를 추가한 후 오류가 발생하면
 

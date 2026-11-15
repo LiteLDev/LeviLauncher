@@ -14,7 +14,7 @@
     "build": "node kit/docs/build.mjs",
     "preview": "node kit/scripts/serve-pages.mjs dist --base /LeviLauncher/ --port 4173",
     "typecheck": "tsc --noEmit",
-    "linkcheck": "node kit/scripts/linkcheck.mjs dist --base /LeviLauncher/ --site-origin https://docs.levimc.org",
+    "linkcheck": "node kit/scripts/linkcheck.mjs dist --base /LeviLauncher/ --site-origin https://levimc.org",
     "smoke": "node kit/scripts/smoke.mjs --url http://127.0.0.1:4173/LeviLauncher/"
   },
   "dependencies": {

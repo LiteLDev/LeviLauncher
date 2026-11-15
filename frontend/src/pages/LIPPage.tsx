@@ -82,7 +82,7 @@ const ALL_GAME_VERSION = "__all_game__";
 const ALL_LL_VERSION = "__all_ll__";
 /** lip's guide to writing lip.toml (docs/guides/creating_packages.md of LiteLDev/lip). */
 const LIP_DEVELOPER_GUIDE_URL =
-  "https://docs.levimc.org/lip/guides/creating_packages.html";
+  "https://levimc.org/lip/guides/creating_packages.html";
 const HIDDEN_LIP_PACKAGES = new Set([
   "levilamina",
   "levilamina-loc",

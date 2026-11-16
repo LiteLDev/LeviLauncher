@@ -19,7 +19,7 @@ hero:
       platform: android
     - theme: alt
       text: Read the guide
-      link: /guide/quick-start
+      link: /guide/version-management
 
 features:
   - title: Version-first workflow
@@ -43,8 +43,8 @@ features:
 LeviLauncher comes in a **Windows version** for Minecraft Bedrock Edition (GDK / UWP) and an **Android version** for the official Google Play Minecraft. Both need a legitimate licensed copy of the game. There is no iOS version, and none is planned.
 :::
 
-::: tip Start here if you are new
-Go to [Quick Start](/guide/quick-start), then continue with [Requirements & Installation](/guide/requirements-installation).
+::: tip Start here
+New to LeviLauncher? The tutorial [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/) takes you from downloading LeviLauncher to your first game with mods. To get the app for Windows or Android, go to the [Download](/download) page.
 :::
 
 ## What this site covers
@@ -73,8 +73,6 @@ This documentation is written for **players and end users**, not maintainers.
 
 ## Recommended reading order
 
-1. [Quick Start](/guide/quick-start)
-2. [Requirements & Installation](/guide/requirements-installation)
-3. [First Launch](/guide/first-launch)
-4. [Version Management](/guide/version-management)
-5. [Content Management](/guide/content-management)
+1. [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/)
+2. [Version Management](/guide/version-management)
+3. [Content Management](/guide/content-management)

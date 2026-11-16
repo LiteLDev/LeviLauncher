@@ -8,7 +8,7 @@ Yes. LeviLauncher is designed to work with a legitimate licensed copy of Minecra
 
 ### Can I use LeviLauncher on macOS or Linux?
 
-LeviLauncher has a **Windows** version and an **Android** version ([Android guide](/guide/quick-start?platform=android)). There is no macOS or Linux version.
+LeviLauncher has a **Windows** version and an **Android** version ([Android guide](/guide/version-management?platform=android)). There is no macOS or Linux version.
 
 ### Is there an iOS version?
 
@@ -32,7 +32,7 @@ Yes, but mod workflows are an advanced area. Start with a clean isolated version
 
 ### What does the Android version need?
 
-Android 9.0 or later on an ARM64 device, and Minecraft Bedrock Edition 1.21.80 or later installed from Google Play. See [Requirements & Installation](./requirements-installation).
+Android 9.0 or later on an ARM64 device, and Minecraft Bedrock Edition 1.21.80 or later installed from Google Play. See [Download](../download?platform=android).
 
 ### Can I run several Minecraft versions on Android?
 

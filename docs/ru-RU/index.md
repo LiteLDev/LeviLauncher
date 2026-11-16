@@ -19,7 +19,7 @@ hero:
       platform: android
     - theme: alt
       text: Читать руководство
-      link: /ru-RU/guide/quick-start
+      link: /ru-RU/guide/version-management
 
 features:
   - title: Управление версиями
@@ -43,8 +43,8 @@ features:
 У LeviLauncher есть **версия для Windows** для Minecraft Bedrock Edition (GDK / UWP) и **версия для Android** для официального Minecraft из Google Play. Для обеих нужна легальная лицензионная копия игры. Версии для iOS нет, и она не планируется.
 :::
 
-::: tip Начните здесь, если вы новичок
-Перейдите к разделу [Быстрый старт](/ru-RU/guide/quick-start), затем продолжите с [Требования и установка](/ru-RU/guide/requirements-installation).
+::: tip Начните здесь
+Впервые пользуетесь LeviLauncher? Руководство [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/) (на английском) проведёт вас от загрузки LeviLauncher до первой игры с модами. Чтобы получить приложение для Windows или Android, откройте страницу [Загрузки](/ru-RU/download).
 :::
 
 ## Что охватывает этот сайт
@@ -73,8 +73,6 @@ features:
 
 ## Рекомендуемый порядок чтения
 
-1. [Быстрый старт](/ru-RU/guide/quick-start)
-2. [Требования и установка](/ru-RU/guide/requirements-installation)
-3. [Первый запуск](/ru-RU/guide/first-launch)
-4. [Управление версиями](/ru-RU/guide/version-management)
-5. [Управление контентом](/ru-RU/guide/content-management)
+1. [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/)
+2. [Управление версиями](/ru-RU/guide/version-management)
+3. [Управление контентом](/ru-RU/guide/content-management)

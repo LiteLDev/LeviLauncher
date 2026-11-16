@@ -19,7 +19,7 @@ hero:
       platform: android
     - theme: alt
       text: ドキュメントを読む
-      link: /ja-JP/guide/quick-start
+      link: /ja-JP/guide/version-management
 
 features:
   - title: バージョン中心主義
@@ -43,8 +43,8 @@ features:
 LeviLauncher には Minecraft Bedrock Edition (GDK / UWP) 向けの **Windows 版**と、Google Play の公式 Minecraft 向けの **Android 版**があります。どちらも**正規版のライセンス**が必要です。iOS 版はなく、開発する予定もありません。
 :::
 
-::: tip 新規ユーザーはここから始めるのがおすすめ
-まず[クイックスタート](/ja-JP/guide/quick-start)を読み、次に[システム要件とインストール](/ja-JP/guide/requirements-installation)を続けてください。
+::: tip ここから始める
+LeviLauncher が初めての方は、チュートリアル[Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/)（英語）で、LeviLauncher のダウンロードから Mod を入れた最初のプレイまでを進められます。Windows 版・Android 版のアプリは[ダウンロード](/ja-JP/download)ページから入手できます。
 :::
 
 ## このサイトには何が載っていますか
@@ -73,8 +73,6 @@ LeviLauncher には Minecraft Bedrock Edition (GDK / UWP) 向けの **Windows �
 
 ## 推奨読解順序
 
-1. [クイックスタート](/ja-JP/guide/quick-start)
-2. [システム要件とインストール](/ja-JP/guide/requirements-installation)
-3. [初回起動](/ja-JP/guide/first-launch)
-4. [バージョン管理](/ja-JP/guide/version-management)
-5. [コンテンツ管理](/ja-JP/guide/content-management)
+1. [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/)
+2. [バージョン管理](/ja-JP/guide/version-management)
+3. [コンテンツ管理](/ja-JP/guide/content-management)

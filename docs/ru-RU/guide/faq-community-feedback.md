@@ -8,7 +8,7 @@
 
 ### Могу ли я использовать LeviLauncher на macOS или Linux?
 
-У LeviLauncher есть версия для **Windows** и версия для **Android** ([руководство для Android](/ru-RU/guide/quick-start?platform=android)). Версий для macOS и Linux нет.
+У LeviLauncher есть версия для **Windows** и версия для **Android** ([руководство для Android](/ru-RU/guide/version-management?platform=android)). Версий для macOS и Linux нет.
 
 ### Есть ли версия для iOS?
 
@@ -32,7 +32,7 @@
 
 ### Что нужно версии для Android?
 
-Android 9.0 или новее на устройстве ARM64 и Minecraft Bedrock Edition 1.21.80 или новее, установленная из Google Play. См. [Требования и установка](./requirements-installation).
+Android 9.0 или новее на устройстве ARM64 и Minecraft Bedrock Edition 1.21.80 или новее, установленная из Google Play. См. [Загрузки](../download?platform=android).
 
 ### Можно ли запускать несколько версий Minecraft на Android?
 

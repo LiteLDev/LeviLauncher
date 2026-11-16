@@ -19,7 +19,7 @@ hero:
       platform: android
     - theme: alt
       text: 문서 읽기
-      link: /ko-KR/guide/quick-start
+      link: /ko-KR/guide/version-management
 
 features:
   - title: 버전 중심
@@ -43,8 +43,8 @@ features:
 LeviLauncher에는 Minecraft Bedrock Edition(GDK / UWP)용 **Windows 버전**과 Google Play 공식 Minecraft용 **Android 버전**이 있습니다. 두 버전 모두 **정품 라이선스**가 필요합니다. iOS 버전은 없으며, 계획도 없습니다.
 :::
 
-::: tip 새 사용자는 여기서 시작하세요
-먼저 [빠른 시작](/ko-KR/guide/quick-start)을 읽은 후 [시스템 요구 사항 및 설치](/ko-KR/guide/requirements-installation)를 계속 읽으세요.
+::: tip 여기서 시작하세요
+LeviLauncher가 처음이라면 튜토리얼 [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/)(영어)이 LeviLauncher 다운로드부터 모드를 넣은 첫 플레이까지 안내합니다. Windows 또는 Android용 앱은 [다운로드](/ko-KR/download) 페이지에서 받을 수 있습니다.
 :::
 
 ## 이 사이트는 무엇을 포함하나요?
@@ -73,8 +73,6 @@ LeviLauncher에는 Minecraft Bedrock Edition(GDK / UWP)용 **Windows 버전**과
 
 ## 권장 읽기 순서
 
-1. [빠른 시작](/ko-KR/guide/quick-start)
-2. [시스템 요구 사항 및 설치](/ko-KR/guide/requirements-installation)
-3. [첫 실행](/ko-KR/guide/first-launch)
-4. [버전 관리](/ko-KR/guide/version-management)
-5. [콘텐츠 관리](/ko-KR/guide/content-management)
+1. [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/)
+2. [버전 관리](/ko-KR/guide/version-management)
+3. [콘텐츠 관리](/ko-KR/guide/content-management)

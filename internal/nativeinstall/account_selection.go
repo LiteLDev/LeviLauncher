@@ -1,5 +1,3 @@
-//go:build windows
-
 package nativeinstall
 
 import (
@@ -12,7 +10,6 @@ import (
 	"sync/atomic"
 
 	"github.com/liteldev/LeviLauncher/internal/xbox"
-	"golang.org/x/sys/windows"
 )
 
 var selectionMu sync.Mutex
@@ -68,7 +65,7 @@ func ForgetSharedAccount(dir string) (err error) {
 		return nil
 	}
 	lock := lockAccountSelection(dir)
-	defer windows.CloseHandle(lock)
+	defer closeCacheLock(lock)
 	if e := os.Remove(filepath.Join(dir, "wam-account.dpapi")); e != nil && !os.IsNotExist(e) {
 		return &Error{Code: "ERR_AUTH_ACCOUNT_SELECTION", Reason: "cannot remove saved account", cause: e}
 	}
@@ -93,7 +90,7 @@ func saveSharedAccountSelection(dir, id string) (err error) {
 	}
 	secureCache(dir)
 	lock := lockAccountSelection(dir)
-	defer windows.CloseHandle(lock)
+	defer closeCacheLock(lock)
 	path := filepath.Join(dir, "wam-account.dpapi")
 	var saved wamAccountSelection
 	loadErr := loadProtected(path, &saved)
@@ -113,17 +110,4 @@ func saveSharedAccountSelection(dir, id string) (err error) {
 		selectionEpoch.Add(1)
 	}
 	return nil
-}
-
-// Cache operations already hold device.lock, but sign-in must be able to replace
-// the account during a long installation. This separate, short-lived lock keeps
-// another launcher process from overwriting a concurrent account switch.
-func lockAccountSelection(dir string) windows.Handle {
-	path, err := windows.UTF16PtrFromString(filepath.Join(dir, "account.lock"))
-	must(err)
-	lock, err := windows.CreateFile(path, windows.GENERIC_READ|windows.GENERIC_WRITE, 0, nil, windows.OPEN_ALWAYS, windows.FILE_ATTRIBUTE_NORMAL, 0)
-	if err != nil {
-		failCode("ERR_AUTH_DEVICE_BUSY", "another process is updating the selected account")
-	}
-	return lock
 }

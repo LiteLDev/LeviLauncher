@@ -13,21 +13,19 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
+
 	"fmt"
 	"github.com/beevik/etree"
 	dsig "github.com/russellhaering/goxmldsig"
-	"golang.org/x/sys/windows"
+
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"math/big"
 	"net/http"
 	"os"
-	"path/filepath"
+
 	"regexp"
 	"strings"
 	"time"
-	"unsafe"
-
-	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 const dsNS = "http://www.w3.org/2000/09/xmldsig#"
@@ -40,64 +38,6 @@ type ownDevice struct{ Member, Password, PUID, License string }
 var ownKey []byte
 var ownDeviceID []byte
 
-func loadProtected(path string, out any) error {
-	info, e := os.Stat(path)
-	if e != nil {
-		return e
-	}
-	if info.Size() == 0 || info.Size() > 1<<20 {
-		return fmt.Errorf("invalid device cache size")
-	}
-	b, e := os.ReadFile(path)
-	if e != nil {
-		return e
-	}
-	if len(b) == 0 {
-		return fmt.Errorf("empty protected cache")
-	}
-	in := windows.DataBlob{Size: uint32(len(b)), Data: &b[0]}
-	var plain windows.DataBlob
-	e = windows.CryptUnprotectData(&in, nil, nil, 0, nil, 1, &plain)
-	if e != nil {
-		return e
-	}
-	defer windows.LocalFree(windows.Handle(uintptr(unsafe.Pointer(plain.Data))))
-	p := unsafe.Slice(plain.Data, plain.Size)
-	defer clear(p)
-	return json.Unmarshal(p, out)
-}
-func saveProtected(path string, v any) error {
-	b, e := json.Marshal(v)
-	if e != nil {
-		return e
-	}
-	defer clear(b)
-	in := windows.DataBlob{Size: uint32(len(b)), Data: &b[0]}
-	var out windows.DataBlob
-	e = windows.CryptProtectData(&in, nil, nil, 0, nil, 1, &out)
-	if e != nil {
-		return e
-	}
-	defer windows.LocalFree(windows.Handle(uintptr(unsafe.Pointer(out.Data))))
-	temp, e := fsx.CreateTemp(filepath.Dir(path), path)
-	if e != nil {
-		return e
-	}
-	name := temp.Name()
-	defer os.Remove(name)
-	if _, e = temp.Write(unsafe.Slice(out.Data, out.Size)); e != nil {
-		temp.Close()
-		return e
-	}
-	if e = temp.Sync(); e != nil {
-		temp.Close()
-		return e
-	}
-	if e = temp.Close(); e != nil {
-		return e
-	}
-	return os.Rename(name, path)
-}
 func parseSP(b []byte) map[uint32][]byte {
 	if len(b) < 8 || len(b) > 1<<20 {
 		fail("invalid SPLicense size")
@@ -353,7 +293,7 @@ type rstResponse struct {
 func postRST(doc *etree.Document, secret []byte) rstResponse {
 	b := canonical(doc.Root())
 	defer clear(b)
-	client := http.Client{Timeout: 35 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+	client := http.Client{Transport: httpx.NewBlockingProxyTransport(), Timeout: 35 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 	req, e := http.NewRequestWithContext(active.ctx, "POST", "https://login.live.com/RST2.srf", bytes.NewReader(b))
 	must(e)
 	req.Header.Set("Content-Type", "application/soap+xml")

@@ -1,5 +1,3 @@
-//go:build windows
-
 // SPDX-License-Identifier: GPL-3.0-only
 package nativeinstall
 
@@ -10,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/xbox"
-	"golang.org/x/sys/windows"
 )
 
 type cachedContentKey struct {
@@ -39,7 +36,7 @@ func beginLicenseAccount(ctx context.Context, expectedXUID string) {
 	selectionMu.Lock()
 	defer selectionMu.Unlock()
 	lock := lockAccountSelection(active.options.CacheDir)
-	defer windows.CloseHandle(lock)
+	defer closeCacheLock(lock)
 	saved := readLicenseAccount()
 	defer clearCachedKeys(saved.Keys)
 	if saved.AccountID != id {
@@ -82,7 +79,7 @@ func withLicenseCache(update func(*wamAccountSelection) bool) {
 	defer selectionMu.Unlock()
 	checkCanceled()
 	lock := lockAccountSelection(active.options.CacheDir)
-	defer windows.CloseHandle(lock)
+	defer closeCacheLock(lock)
 	saved := readLicenseAccount()
 	defer func() { clearCachedKeys(saved.Keys) }()
 	if active.account == nil || saved.AccountID != active.account.id || saved.Revision != active.account.revision {

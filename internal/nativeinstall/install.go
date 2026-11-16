@@ -1,5 +1,3 @@
-//go:build windows
-
 // SPDX-License-Identifier: GPL-3.0-only
 // Package nativeinstall installs complete segmented MSIXVC packages using
 // the shared development key or a Windows Microsoft account and an application-owned device
@@ -14,12 +12,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/xbox"
-	"golang.org/x/sys/windows"
 )
 
 type Options struct {
@@ -96,8 +93,8 @@ func Install(ctx context.Context, sourcePath, outputPath string, options Options
 	active = &installation{ctx: ctx, options: options}
 	defer clearOperation()
 	checkCanceled()
-	if runtime.GOARCH != "amd64" {
-		failCode("ERR_MSIXVC_UNSUPPORTED_FORMAT", "native MSIXVC currently requires Windows x64")
+	if strconv.IntSize != 64 {
+		failCode("ERR_MSIXVC_UNSUPPORTED_FORMAT", "native MSIXVC currently requires a 64-bit host")
 	}
 	if options.Market == "" {
 		active.options.Market = "US"
@@ -118,11 +115,8 @@ func Install(ctx context.Context, sourcePath, outputPath string, options Options
 	active.out = out
 	in, e := filepath.Abs(sourcePath)
 	must(e)
-	path, e := windows.UTF16PtrFromString(in)
+	f, e := openSourceFile(in)
 	must(e)
-	handle, e := windows.CreateFile(path, windows.GENERIC_READ, windows.FILE_SHARE_READ, nil, windows.OPEN_EXISTING, windows.FILE_ATTRIBUTE_NORMAL, 0)
-	must(e)
-	f := os.NewFile(uintptr(handle), in)
 	defer f.Close()
 	active.source = f
 	active.report.ContentID, active.report.KeyID = readIdentifiers(f)
@@ -135,13 +129,8 @@ func Install(ctx context.Context, sourcePath, outputPath string, options Options
 			active.options.CacheDir = apppath.AccountsDir()
 		}
 		secureCache(active.options.CacheDir)
-		lockPath, e := windows.UTF16PtrFromString(filepath.Join(active.options.CacheDir, "device.lock"))
-		must(e)
-		lock, e := windows.CreateFile(lockPath, windows.GENERIC_READ|windows.GENERIC_WRITE, 0, nil, windows.OPEN_ALWAYS, windows.FILE_ATTRIBUTE_NORMAL, 0)
-		if e != nil {
-			failCode("ERR_AUTH_DEVICE_BUSY", "another installation is using this device cache")
-		}
-		defer windows.CloseHandle(lock)
+		lock := lockDeviceCache(active.options.CacheDir)
+		defer closeCacheLock(lock)
 		if err := RestoreSharedAccount(ctx, active.options.CacheDir); err != nil {
 			panic(err)
 		}
@@ -235,24 +224,7 @@ func readIdentifiers(f *os.File) (string, string) {
 	// The licensing service's contentId is VDUID, not XvcInfo.ContentID.
 	return formatGUID(h[0x220:0x230]), formatGUID(x[16:32])
 }
-func secureCache(dir string) {
-	must(os.MkdirAll(dir, 0700))
-	info, e := os.Lstat(dir)
-	must(e)
-	if !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
-		fail("credential cache is not a real directory")
-	}
-	user, e := windows.GetCurrentProcessToken().GetTokenUser()
-	must(e)
-	sd, e := windows.SecurityDescriptorFromString("D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;" + user.User.Sid.String() + ")")
-	must(e)
-	path, e := windows.UTF16PtrFromString(dir)
-	must(e)
-	r, _, e := windows.NewLazySystemDLL("advapi32.dll").NewProc("SetFileSecurityW").Call(ptr(path), 0x80000004, ptr(sd))
-	if r == 0 {
-		must(e)
-	}
-}
+
 func cachePath() string { return filepath.Join(active.options.CacheDir, "device.dpapi") }
 func validateDevice(d ownDevice) {
 	if len(d.Member) < 3 || len(d.Member) > 64 || len(d.Password) < 16 || len(d.Password) > 128 || len(d.PUID) != 16 || len(d.License) == 0 || len(d.License) > 256<<10 {

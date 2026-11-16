@@ -15,6 +15,7 @@ LeviLauncher 读写的每一个路径都在这里定义，名称常量在 `apppa
 %APPDATA%\LeviLauncher\
   config.json
   wine.json                # 仅 macOS/Linux：Wine 运行时、prefix、图形和同步配置
+  install-wine.command     # 仅 macOS：用户启动的官方 Sikarugir 安装脚本
 %LOCALAPPDATA%\LeviLauncher\          默认的 <BaseRoot>
   Logs\startup.log                    以及 startup.1.log … startup.4.log
   Accounts\                           DPAPI 加密的微软账号和设备记录，以及 account.lock、device.lock

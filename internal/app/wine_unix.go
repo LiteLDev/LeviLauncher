@@ -13,3 +13,9 @@ func (a *Minecraft) SaveWineSettings(s types.WineSettings) error  { return gamer
 func (a *Minecraft) CheckWineSettings(ctx context.Context, s types.WineSettings) (string, error) {
 	return gameruntime.CheckSettings(ctx, s)
 }
+
+func (a *Minecraft) ScanWineInstallations(ctx context.Context) ([]types.WineInstallation, error) {
+	return gameruntime.Scan(ctx)
+}
+func (a *Minecraft) GetWineInstallPlan() types.WineInstallPlan { return gameruntime.InstallPlan() }
+func (a *Minecraft) StartWineInstaller() error                 { return gameruntime.StartInstaller() }

@@ -6,7 +6,7 @@ import { CheckWineSettings, GetWineSettings, SaveWineSettings } from "bindings/g
 import type { WineSettings as Settings } from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
-export const WineSettings: React.FC = () => {
+export const WineSettings: React.FC<{ selection?: Settings | null }> = ({ selection }) => {
   const { t } = useTranslation();
   const [settings, setSettings] = React.useState<Settings | null>(null);
   const [saved, setSaved] = React.useState("");
@@ -26,6 +26,12 @@ export const WineSettings: React.FC = () => {
     finally { setBusy(false); }
   };
   React.useEffect(() => { void load(); }, []);
+  React.useEffect(() => {
+    if (!selection) return;
+    setSettings({ ...selection });
+    setResult("");
+    setError("");
+  }, [selection]);
 
   const change = (patch: Partial<Settings>) => {
     setSettings((previous) => previous ? { ...previous, ...patch } : previous);
@@ -93,16 +99,11 @@ export const WineSettings: React.FC = () => {
   );
 
   return (
-    <section aria-labelledby="wine-settings-title" className="flex flex-col gap-4">
-      <div>
-        <h3 id="wine-settings-title" className="font-medium">{t("settings.wine.title")}</h3>
-        <p className="mt-1 text-sm text-muted">{t("settings.wine.description")}</p>
-      </div>
+    <section aria-label={t("settings.wine.title")} className="flex flex-col gap-4">
       {settings && <>
         {System.IsMac() && pathField("app")}
         {pathField("executable")}
         {pathField("prefix")}
-        <p className="text-sm text-muted">{t("settings.wine.paths_help")}</p>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {(["graphics", "sync"] as const).map((field) => (
             <Select key={field} value={settings[field]} onChange={(value) => { if (value) change({ [field]: String(value) }); }} isDisabled={busy}>
@@ -122,7 +123,6 @@ export const WineSettings: React.FC = () => {
             </Select>
           ))}
         </div>
-        <p className="text-sm text-muted">{t("settings.wine.graphics_help")}</p>
       </>}
       {error && <p role="alert" className="break-words text-sm text-danger">{error}</p>}
       {result && <p role="status" className="break-words text-sm text-success">{result}</p>}

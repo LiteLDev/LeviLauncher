@@ -17,3 +17,11 @@ func (a *Minecraft) SaveWineSettings(s types.WineSettings) error {
 func (a *Minecraft) CheckWineSettings(ctx context.Context, s types.WineSettings) (string, error) {
 	return "", errors.New("Wine settings are only available on macOS/Linux")
 }
+
+func (a *Minecraft) ScanWineInstallations(ctx context.Context) ([]types.WineInstallation, error) {
+	return nil, errors.New("Wine settings are only available on macOS/Linux")
+}
+func (a *Minecraft) GetWineInstallPlan() types.WineInstallPlan { return types.WineInstallPlan{} }
+func (a *Minecraft) StartWineInstaller() error {
+	return errors.New("Wine installation is only available on macOS")
+}

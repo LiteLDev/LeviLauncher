@@ -1,6 +1,6 @@
 # Contributing to LeviLauncher
 
-Thank you for helping. This file is for people who work on LeviLauncher itself: the app and its documentation.
+Thank you for helping. This file is for people who work on LeviLauncher itself.
 If you only want to use LeviLauncher, read the user guide at https://levimc.org/LeviLauncher/.
 
 ## Reporting issues
@@ -19,32 +19,11 @@ For app development, keep using the existing `frontend/`, `build/`, and Wails ta
 
 ### The documentation
 
-The end-user guide in `docs/` is published at https://levimc.org/LeviLauncher/. It is built with levimc-kit, which
-`npm ci` downloads from levimc.org into `docs/kit/`. For local docs work:
+The end-user guide is published at https://levimc.org/LeviLauncher/; the other languages are at
+`https://levimc.org/<language>/LeviLauncher/`, for example https://levimc.org/zh-Hans/LeviLauncher/. Its pages are
+not in this repository: they are in
+[`docs/LeviLauncher/` of LiteLDev/liteldev.github.io](https://github.com/LiteLDev/liteldev.github.io/tree/main/docs/LeviLauncher),
+which builds and publishes the whole levimc.org site. Open documentation issues and pull requests there.
 
-```bash
-cd docs
-npm ci
-npm run dev
-```
-
-Before a pull request, run what the `docs` workflow runs:
-
-```bash
-npm run typecheck
-npm run build
-npm run linkcheck
-```
-
-To try changes of levimc-kit that are not published yet, point the install at a kit checkout:
-`LEVIMC_KIT_SOURCE=../path/to/liteldev.github.io/kit npm run kit`.
-
-Where the pages are:
-
-- English is in `docs/` and is published at the root. The other languages are in folders named after their locale
-  (`docs/zh-CN/`, `docs/zh-HK/`, `docs/es-ES/`, …). Simplified Chinese (`zh-CN/`) is published at `zh-Hans/`,
-  Traditional Chinese (`zh-HK/`) at `zh-Hant/`; the others at their folder's name.
-- The site has guides and reference only. Tutorials for newcomers, such as installing LeviLauncher and playing with
-  mods for the first time, are on https://levimc.org/tutorials/ and are written in the LiteLDev/liteldev.github.io
-  repository.
-- A page that moves or goes away keeps its old URLs working: add them to `redirects` in `docs/docs.config.ts`.
+The site has guides and reference only. Tutorials for newcomers, such as installing LeviLauncher and playing with
+mods for the first time, are on https://levimc.org/tutorials/ and are written in the same repository.

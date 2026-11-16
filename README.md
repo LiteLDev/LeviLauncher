@@ -31,7 +31,7 @@ UWP x64 instances support the console toggle under **Instance Settings → Launc
 See the user docs:
 
 - **User docs:** https://levimc.org/LeviLauncher/
-- **中文文档：** https://levimc.org/LeviLauncher/zh-Hans/
+- **中文文档：** https://levimc.org/zh-Hans/LeviLauncher/
 
 ### Command Line
 

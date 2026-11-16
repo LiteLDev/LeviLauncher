@@ -114,9 +114,20 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 	if err != nil || !info.IsDir() {
 		return p, errors.New("Wine prefix is not initialized (drive_c is missing)")
 	}
+	if p.crossOverRoot() != "" {
+		if _, err := os.Stat(filepath.Join(s.Prefix, "cxbottle.conf")); err != nil {
+			return p, errors.New("select a CrossOver bottle directory")
+		}
+	}
 	switch s.Graphics {
 	case "auto", "wined3d":
 	case "d3dmetal":
+		if root := p.crossOverRoot(); root != "" {
+			if _, err := os.Stat(filepath.Join(root, "lib64/apple_gptk")); err != nil {
+				return p, errors.New("D3DMetal is missing from the selected Wine runtime")
+			}
+			break
+		}
 		if s.App == "" {
 			return p, errors.New("D3DMetal requires a compatible Wine app bundle")
 		}

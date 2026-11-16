@@ -57,7 +57,7 @@ func TestScanFindsWrappersAndDeduplicatesPathAliasesWithoutRunningThem(t *testin
 	}
 }
 
-func TestScanLabelsUnsupportedCrossOverAndHonorsCancellation(t *testing.T) {
+func TestScanFindsCrossOverBottlesAndHonorsCancellation(t *testing.T) {
 	root := t.TempDir()
 	wine := filepath.Join(root, "CrossOver.app/Contents/SharedSupport/CrossOver/bin/wine")
 	if err := os.MkdirAll(filepath.Dir(wine), 0700); err != nil {
@@ -66,14 +66,76 @@ func TestScanLabelsUnsupportedCrossOverAndHonorsCancellation(t *testing.T) {
 	if err := os.WriteFile(wine, []byte("not executed"), 0700); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(filepath.Dir(wine), "cxbottle"), []byte("not executed"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	bottle := filepath.Join(root, "Library/Application Support/CrossOver/Bottles/test bottle")
+	if err := os.MkdirAll(filepath.Join(bottle, "drive_c"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bottle, "cxbottle.conf"), []byte("[Bottle]"), 0600); err != nil {
+		t.Fatal(err)
+	}
 	got, err := scanLocations(context.Background(), []string{root}, nil, root, types.WineSettings{})
-	if err != nil || len(got) != 1 || got[0].Status != "unsupported" {
+	if err != nil || len(got) != 1 || got[0].Status != "ready" || got[0].Settings.Prefix != bottle {
 		t.Fatalf("unexpected CrossOver classification: %+v %v", got, err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err := scanLocations(ctx, []string{root}, nil, root, types.WineSettings{}); err != context.Canceled {
 		t.Fatalf("ignored cancellation: %v", err)
+	}
+}
+
+func TestCrossOverUsesVendorWrapperWithExplicitBottle(t *testing.T) {
+	s := fixtureSettings(t)
+	root := filepath.Join(t.TempDir(), "CrossOver.app/Contents/SharedSupport/CrossOver")
+	if err := os.MkdirAll(filepath.Join(root, "bin"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"wine", "cxbottle"} {
+		if err := os.WriteFile(filepath.Join(root, "bin", name), []byte("#!/bin/sh\n"), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	s.Executable = filepath.Join(root, "bin/wine")
+	if err := os.WriteFile(filepath.Join(s.Prefix, "cxbottle.conf"), []byte("[Bottle]"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	p, err := profileFromSettings(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cmd := p.Command(context.Background(), "cmd.exe", "/d", "/c", "echo test")
+	if len(cmd.Args) < 9 || cmd.Args[1] != "--bottle" || cmd.Args[2] != s.Prefix || cmd.Args[len(cmd.Args)-1] != "echo test" {
+		t.Fatalf("unexpected command: %v", cmd.Args)
+	}
+	for _, entry := range cmd.Env {
+		if strings.HasPrefix(entry, "WINELOADER=") || strings.HasPrefix(entry, "WINEDLLPATH=") || strings.Contains(entry, "/renderer/d3dmetal") {
+			t.Fatalf("wrong runtime environment: %s", entry)
+		}
+	}
+}
+
+func TestCrossOverHostedApplicationSymlinkIsRecognized(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "CrossOver")
+	hosted := filepath.Join(root, "CrossOver-Hosted Application")
+	if err := os.MkdirAll(hosted, 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"wine", "cxbottle"} {
+		if err := os.WriteFile(filepath.Join(hosted, name), []byte("#!/bin/sh\n"), 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink(hosted, filepath.Join(root, "bin")); err != nil {
+		t.Fatal(err)
+	}
+	for _, wine := range []string{filepath.Join(root, "bin/wine"), filepath.Join(hosted, "wine")} {
+		p := Profile{Wine: wine}
+		if got := p.crossOverRoot(); got != root {
+			t.Fatalf("CrossOver root=%q, want %q", got, root)
+		}
 	}
 }
 

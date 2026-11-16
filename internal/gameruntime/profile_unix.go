@@ -58,8 +58,10 @@ func (p Profile) Environment() []string {
 		values[key] = value
 	}
 	values["WINEPREFIX"] = p.Prefix
-	values["WINELOADER"] = p.Wine
-	values["WINESERVER"] = filepath.Join(filepath.Dir(p.Wine), "wineserver")
+	if p.crossOverRoot() == "" {
+		values["WINELOADER"] = p.Wine
+		values["WINESERVER"] = filepath.Join(filepath.Dir(p.Wine), "wineserver")
+	}
 	values["WINEDEBUG"] = "-all"
 	if p.App != "" {
 		support := filepath.Join(p.App, "Contents/SharedSupport")
@@ -110,9 +112,48 @@ func (p Profile) Environment() []string {
 	return result
 }
 func (p Profile) Command(ctx context.Context, exe string, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, p.Wine, append([]string{exe}, args...)...)
+	argv := append([]string{exe}, args...)
+	if p.crossOverRoot() != "" {
+		// Use the vendor wrapper so it loads the selected bottle's own
+		// libraries, renderer and defaults instead of the free Wine layout.
+		options := []string{"--bottle", p.Prefix, "--no-gui", "--no-update", "--debugmsg", "-all"}
+		var overrides []string
+		if p.Graphics != "" && p.Graphics != "auto" {
+			overrides = append(overrides, "CX_GRAPHICS_BACKEND="+p.Graphics)
+		}
+		if p.Sync != "" && p.Sync != "auto" {
+			msync, esync := "0", "0"
+			if p.Sync == "msync" {
+				msync = "1"
+			}
+			if p.Sync == "esync" {
+				esync = "1"
+			}
+			overrides = append(overrides, "WINEMSYNC="+msync, "WINEESYNC="+esync, "WINEFSYNC=0")
+		}
+		if len(overrides) > 0 {
+			options = append(options, "--env", strings.Join(overrides, " "))
+		}
+		argv = append(options, argv...)
+	}
+	cmd := exec.CommandContext(ctx, p.Wine, argv...)
 	cmd.Env = p.Environment()
 	return cmd
+}
+
+func (p Profile) crossOverRoot() string {
+	real, _ := filepath.EvalSymlinks(p.Wine)
+	for _, path := range []string{p.Wine, real} {
+		root := filepath.Dir(filepath.Dir(path))
+		parent := filepath.Base(filepath.Dir(path))
+		if (parent != "bin" && parent != "CrossOver-Hosted Application") || filepath.Base(root) != "CrossOver" {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(root, "bin/cxbottle")); err == nil {
+			return root
+		}
+	}
+	return ""
 }
 func Command(ctx context.Context, exe string, args ...string) (*exec.Cmd, error) {
 	p, err := Default()

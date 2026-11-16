@@ -68,7 +68,13 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 		if current.App != "" {
 			name = strings.TrimSuffix(filepath.Base(current.App), ".app")
 		}
-		add(name, current, true)
+		if (Profile{Wine: current.Executable}).crossOverRoot() != "" {
+			if _, err := os.Stat(filepath.Join(current.Prefix, "cxbottle.conf")); err == nil {
+				add("CrossOver · "+filepath.Base(current.Prefix), current, true)
+			}
+		} else {
+			add(name, current, true)
+		}
 	}
 	for _, root := range appDirs {
 		err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
@@ -91,9 +97,16 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 					{"Contents/SharedSupport/wine/bin/wine", true, true},
 					{"Contents/Resources/wine/bin/wine", false, true},
 					{"Contents/Frameworks/wswine.bundle/bin/wine", false, false},
-					{"Contents/SharedSupport/CrossOver/bin/wine", false, false},
+					{"Contents/SharedSupport/CrossOver/bin/wine", false, true},
 				} {
 					s := types.WineSettings{Executable: filepath.Join(path, layout.path), Prefix: prefix}
+					if (Profile{Wine: s.Executable}).crossOverRoot() != "" {
+						for _, bottle := range crossOverBottles(home) {
+							s.Prefix = bottle
+							add(name+" · "+filepath.Base(bottle), s, true)
+						}
+						continue
+					}
 					if layout.bundled {
 						s.App = path
 						s.Prefix = filepath.Join(path, "Contents/SharedSupport/prefix")
@@ -123,11 +136,13 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 		}
 		for _, name := range []string{"wine", "wine64"} {
 			path := filepath.Join(dir, name)
-			// CrossOver shims require its own environment and must not be
-			// mistaken for an independent free Wine installation.
-			real, _ := filepath.EvalSymlinks(path)
-			supported := !strings.Contains(strings.ToLower(real), "crossover")
-			add("Wine · "+dir, types.WineSettings{Executable: path, Prefix: prefix}, supported)
+			if (Profile{Wine: path}).crossOverRoot() != "" {
+				for _, bottle := range crossOverBottles(home) {
+					add("CrossOver · "+filepath.Base(bottle), types.WineSettings{Executable: path, Prefix: bottle}, true)
+				}
+			} else {
+				add("Wine · "+dir, types.WineSettings{Executable: path, Prefix: prefix}, true)
+			}
 		}
 	}
 	sort.SliceStable(result, func(i, j int) bool {
@@ -137,4 +152,20 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 		return result[i].Settings.Executable < result[j].Settings.Executable
 	})
 	return result, nil
+}
+
+func crossOverBottles(home string) []string {
+	root := filepath.Join(home, "Library/Application Support/CrossOver/Bottles")
+	entries, _ := os.ReadDir(root)
+	var bottles []string
+	for _, entry := range entries {
+		path := filepath.Join(root, entry.Name())
+		if _, err := os.Stat(filepath.Join(path, "cxbottle.conf")); err == nil {
+			bottles = append(bottles, path)
+		}
+	}
+	if len(bottles) == 0 {
+		bottles = append(bottles, filepath.Join(root, "default"))
+	}
+	return bottles
 }

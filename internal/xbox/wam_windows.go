@@ -17,12 +17,6 @@ import (
 	"github.com/saltosystems/winrt-go/windows/foundation"
 )
 
-var (
-	ErrInteractionRequired  = errors.New("ERR_AUTH_INTERACTION_REQUIRED")
-	ErrAccountChanged       = errors.New("ERR_AUTH_ACCOUNT_CHANGED")
-	ErrAuthenticationFailed = errors.New("ERR_AUTH_FAILED")
-)
-
 // errSignInUIRequired marks a window-scoped request that needs the user but was
 // answered without a sign-in UI. The forced prompt is what presents it, so such a
 // request is retried once with that prompt.

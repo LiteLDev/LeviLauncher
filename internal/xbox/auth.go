@@ -1,5 +1,3 @@
-//go:build windows
-
 // Package xbox reads Xbox Live profile and identity for the explicitly selected
 // Microsoft account through WebAuthenticationCoreManager (WAM) plus plain XBL REST,
 // with no GDK / GamingServices dependency.

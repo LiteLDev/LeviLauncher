@@ -1,5 +1,3 @@
-//go:build windows
-
 package xbox
 
 import (
@@ -7,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"io"
 	"net/http"
 	"time"
 )
 
-var httpClient = &http.Client{Timeout: 30 * time.Second}
+var httpClient = httpx.NewClient(30 * time.Second)
 
 func postJSONContext(ctx context.Context, url, contract, auth string, body, out any) error {
 	buf, err := json.Marshal(body)

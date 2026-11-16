@@ -78,6 +78,12 @@ func ForgetSharedAccount(dir string) (err error) {
 	return nil
 }
 
+func SignInBrowserAccount(ctx context.Context, dir string, notify func(xbox.BrowserSignInCode)) error {
+	return xbox.SignInBrowser(ctx, notify, func(id string) error {
+		return saveSharedAccountSelection(dir, id)
+	})
+}
+
 func saveSharedAccountSelection(dir, id string) (err error) {
 	selectionMu.Lock()
 	defer selectionMu.Unlock()

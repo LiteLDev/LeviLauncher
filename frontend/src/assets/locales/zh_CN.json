@@ -1053,6 +1053,7 @@
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "部分模组包未能恢复",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "部分模组包版本与备份不一致",
     "ERR_AUTH_FAILED": "微软账户登录或授权失败，请检查网络后重试。",
+    "ERR_AUTH_BROWSER_STORE_UNAVAILABLE": "当前登录未获得 Microsoft Store 安装授权，请重新登录拥有游戏的微软账户后重试。",
     "ERR_AUTH_TIMEOUT": "登录已超时，请重试。",
     "ERR_AUTH_DEVICE_CACHE": "无法读取设备授权缓存，请检查当前 Windows 用户和文件权限。",
     "ERR_AUTH_DEVICE_BUSY": "账户正在用于另一项操作，请稍后重试。",

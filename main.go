@@ -699,6 +699,9 @@ func main() {
 		Icon:        appIcon,
 		Logger:      diagnostics.Logger(),
 		LogLevel:    slog.LevelDebug,
+		// Device-code sign-in waits for user interaction; installations can also
+		// outlast the server's 30-second default response deadline.
+		Server: application.ServerOptions{WriteTimeout: 30 * time.Minute},
 		ErrorHandler: func(err error) {
 			diagnostics.HandleError("Wails/WebView2 error", err)
 		},

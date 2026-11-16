@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/xbox"
 	"golang.org/x/sys/windows"
@@ -70,7 +71,7 @@ func accountOperation(ctx context.Context, dir string, fn func()) (err error) {
 	return nil
 }
 
-// acquireUserTicket uses the launcher's selected WAM account.
+// acquireUserTicket uses the launcher's selected account.
 func acquireUserTicket(ctx context.Context, acquire func(context.Context) (string, string, error)) {
 	token, reference, err := acquire(ctx)
 	if err == nil {
@@ -83,8 +84,13 @@ func acquireUserTicket(ctx context.Context, acquire func(context.Context) (strin
 		failCode("ERR_AUTH_FAILED", "empty launcher account authorization")
 	}
 	checkCanceled()
-	if active != nil && active.account != nil && reference != active.account.id {
-		accountAuthorizationFailed(xbox.ErrAccountChanged)
+	if active != nil && active.account != nil {
+		// Browser selection keys are namespaced locally; Microsoft expects the
+		// original account reference in the license request.
+		expectedReference := strings.TrimPrefix(active.account.id, "browser:")
+		if reference != expectedReference {
+			accountAuthorizationFailed(xbox.ErrAccountChanged)
+		}
 	}
 	userTicket, userReference = token, reference
 }
@@ -100,6 +106,8 @@ func AuthErrorCode(err error) string {
 		return "ERR_AUTH_INTERACTION_REQUIRED"
 	case errors.Is(err, xbox.ErrAccountChanged):
 		return "ERR_AUTH_ACCOUNT_CHANGED"
+	case errors.Is(err, xbox.ErrBrowserStoreAuthorization):
+		return "ERR_AUTH_BROWSER_STORE_UNAVAILABLE"
 	}
 	var failure *Error
 	if errors.As(err, &failure) {

@@ -220,11 +220,25 @@ func (s *UserService) RefreshGameLicenses(ctx context.Context, xuid string) nati
 //wails:ignore
 func (s *UserService) Attach(window *application.WebviewWindow) { s.window = window }
 
-func (s *UserService) SignIn(ctx context.Context) string {
+func (s *UserService) SignIn(ctx context.Context, requestID string) string {
 	if s.window == nil {
 		return "ERR_AUTH_FAILED"
 	}
-	err := nativeinstall.SignInSharedAccount(ctx, apppath.AccountsDir(), uintptr(s.window.NativeWindow()), application.InvokeSync)
+	dir := apppath.AccountsDir()
+	hwnd := uintptr(s.window.NativeWindow())
+	var err error
+	if hwnd == 0 {
+		err = nativeinstall.SignInBrowserAccount(ctx, dir, func(code xbox.BrowserSignInCode) {
+			application.Get().Event.Emit("microsoft.browser.signin", map[string]any{
+				"requestID":       requestID,
+				"userCode":        code.UserCode,
+				"verificationURL": code.VerificationURL,
+				"expiresIn":       code.ExpiresIn,
+			})
+		})
+	} else {
+		err = nativeinstall.SignInSharedAccount(ctx, dir, hwnd, application.InvokeSync)
+	}
 	if err == nil {
 		return ""
 	}

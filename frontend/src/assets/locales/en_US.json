@@ -1053,6 +1053,7 @@
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Some managed packages were not restored",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Some managed package versions do not match the backup",
     "ERR_AUTH_FAILED": "Microsoft sign-in or authorization failed. Check your connection and retry.",
+    "ERR_AUTH_BROWSER_STORE_UNAVAILABLE": "Microsoft Store installation authorization is unavailable. Sign in again with the Microsoft account that owns the game, then retry.",
     "ERR_AUTH_TIMEOUT": "Sign-in timed out. Please try again.",
     "ERR_AUTH_DEVICE_CACHE": "The device authorization cache could not be read. Check the Windows user and file permissions.",
     "ERR_AUTH_DEVICE_BUSY": "The account is in use by another operation. Please try again later.",

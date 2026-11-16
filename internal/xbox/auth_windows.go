@@ -38,6 +38,7 @@ type session struct {
 	accountID string
 	userToken string
 	update    *session
+	browser   *browserCredential
 }
 
 var (
@@ -87,7 +88,7 @@ func ensureSessionLocked(ctx context.Context) (*session, error) {
 	if accountID == "" {
 		return nil, ErrInteractionRequired
 	}
-	ticket, accountID, err := requestWAMTicket(ctx, xblScope, accountID)
+	ticket, _, err := requestSelectedTicket(ctx, xblScope, accountID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +101,7 @@ func ensureSessionLocked(ctx context.Context) (*session, error) {
 		return nil, err
 	}
 	s.accountID = accountID
+	s.browser = selectedBrowser
 	cached = s
 	return s, nil
 }
@@ -115,6 +117,7 @@ func ConfigureAccountSelection(accountID string, err error) {
 func configureSelectionLocked(accountID string, err error) {
 	if preferredAccountID != accountID || err != nil || accountSelectionError != nil {
 		cached = nil
+		selectedBrowser = nil
 	}
 	preferredAccountID = accountID
 	accountSelectionError = err
@@ -183,7 +186,7 @@ func GetStoreTicketForUser(ctx context.Context, expectedXUID string) (token, ref
 	if expectedXUID != "" && s.xuid != expectedXUID {
 		return "", "", ErrAccountChanged
 	}
-	return requestWAMTicket(ctx, "service::www.microsoft.com::MBI_SSL", s.accountID)
+	return requestSelectedTicket(ctx, "service::www.microsoft.com::MBI_SSL", s.accountID)
 }
 
 func xblUserAuth(ctx context.Context, rpsTicket string) (string, error) {
@@ -317,5 +320,6 @@ func signInSession(ctx context.Context, acquire func() (*session, error), persis
 	preferredAccountID = s.accountID
 	accountSelectionError = nil
 	cached = s
+	selectedBrowser = s.browser
 	return nil
 }

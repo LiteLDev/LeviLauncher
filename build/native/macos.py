@@ -25,12 +25,14 @@ macos.mkdir(parents=True, exist_ok=True)
 resources.mkdir(parents=True, exist_ok=True)
 subprocess.run(['go', 'build', '-tags', 'production', '-trimpath', '-ldflags', '-extldflags=-mmacosx-version-min=14.6', '-o', str(macos/'LeviLauncher'), '.'], cwd=root, env=env, check=True)
 with tempfile.TemporaryDirectory() as scratch:
+    mac_icon = pathlib.Path(scratch)/'appicon-macos.png'
+    subprocess.run(['swift', str(root/'build/native/icon.swift'), str(root/'build/appicon.png'), str(mac_icon)], check=True)
     iconset = pathlib.Path(scratch)/'AppIcon.iconset'
     iconset.mkdir()
     for size in [16, 32, 128, 256, 512]:
         for scale in [1, 2]:
             target=iconset/f'icon_{size}x{size}{"@2x" if scale==2 else ""}.png'
-            subprocess.run(['sips', '-z', str(size*scale), str(size*scale), str(root/'build/appicon.png'), '--out', str(target)], stdout=subprocess.DEVNULL, check=True)
+            subprocess.run(['sips', '-z', str(size*scale), str(size*scale), str(mac_icon), '--out', str(target)], stdout=subprocess.DEVNULL, check=True)
     subprocess.run(['iconutil', '-c', 'icns', str(iconset), '-o', str(resources/'AppIcon.icns')], check=True)
 info={'CFBundleExecutable':'LeviLauncher','CFBundleIdentifier':'org.levimc.levilauncher.native','CFBundleName':'LeviLauncher','CFBundleDisplayName':'LeviLauncher for Mac','CFBundlePackageType':'APPL','CFBundleShortVersionString':'1.1.0','CFBundleVersion':'1','CFBundleIconFile':'AppIcon.icns','LSMinimumSystemVersion':'14.6','NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True},'NSSupportsAutomaticGraphicsSwitching':True}
 with (app/'Contents/Info.plist').open('wb') as f: plistlib.dump(info,f)

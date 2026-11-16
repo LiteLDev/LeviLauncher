@@ -8,8 +8,10 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/app"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 	"log/slog"
 	"os"
 	"time"
@@ -37,6 +39,11 @@ func main() {
 	a := application.New(application.Options{Name: "LeviLauncher", LogLevel: slog.LevelWarn, Description: "Minecraft Bedrock launcher", Icon: appIcon, Server: application.ServerOptions{WriteTimeout: 30 * time.Minute}, Services: []application.Service{application.NewService(mc), application.NewService(app.NewContentService(mc)), application.NewService(app.NewModsService(mc)), application.NewService(user), application.NewService(versions)}, Assets: application.AssetOptions{Handler: application.AssetFileServerFS(assets), Middleware: mc.LocalImageMiddleware}, SingleInstance: &application.SingleInstanceOptions{UniqueID: "org.levimc.levilauncher.native"}})
 	mc.StartupEssential()
 	w := a.Window.NewWithOptions(application.WebviewWindowOptions{Name: "main", Title: "LeviLauncher", Width: 1180, Height: 780, MinWidth: 960, MinHeight: 600, URL: "/", EnableFileDrop: true})
+	w.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		if launch.CloseBlocked() && !launch.QuitRequested() {
+			event.Cancel()
+		}
+	})
 	user.Attach(w)
 	if err := a.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

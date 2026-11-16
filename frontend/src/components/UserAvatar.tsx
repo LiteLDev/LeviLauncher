@@ -15,7 +15,7 @@ import {
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { useStartupInteractive } from "@/utils/startupState";
 import { useProcessElevation } from "@/hooks/useProcessElevation";
-import { Browser, Events } from "@wailsio/runtime";
+import { Browser, Events, System } from "@wailsio/runtime";
 import { FiActivity, FiExternalLink } from "react-icons/fi";
 import { OPEN_ACCOUNT_EVENT, useDiagnostics } from "@/utils/DiagnosticsContext";
 import { publishLicenses } from "@/utils/licenseStore";
@@ -95,7 +95,24 @@ export const UserAvatar = () => {
         <div className="select-all rounded-xl bg-surface-secondary p-4 text-center font-mono text-3xl tracking-widest" aria-label="微软登录代码">
           {browserCode?.userCode}
         </div>
-        <a className="font-medium text-accent underline" href={browserCode?.verificationURL} target="_blank" rel="noopener noreferrer">打开微软验证页面</a>
+        <a
+          className="font-medium text-accent underline"
+          href={browserCode?.verificationURL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(event) => {
+            // WKWebView does not open target=_blank links in a browser.
+            // Keep the existing WebView2/server behaviour on Windows.
+            if (!System.IsMac() && !System.IsLinux()) return;
+            event.preventDefault();
+            if (!browserCode) return;
+            void Browser.OpenURL(browserCode.verificationURL).catch(() => {
+              toast.danger("无法打开浏览器", {
+                description: "请手动打开 https://www.microsoft.com/link 并输入上方代码。",
+              });
+            });
+          }}
+        >打开微软验证页面</a>
         <p className="text-sm text-muted">完成后此窗口会自动关闭。代码约 {Math.ceil((browserCode?.expiresIn || 0) / 60)} 分钟内有效。</p>
         <p className="text-xs text-muted">兼容模式的登录凭据仅保留到启动器关闭。游戏安装授权将另行检查。</p>
       </div>

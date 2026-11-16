@@ -7,7 +7,6 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
-	"golang.org/x/sys/windows"
 )
 
 func ListDrives() []string {
@@ -91,25 +90,4 @@ func CreateFolder(parent string, name string) string {
 		return "ERR_CREATE_TARGET_DIR"
 	}
 	return ""
-}
-
-func GetDriveStats(root string) map[string]uint64 {
-	res := map[string]uint64{"total": 0, "free": 0}
-	r := strings.TrimSpace(root)
-	if r == "" {
-		return res
-	}
-	if !strings.HasSuffix(r, "\\") {
-		r += "\\"
-	}
-	p, err := windows.UTF16PtrFromString(r)
-	if err != nil {
-		return res
-	}
-	var freeBytesAvailable, totalNumberOfBytes, totalNumberOfFreeBytes uint64
-	if err := windows.GetDiskFreeSpaceEx(p, &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes); err == nil {
-		res["total"] = totalNumberOfBytes
-		res["free"] = totalNumberOfFreeBytes
-	}
-	return res
 }

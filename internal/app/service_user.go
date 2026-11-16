@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -227,7 +228,7 @@ func (s *UserService) SignIn(ctx context.Context, requestID string) string {
 	dir := apppath.AccountsDir()
 	hwnd := uintptr(s.window.NativeWindow())
 	var err error
-	if hwnd == 0 {
+	if runtime.GOOS != "windows" || hwnd == 0 {
 		err = nativeinstall.SignInBrowserAccount(ctx, dir, func(code xbox.BrowserSignInCode) {
 			application.Get().Event.Emit("microsoft.browser.signin", map[string]any{
 				"requestID":       requestID,

@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
+	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"syscall"
+
 	"text/template"
 
 	"github.com/liteldev/LeviLauncher/internal/registry"
@@ -216,7 +217,7 @@ func logCommandOutput(scope string, output []byte) {
 }
 
 func runHiddenCommand(scope string, cmd *exec.Cmd) error {
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	processinfo.ConfigureChild(cmd)
 	output, err := cmd.CombinedOutput()
 	logCommandOutput(scope, output)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	semver "github.com/Masterminds/semver/v3"
 	"io"
 	"log"
 	"net/http"
@@ -15,13 +16,11 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"syscall"
+
 	"time"
-	"unsafe"
 
 	json "github.com/goccy/go-json"
 
-	"github.com/Masterminds/semver/v3"
 	buildcfg "github.com/liteldev/LeviLauncher/build"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
@@ -37,11 +36,6 @@ import (
 var (
 	appVersion = "0.0.10"
 	isBeta     = true
-
-	shell32            = syscall.NewLazyDLL("shell32.dll")
-	procShellExecuteW  = shell32.NewProc("ShellExecuteW")
-	swShowNormal       = uintptr(1)
-	shellExecuteErrCut = uintptr(32)
 )
 
 type AppUpdateProgress struct {
@@ -396,37 +390,6 @@ func buildSelfUpdateCandidateURLs(ver string) []string {
 			oriUrl,
 		}
 	}
-}
-
-func startSelfUpdateElevated(exePath string, curVer string) error {
-	verb, err := syscall.UTF16PtrFromString("runas")
-	if err != nil {
-		return err
-	}
-	file, err := syscall.UTF16PtrFromString(exePath)
-	if err != nil {
-		return err
-	}
-	arg := "--self-update=" + strings.TrimPrefix(strings.TrimSpace(curVer), "v")
-	args, err := syscall.UTF16PtrFromString(arg)
-	if err != nil {
-		return err
-	}
-	ret, _, callErr := procShellExecuteW.Call(
-		0,
-		uintptr(unsafe.Pointer(verb)),
-		uintptr(unsafe.Pointer(file)),
-		uintptr(unsafe.Pointer(args)),
-		0,
-		swShowNormal,
-	)
-	if ret <= shellExecuteErrCut {
-		if callErr != nil && callErr != syscall.Errno(0) {
-			return callErr
-		}
-		return fmt.Errorf("ShellExecuteW failed with code %d", ret)
-	}
-	return nil
 }
 
 func CheckUpdate(version string) types.CheckUpdate {

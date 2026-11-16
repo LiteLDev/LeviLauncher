@@ -2,9 +2,9 @@ package registry
 
 import (
 	"fmt"
+	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	"log"
 	"os/exec"
-	"syscall"
 
 	json "github.com/goccy/go-json"
 )
@@ -19,7 +19,7 @@ type AppxInfo struct {
 func GetAppxInfo(packageName string) (*AppxInfo, error) {
 	ps := "Get-AppxPackage -Name '" + packageName + "' | Select-Object PackageFullName, PackageFamilyName, Version, InstallLocation | ConvertTo-Json"
 	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", ps)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	processinfo.ConfigureChild(cmd)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println("GetAppxInfo error:", err, string(output))

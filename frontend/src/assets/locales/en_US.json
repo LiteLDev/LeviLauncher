@@ -327,6 +327,32 @@
     }
   },
   "settings": {
+    "wine": {
+      "title": "Wine game runtime",
+      "description": "Used to run Windows games and package hooks. The launcher and Microsoft sign-in run natively.",
+      "app": "Wine app bundle (optional)",
+      "executable": "Wine executable",
+      "prefix": "Wine prefix",
+      "choose": "Choose…",
+      "choose_path": "Choose {{field}}",
+      "paths_help": "Choose an initialized prefix. Selecting an app fills its engine and prefix paths; clear the app path to use a standalone Wine executable.",
+      "graphics": "Graphics backend",
+      "graphics_auto": "Runtime default",
+      "graphics_d3dmetal": "D3DMetal",
+      "graphics_wined3d": "WineD3D (OpenGL)",
+      "sync": "Synchronization",
+      "sync_auto": "Runtime default",
+      "sync_msync": "MSync",
+      "sync_esync": "ESync",
+      "sync_none": "Disabled",
+      "graphics_help": "Backend and sync support depend on the selected runtime. Save applies to the next game/package-hook launch. Keep your usual settings while a game is running.",
+      "save": "Save Wine settings",
+      "check": "Check paths and version",
+      "reload": "Reload saved settings",
+      "working": "Checking Wine settings",
+      "saved": "Wine settings saved. They apply on the next launch.",
+      "checked": "Paths verified · {{version}}. This check does not launch a game."
+    },
     "layout": {
       "title_navbar": "Use Top Navigation Bar",
       "desc_navbar": "Enable to use the top navigation bar instead of the default vertical sidebar"

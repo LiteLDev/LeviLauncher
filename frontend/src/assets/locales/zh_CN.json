@@ -327,6 +327,32 @@
     }
   },
   "settings": {
+    "wine": {
+      "title": "Wine 游戏运行环境",
+      "description": "用于运行 Windows 游戏与安装钩子。启动器和微软登录在本机原生运行。",
+      "app": "Wine 应用（可选）",
+      "executable": "Wine 可执行文件",
+      "prefix": "Wine 容器目录（prefix）",
+      "choose": "选择…",
+      "choose_path": "选择{{field}}",
+      "paths_help": "请选择已经初始化的容器。选择 Wine 应用会填入其引擎和容器路径；使用独立 Wine 时请清空应用路径。",
+      "graphics": "图形后端",
+      "graphics_auto": "运行时默认",
+      "graphics_d3dmetal": "D3DMetal",
+      "graphics_wined3d": "WineD3D（OpenGL）",
+      "sync": "同步方式",
+      "sync_auto": "运行时默认",
+      "sync_msync": "MSync",
+      "sync_esync": "ESync",
+      "sync_none": "关闭",
+      "graphics_help": "图形后端与同步方式需要运行时支持。保存后对下次游戏启动和安装钩子生效；游戏运行期间请保持原有配置。",
+      "save": "保存 Wine 配置",
+      "check": "检查路径与版本",
+      "reload": "重新读取已保存配置",
+      "working": "正在检查 Wine 配置",
+      "saved": "Wine 配置已保存，下次启动生效。",
+      "checked": "路径检查通过 · {{version}}。此检查未启动游戏。"
+    },
     "layout": {
       "title_navbar": "使用顶部导航栏",
       "desc_navbar": "开启后使用顶部导航栏代替默认的垂直侧边栏"

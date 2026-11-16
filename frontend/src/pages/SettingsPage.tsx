@@ -61,9 +61,10 @@ import {
   GetInstallerDir,
   GetVersionsDir,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
-import { Browser, Dialogs } from "@wailsio/runtime";
+import { Browser, Dialogs, System } from "@wailsio/runtime";
 import { useDiagnostics } from "@/utils/DiagnosticsContext";
 import { faqIndexUrl } from "@/utils/troubleshoot";
+import { WineSettings } from "@/components/WineSettings";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
@@ -138,6 +139,7 @@ const lipGithubProxyLabel = (url: string) =>
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const hasWineSettings = System.IsMac() || System.IsLinux();
   const settings = useSettings(i18n);
   const { openDiagnostics } = useDiagnostics();
   const {
@@ -273,7 +275,7 @@ export const SettingsPage: React.FC = () => {
     { tab: "personalization", section: "layout", keys: ["audit.usability.appearance_layout", "settings.layout.title_navbar", "settings.appearance.disable_animations"] },
     { tab: "personalization", section: "wallpaper", keys: ["audit.usability.appearance_wallpaper", "settings.appearance.background_image", "settings.appearance.background_blur", "settings.appearance.background_brightness", "settings.appearance.background_opacity"] },
     { tab: "personalization", section: "material", keys: ["audit.usability.appearance_material"] },
-    { tab: "components", keys: ["settings.tabs.components", "settings.mirror_source.title", "settings.lip.title", "settings.lip.desc", "settings.lip.cache_clean_button", "settings.lip.github_proxy.title"] },
+    { tab: "components", keys: ["settings.tabs.components", "settings.mirror_source.title", "settings.lip.title", "settings.lip.desc", "settings.lip.cache_clean_button", "settings.lip.github_proxy.title", ...(hasWineSettings ? ["settings.wine.title", "settings.wine.prefix", "settings.wine.graphics"] : [])] },
     { tab: "others", keys: ["settings.troubleshoot.title", "settings.process.title", "settings.experimental.title", "settings.experimental.instance_backup.title"] },
     { tab: "privacy", keys: ["settings.tabs.privacy", "settings.privacy.analytics.title"] },
     { tab: "updates", keys: ["settings.tabs.updates", "settings.beta_updates.title"] },
@@ -2531,6 +2533,7 @@ export const SettingsPage: React.FC = () => {
               )}
               {selectedTab === "components" && (
                 <div className="flex flex-col gap-6">
+                  {hasWineSettings && <><WineSettings /><Separator className="bg-surface-tertiary/50" /></>}
                   {/* LIP */}
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col gap-1 min-w-0">

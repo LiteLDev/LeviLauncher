@@ -9,7 +9,7 @@ LeviLauncher comes in a Windows version and an Android version. The tab for your
     - [Download the installer from GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases/latest)
     - [Lanzou mirror](https://levimc.lanzoue.com/b016ke39hc) — password `levi`; use it if GitHub is slow in your region
 
-    Next: [Requirements & Installation](/guide/requirements-installation?platform=windows) · [Get Started in 5 Minutes](/guide/quick-start?platform=windows)
+    Next: [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/) · [Version Management](/guide/version-management?platform=windows)
 
 === "Android"
 
@@ -17,7 +17,7 @@ LeviLauncher comes in a Windows version and an Android version. The tab for your
 
     - [Download the APK from GitHub Releases](https://github.com/LiteLDev/LeviLauncher-Android/releases/latest)
 
-    Next: [Requirements & Installation](/guide/requirements-installation?platform=android) · [Get Started in 5 Minutes](/guide/quick-start?platform=android)
+    Next: [Version Management](/guide/version-management?platform=android)
 
 ::: info iOS
 There is no iOS version of LeviLauncher, and we have no plans to make one.

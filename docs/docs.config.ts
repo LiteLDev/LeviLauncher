@@ -3,21 +3,18 @@
 // by task like mainstream multi-platform docs: where the platforms differ, a page shows `=== "Windows"` /
 // `=== "Android"` tabs (one site-wide choice: the visitor's device, their last pick or ?platform=), sections that
 // apply to one platform carry a <Badge platform="…" />, and whole pages a `platforms:` frontmatter.
-import { defineDocsConfig, type NavEntry } from './kit/docs/node/config.ts';
+import { defineDocsConfig, type LocaleConfig, type NavEntry } from './kit/docs/node/config.ts';
 
 const repo = 'https://github.com/LiteLDev/LeviLauncher';
 
 // --- Navigation -----------------------------------------------------------------------------------
 // The LeviMC navigation model (kit/README.md "Navigation model"): one section, the Guide (a header tab and its sidebar
-// tree), with the Help group (troubleshooting, FAQ, the Android privacy policy) last. The brand links the home page;
-// the Download page is in the Quick Start group and the header's resources slot (`header.links`), next to the
+// tree), with the Help group (troubleshooting, FAQ, the Android privacy policy) last. The brand links the home page,
+// which introduces the project and starts newcomers on the tutorial (levimc.org/tutorials/play/play-with-mods/); the
+// Download page opens Core Workflows and is in the header's resources slot (`header.links`), next to the
 // repository's GitHub icon (`repo`).
 
 interface SidebarLabels {
-  quickStart: string;
-  getStarted: string;
-  requirements: string;
-  firstLaunch: string;
   coreWorkflows: string;
   versions: string;
   downloads: string;
@@ -41,18 +38,10 @@ function buildNav(prefix: string, t: SidebarLabels, n: NavLabels): NavEntry[] {
 function buildGuide(guide: string, prefix: string, t: SidebarLabels, n: NavLabels): NavEntry[] {
   return [
     {
-      text: t.quickStart,
-      items: [
-        { text: t.getStarted, link: `${guide}quick-start` },
-        // the Download page offers both versions and selects the visitor's (tabs named after the platforms)
-        { text: n.download, link: `${prefix}download` },
-        { text: t.requirements, link: `${guide}requirements-installation` },
-        { text: t.firstLaunch, link: `${guide}first-launch` },
-      ],
-    },
-    {
       text: t.coreWorkflows,
       items: [
+        // the Download page offers both versions and selects the visitor's (tabs named after the platforms)
+        { text: n.download, link: `${prefix}download` },
         { text: t.versions, link: `${guide}version-management` },
         { text: t.downloads, link: `${guide}downloads-mirrors` },
         { text: t.content, link: `${guide}content-management` },
@@ -81,10 +70,6 @@ function buildGuide(guide: string, prefix: string, t: SidebarLabels, n: NavLabel
 
 const SIDEBAR: Record<string, SidebarLabels> = {
   'en-US': {
-    quickStart: 'Quick Start',
-    getStarted: 'Get Started in 5 Minutes',
-    requirements: 'Requirements & Installation',
-    firstLaunch: 'First Launch',
     coreWorkflows: 'Core Workflows',
     versions: 'Version Management',
     downloads: 'Downloads & Mirrors',
@@ -100,10 +85,6 @@ const SIDEBAR: Record<string, SidebarLabels> = {
     privacy: 'Privacy Policy (Android)',
   },
   'es-ES': {
-    quickStart: 'Inicio rápido',
-    getStarted: 'Comienza en 5 minutos',
-    requirements: 'Requisitos e instalación',
-    firstLaunch: 'Primer inicio',
     coreWorkflows: 'Flujos principales',
     versions: 'Gestión de versiones',
     downloads: 'Descargas y espejos',
@@ -119,10 +100,6 @@ const SIDEBAR: Record<string, SidebarLabels> = {
     privacy: 'Política de privacidad (Android)',
   },
   'zh-CN': {
-    quickStart: '快速开始',
-    getStarted: '5 分钟上手',
-    requirements: '系统要求与安装',
-    firstLaunch: '首次启动',
     coreWorkflows: '核心功能',
     versions: '版本管理',
     downloads: '下载与镜像',
@@ -138,10 +115,6 @@ const SIDEBAR: Record<string, SidebarLabels> = {
     privacy: '隐私政策（Android）',
   },
   'zh-HK': {
-    quickStart: '快速入門',
-    getStarted: '5 分鐘上手',
-    requirements: '系統要求與安裝',
-    firstLaunch: '首次啟動',
     coreWorkflows: '核心功能',
     versions: '版本管理',
     downloads: '下載與鏡像',
@@ -157,10 +130,6 @@ const SIDEBAR: Record<string, SidebarLabels> = {
     privacy: '私隱政策（Android）',
   },
   'ru-RU': {
-    quickStart: 'Быстрый старт',
-    getStarted: 'Начало работы за 5 минут',
-    requirements: 'Требования и установка',
-    firstLaunch: 'Первый запуск',
     coreWorkflows: 'Основные рабочие процессы',
     versions: 'Управление версиями',
     downloads: 'Загрузки и зеркала',
@@ -176,10 +145,6 @@ const SIDEBAR: Record<string, SidebarLabels> = {
     privacy: 'Политика конфиденциальности (Android)',
   },
   'de-DE': {
-    quickStart: 'Schnellstart',
-    getStarted: 'In 5 Minuten loslegen',
-    requirements: 'Anforderungen & Installation',
-    firstLaunch: 'Erster Start',
     coreWorkflows: 'Kernabläufe',
     versions: 'Versionsverwaltung',
     downloads: 'Downloads & Spiegel',
@@ -195,10 +160,6 @@ const SIDEBAR: Record<string, SidebarLabels> = {
     privacy: 'Datenschutzerklärung (Android)',
   },
   'ja-JP': {
-    quickStart: 'クイックスタート',
-    getStarted: '5 分で始める',
-    requirements: 'システム要件とインストール',
-    firstLaunch: '初回起動',
     coreWorkflows: 'コア機能',
     versions: 'バージョン管理',
     downloads: 'ダウンロードとミラー',
@@ -214,10 +175,6 @@ const SIDEBAR: Record<string, SidebarLabels> = {
     privacy: 'プライバシーポリシー（Android）',
   },
   'ko-KR': {
-    quickStart: '빠른 시작',
-    getStarted: '5분 만에 시작하기',
-    requirements: '시스템 요구사항 및 설치',
-    firstLaunch: '처음 실행하기',
     coreWorkflows: '핵심 워크플로우',
     versions: '버전 관리',
     downloads: '다운로드 및 미러',
@@ -233,10 +190,6 @@ const SIDEBAR: Record<string, SidebarLabels> = {
     privacy: '개인정보 처리방침(Android)',
   },
   'fr-FR': {
-    quickStart: 'Démarrage rapide',
-    getStarted: 'Commencer en 5 minutes',
-    requirements: 'Configuration requise & Installation',
-    firstLaunch: 'Premier lancement',
     coreWorkflows: 'Fonctionnalités principales',
     versions: 'Gestion des versions',
     downloads: 'Téléchargements & Miroirs',
@@ -273,11 +226,13 @@ const NAV: Record<string, NavLabels> = {
 
 // --- Locales & UI labels --------------------------------------------------------------------------
 
-// In the order of the LeviMC bar's language menu on every site; the codes are the URL prefixes and stay as they are.
-const LOCALES = [
+// In the order of the LeviMC bar's language menu on every site. Chinese follows levimc.org's one locale scheme
+// (<base>zh-Hans/, <base>zh-Hant/): the sources stay in zh-CN/ and zh-HK/, whose URLs redirect to the new ones
+// (formerPrefixes). zh-HK is written by hand, not converted. The other codes are the URL prefixes, as they were.
+const LOCALES: LocaleConfig[] = [
   { code: 'en-US', label: 'English', lang: 'en', prefix: '' },
-  { code: 'zh-CN', label: '简体中文', lang: 'zh-CN', prefix: 'zh-CN/' },
-  { code: 'zh-HK', label: '繁體中文', lang: 'zh-HK', prefix: 'zh-HK/' },
+  { code: 'zh-CN', label: '简体中文', lang: 'zh-Hans', prefix: 'zh-Hans/', folder: 'zh-CN', formerPrefixes: ['zh-CN/'] },
+  { code: 'zh-HK', label: '繁體中文', lang: 'zh-Hant', prefix: 'zh-Hant/', folder: 'zh-HK', formerPrefixes: ['zh-HK/'] },
   { code: 'es-ES', label: 'Español', lang: 'es-ES', prefix: 'es-ES/' },
   { code: 'ru-RU', label: 'Русский', lang: 'ru-RU', prefix: 'ru-RU/' },
   { code: 'de-DE', label: 'Deutsch', lang: 'de-DE', prefix: 'de-DE/' },
@@ -311,27 +266,43 @@ const UI: Record<string, UiLabels> = {
 };
 
 
+// Old URLs → their new place, under each locale's prefix and its former ones (formerPrefixes only covers the pages
+// that still exist).
+const urlPrefixes = (l: LocaleConfig): string[] => [l.prefix ?? '', ...(l.formerPrefixes ?? [])];
+
+// The getting-started pages (Quick Start, Requirements & Installation, First Launch) became one tutorial on
+// levimc.org, in English, Simplified and Traditional Chinese: levimc.org/tutorials/play/play-with-mods/.
+const TUTORIAL: Record<string, string> = {
+  'en-US': 'https://levimc.org/tutorials/play/play-with-mods/',
+  'zh-CN': 'https://levimc.org/tutorials/zh-Hans/play/play-with-mods/',
+  'zh-HK': 'https://levimc.org/tutorials/zh-Hant/play/play-with-mods/',
+};
+const TUTORIAL_PAGES = ['guide/quick-start', 'guide/requirements-installation', 'guide/first-launch'];
+
 // The separate Android section (android/, live 2026-10-29) became part of the guide; its developer docs moved to
-// LeviLamina's (developer_guides/android/). Old URLs → their new place.
+// LeviLamina's (developer_guides/android/).
 const LEVILAMINA_ANDROID: Record<string, string> = {
-  '': 'https://levimc.org/LeviLamina/developer_guides/android/',
-  'zh-CN/': 'https://levimc.org/LeviLamina/zh/developer_guides/android/',
-  'zh-HK/': 'https://levimc.org/LeviLamina/zh-Hant/developer_guides/android/',
+  'en-US': 'https://levimc.org/LeviLamina/developer_guides/android/',
+  'zh-CN': 'https://levimc.org/LeviLamina/zh-Hans/developer_guides/android/',
+  'zh-HK': 'https://levimc.org/LeviLamina/zh-Hant/developer_guides/android/',
 };
 const ANDROID_API = ['mod', 'mod-menu', 'config', 'input', 'hook', 'signature', 'patch', 'memory-hook-macros', 'types-and-macros'];
 const REDIRECTS: Record<string, string> = Object.fromEntries(
-  LOCALES.flatMap(({ prefix: p }) => {
-    const ll = LEVILAMINA_ANDROID[p] ?? LEVILAMINA_ANDROID['']!;
-    return [
-      [`${p}android/`, `${p}guide/quick-start?platform=android`],
-      [`${p}android/guide/getting-started`, `${p}guide/quick-start?platform=android`],
-      [`${p}android/guide/features`, `${p}guide/version-management?platform=android`],
-      [`${p}android/guide/compatibility`, `${p}guide/faq-community-feedback`],
-      [`${p}android/guide/developer`, ll],
-      [`${p}android/guide/build`, 'https://github.com/LiteLDev/LeviLauncher-Android#development-setup'],
-      [`${p}android/privacy-policy`, `${p}privacy-policy`],
-      ...ANDROID_API.map((a) => [`${p}android/api/${a}`, `${ll}api/${a.replace(/-/g, '_')}/`]),
-    ];
+  LOCALES.flatMap((l) => {
+    const p = l.prefix ?? '';
+    const ll = LEVILAMINA_ANDROID[l.code] ?? LEVILAMINA_ANDROID['en-US']!;
+    const tutorial = TUTORIAL[l.code] ?? TUTORIAL['en-US']!;
+    return urlPrefixes(l).flatMap((from) => [
+      ...TUTORIAL_PAGES.map((page) => [`${from}${page}`, tutorial]),
+      [`${from}android/`, `${p}download?platform=android`],
+      [`${from}android/guide/getting-started`, `${p}download?platform=android`],
+      [`${from}android/guide/features`, `${p}guide/version-management?platform=android`],
+      [`${from}android/guide/compatibility`, `${p}guide/faq-community-feedback`],
+      [`${from}android/guide/developer`, ll],
+      [`${from}android/guide/build`, 'https://github.com/LiteLDev/LeviLauncher-Android#development-setup'],
+      [`${from}android/privacy-policy`, `${p}privacy-policy`],
+      ...ANDROID_API.map((a) => [`${from}android/api/${a}`, `${ll}api/${a.replace(/-/g, '_')}/`]),
+    ]);
   }),
 );
 

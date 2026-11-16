@@ -8,7 +8,7 @@
 
 ### 能在 macOS 或 Linux 上使用嗎？
 
-LeviLauncher 提供 **Windows 版**和 **Android 版**（[Android 版文檔](/zh-HK/guide/quick-start?platform=android)），沒有 macOS 或 Linux 版本。
+LeviLauncher 提供 **Windows 版**和 **Android 版**（[Android 版文檔](/zh-Hant/guide/version-management?platform=android)），沒有 macOS 或 Linux 版本。
 
 ### 有 iOS 版嗎？
 
@@ -32,7 +32,7 @@ LeviLauncher 提供 **Windows 版**和 **Android 版**（[Android 版文檔](/zh
 
 ### Android 版需要甚麼？
 
-ARM64 裝置上的 Android 9.0 或更高版本，以及從 Google Play 安裝的 Minecraft Bedrock Edition 1.21.80 或更高版本。參見[系統要求與安裝](./requirements-installation)。
+ARM64 裝置上的 Android 9.0 或更高版本，以及從 Google Play 安裝的 Minecraft Bedrock Edition 1.21.80 或更高版本。參見[下載](../download?platform=android)。
 
 ### Android 上能執行多個 Minecraft 版本嗎？
 

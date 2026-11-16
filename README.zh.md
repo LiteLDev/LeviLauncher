@@ -6,7 +6,7 @@
 
 LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版或预览版环境，同时让内容与工具链更容易整理。
 
-本仓库是 LeviLauncher 的 **Windows 版**。**Android 版**在 [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android) 开发，两者共用同一套文档 https://levimc.org/LeviLauncher/zh-CN/ （按 Windows / Android 标签页区分）。Android 原生模组的开发文档在 [LeviLamina 文档](https://levimc.org/LeviLamina/zh/developer_guides/android/)。我们没有开发 iOS 版的计划。
+本仓库是 LeviLauncher 的 **Windows 版**。**Android 版**在 [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android) 开发，两者共用同一套文档 https://levimc.org/LeviLauncher/zh-Hans/ （按 Windows / Android 标签页区分）。Android 原生模组的开发文档在 [LeviLamina 文档](https://levimc.org/LeviLamina/zh-Hans/developer_guides/android/)。我们没有开发 iOS 版的计划。
 
 ## 安装
 
@@ -31,7 +31,7 @@ UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，�
 请参阅用户文档：
 
 - **用户文档：** https://levimc.org/LeviLauncher/
-- **中文文档：** https://levimc.org/LeviLauncher/zh-CN/
+- **中文文档：** https://levimc.org/LeviLauncher/zh-Hans/
 
 ### 命令行
 
@@ -88,17 +88,9 @@ UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，�
 - **Discord：** https://discord.gg/v5R5P4vRZk
 - **QQ 群：** https://qm.qq.com/q/1z791rJgJG
 
-### 文档本地开发
+### 开发
 
-用户文档发布在 https://levimc.org/LeviLauncher/zh-CN/ 。若你要在本地预览文档站：
-
-```bash
-cd docs
-npm ci
-npm run dev
-```
-
-应用本体开发仍沿用仓库现有的 `frontend/`、`build/` 与 Wails 任务流。
+参与应用本体与文档的开发，请见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 许可证
 

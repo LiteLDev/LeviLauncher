@@ -19,7 +19,7 @@ hero:
       platform: android
     - theme: alt
       text: 阅读文档
-      link: /zh-CN/guide/quick-start
+      link: /zh-Hans/guide/version-management
 
 features:
   - title: 以版本为中心
@@ -36,15 +36,15 @@ features:
     details: 调整语言、外观、下载行为、隐私偏好、更新通道和组件状态。
   - title: Android 专属功能
     details: "在同一个启动器里切换 Xbox 账号，并用 URI 快速启动。"
-    link: /zh-CN/guide/accounts-quick-launch
+    link: /zh-Hans/guide/accounts-quick-launch
 ---
 
 ::: info Windows 版与 Android 版
 LeviLauncher 提供面向 Minecraft 基岩版（GDK / UWP）的 **Windows 版**，以及面向 Google Play 官方 Minecraft 的 **Android 版**，两者都需要你拥有**正版授权**。我们没有开发 iOS 版的计划。
 :::
 
-::: tip 新用户建议从这里开始
-先看[快速开始](/zh-CN/guide/quick-start)，再继续阅读[系统要求与安装](/zh-CN/guide/requirements-installation)。
+::: tip 从这里开始
+第一次使用 LeviLauncher？教程[在 Windows 上玩模组](https://levimc.org/tutorials/zh-Hans/play/play-with-mods/)会带你从下载 LeviLauncher 一直走到带模组进入游戏。要获取 Windows 版或 Android 版，请前往[下载](/zh-Hans/download)页面。
 :::
 
 ## 这个站点包含什么
@@ -73,8 +73,6 @@ LeviLauncher 提供面向 Minecraft 基岩版（GDK / UWP）的 **Windows 版**�
 
 ## 推荐阅读顺序
 
-1. [快速开始](/zh-CN/guide/quick-start)
-2. [系统要求与安装](/zh-CN/guide/requirements-installation)
-3. [首次启动](/zh-CN/guide/first-launch)
-4. [版本管理](/zh-CN/guide/version-management)
-5. [内容管理](/zh-CN/guide/content-management)
+1. [在 Windows 上玩模组](https://levimc.org/tutorials/zh-Hans/play/play-with-mods/)
+2. [版本管理](/zh-Hans/guide/version-management)
+3. [内容管理](/zh-Hans/guide/content-management)

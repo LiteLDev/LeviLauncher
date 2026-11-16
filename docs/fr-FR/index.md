@@ -19,7 +19,7 @@ hero:
       platform: android
     - theme: alt
       text: Lire la documentation
-      link: /fr-FR/guide/quick-start
+      link: /fr-FR/guide/version-management
 
 features:
   - title: Axé sur les versions
@@ -43,8 +43,8 @@ features:
 LeviLauncher existe en **version Windows** pour Minecraft Bedrock Edition (GDK / UWP) et en **version Android** pour le Minecraft officiel de Google Play. Les deux nécessitent une **licence officielle** du jeu. Il n'existe pas de version iOS, et aucune n'est prévue.
 :::
 
-::: tip Conseil pour les nouveaux utilisateurs
-Commencez par lire la [prise en main rapide](/fr-FR/guide/quick-start), puis poursuivez avec la page [Exigences système et installation](/fr-FR/guide/requirements-installation).
+::: tip Commencez ici
+Vous découvrez LeviLauncher ? Le tutoriel [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/) (en anglais) vous guide du téléchargement de LeviLauncher jusqu'à votre première partie avec des mods. Pour obtenir l'application pour Windows ou Android, rendez-vous sur la page [Téléchargements](/fr-FR/download).
 :::
 
 ## Contenu de ce site
@@ -73,8 +73,6 @@ Cette documentation s'adresse aux **utilisateurs finaux**, et non aux mainteneur
 
 ## Ordre de lecture recommandé
 
-1. [Prise en main rapide](/fr-FR/guide/quick-start)
-2. [Exigences système et installation](/fr-FR/guide/requirements-installation)
-3. [Premier lancement](/fr-FR/guide/first-launch)
-4. [Gestion des versions](/fr-FR/guide/version-management)
-5. [Gestion du contenu](/fr-FR/guide/content-management)
+1. [Play with mods on Windows](https://levimc.org/tutorials/play/play-with-mods/)
+2. [Gestion des versions](/fr-FR/guide/version-management)
+3. [Gestion du contenu](/fr-FR/guide/content-management)

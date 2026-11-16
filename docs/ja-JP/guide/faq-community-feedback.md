@@ -8,7 +8,7 @@
 
 ### macOS や Linux でも使えますか？
 
-LeviLauncher には **Windows 版**と **Android 版**（[Android 版ガイド](/ja-JP/guide/quick-start?platform=android)）があります。macOS 版や Linux 版はありません。
+LeviLauncher には **Windows 版**と **Android 版**（[Android 版ガイド](/ja-JP/guide/version-management?platform=android)）があります。macOS 版や Linux 版はありません。
 
 ### iOS 版はありますか？
 
@@ -32,7 +32,7 @@ LeviLauncher には **Windows 版**と **Android 版**（[Android 版ガイド](
 
 ### Android 版に必要なものは？
 
-ARM64 デバイス上の Android 9.0 以降と、Google Play からインストールした Minecraft 統合版 1.21.80 以降です。[システム要件とインストール](./requirements-installation)を参照してください。
+ARM64 デバイス上の Android 9.0 以降と、Google Play からインストールした Minecraft 統合版 1.21.80 以降です。[ダウンロード](../download?platform=android)を参照してください。
 
 ### Android で複数の Minecraft バージョンを使えますか？
 

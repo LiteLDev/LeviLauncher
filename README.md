@@ -31,7 +31,7 @@ UWP x64 instances support the console toggle under **Instance Settings → Launc
 See the user docs:
 
 - **User docs:** https://levimc.org/LeviLauncher/
-- **中文文档：** https://levimc.org/LeviLauncher/zh-CN/
+- **中文文档：** https://levimc.org/LeviLauncher/zh-Hans/
 
 ### Command Line
 
@@ -90,15 +90,7 @@ Global flags: `-i/--instance <name>`, `-p/--player <id|gamertag>`, `--json` (one
 
 ### Development
 
-This repository's end-user guide is published at https://levimc.org/LeviLauncher/. For local docs work:
-
-```bash
-cd docs
-npm ci
-npm run dev
-```
-
-For app development, keep using the existing `frontend/`, `build/`, and Wails task flow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for working on the app and its documentation.
 
 ## License
 

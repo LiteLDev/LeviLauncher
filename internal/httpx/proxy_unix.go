@@ -56,6 +56,29 @@ func newBaseTransport() *http.Transport {
 }
 func newBlockingBaseTransport() *http.Transport { return newBaseTransport() }
 
+// NewDirectClient is used only as a fallback for native Xbox token exchanges.
+// It retains the normal certificate checks and headers, and has its own pool.
+func NewDirectClient(timeout time.Duration) *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = nil
+	return &http.Client{Transport: &defaultHeaderTransport{base: transport}, Timeout: timeout}
+}
+
+// UsesSystemProxy distinguishes automatic system routing from an explicit
+// environment proxy. A caller must not bypass an explicitly configured proxy.
+func UsesSystemProxy(req *http.Request) bool {
+	env := httpproxy.FromEnvironment()
+	explicit := env.HTTPProxy
+	if req.URL.Scheme == "https" {
+		explicit = env.HTTPSProxy
+	}
+	if explicit != "" || os.Getenv("ALL_PROXY") != "" || os.Getenv("all_proxy") != "" {
+		return false
+	}
+	proxy, err := proxyFromUnixSystem(req)
+	return err == nil && proxy != nil
+}
+
 func proxyFromUnixSystem(req *http.Request) (*url.URL, error) {
 	if isImplicitDirectHost(strings.ToLower(req.URL.Hostname())) {
 		return nil, nil

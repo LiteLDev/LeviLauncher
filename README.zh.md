@@ -53,7 +53,7 @@ UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，�
   screenshot  list, remove
   server      list
   player      list
-  backup      list, create, restore
+  backup      list, create, restore（预览）
 
 查找可安装的内容：
   installer   list, search, download, remove, mirrors（Minecraft 安装包）

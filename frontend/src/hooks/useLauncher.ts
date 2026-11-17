@@ -2,7 +2,7 @@ import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
 import { useOverlayState } from "@heroui/react";
 import React, { useEffect } from "react";
 
-import { Events } from "@wailsio/runtime";
+import { Events, System } from "@wailsio/runtime";
 import { useNavigate } from "react-router-dom";
 import { compareVersions } from "@/utils/version";
 import {
@@ -652,7 +652,7 @@ export const useLauncher = (args: any) => {
         } catch {}
       }
       // The native DLL loader needs the desktop VC runtime on UWP too.
-      // GameInput and Gaming Services remain GDK-specific dependencies.
+      // GameInput remains a GDK dependency in Wine too.
       if (currentPackageType !== "gdk") return;
       if (
         !hasSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput)
@@ -677,7 +677,10 @@ export const useLauncher = (args: any) => {
             });
         } catch {}
       }
+      // Gaming Services is a Windows Store service; native hosts launch via Wine.
       if (
+        !System.IsMac() &&
+        !System.IsLinux() &&
         !hasSessionDependencyCheckRun(
           DEPENDENCY_CHECK_SESSION_KEYS.gamingServices,
         )

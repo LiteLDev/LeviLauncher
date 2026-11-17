@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
@@ -19,16 +20,30 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/xbox"
 )
 
-type UserService struct{ window *application.WebviewWindow }
+type UserService struct {
+	window             *application.WebviewWindow
+	restoreAccountOnce sync.Once
+}
 
 func (s *UserService) IsElevated() bool {
 	return processinfo.IsElevated()
 }
 
 func NewUserService(_ *Minecraft) *UserService {
-	// Restore identity before any avatar or installation request can select a default account.
-	_ = nativeinstall.RestoreSharedAccount(context.Background(), apppath.AccountsDir())
-	return &UserService{}
+	s := &UserService{}
+	if runtime.GOOS == "windows" {
+		s.restoreAccount()
+	}
+	return s
+}
+
+func (s *UserService) restoreAccount() {
+	// Native credential access may ask for Keychain permission. Defer it to
+	// account requests so it cannot block the main thread before Wails opens.
+	// Every account request still waits for the same restoration to finish.
+	s.restoreAccountOnce.Do(func() {
+		_ = nativeinstall.RestoreSharedAccount(context.Background(), apppath.AccountsDir())
+	})
 }
 
 func (s *UserService) GetGamertagByXuid(xuidStr string) string {
@@ -36,6 +51,7 @@ func (s *UserService) GetGamertagByXuid(xuidStr string) string {
 	if err != nil {
 		return ""
 	}
+	s.restoreAccount()
 	tag, err := xbox.GetGamertagByXuid(xuid)
 	if err != nil {
 		return ""
@@ -44,6 +60,7 @@ func (s *UserService) GetGamertagByXuid(xuidStr string) string {
 }
 
 func (s *UserService) GetLocalUserId() string {
+	s.restoreAccount()
 	id, err := xbox.GetLocalUserId()
 	if err != nil {
 		return ""
@@ -68,6 +85,7 @@ func (s *UserService) GetLocalUserStatus() LocalUserStatus {
 }
 
 func (s *UserService) GetLocalUserGamertag() string {
+	s.restoreAccount()
 	tag, err := xbox.GetLocalUserGamertag()
 	if err != nil {
 		return ""
@@ -76,6 +94,7 @@ func (s *UserService) GetLocalUserGamertag() string {
 }
 
 func (s *UserService) GetLocalUserGamerPicture(size int) string {
+	s.restoreAccount()
 	bin, err := xbox.GetLocalUserGamerPicture(size)
 	if err != nil {
 		return ""
@@ -88,6 +107,7 @@ func (s *UserService) GetUserGamertagMap(usersRoot string) map[string]string {
 	if usersRoot == "" {
 		return map[string]string{}
 	}
+	s.restoreAccount()
 
 	cachePath := apppath.GamertagsPath()
 	out := map[string]string{}
@@ -194,6 +214,7 @@ func (s *UserService) GetUserGamertagMap(usersRoot string) map[string]string {
 }
 
 func (s *UserService) ResetSession() string {
+	s.restoreAccount()
 	if err := xbox.ResetSession(); err != nil {
 		return err.Error()
 	}
@@ -201,6 +222,7 @@ func (s *UserService) ResetSession() string {
 }
 
 func (s *UserService) XUserGetState() int {
+	s.restoreAccount()
 	state, err := xbox.XUserGetState()
 	if err != nil {
 		return 1
@@ -209,10 +231,12 @@ func (s *UserService) XUserGetState() int {
 }
 
 func (s *UserService) CheckGameLicenses(ctx context.Context, xuid string) nativeinstall.GameLicenses {
+	s.restoreAccount()
 	return nativeinstall.CheckGameLicenses(ctx, apppath.AccountsDir(), xuid)
 }
 
 func (s *UserService) RefreshGameLicenses(ctx context.Context, xuid string) nativeinstall.GameLicenses {
+	s.restoreAccount()
 	return nativeinstall.RefreshGameLicenses(ctx, apppath.AccountsDir(), xuid)
 }
 
@@ -225,6 +249,7 @@ func (s *UserService) SignIn(ctx context.Context, requestID string) string {
 	if s.window == nil {
 		return "ERR_AUTH_FAILED"
 	}
+	s.restoreAccount()
 	dir := apppath.AccountsDir()
 	hwnd := uintptr(s.window.NativeWindow())
 	var err error

@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Input, Label, ListBox, Select, Spinner, TextField } from "@heroui/react";
+import { Button, Input, Label, ListBox, Select, Spinner, TextField, toast } from "@heroui/react";
 import { Dialogs, System } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 import { CheckWineSettings, GetWineSettings, SaveWineSettings } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
@@ -72,7 +72,7 @@ export const WineSettings: React.FC<{ selection?: Settings | null }> = ({ select
         const current = await GetWineSettings();
         setSettings(current);
         setSaved(JSON.stringify(current));
-        setResult(t("settings.wine.saved"));
+        toast.success(t("settings.wine.saved"));
       } else {
         const version = await CheckWineSettings(settings);
         setResult(t("settings.wine.checked", { version }));

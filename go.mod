@@ -15,6 +15,7 @@ require (
 	github.com/wailsapp/wails/v3 v3.0.0-beta.19
 	golang.org/x/crypto v0.53.0
 	golang.org/x/mod v0.37.0
+	golang.org/x/net v0.56.0
 	golang.org/x/sys v0.46.0
 	golang.org/x/text v0.39.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce

@@ -4,19 +4,50 @@ package httpx
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/net/http/httpproxy"
 )
 
-var systemProxyOnce sync.Once
-var unixSystemProxy map[string]string
+type unixProxyCache struct {
+	mu       sync.Mutex
+	settings map[string]string
+	until    time.Time
+	load     func() (map[string]string, error)
+	now      func() time.Time
+}
+
+var systemProxy = unixProxyCache{load: loadUnixProxySettings, now: time.Now}
+
+func (c *unixProxyCache) get() (map[string]string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	now := c.now()
+	if c.settings != nil && now.Before(c.until) {
+		return c.settings, nil
+	}
+	settings, err := c.load()
+	if err != nil {
+		c.until = now.Add(time.Second)
+		if c.settings != nil {
+			return c.settings, nil
+		}
+		return nil, err
+	}
+	c.settings = settings
+	c.until = now.Add(5 * time.Second)
+	return settings, nil
+}
 
 func newBaseTransport() *http.Transport {
 	t := http.DefaultTransport.(*http.Transport).Clone()
@@ -26,45 +57,127 @@ func newBaseTransport() *http.Transport {
 func newBlockingBaseTransport() *http.Transport { return newBaseTransport() }
 
 func proxyFromUnixSystem(req *http.Request) (*url.URL, error) {
-	host := req.URL.Hostname()
-	if host == "localhost" || net.ParseIP(host).IsLoopback() {
+	if isImplicitDirectHost(strings.ToLower(req.URL.Hostname())) {
 		return nil, nil
 	}
-	if proxy, err := http.ProxyFromEnvironment(req); proxy != nil || err != nil {
-		return proxy, err
+	if err := req.Context().Err(); err != nil {
+		return nil, err
 	}
-	systemProxyOnce.Do(func() {
-		unixSystemProxy = map[string]string{}
-		if runtime.GOOS != "darwin" {
-			return
+	settings, err := systemProxy.get()
+	env := httpproxy.FromEnvironment()
+	// Fill the system fallback before evaluating NO_PROXY, so an explicit
+	// bypass remains a direct connection rather than falling through to macOS.
+	schemeProxy := env.HTTPProxy
+	if req.URL.Scheme == "https" {
+		schemeProxy = env.HTTPSProxy
+	}
+	if schemeProxy == "" {
+		schemeProxy = os.Getenv("ALL_PROXY")
+		if schemeProxy == "" {
+			schemeProxy = os.Getenv("all_proxy")
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		output, err := exec.CommandContext(ctx, "/usr/sbin/scutil", "--proxy").Output()
-		if err != nil {
-			return
-		}
-		for _, line := range strings.Split(string(output), "\n") {
-			key, value, ok := strings.Cut(strings.TrimSpace(line), " : ")
-			if ok {
-				unixSystemProxy[key] = strings.TrimSpace(value)
-			}
-		}
-	})
-	return proxyFromMacSettings(req.URL.Scheme, unixSystemProxy), nil
+	}
+	if err != nil && schemeProxy == "" {
+		return nil, err
+	}
+	return proxyFromUnixSettings(req, settings, env)
 }
+
+func proxyFromUnixSettings(req *http.Request, settings map[string]string, env *httpproxy.Config) (*url.URL, error) {
+	cfg := *env
+	all := os.Getenv("ALL_PROXY")
+	if all == "" {
+		all = os.Getenv("all_proxy")
+	}
+	if cfg.HTTPProxy == "" {
+		cfg.HTTPProxy = all
+	}
+	if cfg.HTTPSProxy == "" {
+		cfg.HTTPSProxy = all
+	}
+	if cfg.HTTPProxy == "" {
+		if proxy := proxyFromMacSettings("http", settings); proxy != nil {
+			cfg.HTTPProxy = proxy.String()
+		}
+	}
+	if cfg.HTTPSProxy == "" {
+		if proxy := proxyFromMacSettings("https", settings); proxy != nil {
+			cfg.HTTPSProxy = proxy.String()
+		}
+	}
+	if settings["ExcludeSimpleHostnames"] == "1" && isLocalHostName(req.URL.Hostname()) {
+		return nil, nil
+	}
+	cfg.NoProxy = strings.Trim(strings.Join([]string{cfg.NoProxy, settings["ExceptionsList"]}, ","), ",")
+	return cfg.ProxyFunc()(req.URL)
+}
+
+func loadUnixProxySettings() (map[string]string, error) {
+	if runtime.GOOS != "darwin" {
+		return map[string]string{}, nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	output, err := exec.CommandContext(ctx, "/usr/sbin/scutil", "--proxy").Output()
+	if err != nil {
+		return nil, fmt.Errorf("read macOS proxy settings: %w", err)
+	}
+	return parseUnixProxySettings(string(output)), nil
+}
+
+func parseUnixProxySettings(output string) map[string]string {
+	settings := map[string]string{}
+	depth := 0
+	exceptions := false
+	var bypass []string
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "}" {
+			if depth == 2 {
+				exceptions = false
+			}
+			depth--
+			continue
+		}
+		key, value, ok := strings.Cut(line, " : ")
+		if strings.HasSuffix(line, "{") {
+			depth++
+			if depth == 2 && key == "ExceptionsList" {
+				exceptions = true
+			}
+			continue
+		}
+		if !ok {
+			continue
+		}
+		if depth == 1 {
+			settings[key] = strings.TrimSpace(value)
+		}
+		if depth == 2 && exceptions {
+			bypass = append(bypass, strings.TrimSpace(value))
+		}
+	}
+	settings["ExceptionsList"] = strings.Join(bypass, ",")
+	return settings
+}
+
 func proxyFromMacSettings(scheme string, settings map[string]string) *url.URL {
 	name := "HTTP"
 	if scheme == "https" {
 		name = "HTTPS"
 	}
+	proxyScheme := "http"
 	if settings[name+"Enable"] != "1" {
-		return nil
+		if settings["SOCKSEnable"] != "1" {
+			return nil
+		}
+		name = "SOCKS"
+		proxyScheme = "socks5"
 	}
 	host := settings[name+"Proxy"]
 	port, err := strconv.Atoi(settings[name+"Port"])
 	if host == "" || err != nil || port < 1 || port > 65535 {
 		return nil
 	}
-	return &url.URL{Scheme: "http", Host: net.JoinHostPort(host, strconv.Itoa(port))}
+	return &url.URL{Scheme: proxyScheme, Host: net.JoinHostPort(host, strconv.Itoa(port))}
 }

@@ -83,6 +83,7 @@ func browserOAuthError(code string) error {
 }
 
 func pollBrowserToken(ctx context.Context, deviceCode string, interval time.Duration) (browserToken, error) {
+	transientFailures := 0
 	for {
 		timer := time.NewTimer(interval)
 		select {
@@ -95,9 +96,14 @@ func pollBrowserToken(ctx context.Context, deviceCode string, interval time.Dura
 		status, err := browserPost(ctx, "https://login.live.com/oauth20_token.srf", url.Values{
 			"client_id": {browserClientID}, "grant_type": {"urn:ietf:params:oauth:grant-type:device_code"}, "device_code": {deviceCode},
 		}, &token)
+		if ctx.Err() == nil && browserPollMayRetry(status, err) && transientFailures < 3 {
+			transientFailures++
+			continue
+		}
 		if err != nil {
 			return browserToken{}, err
 		}
+		transientFailures = 0
 		switch token.Error {
 		case "authorization_pending":
 			continue

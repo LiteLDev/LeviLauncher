@@ -40,7 +40,7 @@ func doJSON(req *http.Request, contract, auth string, out any) error {
 	if auth != "" {
 		req.Header.Set("Authorization", auth)
 	}
-	resp, err := httpClient.Do(req)
+	resp, err := doXboxRequest(req)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func getBytes(url, auth string) ([]byte, error) {
 	if auth != "" {
 		req.Header.Set("Authorization", auth)
 	}
-	resp, err := httpClient.Do(req)
+	resp, err := doXboxRequest(req)
 	if err != nil {
 		return nil, err
 	}

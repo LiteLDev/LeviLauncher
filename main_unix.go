@@ -12,6 +12,8 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
+	"io"
+	"log"
 	"log/slog"
 	"os"
 	"runtime"
@@ -28,6 +30,12 @@ func main() {
 	if err := apppath.EnsureDirs(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
+	}
+	// Finder-launched apps have no terminal; retain backend errors locally so
+	// authentication failures can be diagnosed without logging credentials.
+	if file, err := os.OpenFile(apppath.StartupLogPath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); err == nil {
+		defer file.Close()
+		log.SetOutput(io.MultiWriter(os.Stderr, file))
 	}
 	if _, err := config.Load(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

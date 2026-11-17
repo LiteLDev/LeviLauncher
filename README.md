@@ -53,7 +53,7 @@ Manage an instance:
   screenshot  list, remove
   server      list
   player      list
-  backup      list, create, restore
+  backup      list, create, restore (preview)
 
 Find things to install:
   installer   list, search, download, remove, mirrors (Minecraft builds)

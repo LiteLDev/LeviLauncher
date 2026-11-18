@@ -41,7 +41,7 @@ with tempfile.TemporaryDirectory() as scratch:
             target=iconset/f'icon_{size}x{size}{"@2x" if scale==2 else ""}.png'
             subprocess.run(['sips', '-z', str(size*scale), str(size*scale), str(mac_icon), '--out', str(target)], stdout=subprocess.DEVNULL, check=True)
     subprocess.run(['iconutil', '-c', 'icns', str(iconset), '-o', str(resources/'AppIcon.icns')], check=True)
-info={'CFBundleExecutable':'LeviLauncher','CFBundleIdentifier':'org.levimc.levilauncher.native','CFBundleName':'LeviLauncher','CFBundleDisplayName':'LeviLauncher for Mac','CFBundlePackageType':'APPL','CFBundleShortVersionString':'1.1.0','CFBundleVersion':'1','CFBundleIconFile':'AppIcon.icns','LSMinimumSystemVersion':'14.6','NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True},'NSSupportsAutomaticGraphicsSwitching':True}
+info={'CFBundleExecutable':'LeviLauncher','CFBundleIdentifier':'org.levimc.levilauncher.native','CFBundleName':'LeviLauncher','CFBundleDisplayName':'LeviLauncher','CFBundlePackageType':'APPL','CFBundleShortVersionString':'1.1.0','CFBundleVersion':'1','CFBundleIconFile':'AppIcon.icns','LSMinimumSystemVersion':'14.6','NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True},'NSSupportsAutomaticGraphicsSwitching':True}
 with (app/'Contents/Info.plist').open('wb') as f: plistlib.dump(info,f)
 for name in ('COPYING', 'THIRD_PARTY_NOTICES'):
     shutil.copyfile(root/name, resources/name)

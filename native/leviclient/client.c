@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "protocol.h"
+#include "heap_guard.h"
 
 typedef int (WINAPI *MessageBoxFn)(HWND, LPCWSTR, LPCWSTR, UINT);
 static MessageBoxFn original_message_box;
@@ -132,6 +133,7 @@ static int install_bridge(HMODULE runtime) {
 
 static DWORD WINAPI attach_runtime(void *unused) {
     (void)unused;
+    install_heap_guard();
     for (int i = 0; i < 600; ++i) {
         HMODULE runtime = GetModuleHandleW(L"xgameruntime.dll");
         if (runtime && install_bridge(runtime)) return 0;

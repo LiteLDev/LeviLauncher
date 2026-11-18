@@ -15,6 +15,7 @@ p = argparse.ArgumentParser()
 p.add_argument('--compiler', required=True, help='zig cc -target x86_64-windows-gnu')
 p.add_argument('--launcher', required=True, type=Path, help='Sikarugir Contents/MacOS/wineskinlauncher')
 p.add_argument('--output', required=True, type=Path)
+p.add_argument('--client', type=Path, help='Alternate client artifact for regression comparison')
 args = p.parse_args()
 root = Path(__file__).resolve().parents[3]
 source = Path(__file__).resolve().parent
@@ -23,8 +24,9 @@ output.mkdir(parents=True, exist_ok=True)
 cc = shlex.split(args.compiler) + ['-O2']
 subprocess.run(cc + ['-shared', str(source/'fixture_api.c'), str(source/'fixture-api.def'), '-o', str(output/'fixture-api.dll')], check=True)
 subprocess.run(cc + ['-shared', '-fno-builtin', str(source/'fixture_runtime.c'), str(output/'fixture_api.lib'), '-o', str(output/'xgameruntime.dll')], check=True)
+subprocess.run(cc + ['-shared', str(source/'fixture_preloader.c'), '-o', str(output/'PreLoader.dll')], check=True)
 subprocess.run(cc + [str(source/'fixture_main.c'), '-o', str(output/'fixture.exe')], check=True)
-shutil.copyfile(root/'internal/gameclient/LeviClient.dll', output/'LeviClient.dll')
+shutil.copyfile(args.client or root/'internal/gameclient/LeviClient.dll', output/'LeviClient.dll')
 
 mode, received = 'accepted', []
 class Handler(BaseHTTPRequestHandler):
@@ -53,12 +55,13 @@ try:
         while not result.exists() and time.monotonic() < deadline:
             time.sleep(0.1)
         actual = result.read_text().strip()
-        assert actual == f'prompt={expected} other=2', (mode, actual)
+        guard = -1 if mode == 'inert' else 1
+        assert actual == f'prompt={expected} other=2 guard={guard}', (mode, actual)
         if mode == 'accepted':
             assert received == [('/v1/game-login/fixture', {'code': 'AB12CD34', 'expiresIn': 900, 'resultEvents': True}), ('/v1/game-login/fixture/result', {'phase': 'failed', 'errorCode': '80004005'})], received
         elif mode == 'inert':
             assert not received, received
-        report[mode] = {'passed': True, 'promptResult': expected, 'unrelatedPromptResult': 2}
+        report[mode] = {'passed': True, 'promptResult': expected, 'unrelatedPromptResult': 2, 'heapGuard': guard == 1 if mode != 'inert' else 'inert'}
         print(f'{mode}: passed', flush=True)
 finally:
     server.shutdown()

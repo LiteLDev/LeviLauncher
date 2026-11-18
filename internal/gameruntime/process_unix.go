@@ -15,7 +15,7 @@ type Process struct {
 }
 
 func Processes() []Process {
-	data, err := exec.Command("ps", "-axo", "pid=,comm=").Output()
+	data, err := exec.Command("/bin/ps", "-axo", "pid=,comm=").Output()
 	if err != nil {
 		return nil
 	}
@@ -29,8 +29,10 @@ func Processes() []Process {
 		if err != nil {
 			continue
 		}
-		files, err := exec.Command("lsof", "-p", words[0], "-Fn").Output()
-		if err != nil {
+		// Finder launches can omit /usr/sbin from PATH. lsof can also return
+		// useful mappings with a nonzero status when another file is inaccessible.
+		files, _ := exec.Command("/usr/sbin/lsof", "-p", words[0], "-Fn").Output()
+		if len(files) == 0 {
 			continue
 		}
 		for _, f := range strings.Split(string(files), "\n") {

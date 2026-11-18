@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 )
 
 func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) string {
@@ -50,16 +51,15 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	if prepared != "" {
 		exe = prepared
 	}
-	guest, err := p.WindowsPath(exe)
-	if err != nil {
-		return "ERR_WINE_PATH: " + err.Error()
-	}
 	args := parseCommandLineArgs(meta.LaunchArgs)
 	if meta.EnableEditorMode {
 		args = append(args, "-Editor", "true")
 	}
 	// Game lifetime is independent of the launcher's context once started.
-	cmd := p.Command(context.Background(), guest, args...)
+	cmd, detached, err := p.GameCommand(context.Background(), exe, args...)
+	if err != nil {
+		return "ERR_WINE_RUNTIME: " + err.Error()
+	}
 	cmd.Dir = dir
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	env := map[string]string{}
@@ -79,14 +79,27 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, k+"="+v)
 	}
+	logFile, err := os.OpenFile(filepath.Join(dir, ".levilauncher", "wine-launch.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+	if err != nil {
+		return "ERR_LAUNCH_GAME: " + err.Error()
+	}
+	fmt.Fprintln(logFile, time.Now().Format(time.RFC3339), "Starting", filepath.Base(exe), "via", filepath.Base(cmd.Path))
+	cmd.Stdout, cmd.Stderr = logFile, logFile
 	eventsink.From(ctx).Emit(launch.EventMcLaunchStart, struct{}{})
 	if err = cmd.Start(); err != nil {
+		logFile.Close()
 		return "ERR_LAUNCH_GAME: " + err.Error()
 	}
 	pid := cmd.Process.Pid
+	if detached {
+		// Sikarugir delegates to its SDK and exits before the game's window.
+		// Monitor the actual instance, not the short-lived wrapper's PID.
+		pid = 0
+	}
 	go func() {
+		defer logFile.Close()
 		if err := cmd.Wait(); err != nil {
-			fmt.Fprintln(os.Stderr, "Wine launcher exited:", err)
+			fmt.Fprintln(logFile, "Wine launcher exited:", err)
 		}
 	}()
 	go launch.MonitorGameProcess(ctx, dir, pid)

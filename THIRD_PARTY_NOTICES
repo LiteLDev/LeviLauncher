@@ -13,6 +13,12 @@ internal/nativeinstall
   0670e25aeb0e0e9f800f8f2f4968ae3b681842a7
   (https://github.com/xodus-gaming/xodus), licensed under GNU GPL version 3.
 
+internal/gameruntime/sikarugir
+  The Windows x64 xgameruntime.dll and mcwinrt.dll compatibility shims are
+  from Flarial's macOS fork (https://github.com/flarialmc/macos), commit
+  fd7c8991ca151bfaef60882152e8b270bca68daa, under GNU GPL version 3.
+  Corresponding sources and build instructions are in the source subdirectory.
+
 github.com/axrona/go-discordrpc v1.1.0-1
   GNU GPL version 3. Used by internal/discord.
 

@@ -22,6 +22,13 @@ func RunHook(ctx context.Context, dir, command string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
+	return p.runHook(ctx, dir, command, output)
+}
+
+func (p Profile) runHook(ctx context.Context, dir, command string, output io.Writer) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	temp, err := os.MkdirTemp("", "levi-hook-")
 	if err != nil {
 		return err

@@ -51,6 +51,9 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	if !gameinput.IsInstalled() {
 		return "ERR_GAMEINPUT_MISSING"
 	}
+	if err := p.PrepareMinecraft(ctx); err != nil {
+		return "ERR_WINE_RUNTIME: " + err.Error()
+	}
 	accountSession := gameauth.Register(name, p.Prefix)
 	launched := false
 	if accountSession != nil {

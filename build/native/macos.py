@@ -43,8 +43,8 @@ with tempfile.TemporaryDirectory() as scratch:
     subprocess.run(['iconutil', '-c', 'icns', str(iconset), '-o', str(resources/'AppIcon.icns')], check=True)
 info={'CFBundleExecutable':'LeviLauncher','CFBundleIdentifier':'org.levimc.levilauncher.native','CFBundleName':'LeviLauncher','CFBundleDisplayName':'LeviLauncher for Mac','CFBundlePackageType':'APPL','CFBundleShortVersionString':'1.1.0','CFBundleVersion':'1','CFBundleIconFile':'AppIcon.icns','LSMinimumSystemVersion':'14.6','NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True},'NSSupportsAutomaticGraphicsSwitching':True}
 with (app/'Contents/Info.plist').open('wb') as f: plistlib.dump(info,f)
-license_file = root/'LICENSE'
-if license_file.exists(): shutil.copyfile(license_file, resources/'LICENSE')
+for name in ('COPYING', 'THIRD_PARTY_NOTICES'):
+    shutil.copyfile(root/name, resources/name)
 subprocess.run(['codesign','--force','--sign','-',str(app)],check=True)
 subprocess.run(['codesign','--verify','--deep','--strict',str(app)],check=True)
 print(f'Native application: {app}')

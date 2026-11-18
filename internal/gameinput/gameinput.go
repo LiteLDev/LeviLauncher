@@ -78,12 +78,7 @@ func EnsureInteractive(ctx context.Context) {
 	eventsink.From(ctx).Emit("gameinput.download.done", struct{}{})
 	log.Println("GameInputRedist prepared:", dlPath)
 
-	cmd, commandErr := installerCommand(ctx, dlPath)
-	if commandErr != nil {
-		eventsink.From(ctx).Emit("gameinput.download.error", commandErr.Error())
-		return
-	}
-	if err := cmd.Run(); err != nil {
+	if err := runInstaller(ctx, dlPath); err != nil {
 		log.Println("failed to run GameInput installer:", err)
 	}
 	installed := false

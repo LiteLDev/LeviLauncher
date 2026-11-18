@@ -298,6 +298,10 @@ export const useLauncher = (args: any) => {
               }
               launchRequestActiveRef.current = false;
               mcLaunchLoadingDisclosure.close();
+              if (s === "ERR_GAMEINPUT_MISSING") {
+                gameInputMissingDisclosure.open();
+                return;
+              }
               setLaunchErrorCode(s);
               launchFailedDisclosure.open();
             }
@@ -323,6 +327,7 @@ export const useLauncher = (args: any) => {
     navigate,
     launchFailedDisclosure,
     mcLaunchLoadingDisclosure,
+    gameInputMissingDisclosure,
   ]);
 
   const doForceLaunch = React.useCallback(() => {
@@ -610,6 +615,9 @@ export const useLauncher = (args: any) => {
   }, [requiresUWPRegistration, doRegister, doLaunch]);
 
   useEffect(() => {
+    // A native first run must reach Wine settings before any Windows
+    // runtime prerequisites can be checked or installed.
+    if (System.IsMac() || System.IsLinux()) return;
     let disposed = false;
     let vcRuntimeRetryTimer: number | null = null;
 

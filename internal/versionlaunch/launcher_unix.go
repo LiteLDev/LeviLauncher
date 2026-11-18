@@ -8,10 +8,12 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/gameauth"
 	"github.com/liteldev/LeviLauncher/internal/gameclient"
+	"github.com/liteldev/LeviLauncher/internal/gameinput"
 	"github.com/liteldev/LeviLauncher/internal/gameruntime"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
+	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"os"
 	"path/filepath"
@@ -42,6 +44,12 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	p, err := gameruntime.Default()
 	if err != nil {
 		return "ERR_WINE_RUNTIME: " + err.Error()
+	}
+	if !vcruntime.IsInstalled() {
+		return "ERR_VCRUNTIME_MISSING"
+	}
+	if !gameinput.IsInstalled() {
+		return "ERR_GAMEINPUT_MISSING"
 	}
 	accountSession := gameauth.Register(name, p.Prefix)
 	launched := false

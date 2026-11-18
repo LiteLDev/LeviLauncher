@@ -16,6 +16,6 @@ func IsInstalled() bool {
 	return false
 }
 
-func installerCommand(ctx context.Context, path string) (*exec.Cmd, error) {
-	return exec.CommandContext(ctx, "msiexec", "/i", path, "/passive"), nil
+func runInstaller(ctx context.Context, path string) error {
+	return exec.CommandContext(ctx, "msiexec", "/i", path, "/passive").Run()
 }

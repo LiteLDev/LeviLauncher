@@ -4,19 +4,26 @@ package gameinput
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/liteldev/LeviLauncher/internal/gameruntime"
-	"os/exec"
 )
 
 func IsInstalled() bool { return gameruntime.HasSystemDLL("GameInputRedist.dll") }
-func installerCommand(ctx context.Context, path string) (*exec.Cmd, error) {
+func runInstaller(ctx context.Context, path string) error {
 	p, err := gameruntime.Default()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	win, err := p.WindowsPath(path)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return p.Command(ctx, "msiexec.exe", "/i", win, "/passive"), nil
+	if strings.ContainsAny(win, "\"\r\n") {
+		return fmt.Errorf("invalid GameInput installer path")
+	}
+	win = strings.ReplaceAll(win, "%", "%%")
+	return gameruntime.RunHook(ctx, filepath.Dir(path), `msiexec.exe /i "`+win+`" /passive`, nil)
 }

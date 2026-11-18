@@ -5,6 +5,7 @@ package gameclient
 import (
 	"bytes"
 	"debug/pe"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,7 +24,7 @@ func TestEnsureInstallsAnX64DLLAndUpgradesOwnedClient(t *testing.T) {
 	if err := Ensure(instance); err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(instance, "mods", "LeviClient", "LeviClient.dll")
+	path := filepath.Join(instance, "mods", "LeviClient", "XboxSignInFix.dll")
 	if err := os.WriteFile(path, []byte("old client"), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -33,6 +34,41 @@ func TestEnsureInstallsAnX64DLLAndUpgradesOwnedClient(t *testing.T) {
 	data, err := os.ReadFile(path)
 	if err != nil || !bytes.Equal(data, clientDLL) {
 		t.Fatal("owned client was not upgraded")
+	}
+}
+
+func TestEnsureMigratesLegacyManifestAndPreservesDisabledState(t *testing.T) {
+	for _, filename := range []string{"manifest.json", "manifest.json.close"} {
+		t.Run(filename, func(t *testing.T) {
+			instance := t.TempDir()
+			dir := filepath.Join(instance, "mods", "LeviClient")
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(dir, filename)
+			if err := os.WriteFile(path, []byte(`{"name":"LeviClient","entry":"LeviClient.dll","type":"preload-native","version":"0.1.0"}`), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := Ensure(instance); err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got clientManifest
+			if err := json.Unmarshal(data, &got); err != nil {
+				t.Fatal(err)
+			}
+			if got.Name != "Xbox Sign-in Fix" || got.Entry != "XboxSignInFix.dll" || got.Author != "wzyyyyyyy" {
+				t.Fatalf("unexpected manifest: %+v", got)
+			}
+			if filename == "manifest.json.close" {
+				if _, err := os.Stat(filepath.Join(dir, "manifest.json")); !os.IsNotExist(err) {
+					t.Fatal("disabled plugin was enabled")
+				}
+			}
+		})
 	}
 }
 

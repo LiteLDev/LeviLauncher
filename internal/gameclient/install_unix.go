@@ -13,15 +13,43 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
-//go:embed LeviClient.dll
+//go:embed XboxSignInFix.dll
 var clientDLL []byte
 
+const (
+	modName    = "Xbox Sign-in Fix"
+	modEntry   = "XboxSignInFix.dll"
+	modType    = "preload-native"
+	legacyName = "LeviClient"
+	legacyDLL  = "LeviClient.dll"
+)
+
+type clientManifest struct {
+	Name    string `json:"name"`
+	Entry   string `json:"entry"`
+	Type    string `json:"type"`
+	Author  string `json:"author"`
+	Version string `json:"version"`
+}
+
 func Ensure(instance string) error {
-	dir := filepath.Join(instance, "mods", "LeviClient")
+	// The folder is the launcher's persistent mod identifier. Keeping it
+	// lets existing instances upgrade without loading a second copy.
+	dir := filepath.Join(instance, "mods", legacyName)
 	manifest := filepath.Join(dir, "manifest.json")
-	if data, err := os.ReadFile(manifest); err == nil {
-		var existing struct{ Name, Entry, Type string }
-		if json.Unmarshal(data, &existing) != nil || existing.Name != "LeviClient" || existing.Entry != "LeviClient.dll" || existing.Type != "preload-native" {
+	data, err := os.ReadFile(manifest)
+	if os.IsNotExist(err) {
+		disabled := manifest + ".close"
+		data, err = os.ReadFile(disabled)
+		if err == nil {
+			manifest = disabled
+		}
+	}
+	if err == nil {
+		var existing clientManifest
+		if json.Unmarshal(data, &existing) != nil || existing.Type != modType ||
+			!((existing.Name == modName && existing.Entry == modEntry) ||
+				(existing.Name == legacyName && existing.Entry == legacyDLL)) {
 			return fmt.Errorf("mods/LeviClient is occupied by another mod")
 		}
 	} else if !os.IsNotExist(err) {
@@ -34,11 +62,17 @@ func Ensure(instance string) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	path := filepath.Join(dir, "LeviClient.dll")
+	path := filepath.Join(dir, modEntry)
 	if data, err := os.ReadFile(path); err != nil || !bytes.Equal(data, clientDLL) {
 		if err := fsx.WriteFileAtomic(path, clientDLL, 0644); err != nil {
 			return err
 		}
 	}
-	return fsx.WriteFileAtomic(manifest, []byte("{\n  \"name\": \"LeviClient\",\n  \"entry\": \"LeviClient.dll\",\n  \"version\": \"0.1.0\",\n  \"type\": \"preload-native\"\n}\n"), 0644)
+	metadata, err := json.MarshalIndent(clientManifest{
+		Name: modName, Entry: modEntry, Type: modType, Author: "wzyyyyyyy", Version: "0.1.1",
+	}, "", "  ")
+	if err != nil {
+		return err
+	}
+	return fsx.WriteFileAtomic(manifest, append(metadata, '\n'), 0644)
 }

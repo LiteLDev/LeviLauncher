@@ -73,10 +73,9 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 		code, detail := "ERR_NATIVE_MSIXVC", ""
 		var failure *nativeinstall.Error
 		if errors.As(err, &failure) {
-			if cause := failure.Unwrap().Error(); cause != "" {
-				code, detail = failure.Code, failure.Reason+"("+cause+")"
-			} else {
-				code, detail = failure.Code, failure.Reason
+			code, detail = failure.Code, failure.Reason
+			if cause := failure.Unwrap(); cause != nil {
+				detail += " (" + cause.Error() + ")"
 			}
 		}
 		if errors.Is(err, context.Canceled) {

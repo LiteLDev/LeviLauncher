@@ -328,6 +328,24 @@
   },
   "settings": {
     "wine": {
+      "setup": {
+        "next": "Next",
+        "back_to_list": "Back to Wine list",
+        "title": "Set up Wine",
+        "ready": "Wine is ready",
+        "change": "Change Wine",
+        "keep_current": "Keep current Wine",
+        "choose_or_install": "Select a Wine environment or install Wine to run Minecraft.",
+        "rescan": "Scan again",
+        "manual": "Choose paths…",
+        "needs_prefix": "Prefix not initialized",
+        "use": "Use this Wine",
+        "install_help": "Install Sikarugir Creator to set up Wine.",
+        "install_next": "In Sikarugir Creator, install a template and a Wine engine. Create a wrapper, run it once to initialize it, then scan again here.",
+        "terminal_started": "Finish the installation in Terminal, set up your wrapper in Sikarugir Creator, then scan again.",
+        "skip": "Set up later",
+        "save_next": "Save and Continue"
+      },
       "scan": "Scan this Mac / PC",
       "install": "Install Wine…",
       "found": "Found {{count}} Wine installation(s)",

@@ -6,7 +6,11 @@ import { CheckWineSettings, GetWineSettings, SaveWineSettings } from "bindings/g
 import type { WineSettings as Settings } from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
-export const WineSettings: React.FC<{ selection?: Settings | null }> = ({ selection }) => {
+export const WineSettings: React.FC<{
+  selection?: Settings | null;
+  onConfigured?: (settings: Settings, version: string) => void;
+  onCancel?: () => void;
+}> = ({ selection, onConfigured, onCancel }) => {
   const { t } = useTranslation();
   const [settings, setSettings] = React.useState<Settings | null>(null);
   const [saved, setSaved] = React.useState("");
@@ -45,6 +49,15 @@ export const WineSettings: React.FC<{ selection?: Settings | null }> = ({ select
       prefix: `${app.replace(/\/+$/, "")}/Contents/SharedSupport/prefix`,
     } : {}),
   });
+  const changePath = (field: "app" | "executable" | "prefix", path: string) => {
+    if (field === "app") {
+      changeApp(path);
+    } else if (onConfigured && field === "executable") {
+      change({ app: "", executable: path });
+    } else {
+      change({ [field]: path });
+    }
+  };
   const choose = async (field: "app" | "executable" | "prefix") => {
     setError("");
     try {
@@ -57,7 +70,7 @@ export const WineSettings: React.FC<{ selection?: Settings | null }> = ({ select
         AllowsMultipleSelection: false,
       });
       const path = Array.isArray(selected) ? selected[0] : selected;
-      if (path) field === "app" ? changeApp(path) : change({ [field]: path });
+      if (path) changePath(field, path);
     } catch (error) { reportError(error); }
   };
 
@@ -68,6 +81,12 @@ export const WineSettings: React.FC<{ selection?: Settings | null }> = ({ select
     setResult("");
     try {
       if (action === "save") {
+        if (onConfigured) {
+          const version = await CheckWineSettings(settings);
+          await SaveWineSettings(settings);
+          onConfigured(settings, version);
+          return;
+        }
         await SaveWineSettings(settings);
         const current = await GetWineSettings();
         setSettings(current);
@@ -86,7 +105,7 @@ export const WineSettings: React.FC<{ selection?: Settings | null }> = ({ select
       <TextField
         className="min-w-0 flex-1"
         value={settings?.[field] || ""}
-        onChange={(value) => field === "app" ? changeApp(value) : change({ [field]: value })}
+        onChange={(value) => changePath(field, value)}
         isDisabled={busy}
       >
         <Label>{t(`settings.wine.${field}`)}</Label>
@@ -127,7 +146,10 @@ export const WineSettings: React.FC<{ selection?: Settings | null }> = ({ select
       {error && <p role="alert" className="break-words text-sm text-danger">{error}</p>}
       {result && <p role="status" className="break-words text-sm text-success">{result}</p>}
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="primary" isDisabled={busy || !settings || JSON.stringify(settings) === saved} onPress={() => void run("save")}>{t("settings.wine.save")}</Button>
+        {onCancel && <Button variant="ghost" isDisabled={busy} onPress={onCancel}>{t("settings.wine.setup.back_to_list")}</Button>}
+        <Button variant="primary" isDisabled={busy || !settings || (!onConfigured && JSON.stringify(settings) === saved)} onPress={() => void run("save")}>
+          {t(onConfigured ? "settings.wine.setup.use" : "settings.wine.save")}
+        </Button>
         <Button variant="outline" isDisabled={busy || !settings} onPress={() => void run("check")}>{t("settings.wine.check")}</Button>
         <Button variant="ghost" isDisabled={busy} onPress={() => void load()}>{t("settings.wine.reload")}</Button>
         {busy && <Spinner size="sm" aria-label={t("settings.wine.working")} />}

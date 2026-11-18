@@ -43,7 +43,8 @@ func installerScript(brew string) string {
 		quoted + " install --cask Sikarugir-App/sikarugir/sikarugir\n" +
 		"result=$?\n" +
 		"if [ $result -eq 0 ]; then\n" +
-		"  echo 'Installation complete. Create or select a Wine wrapper in Sikarugir, then return to Levi and scan again.'\n" +
+		"  echo 'Sikarugir Creator is installed. Create and initialize a Wine wrapper, then return to Levi and scan again.'\n" +
+		"  open -a 'Sikarugir Creator' || echo 'Open Sikarugir Creator from Applications to continue.'\n" +
 		"else\n" +
 		"  echo 'Installation did not complete. Review the Homebrew message above and the official Sikarugir instructions.'\n" +
 		"fi\n" +

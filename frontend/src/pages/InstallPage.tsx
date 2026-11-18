@@ -36,7 +36,7 @@ import { splitErrorResult } from "@/utils/errorDetail";
 import { saveCurrentVersionName } from "@/utils/currentVersion";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clipboard, Dialogs, Events } from "@wailsio/runtime";
+import { Clipboard, Dialogs, Events, System } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   CopyVersionDataFromGDK,
@@ -51,6 +51,7 @@ import {
   ValidateVersionFolderName,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { UnifiedModal } from "@/components/UnifiedModal";
+import { WineSetup } from "@/components/WineSetup";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -169,6 +170,9 @@ export default function InstallPage() {
     ? isAppxInstaller(customInstallerPath) ? "uwp" : "gdk"
     : normalizePackageType(location?.state?.packageType);
   const isUWP = packageType === "uwp";
+  const requiresWine = !isUWP && (System.IsMac() || System.IsLinux());
+  const [wineReady, setWineReady] = useState(false);
+  const canInstall = !requiresWine || wineReady;
   // Unknown local packages can request isolation; their manifest is checked after extraction.
   const isolationSupported = (isUWP && !!customInstallerPath && !mirrorVersion.trim()) ||
     supportsVersionIsolation(packageType, mirrorVersion);
@@ -454,6 +458,7 @@ export default function InstallPage() {
   };
 
   const proceedInstall = async () => {
+    if (!canInstall) return;
     setFailureDetails("");
     setInstallError("");
     setResultMsg("");
@@ -653,6 +658,7 @@ export default function InstallPage() {
   };
 
   const handleInstall = async () => {
+    if (!canInstall) return;
     if (!isUWP && installLeviLamina && mirrorVersion) {
       const targetLLVersion = String(
         selectedLLVersion || getLatestLLVersion(mirrorVersion),
@@ -728,6 +734,7 @@ export default function InstallPage() {
                       </Button>
                       <Button
                         onPress={handleInstall}
+                        isDisabled={!canInstall}
                         variant={"secondary"}
                         className={cn(
                           "rounded-full",
@@ -950,8 +957,19 @@ export default function InstallPage() {
                       channel={mirrorType === "Preview" ? "preview" : "release"}
                     />
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="primary" size="sm" onPress={handleInstall}>{t("download_manager.actions.retry")}</Button>
+                      <Button variant="primary" size="sm" onPress={handleInstall} isDisabled={!canInstall}>{t("download_manager.actions.retry")}</Button>
                     </div>
+                  </Card.Content>
+                </Card>
+              )}
+
+              {requiresWine && (
+                <Card className={LAYOUT.GLASS_CARD.BASE}>
+                  <Card.Header className={LAYOUT.GLASS_CARD.HEADER}>
+                    <h3 className="text-lg font-medium">{t("settings.wine.setup.title")}</h3>
+                  </Card.Header>
+                  <Card.Content className="p-6">
+                    <WineSetup onReadyChange={setWineReady} />
                   </Card.Content>
                 </Card>
               )}

@@ -328,6 +328,24 @@
   },
   "settings": {
     "wine": {
+      "setup": {
+        "next": "下一步",
+        "back_to_list": "返回 Wine 列表",
+        "title": "设置 Wine",
+        "ready": "Wine 已就绪",
+        "change": "更换 Wine",
+        "keep_current": "继续使用当前 Wine",
+        "choose_or_install": "选择已有的 Wine 环境，或安装 Wine 来运行 Minecraft。",
+        "rescan": "重新扫描",
+        "manual": "手动选择路径…",
+        "needs_prefix": "容器未初始化",
+        "use": "使用此 Wine",
+        "install_help": "安装 Sikarugir Creator 来配置 Wine。",
+        "install_next": "在 Sikarugir Creator 中安装模板和 Wine 引擎，创建并运行一次容器，然后回到这里重新扫描。",
+        "terminal_started": "请在终端完成安装，在 Sikarugir Creator 中配置容器，然后回来重新扫描。",
+        "skip": "稍后设置",
+        "save_next": "保存并继续"
+      },
       "scan": "扫描本机 Wine",
       "install": "安装 Wine…",
       "found": "发现 {{count}} 个 Wine 安装",

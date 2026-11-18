@@ -1,0 +1,23 @@
+version: "3"
+
+tasks:
+  build:
+    summary: Builds the native macOS application
+    platforms: [darwin]
+    dir: "{{.ROOT_DIR}}"
+    cmds:
+      - python3 build/native/macos.py
+
+  package:
+    summary: Builds the native macOS application and packages it as a DMG
+    platforms: [darwin]
+    cmds:
+      - task: build
+      - task: create:dmg
+
+  create:dmg:
+    summary: Packages an existing macOS application as a DMG
+    platforms: [darwin]
+    dir: "{{.ROOT_DIR}}"
+    cmds:
+      - python3 build/native/dmg.py

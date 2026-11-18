@@ -2,6 +2,7 @@ version: "3"
 
 includes:
   common: ./build/Taskfile.yml
+  darwin: ./build/native/Taskfile.yml
   windows: ./build/windows/Taskfile.yml
   windows_inno: ./build/windows/Taskfile.inno.yml
 

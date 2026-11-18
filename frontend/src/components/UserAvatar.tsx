@@ -103,7 +103,7 @@ export const UserAvatar = () => {
           onClick={(event) => {
             // WKWebView does not open target=_blank links in a browser.
             // Keep the existing WebView2/server behaviour on Windows.
-            if (!System.IsMac() && !System.IsLinux()) return;
+            if (!System.IsMac()) return;
             event.preventDefault();
             if (!browserCode) return;
             void Browser.OpenURL(browserCode.verificationURL).catch(() => {

@@ -1,4 +1,4 @@
-//go:build darwin || linux
+//go:build darwin
 
 package gameruntime
 
@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
@@ -26,9 +25,6 @@ func homebrewPath() string {
 }
 
 func InstallPlan() types.WineInstallPlan {
-	if runtime.GOOS != "darwin" {
-		return types.WineInstallPlan{URL: "https://gitlab.winehq.org/wine/wine/-/wikis/Download"}
-	}
 	return types.WineInstallPlan{
 		CanInstall: homebrewPath() != "",
 		Command:    "brew install --cask Sikarugir-App/sikarugir/sikarugir",
@@ -54,9 +50,6 @@ func installerScript(brew string) string {
 // StartInstaller opens a visible installer terminal, allowing Homebrew to ask
 // for any required input. A successful return means only that it was opened.
 func StartInstaller() error {
-	if runtime.GOOS != "darwin" {
-		return errors.New("use the WineHQ installation instructions for your Linux distribution")
-	}
 	brew := homebrewPath()
 	if brew == "" {
 		return errors.New("Homebrew is not installed; use the official installation instructions")

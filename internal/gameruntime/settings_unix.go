@@ -1,4 +1,4 @@
-//go:build darwin || linux
+//go:build darwin
 
 package gameruntime
 
@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -45,7 +44,7 @@ func resolveSettings(s types.WineSettings) (types.WineSettings, error) {
 	if s.App == "" && s.Executable == "" {
 		s.App = os.Getenv("LEVI_WINE_APP")
 		s.Executable = os.Getenv("LEVI_WINE_EXECUTABLE")
-		if runtime.GOOS == "darwin" && s.App == "" && s.Executable == "" {
+		if s.App == "" && s.Executable == "" {
 			s.App = filepath.Join(home, "Applications", "Minecraft Wine", "Minecraft Wine.app")
 		}
 	}
@@ -62,11 +61,7 @@ func resolveSettings(s types.WineSettings) (types.WineSettings, error) {
 			s.Prefix = filepath.Join(s.App, "Contents/SharedSupport/prefix")
 		}
 		if s.Prefix == "" {
-			data := os.Getenv("XDG_DATA_HOME")
-			if data == "" {
-				data = filepath.Join(home, ".local/share")
-			}
-			s.Prefix = filepath.Join(data, "levilauncher/wineprefix")
+			s.Prefix = filepath.Join(home, ".wine")
 		}
 	}
 	if s.Graphics == "" {
@@ -99,8 +94,8 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 		}
 	}
 	if s.App != "" {
-		if runtime.GOOS != "darwin" || !filepath.IsAbs(s.App) {
-			return p, errors.New("Wine app bundles are only supported on macOS")
+		if !filepath.IsAbs(s.App) {
+			return p, errors.New("Wine app bundle must be an absolute path")
 		}
 		if s.Executable != filepath.Join(s.App, "Contents/SharedSupport/wine/bin/wine") {
 			return p, errors.New("Wine executable does not belong to the selected app; clear the app path to use a custom executable")

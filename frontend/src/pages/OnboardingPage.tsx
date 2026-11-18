@@ -42,7 +42,7 @@ type OnboardingErrorKey = "common.load_failed" | "common.save_failed" | null;
 export default function OnboardingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const supportsWine = System.IsMac() || System.IsLinux();
+  const supportsWine = System.IsMac();
   const [wineStep, setWineStep] = React.useState(false);
   const [wineReady, setWineReady] = React.useState(false);
   const [langNames, setLangNames] = React.useState<

@@ -1,4 +1,4 @@
-//go:build darwin || linux
+//go:build darwin
 
 package nativeinstall
 
@@ -6,7 +6,6 @@ import (
 	"golang.org/x/sys/unix"
 	"os"
 	"path/filepath"
-	"runtime"
 )
 
 type cacheLock = *os.File
@@ -43,12 +42,5 @@ func secureCache(dir string) {
 func deviceInfo() (string, error) {
 	// Xodus also uses an empty SMBIOS block when hardware probing is unavailable.
 	// Credentials and the service-assigned device identity are persisted separately.
-	var raw []byte
-	if runtime.GOOS == "linux" {
-		raw, _ = os.ReadFile("/sys/firmware/dmi/tables/DMI")
-		if len(raw) > 1<<20 {
-			raw = nil
-		}
-	}
-	return makeDeviceInfo(raw), nil
+	return makeDeviceInfo(nil), nil
 }

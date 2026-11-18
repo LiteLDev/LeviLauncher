@@ -139,7 +139,7 @@ const lipGithubProxyLabel = (url: string) =>
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const hasWineSettings = System.IsMac() || System.IsLinux();
+  const hasWineSettings = System.IsMac();
   const settings = useSettings(i18n);
   const { openDiagnostics } = useDiagnostics();
   const {

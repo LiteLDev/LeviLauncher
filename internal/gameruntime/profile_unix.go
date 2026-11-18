@@ -1,4 +1,4 @@
-//go:build darwin || linux
+//go:build darwin
 
 // Package gameruntime executes Windows game components in the selected Wine prefix.
 package gameruntime

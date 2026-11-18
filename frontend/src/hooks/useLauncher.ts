@@ -617,7 +617,7 @@ export const useLauncher = (args: any) => {
   useEffect(() => {
     // A native first run must reach Wine settings before any Windows
     // runtime prerequisites can be checked or installed.
-    if (System.IsMac() || System.IsLinux()) return;
+    if (System.IsMac()) return;
     let disposed = false;
     let vcRuntimeRetryTimer: number | null = null;
 
@@ -688,7 +688,6 @@ export const useLauncher = (args: any) => {
       // Gaming Services is a Windows Store service; native hosts launch via Wine.
       if (
         !System.IsMac() &&
-        !System.IsLinux() &&
         !hasSessionDependencyCheckRun(
           DEPENDENCY_CHECK_SESSION_KEYS.gamingServices,
         )

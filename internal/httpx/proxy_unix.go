@@ -1,4 +1,4 @@
-//go:build darwin || linux
+//go:build darwin
 
 package httpx
 
@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -136,9 +135,6 @@ func proxyFromUnixSettings(req *http.Request, settings map[string]string, env *h
 }
 
 func loadUnixProxySettings() (map[string]string, error) {
-	if runtime.GOOS != "darwin" {
-		return map[string]string{}, nil
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	output, err := exec.CommandContext(ctx, "/usr/sbin/scutil", "--proxy").Output()

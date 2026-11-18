@@ -1,11 +1,10 @@
-//go:build darwin || linux
+//go:build darwin
 
 package oslang
 
 import (
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 )
 
@@ -15,9 +14,6 @@ func IsChineseUI() bool {
 			return strings.HasPrefix(strings.ToLower(v), "zh")
 		}
 	}
-	if runtime.GOOS == "darwin" {
-		b, e := exec.Command("/usr/bin/defaults", "read", "-g", "AppleLanguages").Output()
-		return e == nil && strings.Contains(string(b), "zh-")
-	}
-	return false
+	b, err := exec.Command("/usr/bin/defaults", "read", "-g", "AppleLanguages").Output()
+	return err == nil && strings.Contains(string(b), "zh-")
 }

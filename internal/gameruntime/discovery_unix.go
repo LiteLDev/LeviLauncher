@@ -1,4 +1,4 @@
-//go:build darwin || linux
+//go:build darwin
 
 package gameruntime
 
@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 
@@ -22,10 +21,7 @@ func Scan(ctx context.Context) ([]types.WineInstallation, error) {
 		return nil, err
 	}
 	binDirs := append(filepath.SplitList(os.Getenv("PATH")), "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", filepath.Join(home, ".local/bin"))
-	appDirs := []string{}
-	if runtime.GOOS == "darwin" {
-		appDirs = []string{"/Applications", filepath.Join(home, "Applications")}
-	}
+	appDirs := []string{"/Applications", filepath.Join(home, "Applications")}
 	current, err := LoadSettings()
 	if err != nil {
 		return nil, err

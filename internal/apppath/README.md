@@ -14,8 +14,6 @@ LeviLauncher 读写的每一个路径都在这里定义，名称常量在 `apppa
 ```
 %APPDATA%\LeviLauncher\
   config.json
-  wine.json                # 仅 macOS/Linux：Wine 运行时、prefix、图形和同步配置
-  install-wine.command     # 仅 macOS：用户启动的官方 Sikarugir 安装脚本
 %LOCALAPPDATA%\LeviLauncher\          默认的 <BaseRoot>
   Logs\startup.log                    以及 startup.1.log … startup.4.log
   Accounts\                           DPAPI 加密的微软账号和设备记录，以及 account.lock、device.lock
@@ -132,8 +130,10 @@ N9 保留的名称：
 - **实例名以文件夹为准：** 列出实例时，元数据里的名字与文件夹名不同（改名为 `-legacy` 的实例，或者在启动器外改过名的文件夹），就把名字改成文件夹名并写回。
 - **实例内文件按需迁移：** `version.json` 在第一次读取时原样搬到 `.levilauncher\instance.json`；两个都在时以较新的为准。LeviLauncher.dll 读取的也是两者中较新的一个。Xbox 验证标记在第一次使用时搬过去。图标在下次生成时写到新位置，旧的 `LargeLogo.ico` 保留，因为未修复的快捷方式可能还指向它。
 
-## 原生 macOS / Linux
+## 原生 macOS
 
-Windows 布局保持不变。原生 macOS 的配置与本机数据均默认位于 `~/Library/Application Support/LeviLauncher/`；Linux 的配置位于 `$XDG_CONFIG_HOME/LeviLauncher/`，本机数据位于 `$XDG_DATA_HOME/LeviLauncher/`（默认 `~/.local/share/LeviLauncher/`）。数据不放在可清理的宿主缓存目录。`APPDATA` / `LOCALAPPDATA` 仍可显式覆盖，供测试和可移植部署使用。
+原生 macOS 的配置与本机数据均默认位于 `~/Library/Application Support/LeviLauncher/`。`APPDATA` 和 `LOCALAPPDATA` 可分别覆盖配置与数据目录。
 
-Unix `Accounts/` 中沿用现有文件名，但使用带版本头的认证加密格式；密钥由 macOS Keychain 或 Linux Secret Service 保护，不直接复用 Wine DPAPI 文件。游戏运行组件与 prefix 由 `LEVI_WINE_APP` / `LEVI_WINEPREFIX`（Linux 可用 `LEVI_WINE_EXECUTABLE`）选择，默认发现本机免费 Minecraft Wine.app。
+- `Accounts/` 使用带版本头的认证加密格式，密钥由 macOS 钥匙串保护。
+- `wine.json` 保存 Wine 运行时、prefix、图形和同步配置。首次配置可通过界面选择 Wine，也可由 `LEVI_WINE_APP`、`LEVI_WINE_EXECUTABLE` 和 `LEVI_WINEPREFIX` 指定路径。自定义 Wine 可执行文件默认使用 `~/.wine`。
+- `install-wine.command` 由启动器生成，用于在终端安装 Sikarugir。

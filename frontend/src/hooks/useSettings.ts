@@ -95,7 +95,7 @@ export const useSettings = (i18n: { language: string }) => {
   const [selectedTab, setSelectedTab] = useState<string>(() => {
     try {
       const saved = localStorage.getItem("app.settingsTab") || "";
-      if (saved === "wine" && (System.IsMac() || System.IsLinux())) return saved;
+      if (saved === "wine" && System.IsMac()) return saved;
       if (["general", "personalization", "components", "others", "privacy", "updates", "about"].includes(saved)) return saved;
     } catch {}
     return "general";

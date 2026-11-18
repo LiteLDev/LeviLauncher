@@ -25,7 +25,7 @@ export function GameSignInNotice() {
   const [hidden, setHidden] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [copied, setCopied] = useState(false);
-  const nativeHost = System.IsMac() || System.IsLinux();
+  const nativeHost = System.IsMac();
 
   useEffect(() => {
     if (!nativeHost) return;

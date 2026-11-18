@@ -170,7 +170,7 @@ export default function InstallPage() {
     ? isAppxInstaller(customInstallerPath) ? "uwp" : "gdk"
     : normalizePackageType(location?.state?.packageType);
   const isUWP = packageType === "uwp";
-  const requiresWine = !isUWP && (System.IsMac() || System.IsLinux());
+  const requiresWine = !isUWP && System.IsMac();
   const [wineReady, setWineReady] = useState(false);
   const canInstall = !requiresWine || wineReady;
   // Unknown local packages can request isolation; their manifest is checked after extraction.

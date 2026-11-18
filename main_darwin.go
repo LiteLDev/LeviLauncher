@@ -1,5 +1,3 @@
-//go:build darwin || linux
-
 package main
 
 import (
@@ -17,15 +15,11 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"runtime"
 	"time"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
-
-//go:embed build/appicon.png
-var appIcon []byte
 
 func main() {
 	if err := apppath.EnsureDirs(); err != nil {
@@ -46,15 +40,10 @@ func main() {
 	mc := app.NewMinecraft()
 	user := app.NewUserService(mc)
 	versions := app.NewVersionService(mc)
-	icon := appIcon
-	if runtime.GOOS == "darwin" {
-		// Let macOS load the padded, multi-resolution ICNS from the bundle.
-		// Overriding it with the full-bleed Windows PNG makes the Dock icon huge.
-		icon = nil
-	}
+	// macOS loads the Dock icon from the app bundle.
 	a := application.New(application.Options{
 		Name: "LeviLauncher", LogLevel: slog.LevelWarn,
-		Description: "Minecraft Bedrock launcher", Icon: icon,
+		Description:    "Minecraft Bedrock launcher",
 		Mac:            application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
 		Server:         application.ServerOptions{WriteTimeout: 30 * time.Minute},
 		Services:       []application.Service{application.NewService(mc), application.NewService(app.NewContentService(mc)), application.NewService(app.NewModsService(mc)), application.NewService(user), application.NewService(versions)},

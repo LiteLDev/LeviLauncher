@@ -38,8 +38,9 @@ var _ packageEngine = (*engine.Engine)(nil)
 // It turns on the engine's temporary compatibility layer for tooth.json
 // dependencies on "X#client" (internal/lipcore/engine/compat_legacy_variants.go).
 var newEngine = func(workDir string, r report.Reporter) packageEngine {
-	return engine.New(workDir, engine.Options{GithubProxy: EffectiveGithubProxy(), HTTPClient: engineHTTPClient,
-		LegacyRoleVariants: true}, r)
+	options := engine.Options{GithubProxy: EffectiveGithubProxy(), HTTPClient: engineHTTPClient, LegacyRoleVariants: true}
+	configureHostEngine(&options)
+	return engine.New(workDir, options, r)
 }
 
 // engineHTTPClient carries the engine's git requests and downloads. Its

@@ -2346,5 +2346,24 @@
         "info_other": "Windows 中注册了另一个{{channel}} Minecraft（{{path}}）。只有使用“注册到系统”时才需要注意。"
       }
     }
+  },
+  "gameaccount": {
+    "title": "Minecraft 登录",
+    "success": "已登录 Minecraft",
+    "failed": "游戏登录未完成",
+    "expired": "登录代码已过期",
+    "closed": "本次登录已结束",
+    "waiting": "已打开微软验证页，请在浏览器中确认账户。",
+    "browser_error": "未能打开浏览器，请点击下方按钮重试。",
+    "copy_error": "未能复制代码，请手动选择代码复制。",
+    "code": "微软登录代码",
+    "collapse": "收起登录提示",
+    "open": "打开验证页",
+    "copy": "复制代码",
+    "copied": "已复制",
+    "keep_game_open": "验证期间请保持游戏开启",
+    "expires": "代码剩余有效时间",
+    "return_to_game": "验证完成，可以回到游戏了。",
+    "retry_in_game": "请回到游戏重新点击登录。"
   }
 }

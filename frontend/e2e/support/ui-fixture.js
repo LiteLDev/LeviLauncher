@@ -4,6 +4,12 @@
   const isEditorMinimum = scenario === 'uwp-editor-minimum';
   const state = window.__audit = { recovered: false, baseRoot: 'C:\\Fixture', scenario, processes: [{ pid: 4242, exePath: 'C:\\Fixture\\Minecraft.Windows.exe', isLauncher: true, versionName: 'UI test instance' }] };
   const sponsorParams = new URLSearchParams(location.search);
+  if (scenario.startsWith('game-signin')) {
+    window._wails = { environment: { OS: 'darwin', Arch: 'arm64' } };
+    localStorage.setItem('app.themeMode', sponsorParams.get('theme') || 'light');
+    state.openGameVerification = async (url) => { state.openedVerification = url; };
+    state.copyGameCode = async (code) => { state.copiedCode = code; };
+  }
   state.openedSponsorURLs = [];
   state.openSponsorURL = async (url) => {
     if (scenario === 'sponsor-link-error' && !state.recovered) throw new Error('Fixture: browser unavailable');
@@ -87,6 +93,12 @@
       return { topic, instance, checks: scenario === 'diagnostics-clean' ? checks.map(c => ({ ...c, status: c.status === 'skip' ? 'skip' : 'ok', params: { ...c.params, reason: undefined } })) : checks, durationMs: 1200 };
     }
     if (name === 'IsDeveloperModeEnabled' || name === 'EnableDeveloperMode') return true;
+    if (name === 'GetGameSignInState') {
+      if (!scenario.startsWith('game-signin')) return { revision: 0, phase: 'idle' };
+      const phase = scenario === 'game-signin-failed' ? 'failed' : scenario === 'game-signin-expired' ? 'expired' : scenario === 'game-signin-success' ? 'success' : 'pending';
+      return { revision: 1, requestID: 'fixture', instance: '1.26.60.05_levi', phase, userCode: phase === 'pending' ? 'AB12CD34' : '', verificationURL: 'https://www.microsoft.com/link', expiresAt: Math.floor(Date.now()/1000)+900, errorCode: phase === 'failed' ? '80004005' : '', browserError: scenario === 'game-signin-browser-error' };
+    }
+    if (scenario.startsWith('game-signin') && /^(IsGameInputInstalled|IsGamingServicesInstalled|IsVcRuntimeInstalled)$/.test(name)) return true;
     if (scenario === 'licenses') {
       const xuid = state.licenseAccount || '101';
       if (name === 'GetLocalUserId') return xuid;
@@ -363,5 +375,5 @@
     'C:\\Fixture\\installers\\retry.msixvc': { dest: 'C:\\Fixture\\installers\\retry.msixvc', fileName: 'retry.msixvc', status: 'error', error: 'Fixture: network unavailable', speed: 0, progress: null, url: 'https://example.com/game.msixvc', md5sum: 'fixture-checksum', installer: { version: '1.21.1', type: 'Release', isLeviLaminaSupported: false } },
     'active.msixvc': { dest: 'active.msixvc', fileName: 'active.msixvc', status: 'started', error: '', speed: 1024, progress: { downloaded: 512, total: 4096 } }
   } : {};
-  document.addEventListener('DOMContentLoaded', () => { const panel = document.createElement('aside'); panel.style.cssText = 'position:fixed;bottom:0;right:0;z-index:20000;background:#fff;color:#111;border:1px solid #777;padding:4px;font:12px sans-serif;max-width:420px'; panel.innerHTML = '<b>UI 预览 · 模拟接口，不执行系统操作</b> <button id="audit-recover">恢复模拟接口</button><output id="audit-calls" style="display:block;overflow-wrap:anywhere"></output>'; document.body.append(panel); panel.querySelector('button').onclick = () => { state.recovered = true; document.getElementById('audit-calls').textContent = '模拟接口已恢复'; }; });
+  document.addEventListener('DOMContentLoaded', () => { const panel = document.createElement('aside'); panel.style.cssText = 'position:fixed;bottom:0;right:0;z-index:20000;background:#fff;color:#111;border:1px solid #777;padding:4px;font:12px sans-serif;max-width:420px'; if (scenario.startsWith('game-signin')) { panel.style.right = 'auto'; panel.style.left = '0'; } panel.innerHTML = '<b>UI 预览 · 模拟接口，不执行系统操作</b> <button id="audit-recover">恢复模拟接口</button><output id="audit-calls" style="display:block;overflow-wrap:anywhere"></output>'; document.body.append(panel); panel.querySelector('button').onclick = () => { state.recovered = true; document.getElementById('audit-calls').textContent = '模拟接口已恢复'; }; });
 })();

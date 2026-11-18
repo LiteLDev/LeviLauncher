@@ -2348,5 +2348,24 @@
         "info_other": "Windows has another {{channel}} Minecraft registered ({{path}}). This only matters if you use “Register to system”."
       }
     }
+  },
+  "gameaccount": {
+    "title": "Minecraft sign-in",
+    "success": "Signed in to Minecraft",
+    "failed": "Game sign-in was not completed",
+    "expired": "Sign-in code expired",
+    "closed": "Game sign-in ended",
+    "waiting": "The Microsoft verification page is open. Confirm your account in the browser.",
+    "browser_error": "The browser could not be opened. Try the button below.",
+    "copy_error": "Could not copy the code. Select and copy it manually.",
+    "code": "Microsoft sign-in code",
+    "collapse": "Collapse sign-in notice",
+    "open": "Open verification",
+    "copy": "Copy code",
+    "copied": "Copied",
+    "keep_game_open": "Keep the game open while verifying",
+    "expires": "Code time remaining",
+    "return_to_game": "Verification is complete. Return to your game.",
+    "retry_in_game": "Return to the game and choose sign-in again."
   }
 }

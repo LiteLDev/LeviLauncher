@@ -2345,5 +2345,24 @@
     "copy_failed": "複製詳情失敗",
     "open_logs": "開啟日誌資料夾",
     "log_hint": "完整日誌儲存在啟動器日誌資料夾中。"
+  },
+  "gameaccount": {
+    "title": "Minecraft 登入",
+    "success": "已登入 Minecraft",
+    "failed": "遊戲登入未完成",
+    "expired": "登入代碼已過期",
+    "closed": "本次登入已結束",
+    "waiting": "已開啟 Microsoft 驗證頁，請在瀏覽器中確認帳戶。",
+    "browser_error": "未能開啟瀏覽器，請點擊下方按鈕重試。",
+    "copy_error": "未能複製代碼，請手動選取並複製。",
+    "code": "Microsoft 登入代碼",
+    "collapse": "收起登入提示",
+    "open": "開啟驗證頁",
+    "copy": "複製代碼",
+    "copied": "已複製",
+    "keep_game_open": "驗證期間請保持遊戲開啟",
+    "expires": "代碼剩餘有效時間",
+    "return_to_game": "驗證完成，可以返回遊戲。",
+    "retry_in_game": "請返回遊戲重新點擊登入。"
   }
 }

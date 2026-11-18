@@ -8,6 +8,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/app"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/gameauth"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -68,6 +69,11 @@ func main() {
 		}
 	})
 	user.Attach(w)
+	if broker, err := gameauth.Start(func(state gameauth.State) { a.Event.Emit(gameauth.Event, state) }, a.Browser.OpenURL); err != nil {
+		log.Printf("Game account bridge unavailable: %v", err)
+	} else {
+		defer broker.Close()
+	}
 	if err := a.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

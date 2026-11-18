@@ -29,6 +29,7 @@ logs
 bin
 /native/*
 !/native/levilauncher/
+!/native/leviclient/
 # Built from native/levilauncher by `task common:build:native` and embedded with go:embed.
 /internal/leviloader/LeviLauncher.dll
 nda

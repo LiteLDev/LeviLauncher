@@ -1,0 +1,6 @@
+LIBRARY fixture-api
+EXPORTS
+MessageBoxW=fixture_message_box
+fopen=fixture_open
+fputs=fixture_put
+fclose=fixture_close

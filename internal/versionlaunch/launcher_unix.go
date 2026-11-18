@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
+	"github.com/liteldev/LeviLauncher/internal/gameauth"
+	"github.com/liteldev/LeviLauncher/internal/gameclient"
 	"github.com/liteldev/LeviLauncher/internal/gameruntime"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
@@ -41,6 +43,18 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	if err != nil {
 		return "ERR_WINE_RUNTIME: " + err.Error()
 	}
+	accountSession := gameauth.Register(name, p.Prefix)
+	launched := false
+	if accountSession != nil {
+		defer func() {
+			if !launched {
+				accountSession.Close()
+			}
+		}()
+		if err := gameclient.Ensure(dir); err != nil {
+			return "ERR_GAME_CLIENT_PREPARE: " + err.Error()
+		}
+	}
 	if _, err = leviloader.PatchAndActivateForWine(ctx, dir); err != nil {
 		return "ERR_LOADER_PREPARE: " + err.Error()
 	}
@@ -75,6 +89,14 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 			env[k] = v
 		}
 	}
+	if accountSession != nil {
+		for k, v := range accountSession.Environment() {
+			env[k] = v
+		}
+		// The client suppresses only prompts acknowledged by this launcher;
+		// when it is unavailable the original game prompt remains usable.
+		env["XGR_SIGNIN_NOMSGBOX"] = "0"
+	}
 	cmd.Env = nil
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, k+"="+v)
@@ -90,6 +112,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		logFile.Close()
 		return "ERR_LAUNCH_GAME: " + err.Error()
 	}
+	launched = true
 	pid := cmd.Process.Pid
 	if detached {
 		// Sikarugir delegates to its SDK and exits before the game's window.
@@ -102,7 +125,12 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 			fmt.Fprintln(logFile, "Wine launcher exited:", err)
 		}
 	}()
-	go launch.MonitorGameProcess(ctx, dir, pid)
+	go func() {
+		launch.MonitorGameProcess(ctx, dir, pid)
+		if accountSession != nil {
+			accountSession.Close()
+		}
+	}()
 	return ""
 }
 func isProcessRunningAtPath(path string) bool {

@@ -6,12 +6,14 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/beevik/etree"
-	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/beevik/etree"
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 )
 
 var userTicket, userReference string
@@ -67,6 +69,13 @@ func requestContentLicense(device, contentID string) contentLicenseResponse {
 	}
 	var parsed contentLicenseResponse
 	must(json.Unmarshal(data, &parsed))
+	if failure := parsed.SatisfactionFailure; failure != nil {
+		keyCount := 0
+		if parsed.License != nil {
+			keyCount = len(parsed.License.Keys)
+		}
+		log.Printf("Store content license: market=%s satisfaction=%d key_count=%d", active.options.Market, failure.Code, keyCount)
+	}
 	return parsed
 }
 

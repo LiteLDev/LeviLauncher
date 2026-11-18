@@ -112,23 +112,43 @@ func configureMinecraftWrapper(ctx context.Context, plist string) error {
 		return fmt.Errorf("read Sikarugir launch configuration: %w", err)
 	}
 	current := strings.TrimSuffix(string(raw), "\n")
-	var flags strings.Builder
+	updated := minecraftWrapperCommands(current)
+	if updated == current {
+		return nil
+	}
+	write := exec.CommandContext(ctx, "/usr/bin/plutil", "-replace", field, "-string", updated, plist)
+	if data, err := write.CombinedOutput(); err != nil {
+		return fmt.Errorf("write Sikarugir launch configuration: %w: %s", err, strings.TrimSpace(string(data)))
+	}
+	return nil
+}
+
+// minecraftWrapperCommands avoids a trailing semicolon because Sikarugir
+// appends its own shell separator before invoking Wine.
+func minecraftWrapperCommands(current string) string {
+	var required []string
 	for _, name := range []string{
 		"XGR_MODS",
 		"MICROSOFT_WINDOWSAPPRUNTIME_BOOTSTRAP_INITIALIZE_SHOWUI",
 		"MICROSOFT_WINDOWSAPPRUNTIME_BOOTSTRAP_INITIALIZE_FAILFAST",
 		"MICROSOFT_WINDOWSAPPRUNTIME_DEPLOYMENT_INITIALIZE_ONERRORSHOWUI",
 	} {
+		required = append(required, "export "+name+"=0")
+	}
+	// Repair the exact command written by the previous launcher version.
+	if strings.TrimSpace(current) == strings.Join(required, "; ")+";" {
+		return strings.Join(required, "; ")
+	}
+	var commands []string
+	for _, command := range required {
+		assignment := strings.TrimPrefix(command, "export ")
+		name, _, _ := strings.Cut(assignment, "=")
 		if !strings.Contains(current, name+"=") {
-			flags.WriteString("export " + name + "=0; ")
+			commands = append(commands, command)
 		}
 	}
-	if flags.Len() == 0 {
-		return nil
+	if current != "" {
+		commands = append(commands, current)
 	}
-	write := exec.CommandContext(ctx, "/usr/bin/plutil", "-replace", field, "-string", flags.String()+current, plist)
-	if data, err := write.CombinedOutput(); err != nil {
-		return fmt.Errorf("write Sikarugir launch configuration: %w: %s", err, strings.TrimSpace(string(data)))
-	}
-	return nil
+	return strings.Join(commands, "; ")
 }

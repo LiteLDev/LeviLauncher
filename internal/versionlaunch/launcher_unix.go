@@ -41,7 +41,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	if err != nil {
 		return "ERR_WINE_RUNTIME: " + err.Error()
 	}
-	if _, err = leviloader.PatchAndActivate(ctx, dir); err != nil {
+	if _, err = leviloader.PatchAndActivateForWine(ctx, dir); err != nil {
 		return "ERR_LOADER_PREPARE: " + err.Error()
 	}
 	prepared, err := peeditor.PrepareExecutableForLaunch(ctx, dir, meta.EnableConsole)

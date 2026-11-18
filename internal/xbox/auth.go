@@ -6,6 +6,7 @@ package xbox
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -122,14 +123,38 @@ func configureSelectionLocked(accountID string, err error) {
 }
 
 // RestoreAccountSelection serializes preference reads with native sign-in commits.
-func RestoreAccountSelection(ctx context.Context, load func() (string, error)) error {
+func RestoreAccountSelection(ctx context.Context, load func() (string, string, error), rotate BrowserRefreshSaver) error {
 	if err := lockSession(ctx); err != nil {
 		return err
 	}
 	defer func() { <-sessionGate }()
-	id, err := load()
+	id, refresh, err := load()
 	configureSelectionLocked(id, err)
+	if err == nil && rotate != nil {
+		userID, browser := strings.CutPrefix(id, "browser:")
+		if browser && userID != "" && refresh != "" {
+			if selectedBrowser == nil || selectedBrowser.refresh != refresh {
+				cached = nil
+				selectedBrowser = &browserCredential{userID: userID, refresh: refresh}
+			}
+			selectedBrowser.rotate = rotate
+		} else if selectedBrowser != nil {
+			cached, selectedBrowser = nil, nil
+		}
+	}
 	return err
+}
+
+// ForgetAccountSelection clears both the saved selection and its in-memory session.
+func ForgetAccountSelection(remove func() error) error {
+	sessionGate <- struct{}{}
+	defer func() { <-sessionGate }()
+	if err := remove(); err != nil {
+		return err
+	}
+	cached, selectedBrowser = nil, nil
+	configureSelectionLocked("", nil)
+	return nil
 }
 
 func resetCache() {
@@ -139,7 +164,7 @@ func resetCache() {
 }
 
 // GetStoreTicket obtains a fresh Store ticket for the same account as the launcher.
-// Credentials remain in the backend and are never persisted or sent over bindings.
+// Store tickets remain in the backend and are never persisted or sent over bindings.
 func GetStoreTicket(ctx context.Context) (token, reference string, err error) {
 	return GetStoreTicketForUser(ctx, "")
 }

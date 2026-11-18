@@ -712,6 +712,8 @@
       "error": "Check failed",
       "description": "Release and Preview licenses are checked after you sign in. Select refresh to check again."
     },
+    "sign_out": "Sign out",
+    "signout_failed": "Could not sign out",
     "sign_in": "Sign in with Microsoft",
     "switch_account": "Switch account",
     "signin_failed": "Microsoft sign-in failed"

@@ -712,6 +712,8 @@
       "error": "检查失败",
       "description": "登录后会自动检查正式版和预览版的授权状态。点击刷新可重新检查。"
     },
+    "sign_out": "退出登录",
+    "signout_failed": "退出登录失败",
     "sign_in": "登录微软账户",
     "switch_account": "切换账户",
     "signin_failed": "微软账户登录失败"

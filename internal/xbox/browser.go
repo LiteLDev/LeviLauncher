@@ -23,10 +23,14 @@ type BrowserSignInCode struct {
 type browserCredential struct {
 	userID, refresh, access string
 	expires                 time.Time
+	rotate                  BrowserRefreshSaver
 }
 
-// Protected by sessionGate, like cached and preferredAccountID. These temporary
-// compatibility credentials live only until the launcher process closes.
+// BrowserRefreshSaver stores a replacement refresh token for the selected
+// account. An empty previous token denotes an interactive sign-in.
+type BrowserRefreshSaver func(accountID, previous, next string) error
+
+// Protected by sessionGate, like cached and preferredAccountID.
 var selectedBrowser *browserCredential
 
 // The Minecraft Launcher client used by native WAM is not pre-authorized for
@@ -121,7 +125,8 @@ func pollBrowserToken(ctx context.Context, deviceCode string, interval time.Dura
 
 // SignInBrowser uses Microsoft's device authorization grant without native WAM.
 // Like native sign-in, it commits identity only after Xbox auth and persistence.
-func SignInBrowser(ctx context.Context, notify func(BrowserSignInCode), persist func(string) error) error {
+func SignInBrowser(ctx context.Context, notify func(BrowserSignInCode), persist BrowserRefreshSaver) error {
+	var credential *browserCredential
 	return signInSession(ctx, func() (*session, error) {
 		var challenge struct {
 			UserCode        string `json:"user_code"`
@@ -163,9 +168,10 @@ func SignInBrowser(ctx context.Context, notify func(BrowserSignInCode), persist 
 			return nil, ErrAuthenticationFailed
 		}
 		s.accountID = "browser:" + token.UserID
-		s.browser = &browserCredential{userID: token.UserID, refresh: token.Refresh, access: token.Access, expires: time.Now().Add(time.Duration(token.ExpiresIn)*time.Second - sessionSkew)}
+		credential = &browserCredential{rotate: persist, userID: token.UserID, refresh: token.Refresh, access: token.Access, expires: time.Now().Add(time.Duration(token.ExpiresIn)*time.Second - sessionSkew)}
+		s.browser = credential
 		return s, nil
-	}, persist)
+	}, func(id string) error { return persist(id, "", credential.refresh) })
 }
 
 func requestSelectedTicket(ctx context.Context, scope, expectedAccount string) (string, string, error) {
@@ -195,7 +201,12 @@ func requestSelectedTicket(ctx context.Context, scope, expectedAccount string) (
 	if token.Access == "" {
 		return "", "", ErrAuthenticationFailed
 	}
-	if token.Refresh != "" {
+	if token.Refresh != "" && token.Refresh != c.refresh {
+		if c.rotate != nil {
+			if err := c.rotate(expectedAccount, c.refresh, token.Refresh); err != nil {
+				return "", "", err
+			}
+		}
 		c.refresh = token.Refresh
 	}
 	if scope == xblScope {

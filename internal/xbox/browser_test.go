@@ -83,7 +83,7 @@ func TestBrowserCanceledSignInPreservesAccount(t *testing.T) {
 			t.Fatal("missing visible challenge")
 		}
 		cancel()
-	}, func(string) error { t.Fatal("canceled sign-in persisted account"); return nil })
+	}, func(string, string, string) error { t.Fatal("canceled sign-in persisted account"); return nil })
 	if !errors.Is(err, context.Canceled) || requests != 1 || preferredAccountID != "original" || cached != original || selectedBrowser != nil {
 		t.Fatalf("cancellation replaced previous account: %v", err)
 	}
@@ -125,7 +125,16 @@ func TestBrowserSignInCommitsOnlyAfterXboxAndPersistence(t *testing.T) {
 		return nil, nil
 	})
 	persisted := false
-	err := SignInBrowser(context.Background(), func(BrowserSignInCode) {}, func(id string) error {
+	err := SignInBrowser(context.Background(), func(BrowserSignInCode) {}, func(id, previous, next string) error {
+		if previous != "" {
+			if id != "browser:test-user" || previous != "test-refresh" || next != "rotated-refresh" {
+				t.Fatal("incorrect rotated credential persisted")
+			}
+			return nil
+		}
+		if next != "test-refresh" {
+			t.Fatal("initial refresh token was not saved")
+		}
 		if preferredAccountID != "original" || selectedBrowser != nil || id != "browser:test-user" {
 			t.Fatal("account published before persistence")
 		}
@@ -171,5 +180,50 @@ func TestBrowserRefreshRejectsAccountSwitchAndStoreScopeDenial(t *testing.T) {
 				t.Fatalf("credential changed after rejected response: %v", err)
 			}
 		})
+	}
+}
+
+func TestBrowserSessionRestoresAndPersistsRotation(t *testing.T) {
+	ConfigureAccountSelection("", nil)
+	const account = "browser:test-user"
+	stored := "saved-refresh"
+	browserTestHTTP(t, func(r *http.Request) (*http.Response, error) {
+		switch r.URL.Host + r.URL.Path {
+		case "login.live.com/oauth20_token.srf":
+			if err := r.ParseForm(); err != nil {
+				t.Fatal(err)
+			}
+			if r.Form.Get("grant_type") != "refresh_token" || r.Form.Get("refresh_token") != stored {
+				t.Fatal("restore did not use the current saved refresh token")
+			}
+			return browserTestResponse(200, `{"access_token":"test-access","refresh_token":"rotated","user_id":"test-user","expires_in":3600}`)
+		case "user.auth.xboxlive.com/user/authenticate":
+			return browserTestResponse(200, `{"Token":"test-user-token"}`)
+		case "xsts.auth.xboxlive.com/xsts/authorize":
+			return browserTestResponse(200, `{"Token":"test-xsts","DisplayClaims":{"xui":[{"uhs":"test-hash","xid":"123","gtg":"Test"}]}}`)
+		}
+		t.Fatal("unexpected request during session restoration")
+		return nil, nil
+	})
+	ctx := context.Background()
+	load := func() (string, string, error) { return account, stored, nil }
+	rotate := func(id, prior, next string) error {
+		if id != account || prior != stored || next != "rotated" {
+			t.Fatal("wrong refresh token rotation")
+		}
+		stored = next
+		return nil
+	}
+	for range 2 {
+		ConfigureAccountSelection("", nil)
+		if err := RestoreAccountSelection(ctx, load, rotate); err != nil {
+			t.Fatal(err)
+		}
+		if id, err := GetLocalUserId(); err != nil || id != 123 {
+			t.Fatalf("could not restore Xbox session: %v", err)
+		}
+		if stored != "rotated" {
+			t.Fatal("refresh token rotation was not persisted")
+		}
 	}
 }

@@ -56,6 +56,7 @@ export const UserAvatar = () => {
   // An account is selected but Xbox Live could not be reached to confirm it:
   // a network problem, not a sign-out.
   const [unreachable, setUnreachable] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [licenses, setLicenses] = useState<LicenseResult | null>(null);
   const [browserCode, setBrowserCode] = useState<BrowserCode | null>(null);
   const signInRequest = React.useRef<ReturnType<typeof userService.SignIn> | null>(null);
@@ -114,7 +115,9 @@ export const UserAvatar = () => {
           }}
         >打开微软验证页面</a>
         <p className="text-sm text-muted">完成后此窗口会自动关闭。代码约 {Math.ceil((browserCode?.expiresIn || 0) / 60)} 分钟内有效。</p>
-        <p className="text-xs text-muted">兼容模式的登录凭据仅保留到启动器关闭。游戏安装授权将另行检查。</p>
+        {!System.IsMac() && (
+          <p className="text-xs text-muted">兼容模式的登录凭据仅保留到启动器关闭。游戏安装授权将另行检查。</p>
+        )}
       </div>
     </UnifiedModal>
   );
@@ -151,6 +154,24 @@ export const UserAvatar = () => {
       activeSignInID.current = null;
       setBrowserCode(null);
       setSigningIn(false);
+    }
+  };
+
+  const signOut = async () => {
+    setSigningOut(true);
+    try {
+      const code = await userService.SignOut();
+      if (code) {
+        toast.danger(t("useravatar.signout_failed"), { description: t(`errors.${code}`) });
+        return;
+      }
+      setOpen(false);
+      clearUserState();
+      setReloadNonce((value) => value + 1);
+    } catch {
+      toast.danger(t("useravatar.signout_failed"));
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -574,8 +595,13 @@ export const UserAvatar = () => {
             {elevated && (
               <p className="mt-3 text-xs text-muted">{t("app.administrator_description")}</p>
             )}
-            <div className="mt-3 flex justify-end">
-              <Button size="sm" variant="secondary" isPending={signingIn} onPress={() => void signIn()}>
+            <div className="mt-3 flex justify-end gap-2">
+              {System.IsMac() && (
+                <Button size="sm" variant="ghost" isPending={signingOut} isDisabled={signingIn} onPress={() => void signOut()}>
+                  {t("useravatar.sign_out")}
+                </Button>
+              )}
+              <Button size="sm" variant="secondary" isPending={signingIn} isDisabled={signingOut} onPress={() => void signIn()}>
                 {t("useravatar.switch_account")}
               </Button>
             </div>

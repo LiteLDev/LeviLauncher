@@ -147,7 +147,7 @@ func TestCanceledPreferenceRestoreDoesNotWaitForSignIn(t *testing.T) {
 	defer func() { <-sessionGate }()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err := RestoreAccountSelection(ctx, func() (string, error) { t.Fatal("canceled restore read preference"); return "", nil })
+	err := RestoreAccountSelection(ctx, func() (string, string, error) { t.Fatal("canceled restore read preference"); return "", "", nil }, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatal("restore ignored cancellation")
 	}

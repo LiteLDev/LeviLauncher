@@ -712,6 +712,8 @@
       "error": "檢查失敗",
       "description": "登入後會自動檢查正式版與預覽版的授權狀態。點擊重新整理可再次檢查。"
     },
+    "sign_out": "登出",
+    "signout_failed": "登出失敗",
     "sign_in": "登入 Microsoft 帳戶",
     "switch_account": "切換帳戶",
     "signin_failed": "Microsoft 帳戶登入失敗"

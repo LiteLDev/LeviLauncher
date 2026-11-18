@@ -213,6 +213,18 @@ func (s *UserService) GetUserGamertagMap(usersRoot string) map[string]string {
 	return out
 }
 
+// SignOut removes the saved browser account from the launcher on macOS.
+func (s *UserService) SignOut() string {
+	if runtime.GOOS != "darwin" {
+		return "ERR_AUTH_FAILED"
+	}
+	s.restoreAccount()
+	if err := nativeinstall.ForgetSharedAccount(apppath.AccountsDir()); err != nil {
+		return nativeinstall.AuthErrorCode(err)
+	}
+	return ""
+}
+
 func (s *UserService) ResetSession() string {
 	s.restoreAccount()
 	if err := xbox.ResetSession(); err != nil {

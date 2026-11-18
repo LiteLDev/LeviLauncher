@@ -47,14 +47,14 @@ func beginLicenseAccount(ctx context.Context, expectedXUID string) {
 
 func readLicenseAccount() wamAccountSelection {
 	var record struct {
-		AccountID, Revision string
-		Keys                json.RawMessage
+		AccountID, Revision, BrowserRefresh string
+		Keys                                json.RawMessage
 	}
 	defer func() { clear(record.Keys) }()
 	if err := loadProtected(filepath.Join(active.options.CacheDir, "wam-account.dpapi"), &record); err != nil {
 		failCode("ERR_AUTH_ACCOUNT_SELECTION", "cannot read selected account")
 	}
-	saved := wamAccountSelection{AccountID: record.AccountID, Revision: record.Revision}
+	saved := wamAccountSelection{AccountID: record.AccountID, Revision: record.Revision, BrowserRefresh: record.BrowserRefresh}
 	if saved.AccountID == "" || len(saved.AccountID) > 128 {
 		clearCachedKeys(saved.Keys)
 		failCode("ERR_AUTH_ACCOUNT_SELECTION", "invalid selected account identity")

@@ -31,6 +31,8 @@ import {
   useLipTaskProgress,
 } from "@/utils/LipTaskConsoleContext";
 import { resolveInstallError } from "@/utils/installError";
+import { ErrorDetail } from "@/components/ErrorDetail";
+import { splitErrorResult } from "@/utils/errorDetail";
 import { saveCurrentVersionName } from "@/utils/currentVersion";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -153,6 +155,7 @@ export default function InstallPage() {
   const [inheritCandidates, setInheritCandidates] = useState<string[]>([]);
   const [installError, setInstallError] = useState<string>("");
   const [failureDetails, setFailureDetails] = useState("");
+  const failure = useMemo(() => splitErrorResult(failureDetails), [failureDetails]);
   const [installing, setInstalling] = useState<boolean>(false);
   // The LeviLamina step runs lip tasks; their progress replaces the
   // extraction bar while it runs.
@@ -932,21 +935,21 @@ export default function InstallPage() {
             >
               {failureDetails && (
                 <Card className={cn(LAYOUT.GLASS_CARD.BASE, "border-danger/30")}>
-                  <Card.Content className="space-y-3 p-5">
+                  <Card.Content className="space-y-4 p-5">
                     <div role="alert" className="space-y-2">
                       <h3 className="font-semibold text-danger">{t("audit.primary.install.failed")}</h3>
-                      <p className="text-sm text-foreground">{resolveInstallError(failureDetails, t, typeLabel)}</p>
-                      <pre className="whitespace-pre-wrap break-all text-xs text-muted select-text">{failureDetails}</pre>
+                      <p className="text-sm text-foreground">
+                        {resolveInstallError(failure.code || failureDetails, t, typeLabel)}
+                      </p>
                     </div>
+                    <ErrorDetail
+                      code={failure.code}
+                      detail={failure.code ? failure.detail : failureDetails}
+                      topic="install"
+                      guide={failure.code ? undefined : "install_failed"}
+                      channel={mirrorType === "Preview" ? "preview" : "release"}
+                    />
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="secondary" size="sm" onPress={async () => {
-                        try {
-                          await Clipboard.SetText(failureDetails);
-                          toast(t("audit.primary.install.copied"), { variant: "success" });
-                        } catch {
-                          toast(t("audit.primary.install.copy_failed"), { variant: "danger" });
-                        }
-                      }}>{t("audit.primary.install.copy_details")}</Button>
                       <Button variant="primary" size="sm" onPress={handleInstall}>{t("download_manager.actions.retry")}</Button>
                     </div>
                   </Card.Content>

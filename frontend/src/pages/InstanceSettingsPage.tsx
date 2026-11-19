@@ -22,6 +22,8 @@ import { cn } from "@/utils/cn";
 
 import { Dialogs } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
+import { ErrorDetail } from "@/components/ErrorDetail";
+import { splitErrorResult } from "@/utils/errorDetail";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -1994,9 +1996,15 @@ export default function InstanceSettingsPage() {
         confirmText={t("common.ok")}
         showCancelButton={false}
       >
-        <div className="text-base font-medium text-rose-600 dark:text-rose-400 whitespace-pre-wrap break-words leading-7">
-          {t(vs.getErrorKey(vs.error))}
-        </div>
+        <InstanceErrorBody
+          error={vs.error}
+          getErrorKey={vs.getErrorKey}
+          instance={vs.targetName}
+          onLeave={() => {
+            vs.setError("");
+            vs.setErrorOpen(false);
+          }}
+        />
       </UnifiedModal>
 
       <DeleteConfirmModal
@@ -2252,3 +2260,32 @@ export default function InstanceSettingsPage() {
     </PageContainer>
   );
 }
+
+// InstanceErrorBody shows an instance operation's failure: the message for
+// its code, then how to fix it and the technical detail.
+const InstanceErrorBody: React.FC<{
+  error: string;
+  getErrorKey: (code: string) => string;
+  instance?: string;
+  onLeave: () => void;
+}> = ({ error, getErrorKey, instance, onLeave }) => {
+  const { t } = useTranslation();
+  const { code, detail } = splitErrorResult(error);
+  const key = getErrorKey(code || error);
+  const translated = key ? t(key, { defaultValue: "" }) : "";
+  const message = translated || (code ? t("installpage.error.unknown") : error);
+  return (
+    <>
+      <div className="text-base font-medium text-rose-600 dark:text-rose-400 whitespace-pre-wrap break-words leading-7">
+        {message}
+      </div>
+      <ErrorDetail
+        code={code}
+        detail={code ? detail : ""}
+        topic="launch"
+        instance={instance || undefined}
+        onLeave={onLeave}
+      />
+    </>
+  );
+};

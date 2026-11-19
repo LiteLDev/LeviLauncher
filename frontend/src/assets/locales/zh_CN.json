@@ -84,7 +84,8 @@
     "loader_migration": {
       "title": "正在更新加载器",
       "body": "正在将已安装的实例适配到新版 LeviLauncher 加载器。此操作只会执行一次，请稍候…",
-      "preparing": "正在准备更新…"
+      "preparing": "正在准备更新…",
+      "failed": "将实例迁移到新模组加载方式的一次性操作失败了。实例本身未被改动。"
     },
     "mclaunch": {
       "loading": {
@@ -541,6 +542,11 @@
       "on_exit_close": "关闭启动器",
       "minimize_to_tray": "关闭窗口时隐藏到托盘",
       "minimize_to_tray_desc": "点击关闭按钮时将启动器隐藏到系统托盘，而不是退出；最小化按钮仍最小化到任务栏"
+    },
+    "troubleshoot": {
+      "title": "故障排查",
+      "desc": "检查启动器依赖的运行库、Windows 设置、网络、代理和账户授权。最多耗时一分钟，不会更改任何设置。",
+      "run": "运行诊断"
     }
   },
   "downloadmodal": {
@@ -1643,5 +1649,656 @@
     "open_content_dir": "打开 UWP 内容目录",
     "not_specified": "请选择 UWP 安装包，或先下载对应版本。",
     "resolving_download": "获取下载地址…"
+  },
+  "troubleshoot": {
+    "causes_title": "可能的原因",
+    "steps_title": "解决办法",
+    "open_faq": "在常见问题中查看详情",
+    "open_faq_index": "浏览常见问题",
+    "learn_more": "了解详情",
+    "how_to_fix": "可能的原因与解决办法",
+    "action_failed": "无法打开",
+    "action_failed_body": "Windows 无法打开该链接或设置页面。",
+    "installer_started": "安装程序已启动",
+    "installer_started_body": "请按 Windows 的提示完成安装，完成后可再次运行诊断。",
+    "developer_mode_enabled": "开发者模式已开启",
+    "developer_mode_failed": "未能开启开发者模式",
+    "developer_mode_failed_body": "管理员权限请求被拒绝或被阻止。请在“设置 > 系统 > 开发者选项”中手动开启。",
+    "download_failed_title": "下载失败",
+    "download_start_failed_title": "无法开始下载",
+    "download_failed_hint": "下载管理中列出了可能的原因，并提供诊断按钮。",
+    "version_list_failed_hint": "版本列表来自 GitHub。如果一直失败，请在设置中开启“使用镜像源”，或运行诊断。",
+    "action": {
+      "diagnose": "运行诊断",
+      "install_vcruntime": "安装 Visual C++ 运行库",
+      "install_gameinput": "安装 GameInput",
+      "open_gaming_services": "获取 Gaming Services",
+      "open_minecraft_store": "在商店中打开 Minecraft",
+      "open_preview_store": "获取 Minecraft 预览版",
+      "open_buy": "购买 Minecraft",
+      "open_devices": "管理设备",
+      "open_orders": "订单记录",
+      "enable_developer_mode": "开启开发者模式",
+      "open_developer_settings": "打开开发者选项",
+      "open_proxy_settings": "打开代理设置",
+      "open_date_settings": "打开日期和时间设置",
+      "open_region_settings": "打开区域设置",
+      "open_apps_settings": "打开已安装的应用",
+      "open_storage_settings": "打开存储设置",
+      "open_mirror_settings": "打开包管理设置",
+      "open_data_settings": "打开数据目录设置",
+      "open_process_settings": "打开运行中的进程",
+      "open_update_settings": "打开更新设置",
+      "open_download_page": "前往下载页",
+      "open_account": "打开账户菜单",
+      "open_logs": "打开日志文件夹",
+      "open_releases": "打开 GitHub Releases"
+    },
+    "license": {
+      "preview_only": {
+        "title": "此账户无法使用正式版，但预览版可用",
+        "body": "微软拒绝为此账户发放正式版（Release）授权，而预览版（Preview）已授权。常见原因：游戏是在另一个微软账户上购买的；购买已退款，或来自已到期的 Game Pass 订阅；或账户已达到 10 台设备的上限。请检查 Microsoft Store 的游戏库和订单记录，移除不再使用的设备，然后刷新。",
+        "banner": "使用此账户下载或安装正式版会失败；预览版可以正常使用。"
+      },
+      "release_only": {
+        "title": "此账户无法使用预览版",
+        "body": "正式版已授权，但预览版需要单独的授权：请用此账户在 Microsoft Store 或 Xbox 应用中获取一次“Minecraft Preview”。在中国大陆，需要先把 Windows 的区域改为其他国家或地区，因为商店不在该区域提供预览版。",
+        "banner": "可以安装正式版；在此账户获得预览版授权之前，安装预览版会失败。"
+      },
+      "trial": {
+        "title": "只有试用版授权",
+        "body": "微软只发放了试用版授权。通常是账户没有购买完整版、完整版在另一个账户上，或账户已达到 10 台设备的上限。",
+        "banner": "在此账户获得完整授权之前，安装游戏版本会失败。"
+      },
+      "none": {
+        "title": "此账户未拥有 Minecraft for Windows",
+        "body": "正式版和预览版都未授权。请登录购买了 Minecraft for Windows 的微软账户（仅在游戏内登录 Xbox 并不等于拥有 PC 版），或购买游戏。",
+        "banner": "下载和安装游戏版本需要拥有 Minecraft for Windows 的账户。"
+      },
+      "error": {
+        "title": "无法检查授权",
+        "body": "启动器无法连接微软检查授权。常见原因是代理、VPN、“网络加速器”或系统时间不正确。运行诊断即可找出原因。"
+      },
+      "partial_error": {
+        "title": "有一个渠道的授权无法检查",
+        "body": "其中一个渠道的授权检查失败（网络或微软服务问题）。请刷新重试；若一直失败，请运行诊断。"
+      },
+      "signed_out": {
+        "title": "未登录",
+        "banner": "请登录拥有 Minecraft 的微软账户，才能下载和安装游戏版本。"
+      }
+    },
+    "guide": {
+      "launch_game": {
+        "cause": {
+          "components": "游戏需要的组件缺失或损坏：Visual C++ 运行库，以及 GDK 版需要的 GameInput 和 Microsoft Gaming Services。",
+          "first_run": "这台电脑上从未通过 Microsoft Store 或 Xbox 应用安装并启动过 Minecraft（重装系统后很常见），因此游戏依赖的系统组件从未安装。",
+          "stale_login": "很久没玩后，游戏保存的 Xbox 登录数据已过期；用官方方式启动一次游戏即可刷新。",
+          "mods": "某个模组、附加包、资源包或光影与此游戏版本不兼容（如果只有装了模组才出现）。",
+          "graphics": "显卡驱动过旧或损坏，或者叠加层、补帧工具干扰了游戏。",
+          "outdated": "启动器本身版本过旧。"
+        },
+        "step": {
+          "diagnose": "运行诊断，检查运行库、Gaming Services 和此实例的文件。",
+          "components": "安装诊断报告缺失的组件。Gaming Services 必须从 Microsoft Store 安装。",
+          "official_once": "通过 Microsoft Store 或 Xbox 应用安装一次 Minecraft 并成功启动，然后重试。这是最常见的解决办法，之后可以卸载商店版。",
+          "proxy": "如果使用代理，在商店安装组件期间请关闭代理（或将 microsoft.com、xboxlive.com 设为直连）。",
+          "clean_instance": "用一个没有模组、没有 LeviLamina 的实例试试。如果能启动，再逐个启用模组找出出问题的那个。",
+          "graphics": "更新或重装显卡驱动，并关闭叠加层和补帧功能。",
+          "report": "仍然失败？请更新启动器、重装实例，并附上启动器日志到 GitHub 反馈问题。"
+        }
+      },
+      "game_running": {
+        "cause": {
+          "still_running": "此实例仍在运行，可能已最小化或在后台。",
+          "stuck": "上一次的游戏进程没有正常退出，仍占用着此实例。"
+        },
+        "step": {
+          "close": "关闭正在运行的游戏后重试，或使用“强制启动”再启动一个（仅 GDK 版）。",
+          "end_process": "在“设置 > 其他设置 > 进程管理”中结束残留的游戏进程。"
+        }
+      },
+      "game_files": {
+        "cause": {
+          "moved": "实例文件夹被移动、重命名或删除，或数据目录位置发生了变化。",
+          "antivirus": "杀毒软件隔离了游戏主程序。",
+          "incomplete": "安装没有完成。"
+        },
+        "step": {
+          "diagnose": "运行诊断，查看缺少哪个文件。",
+          "antivirus": "检查杀毒软件的隔离区并恢复游戏文件，再把启动器的数据目录加入排除列表。",
+          "reinstall": "重新安装此实例：重新下载同一版本并安装。"
+        }
+      },
+      "launch_window": {
+        "cause": {
+          "loading": "游戏仍在加载；安装后第一次启动或模组较多时可能需要一些时间。",
+          "mods": "某个模组在加载时卡住了。",
+          "graphics": "显卡驱动无法创建游戏窗口。",
+          "components": "缺少运行库或 Gaming Services。"
+        },
+        "step": {
+          "wait": "等待一分钟，看游戏窗口是否出现。",
+          "diagnose": "运行诊断，检查运行库和此实例。",
+          "clean_instance": "去掉模组后再试，看是否有模组卡住。",
+          "graphics": "更新显卡驱动。",
+          "logs": "查看游戏日志：崩溃日志位于实例文件夹内的 logs/crash。"
+        }
+      },
+      "write_access": {
+        "cause": {
+          "in_use": "文件正被运行中的游戏或其他程序占用。",
+          "protected": "文件夹受保护：位于 Program Files、系统目录，或受“受控文件夹访问”保护。",
+          "antivirus": "杀毒软件正在扫描或拦截这些文件。",
+          "disk": "磁盘已满。",
+          "path": "路径包含中文等非英文字符，或路径过长。"
+        },
+        "step": {
+          "close_game": "关闭游戏和占用实例文件夹的程序；可在“设置 > 其他设置”中结束残留的游戏进程。",
+          "data_folder": "使用不在 Program Files 中、只含英文字符的数据目录（设置 > 基础设置）。",
+          "antivirus": "在杀毒软件和“Windows 安全中心 > 勒索软件防护”（受控文件夹访问）中放行启动器。",
+          "disk": "清理一些磁盘空间。",
+          "diagnose": "运行诊断，检查数据目录、磁盘空间和路径。"
+        }
+      },
+      "license_not_entitled": {
+        "cause": {
+          "not_owned": "当前登录的微软账户未拥有 Minecraft for Windows（{{channel}}）。",
+          "other_account": "游戏是在另一个微软账户上购买的，而不是启动器当前登录的账户。",
+          "xbox_only": "在游戏内登录 Xbox 不等于拥有 PC 版：需要为此账户购买 Minecraft for Windows。",
+          "preview_separate": "预览版需要单独的授权：请用此账户在 Microsoft Store 或 Xbox 应用中获取一次“Minecraft Preview”。",
+          "region": "当 Windows 区域设为中国大陆时，商店不提供预览版，只会显示教育版。",
+          "device_limit": "一个微软账户最多在 10 台设备上使用商店游戏，启动器也算一台。超出上限时授权会被拒绝。",
+          "refund": "购买已退款，或授权来自已到期的 Game Pass 订阅。"
+        },
+        "step": {
+          "check_account": "打开右上角的账户菜单，查看此账户拥有哪些渠道，并切换到购买了游戏的账户。",
+          "diagnose": "运行账户诊断，在线重新检查两个渠道的授权。",
+          "buy": "如果此账户未拥有游戏，请购买 Minecraft for Windows。",
+          "preview": "预览版：在 Microsoft Store 中获取一次 Minecraft Preview。",
+          "region": "在中国大陆使用预览版：把 Windows 的“国家或地区”改为其他地区（设置 > 时间和语言 > 语言和区域），账户本身不会改变。",
+          "devices": "在微软账户中移除不再使用的设备，然后重试。"
+        }
+      },
+      "license_trial": {
+        "cause": {
+          "not_owned": "此账户只拥有游戏的试用版。",
+          "other_account": "完整版是在另一个微软账户上购买的。",
+          "device_limit": "账户使用商店游戏的设备已达 10 台上限，因此只发放了试用授权。",
+          "game_pass": "包含此游戏的 Game Pass 订阅已到期。"
+        },
+        "step": {
+          "check_account": "打开账户菜单，登录拥有完整版的账户。",
+          "devices": "在微软账户中移除不再使用的设备。",
+          "official_once": "通过 Microsoft Store 或 Xbox 应用启动一次游戏以刷新授权。",
+          "diagnose": "运行账户诊断，重新检查授权。"
+        }
+      },
+      "license_network": {
+        "cause": {
+          "network": "从当前网络无法连接微软的登录或授权服务器。",
+          "proxy": "代理、VPN 或“网络加速器”拦截或篡改了与微软的连接。",
+          "clock": "系统时间不正确，导致微软拒绝请求。",
+          "service": "微软服务暂时不可用。"
+        },
+        "step": {
+          "diagnose": "运行诊断，测试与微软的连接和系统时间。",
+          "proxy": "关闭代理或加速器，或将 microsoft.com、live.com、xboxlive.com 设为直连。",
+          "clock": "在 Windows“设置 > 时间和语言”中开启“自动设置时间”。",
+          "retry": "等几分钟后重试。"
+        }
+      },
+      "license_package": {
+        "cause": {
+          "mismatch": "安装包与微软发放的授权不匹配（例如渠道不同，或是特殊构建）。",
+          "catalog": "Microsoft Store 目录返回了意外的产品。"
+        },
+        "step": {
+          "refresh": "刷新版本列表，下载标准的正式版或预览版。",
+          "check_account": "确认当前登录的账户拥有此渠道。"
+        }
+      },
+      "account": {
+        "cause": {
+          "changed": "自启动器上次检查后，微软账户发生了变化。",
+          "elevated": "启动器以管理员身份运行，Windows 会跳过账户选择器并沿用之前的账户。",
+          "cache": "无法读取启动器保存的账户数据。"
+        },
+        "step": {
+          "sign_in": "打开账户菜单重新登录，或切换账户。",
+          "not_admin": "如果启动器以管理员身份运行，请以普通方式重新启动它。",
+          "retry": "然后重试。"
+        }
+      },
+      "download_network": {
+        "cause": {
+          "blocked": "从当前网络无法稳定连接下载服务器。",
+          "proxy": "代理软件在运行，但没有设置为 Windows 系统代理，因此启动器不会使用它。",
+          "stale_proxy": "代理软件退出时没有恢复 Windows 代理设置，连接都被发往一个已不存在的代理。",
+          "mirror": "“使用镜像源”已关闭，而当前网络访问 GitHub 很慢或被阻断（中国大陆常见）。",
+          "disk": "下载过程中磁盘空间不足。"
+        },
+        "step": {
+          "diagnose": "运行诊断，逐个测试服务器、代理和磁盘空间。",
+          "mirror": "在“设置 > 包管理”中开启“使用镜像源”。",
+          "source": "在下载页运行测速，并切换到其他下载源。",
+          "proxy": "如果使用代理，请开启其系统代理（或 TUN）模式；如果不使用，请确认 Windows 代理已关闭。",
+          "local": "也可以在其他地方下载安装包，再作为本地安装包导入。"
+        }
+      },
+      "version_list": {
+        "cause": {
+          "github": "版本列表托管在 GitHub 上，当前网络访问很慢或被阻断。",
+          "mirror": "“使用镜像源”已关闭。",
+          "proxy": "Windows 代理指向一个无响应的代理。"
+        },
+        "step": {
+          "diagnose": "运行诊断，测试 GitHub、镜像和代理。",
+          "mirror": "在“设置 > 包管理”中开启“使用镜像源”。",
+          "retry": "重试；列表加载成功一次后会被缓存。"
+        }
+      },
+      "lip_install": {
+        "cause": {
+          "github": "无法稳定连接 GitHub，而 LeviLamina 和模组都从那里下载。",
+          "proxy_down": "“设置 > 包管理”中的 GitHub 代理不可用或填写有误。",
+          "stale_proxy": "Windows 代理指向一个已不在运行的代理软件（日志中会出现 127.0.0.1）。",
+          "cache": "下载缓存中有损坏的文件。",
+          "timeout": "连接太慢导致下载超时（“context deadline exceeded”）。"
+        },
+        "step": {
+          "diagnose": "运行诊断，测试 GitHub、GitHub 代理和 Windows 代理。",
+          "mirror": "在“设置 > 包管理”中开启“使用镜像源”，并换一个 GitHub 代理预设。",
+          "clear_cache": "在同一页面点击“清理缓存”后重试。安装 LeviLamina 大约需要一分钟。",
+          "system_proxy": "如果诊断报告代理无响应，请在 Windows“设置 > 网络和 Internet > 代理”中关闭代理。",
+          "dns": "多试几次，或更换 DNS 服务器。",
+          "later": "想先玩的话，可以先不勾选 LeviLamina 安装游戏，之后再在实例设置中添加。"
+        }
+      },
+      "lip_package": {
+        "cause": {
+          "unsupported": "该模组不支持此游戏版本或平台。",
+          "conflict": "它的依赖与已安装的模组冲突。",
+          "network": "下载失败。"
+        },
+        "step": {
+          "version": "选择适配你游戏版本的模组版本，或使用游戏版本受支持的实例。",
+          "conflict": "更新或移除冲突的模组。",
+          "diagnose": "如果是下载本身失败，请运行诊断。"
+        }
+      },
+      "ll_unsupported": {
+        "cause": {
+          "new_version": "此游戏版本比 LeviLamina 的版本列表更新；LeviLamina 为它发布后才会加入支持。",
+          "preview": "LeviLamina 通常只支持正式版。",
+          "uwp": "LeviLamina 只会自动安装到 GDK 实例。"
+        },
+        "step": {
+          "wait": "等待版本列表更新（无需更新启动器），然后刷新。",
+          "supported_version": "或安装 LeviLamina 支持的游戏版本。",
+          "manual": "进阶：使用 lip 手动安装对应的 LeviLamina。"
+        }
+      },
+      "vcruntime": {
+        "cause": {
+          "missing": "未安装 Microsoft Visual C++ 2015–2022 运行库（x64）。",
+          "damaged": "已安装但已损坏，或注册表中只剩残留。",
+          "system": "Windows 本身缺少系统库（部分精简版系统）。"
+        },
+        "step": {
+          "install": "安装 Visual C++ 运行库（需要管理员确认）。",
+          "official_once": "如果仍不行，请从 Microsoft Store 安装一次 Minecraft，商店会安装游戏所需的系统库。",
+          "repair": "如果连商店版也无法运行，请修复 Windows（sfc /scannow）或重装系统。"
+        }
+      },
+      "developer_mode": {
+        "cause": {
+          "off": "Windows 开发者模式未开启。只有开启后，Windows 才允许注册 UWP 实例（以及“注册到系统”）。",
+          "policy": "在单位或学校的电脑上，管理员策略可能禁止开启开发者模式。"
+        },
+        "step": {
+          "enable": "开启开发者模式（需要管理员确认）。",
+          "settings": "或在“设置 > 系统 > 开发者选项”中手动开启。",
+          "policy": "如果开关是灰色的，请联系电脑的管理员。"
+        }
+      },
+      "uwp_conflict": {
+        "cause": {
+          "store": "已安装 Microsoft Store 版 Minecraft，它占用了应用注册。",
+          "other_launcher": "其他启动器注册了自己的 Minecraft。"
+        },
+        "step": {
+          "backup": "先备份存档（com.mojang 文件夹）。",
+          "uninstall": "在“设置 > 应用”中卸载另一个副本，或在注册它的启动器中取消注册。",
+          "retry": "然后重新注册或启动此实例。"
+        }
+      },
+      "uwp_register": {
+        "cause": {
+          "developer_mode": "开发者模式未开启。",
+          "conflict": "另一个 Minecraft 注册与此实例冲突。",
+          "dependency": "缺少游戏需要的框架包（例如 Microsoft.VCLibs）。",
+          "folder": "实例文件夹不可写，或路径中有中文等非英文字符。",
+          "deployment": "Windows 应用部署服务出错，重启电脑通常可以解决。"
+        },
+        "step": {
+          "diagnose": "运行诊断，检查开发者模式、当前注册情况和实例。",
+          "developer_mode": "确认开发者模式已开启。",
+          "conflict": "在“设置 > 应用”中移除冲突的 Minecraft（请先备份存档）。",
+          "restart": "重启 Windows 后重试。",
+          "logs": "如果仍然失败，请发送启动器日志和错误详情。"
+        }
+      },
+      "uwp_dependency": {
+        "cause": {
+          "framework": "缺少此游戏版本需要的 Windows 框架包（例如 Microsoft.VCLibs 或 Microsoft.NET.Native）。",
+          "old_windows": "Windows 版本过旧，无法安装该框架版本。"
+        },
+        "step": {
+          "store": "从 Microsoft Store 安装一次 Minecraft，商店会安装这些框架。",
+          "windows_update": "安装 Windows 更新。",
+          "other_version": "或选择其他游戏版本。"
+        }
+      },
+      "uwp_system_version": {
+        "cause": {
+          "old_windows": "此游戏版本需要比本机更新的 Windows 版本。",
+          "locked": "这里无法更新 Windows（例如租用的云电脑）。"
+        },
+        "step": {
+          "other_version": "选择兼容当前 Windows 版本的游戏版本。",
+          "windows_update": "或更新 Windows。"
+        }
+      },
+      "package_corrupt": {
+        "cause": {
+          "incomplete": "下载被中断或不完整。",
+          "disk": "写入时磁盘出错或空间不足。",
+          "antivirus": "杀毒软件修改或锁定了文件。",
+          "format": "该文件不是完整的 Windows x64 Minecraft 安装包。"
+        },
+        "step": {
+          "redownload": "在下载页删除已下载的安装包，然后重新下载。",
+          "disk": "清理一些磁盘空间。",
+          "antivirus": "安装期间暂停杀毒软件对启动器数据目录的扫描。"
+        }
+      },
+      "install_failed": {
+        "cause": {
+          "vcruntime": "Visual C++ 运行库缺失或损坏（安装时会闪退，或只留下空文件夹）。",
+          "disk": "磁盘空间不足。",
+          "path": "数据目录路径包含中文等非英文字符，或位于受保护的位置。",
+          "antivirus": "杀毒软件拦截了解压。",
+          "license": "账户未拥有此版本。"
+        },
+        "step": {
+          "diagnose": "运行诊断，检查账户授权、运行库、磁盘空间和网络。",
+          "vcruntime": "安装 Visual C++ 运行库。",
+          "path": "使用不在 Program Files 中、只含英文字符的数据目录。",
+          "antivirus": "在杀毒软件中放行启动器。",
+          "report": "如果仍然失败，请附上启动器日志到 GitHub 反馈。"
+        }
+      },
+      "gaming_services": {
+        "cause": {
+          "missing": "未安装 Gaming Services，而 GDK 版 Minecraft 需要它。",
+          "ltsc": "LTSC 和精简版 Windows 没有 Microsoft Store，无法按常规方式安装，且 Xbox 相关服务常被禁用。",
+          "broken": "已安装但已损坏，或其 Windows 服务被禁用。",
+          "proxy": "开启代理时，Microsoft Store 安装它可能会卡住。"
+        },
+        "step": {
+          "store": "从 Microsoft Store 安装（下方按钮），装好后回来重新检测。",
+          "official_once": "从商店或 Xbox 应用安装并启动一次 Minecraft，也会顺带安装它。",
+          "ltsc": "LTSC 系统：请参阅常见问题中不经商店安装 Gaming Services 的方法，并在 services.msc 中把 Xbox 相关服务设为“自动”。",
+          "diagnose": "运行诊断，查看它是否已安装、服务是否已启用。",
+          "repair": "如果已安装但仍提示缺失，请卸载它、重启 Windows，再从商店重新安装。",
+          "ignore": "如果只使用 UWP 实例，可以忽略此提示。"
+        }
+      },
+      "update_failed": {
+        "cause": {
+          "network": "无法下载更新（GitHub 或镜像无法访问）。",
+          "permission": "启动器所在文件夹不可写（例如位于 Program Files 且没有管理员权限）。",
+          "asset": "该版本没有适用于此启动器的更新包（旧版本需要手动更新）。",
+          "antivirus": "杀毒软件阻止了替换启动器。"
+        },
+        "step": {
+          "retry": "关闭并重新打开启动器以重试。",
+          "mirror": "在“设置 > 包管理”中开启“使用镜像源”。",
+          "manual": "从 GitHub Releases（或官方镜像）下载最新版，覆盖安装。",
+          "admin": "如果启动器安装在 Program Files 下，更新时请允许管理员权限请求。"
+        }
+      },
+      "migration": {
+        "cause": {
+          "running": "Minecraft 正在运行，占用着游戏文件。",
+          "locked": "杀毒软件或其他程序锁定了游戏主程序。",
+          "permission": "某个实例文件夹不可写。"
+        },
+        "step": {
+          "close": "关闭 Minecraft（可在“设置 > 其他设置”中结束残留进程）。",
+          "retry": "重新启动启动器；在仍需要迁移时它会再次尝试。",
+          "logs": "如果再次失败，请发送启动器日志。"
+        }
+      }
+    }
+  },
+  "diagnostics": {
+    "title_running": "正在运行诊断…",
+    "title_failed": "诊断无法运行",
+    "title_problems_other": "发现 {{count}} 个问题",
+    "title_ok": "未发现问题",
+    "scope_instance": "{{topic}} · {{instance}}",
+    "running_label": "正在检查",
+    "running_body": "正在检查运行库、Windows 设置、网络和账户。最多需要一分钟，不会更改电脑上的任何设置。",
+    "elapsed": "已用时 {{seconds}} 秒",
+    "failed_body": "诊断无法运行。请重新启动启动器后再试。",
+    "no_problems_body": "检查的项目均正常。如果问题仍然存在，常见问题中还有更多情况；反馈问题时附上启动器日志会很有帮助。",
+    "problems_heading": "问题",
+    "notes_heading": "值得注意",
+    "passed_heading_other": "{{count}} 项检查通过",
+    "duration": "用时 {{seconds}} 秒。",
+    "copy_report": "复制报告",
+    "copied": "报告已复制",
+    "run_again": "重新诊断",
+    "clock_ahead": "快了",
+    "clock_behind": "慢了",
+    "status": {
+      "ok": "通过",
+      "info": "提示",
+      "skip": "已跳过",
+      "warn": "警告",
+      "fail": "问题"
+    },
+    "channel": {
+      "release": "正式版",
+      "preview": "预览版",
+      "this": "此版本"
+    },
+    "topic": {
+      "launch": "启动游戏",
+      "install": "安装游戏版本",
+      "download": "下载",
+      "lip": "LeviLamina 与模组",
+      "license": "账户与授权",
+      "uwp": "UWP 注册",
+      "full": "全面检查"
+    },
+    "reason": {
+      "timeout": "检查未能按时完成。"
+    },
+    "endpoint": {
+      "ok": "可以访问（{{latency}} 秒）。",
+      "slow": "可以访问但很慢（{{latency}} 秒），从这里下载可能会超时。",
+      "dns": "无法解析服务器域名（DNS）。请检查网络或 DNS 设置，或换一个 DNS 服务器。",
+      "tls": "无法建立安全连接。请检查系统时间，并关闭会拦截 HTTPS 的代理、“网络加速器”或安全软件。",
+      "timeout": "8 秒内没有响应，网络或防火墙可能阻止了连接。",
+      "proxy": "代理导致连接失败。请检查代理软件，或关闭系统代理。",
+      "refused": "连接被拒绝。",
+      "reset": "连接被中断。防火墙、代理或网络不稳定可能是原因。",
+      "other": "无法连接。",
+      "rate_limited": "服务器正在限制请求（HTTP 429），请等几分钟。",
+      "server_error": "服务器报告了错误（HTTP {{http}}），这是服务器端的问题，请稍后再试。",
+      "http_error": "服务器返回 HTTP {{http}}，文件可能已移动。"
+    },
+    "check": {
+      "vcruntime": {
+        "title": "Visual C++ 运行库",
+        "ok": "已安装。",
+        "missing": "未安装 Microsoft Visual C++ 2015–2022 运行库（x64）。游戏、LeviLamina 和原生模组都需要它，缺少时安装游戏版本也可能闪退。"
+      },
+      "gameinput": {
+        "title": "GameInput",
+        "ok": "已安装。",
+        "missing": "未安装 Microsoft GameInput。GDK 版 Minecraft 需要它来处理输入设备。",
+        "uwp": "UWP 实例不需要。"
+      },
+      "gaming_services": {
+        "title": "Microsoft Gaming Services",
+        "ok": "已安装并启用。",
+        "missing": "未安装 Gaming Services，GDK 版 Minecraft 没有它无法启动。请从 Microsoft Store 安装；LTSC 或精简版 Windows 请参阅常见问题中的手动安装方法。",
+        "disabled": "Gaming Services 已安装，但其 Windows 服务被禁用。请打开“服务”（services.msc），把“Gaming Services”设为“自动”，然后重启 Windows。",
+        "uwp": "UWP 实例不需要。"
+      },
+      "xbox_services": {
+        "title": "Xbox 服务",
+        "ok": "未被禁用。",
+        "disabled": "以下 Xbox 服务被禁用：{{services}}。LTSC 和“优化”过的 Windows 常会禁用它们，导致 Xbox 登录和 Gaming Services 无法工作。请在“服务”（services.msc）中把它们设为“手动”或“自动”。",
+        "uwp": "UWP 实例不需要。"
+      },
+      "developer_mode": {
+        "title": "Windows 开发者模式",
+        "ok": "已开启。",
+        "fail_off": "开发者模式未开启。只有开启后 Windows 才会注册 UWP 实例，因此此实例无法启动或注册。",
+        "info_off": "未开启。只有 UWP 实例和“注册到系统”需要它。",
+        "gdk": "启动 GDK 实例不需要。"
+      },
+      "webview2": {
+        "title": "WebView2 运行时",
+        "ok": "已安装。",
+        "missing": "缺失；启动器窗口启动时会自动安装。"
+      },
+      "data_root": {
+        "title": "数据目录",
+        "ok": "{{path}} 可写入。",
+        "not_writable": "启动器无法写入 {{path}}。请在“设置 > 基础设置”中选择不在受保护位置（如 Program Files）的数据目录，或检查其权限和“受控文件夹访问”。",
+        "non_ascii": "数据目录 {{path}} 包含中文等非英文字符。部分游戏组件和模组在这类路径下会出错；只含英文字母和数字的路径最稳妥。",
+        "unknown": "未设置数据目录。"
+      },
+      "disk_space": {
+        "title": "可用磁盘空间",
+        "ok": "{{path}} 所在磁盘还有 {{free}} GB 可用空间。",
+        "low": "{{path}} 所在磁盘只剩 {{free}} GB 可用空间。安装一个游戏版本约需 10 GB（安装包加解压后的游戏）。",
+        "unknown": "无法读取可用空间。"
+      },
+      "appdata_link": {
+        "title": "Minecraft 数据文件夹",
+        "ok": "未发现其他工具创建的链接。",
+        "link": "{{path}} 是符号链接或目录联接，通常由 BedrockBoot 等工具创建。它与版本隔离冲突，可能导致存档和模组“丢失”或提示存储空间不足。请关闭该工具的版本隔离，或删除该链接（请先备份存档）。"
+      },
+      "elevation": {
+        "title": "管理员权限",
+        "ok": "启动器未以管理员身份运行。",
+        "warn_elevated": "启动器正以管理员身份运行。此时 Windows 登录时不会显示账户选择器，切换账户看起来总是回到原来的账户。请以非管理员身份重新启动启动器。",
+        "info_elevated": "启动器正以管理员身份运行。"
+      },
+      "account": {
+        "title": "微软账户",
+        "ok": "已登录。",
+        "signed_out": "未登录微软账户。下载和安装游戏版本需要登录拥有 Minecraft 的账户。"
+      },
+      "license": {
+        "title": "游戏授权",
+        "summary": "正式版：{{release_state}}；预览版：{{preview_state}}。",
+        "ok": "两个渠道都已授权。",
+        "channel_authorized": "此账户拥有{{channel}}。",
+        "channel_not_entitled": "此账户未拥有{{channel}}。",
+        "channel_trial": "微软只为{{channel}}发放了试用授权。",
+        "channel_error": "无法检查{{channel}}的授权。",
+        "signed_out": "请先登录。"
+      },
+      "proxy": {
+        "title": "代理",
+        "ok_none": "未设置代理，启动器直接连接。",
+        "info_manual": "连接经过 Windows 系统代理 {{address}}，该代理有响应。如果下载仍然失败，请确认代理软件放行了启动器，或使用其 TUN 模式。",
+        "info_env": "连接经过环境变量中设置的代理（{{address}}），该代理有响应。",
+        "info_pac": "Windows 使用代理脚本（{{pac}}），连接按脚本进行。",
+        "info_auto": "Windows 会自动检测代理设置，连接按其结果进行。",
+        "unreachable": "Windows 中设置的代理 {{address}} 没有响应。这通常是代理软件退出时没有恢复设置，导致所有连接都失败（日志中出现“connection to 127.0.0.1 failed”）。请在 Windows“设置 > 网络和 Internet > 代理”中关闭代理，或启动代理软件。",
+        "unknown": "无法读取代理设置。"
+      },
+      "mirror": {
+        "title": "镜像源",
+        "info_on": "“使用镜像源”已开启：GitHub 下载经由镜像。",
+        "info_off": "“使用镜像源”已关闭：直接访问 GitHub，当前网络可以正常访问。",
+        "github_unreachable": "“使用镜像源”已关闭，而当前网络无法快速访问 GitHub。请在“设置 > 包管理”中开启，之后版本列表、LeviLamina 和更新都会经由镜像。"
+      },
+      "clock": {
+        "title": "系统时间",
+        "ok": "系统时间正确。",
+        "skew": "系统时间{{direction}} {{skew}} 分钟。时间不正确会导致安全连接、微软登录和授权检查失败。请在 Windows“设置 > 时间和语言”中开启“自动设置时间”。",
+        "no_server": "没有服务器响应，无法比对时间。"
+      },
+      "ep_microsoft_auth": {
+        "title": "微软登录（login.live.com）"
+      },
+      "ep_xbox_store": {
+        "title": "Microsoft Store 目录（授权）"
+      },
+      "ep_xbox_packages": {
+        "title": "Xbox 下载服务（游戏安装包）"
+      },
+      "ep_version_db": {
+        "title": "游戏版本列表（GitHub）"
+      },
+      "ep_github": {
+        "title": "GitHub（LeviLamina 与模组）"
+      },
+      "ep_levimc": {
+        "title": "levimc.org（模组目录）"
+      },
+      "ep_github_proxy": {
+        "title": "GitHub 代理（{{proxy}}）",
+        "inactive_ok": "未使用（镜像源已关闭），但可以访问：在当前网络开启“使用镜像源”是可行的。",
+        "inactive_fail": "未使用，且在当前网络也无法访问。"
+      },
+      "ep_ll_db": {
+        "title": "LeviLamina 版本列表",
+        "ok": "已加载（列出 {{count}} 个游戏版本）。"
+      },
+      "ll_support": {
+        "title": "此版本的 LeviLamina 支持",
+        "ok": "游戏版本 {{version}} 受支持（最新 LeviLamina {{latest}}）。",
+        "unsupported": "游戏版本 {{version}} 还不在 LeviLamina 的版本列表中。新游戏版本要等 LeviLamina 为其发布后才会加入；请等待，或使用受支持的版本。",
+        "uwp": "LeviLamina 只会自动安装到 GDK 实例。",
+        "db_unavailable": "无法加载 LeviLamina 版本列表。",
+        "unknown_version": "此实例的游戏版本未知。"
+      },
+      "instance_files": {
+        "title": "实例文件",
+        "ok": "已找到（{{type}} {{version}}）。",
+        "dir_missing": "实例文件夹 {{path}} 不存在，可能已被移动或删除，或数据目录发生了变化。",
+        "manifest_missing": "{{path}} 中缺少 AppxManifest.xml，实例不完整，请重新安装。",
+        "exe_missing": "游戏主程序缺失（{{path}}）。可能被杀毒软件隔离，或安装没有完成。请从隔离区恢复，或重新安装实例。"
+      },
+      "instance_path": {
+        "title": "实例路径",
+        "ok": "路径正常。",
+        "non_ascii": "实例路径 {{path}} 包含中文等非英文字符。部分组件和模组在这类路径下会出错；请重命名实例，或把数据目录移到只含英文的路径。",
+        "long": "实例路径过长（{{path}}）。请缩短实例名称，或把数据目录移到更靠近盘符根目录的位置。"
+      },
+      "instance_running": {
+        "title": "运行中的游戏",
+        "ok": "此实例未在运行。",
+        "running": "此实例正在运行。再次启动或修改其文件前，请先关闭游戏（或在“设置 > 其他设置 > 进程管理”中结束它）。"
+      },
+      "registration": {
+        "title": "系统注册",
+        "ok_this": "此实例就是在 Windows 中注册的{{channel}} Minecraft 应用。",
+        "info_none": "Windows 中没有注册{{channel}} Minecraft 应用。UWP 实例会在启动时自动注册。",
+        "warn_other": "Windows 中注册了另一个{{channel}} Minecraft（{{path}}），例如 Microsoft Store 版或其他启动器注册的版本。它可能阻止此实例：请先备份存档，再在“设置 > 应用”中卸载它。",
+        "info_other": "Windows 中注册了另一个{{channel}} Minecraft（{{path}}）。只有使用“注册到系统”时才需要注意。"
+      }
+    }
   }
 }

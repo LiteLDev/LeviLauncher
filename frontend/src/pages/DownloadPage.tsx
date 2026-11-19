@@ -17,6 +17,9 @@ import {
 } from "@heroui/react";
 import { PagePagination } from "@/components/PagePagination";
 import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from "react";
+import { useDiagnostics, OPEN_ACCOUNT_EVENT } from "@/utils/DiagnosticsContext";
+import { useLicenseSnapshot } from "@/utils/licenseStore";
+import { licenseInsight } from "@/utils/troubleshoot";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 
@@ -64,6 +67,7 @@ type VersionItem = {
 
 export const DownloadPage: React.FC = () => {
   const { t } = useTranslation();
+  const { openDiagnostics } = useDiagnostics();
   const navigate = useNavigate();
   const { startDownload, isDownloading } = useDownloads();
   const [items, setItems] = useState<VersionItem[]>([]);
@@ -853,11 +857,15 @@ export const DownloadPage: React.FC = () => {
           <Card className={cn("flex-1 min-h-0 gap-0 p-0 overflow-hidden", LAYOUT.GLASS_CARD.BASE)}>
             <Card.Content className="p-0 flex flex-1 min-h-0 flex-col overflow-hidden relative">
               {versionsError && items.length > 0 && (
-                <div role="alert" className="flex shrink-0 items-center justify-between gap-3 p-3 text-sm bg-warning/10 text-foreground">
-                  <span>{t("audit.primary.download.stale")}</span>
-                  <Button size="sm" variant="secondary" onPress={reloadAll} isDisabled={versionsLoading}>{t("download_manager.actions.retry")}</Button>
+                <div role="alert" className="flex shrink-0 flex-wrap items-center justify-between gap-3 p-3 text-sm bg-warning/10 text-foreground">
+                  <span className="min-w-0 flex-1">{t("audit.primary.download.stale")}</span>
+                  <div className="flex shrink-0 gap-2">
+                    <Button size="sm" variant="secondary" onPress={() => openDiagnostics({ topic: "download" })}>{t("troubleshoot.action.diagnose")}</Button>
+                    <Button size="sm" variant="secondary" onPress={reloadAll} isDisabled={versionsLoading}>{t("download_manager.actions.retry")}</Button>
+                  </div>
                 </div>
               )}
+              <LicenseBanner />
               <Table
                 ref={tableAreaRef}
                 className="flex-1 min-h-0 overflow-hidden"
@@ -925,8 +933,18 @@ export const DownloadPage: React.FC = () => {
                         <div className="flex flex-col items-center justify-center h-40 text-muted gap-2">
                           {versionsLoading ? <Spinner /> : <FaBoxOpen className="w-10 h-10 opacity-20" />}
                           <p role={versionsError ? "alert" : "status"}>{t(versionsLoading ? "common.loading" : versionsError ? "audit.primary.download.failed" : items.length > 0 ? "audit.primary.download.no_matches" : "downloadpage.table.empty")}</p>
+                          {versionsError && !versionsLoading && (
+                            <p className="max-w-md text-center text-xs">{t("troubleshoot.version_list_failed_hint")}</p>
+                          )}
                           {!versionsLoading && (versionsError || items.length === 0 ? (
-                            <Button size="sm" variant="secondary" onPress={reloadAll}>{t("download_manager.actions.retry")}</Button>
+                            <div className="flex flex-wrap justify-center gap-2">
+                              <Button size="sm" variant="secondary" onPress={reloadAll}>{t("download_manager.actions.retry")}</Button>
+                              {versionsError && (
+                                <Button size="sm" variant="secondary" onPress={() => openDiagnostics({ topic: "download" })}>
+                                  {t("troubleshoot.action.diagnose")}
+                                </Button>
+                              )}
+                            </div>
                           ) : (
                             <Button size="sm" variant="secondary" onPress={() => { setQuery(""); setTypeFilter("all"); setStatusFilter("all"); setLlFilter("all"); }}>{t("audit.primary.clear_filters")}</Button>
                           ))}
@@ -1581,5 +1599,36 @@ export const DownloadPage: React.FC = () => {
         )}
       </PageContainer>
     </>
+  );
+};
+
+// LicenseBanner tells, before a download fails on it, that the signed-in
+// account cannot license a channel (for example Release unavailable while
+// Preview is fine), why that usually happens and where to look.
+const LicenseBanner: React.FC = () => {
+  const { t } = useTranslation();
+  const { openDiagnostics } = useDiagnostics();
+  const license = useLicenseSnapshot();
+  if (!license.known) return null;
+  const signedOut = !license.xuid;
+  const insight = signedOut ? "signed_out" : licenseInsight(license.release, license.preview);
+  if (!insight || insight === "error" || insight === "partial_error") return null;
+  return (
+    <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/60 p-3 text-sm bg-surface-secondary/60 text-foreground">
+      <div className="min-w-0 flex-1">
+        <p className="font-medium">{t(`troubleshoot.license.${insight}.title`)}</p>
+        <p className="text-xs text-foreground/75">{t(`troubleshoot.license.${insight}.banner`)}</p>
+      </div>
+      <div className="flex shrink-0 gap-2">
+        <Button size="sm" variant="secondary" onPress={() => window.dispatchEvent(new CustomEvent(OPEN_ACCOUNT_EVENT))}>
+          {t(signedOut ? "useravatar.sign_in" : "troubleshoot.action.open_account")}
+        </Button>
+        {!signedOut && (
+          <Button size="sm" variant="secondary" onPress={() => openDiagnostics({ topic: "license" })}>
+            {t("troubleshoot.action.diagnose")}
+          </Button>
+        )}
+      </div>
+    </div>
   );
 };

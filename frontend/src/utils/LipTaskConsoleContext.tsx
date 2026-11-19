@@ -1,5 +1,6 @@
 import { ModalAction, ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
 import { LipTaskProgressView } from "@/components/LipTaskProgressView";
+import { FailureHelp } from "@/components/FailureHelp";
 import { cn } from "@/utils/cn";
 import { Button, Chip, toast } from "@heroui/react";
 
@@ -894,12 +895,22 @@ export const LipTaskConsoleProvider: React.FC<{
               </div>
 
               {errorText ? (
-                <ModalNotice
-                  tone="danger"
-                  className="max-h-24 shrink-0 overflow-y-auto whitespace-pre-wrap break-all custom-scrollbar"
-                >
-                  {errorText}
-                </ModalNotice>
+                <div className="flex max-h-[55%] shrink-0 flex-col gap-2 overflow-y-auto custom-scrollbar">
+                  <ModalNotice
+                    tone="danger"
+                    role="alert"
+                    className="whitespace-pre-wrap break-all"
+                  >
+                    {errorText}
+                  </ModalNotice>
+                  <FailureHelp
+                    error={errorText}
+                    topic="lip"
+                    instance={target || undefined}
+                    fallback="lip_install"
+                    onLeave={closeConsole}
+                  />
+                </div>
               ) : null}
 
               <div className="flex min-h-[7rem] flex-1 flex-col space-y-1">

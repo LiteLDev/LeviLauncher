@@ -84,7 +84,8 @@
     "loader_migration": {
       "title": "正在更新載入器",
       "body": "正在將已安裝的實例適配至新版 LeviLauncher 載入器。此操作只會執行一次，請稍候…",
-      "preparing": "正在準備更新…"
+      "preparing": "正在準備更新…",
+      "failed": "將實例遷移到新模組載入方式的一次性操作失敗了。實例本身未被改動。"
     },
     "mclaunch": {
       "loading": {
@@ -541,6 +542,11 @@
       "on_exit_close": "關閉啟動器",
       "minimize_to_tray": "關閉視窗時隱藏到系統匣",
       "minimize_to_tray_desc": "點擊關閉按鈕時將啟動器隱藏到系統匣，而不是結束；最小化按鈕仍最小化到工作列"
+    },
+    "troubleshoot": {
+      "title": "故障排查",
+      "desc": "檢查啟動器依賴的執行庫、Windows 設定、網路、代理和帳戶授權。最多耗時一分鐘，不會更改任何設定。",
+      "run": "執行診斷"
     }
   },
   "downloadmodal": {
@@ -1059,7 +1065,31 @@
     "ERR_UWP_INTEGRITY": "安裝包完整性檢查失敗，請重新下載。",
     "ERR_UWP_NOT_REGISTERED": "此實例尚未註冊到 Windows。請先選擇「註冊」，成功後再啟動。",
     "ERR_UWP_PREPARE": "無法為此實例準備系統註冊，請檢查實例資料夾權限後重試。",
-    "ERR_LIP_INVALID_GITHUB_PROXY": "請輸入有效的 HTTP(S) URL"
+    "ERR_LIP_INVALID_GITHUB_PROXY": "請輸入有效的 HTTP(S) URL",
+    "explain": {
+      "game_exited_early": "遊戲程序已啟動，但很快又退出了。常見原因是某個模組、附加包或資源包有問題，或遊戲檔案已損壞。",
+      "game_no_window": "遊戲程序在執行，卻一直沒有出現視窗。可能卡在載入某個模組，或缺少執行庫、顯示卡驅動有問題。",
+      "loader_activation": "無法為該實例準備模組載入器。請檢查實例資料夾是否完整且可寫，然後在實例設定中重新安裝 LeviLamina。",
+      "bad_executable": "遊戲主程式與當前系統不匹配或已損壞。請重新安裝該實例，或選擇適合你平台的版本。",
+      "access_denied": "Windows 拒絕訪問某個檔案或資料夾。請關閉可能佔用它的程式（包括防毒軟體），確認實例資料夾可寫，或以管理員身份執行啟動器。",
+      "file_in_use": "有檔案正被其他程式佔用，通常是遊戲本身或防毒軟體在掃描。請關閉遊戲以及訪問實例資料夾的程式後重試。",
+      "disk_full": "磁碟可用空間不足。請釋放空間，或將實例移到其他磁碟。",
+      "path_too_long": "某個檔案路徑對 Windows 來說太長。請把實例移到更短的目錄，或縮短實例名稱。",
+      "not_found": "缺少必需的檔案或資料夾。實例可能被移動、刪除或只安裝了一部分，請嘗試修復或重新安裝。",
+      "developer_mode": "此操作需要開啟 Windows 開發人員模式。請在「設定 > 系統 > 開發者選項」中開啟後重試。",
+      "dns": "無法解析伺服器域名。請檢查網路連線、DNS 或代理設定。",
+      "tls": "無法建立安全連線。請確認系統日期和時間正確，且沒有代理或安全軟體攔截連線。",
+      "timeout": "伺服器回應超時。請檢查網路，稍後重試，或在設定中啟用鏡像/代理。",
+      "connection": "與伺服器的連線被拒絕或中斷。請檢查網路、防火牆和代理設定後重試。",
+      "http_403": "伺服器拒絕了請求（HTTP 403）。該服務可能限制了你所在的網路地區，可嘗試在設定中啟用鏡像或代理。",
+      "http_404": "伺服器上找不到該檔案（HTTP 404）。它可能已被移除或改名，請重新整理列表後重試。",
+      "http_429": "伺服器正在限制請求頻率（HTTP 429）。請等待幾分鐘後重試。",
+      "http_5xx": "伺服器報告了內部錯誤，問題在伺服器一側，請稍後重試。",
+      "lip_no_package": "沒有與該版本、該平台匹配的包。該模組可能尚未支援當前遊戲版本。",
+      "lip_already_installed": "該包已經安裝。請使用「更新」而不是「安裝」。",
+      "lip_conflict": "這些包的版本要求相互衝突，無法同時安裝。請移除或更新衝突的模組後重試。",
+      "corrupt_download": "下載的檔案已損壞或不完整。請在設定中清理下載快取後重試。"
+    }
   },
   "filemanager": {
     "sort": {
@@ -1610,5 +1640,665 @@
     "open_content_dir": "開啟 UWP 內容目錄",
     "not_specified": "請選擇 UWP 安裝包，或先下載對應版本。",
     "resolving_download": "正在取得下載位址…"
+  },
+  "troubleshoot": {
+    "causes_title": "可能的原因",
+    "steps_title": "解決辦法",
+    "open_faq": "在常見問題中檢視詳情",
+    "open_faq_index": "瀏覽常見問題",
+    "learn_more": "瞭解詳情",
+    "how_to_fix": "可能的原因與解決辦法",
+    "action_failed": "無法開啟",
+    "action_failed_body": "Windows 無法開啟該連結或設定頁面。",
+    "installer_started": "安裝程式已啟動",
+    "installer_started_body": "請按 Windows 的提示完成安裝，完成後可再次執行診斷。",
+    "developer_mode_enabled": "開發者模式已開啟",
+    "developer_mode_failed": "未能開啟開發者模式",
+    "developer_mode_failed_body": "管理員許可權請求被拒絕或被阻止。請在「設定 > 系統 > 開發者選項」中手動開啟。",
+    "download_failed_title": "下載失敗",
+    "download_start_failed_title": "無法開始下載",
+    "download_failed_hint": "下載管理中列出了可能的原因，並提供診斷按鈕。",
+    "version_list_failed_hint": "版本列表來自 GitHub。如果一直失敗，請在設定中開啟「使用鏡像來源」，或執行診斷。",
+    "action": {
+      "diagnose": "執行診斷",
+      "install_vcruntime": "安裝 Visual C++ 執行庫",
+      "install_gameinput": "安裝 GameInput",
+      "open_gaming_services": "獲取 Gaming Services",
+      "open_minecraft_store": "在商店中開啟 Minecraft",
+      "open_preview_store": "獲取 Minecraft 預覽版",
+      "open_buy": "購買 Minecraft",
+      "open_devices": "管理裝置",
+      "open_orders": "訂單記錄",
+      "enable_developer_mode": "開啟開發者模式",
+      "open_developer_settings": "開啟開發者選項",
+      "open_proxy_settings": "開啟代理設定",
+      "open_date_settings": "開啟日期和時間設定",
+      "open_region_settings": "開啟區域設定",
+      "open_apps_settings": "開啟已安裝的應用",
+      "open_storage_settings": "開啟儲存設定",
+      "open_mirror_settings": "開啟套件管理設定",
+      "open_data_settings": "開啟資料目錄設定",
+      "open_process_settings": "開啟執行中的程序",
+      "open_update_settings": "開啟更新設定",
+      "open_download_page": "前往下載頁",
+      "open_account": "開啟帳戶選單",
+      "open_logs": "開啟日誌資料夾",
+      "open_releases": "開啟 GitHub Releases"
+    },
+    "license": {
+      "preview_only": {
+        "title": "此帳戶無法使用正式版，但預覽版可用",
+        "body": "微軟拒絕為此帳戶發放正式版（Release）授權，而預覽版（Preview）已授權。常見原因：遊戲是在另一個微軟帳戶上購買的；購買已退款，或來自已到期的 Game Pass 訂閱；或帳戶已達到 10 台裝置的上限。請檢查 Microsoft Store 的遊戲庫和訂單記錄，移除不再使用的裝置，然後重新整理。",
+        "banner": "使用此帳戶下載或安裝正式版會失敗；預覽版可以正常使用。"
+      },
+      "release_only": {
+        "title": "此帳戶無法使用預覽版",
+        "body": "正式版已授權，但預覽版需要單獨的授權：請用此帳戶在 Microsoft Store 或 Xbox 應用中獲取一次「Minecraft Preview」。在中國大陸，需要先把 Windows 的區域改為其他國家或地區，因為商店不在該區域提供預覽版。",
+        "banner": "可以安裝正式版；在此帳戶獲得預覽版授權之前，安裝預覽版會失敗。"
+      },
+      "trial": {
+        "title": "只有試用版授權",
+        "body": "微軟只發放了試用版授權。通常是帳戶沒有購買完整版、完整版在另一個帳戶上，或帳戶已達到 10 台裝置的上限。",
+        "banner": "在此帳戶獲得完整授權之前，安裝遊戲版本會失敗。"
+      },
+      "none": {
+        "title": "此帳戶未擁有 Minecraft for Windows",
+        "body": "正式版和預覽版都未授權。請登入購買了 Minecraft for Windows 的微軟帳戶（僅在遊戲內登入 Xbox 並不等於擁有 PC 版），或購買遊戲。",
+        "banner": "下載和安裝遊戲版本需要擁有 Minecraft for Windows 的帳戶。"
+      },
+      "error": {
+        "title": "無法檢查授權",
+        "body": "啟動器無法連線微軟檢查授權。常見原因是代理、VPN、「網路加速器」或系統時間不正確。執行診斷即可找出原因。"
+      },
+      "partial_error": {
+        "title": "有一個渠道的授權無法檢查",
+        "body": "其中一個渠道的授權檢查失敗（網路或微軟服務問題）。請重新整理重試；若一直失敗，請執行診斷。"
+      },
+      "signed_out": {
+        "title": "未登入",
+        "banner": "請登入擁有 Minecraft 的微軟帳戶，才能下載和安裝遊戲版本。"
+      }
+    },
+    "guide": {
+      "launch_game": {
+        "cause": {
+          "components": "遊戲需要的元件缺失或損壞：Visual C++ 執行庫，以及 GDK 版需要的 GameInput 和 Microsoft Gaming Services。",
+          "first_run": "這台電腦上從未透過 Microsoft Store 或 Xbox 應用安裝並啟動過 Minecraft（重新安裝系統後很常見），因此遊戲依賴的系統元件從未安裝。",
+          "stale_login": "很久沒玩後，遊戲儲存的 Xbox 登入資料已過期；用官方方式啟動一次遊戲即可重新整理。",
+          "mods": "某個模組、附加包、資源包或光影與此遊戲版本不相容（如果只有裝了模組才出現）。",
+          "graphics": "顯示卡驅動過舊或損壞，或者疊加層、補幀工具干擾了遊戲。",
+          "outdated": "啟動器本身版本過舊。"
+        },
+        "step": {
+          "diagnose": "執行診斷，檢查執行庫、Gaming Services 和此實例的檔案。",
+          "components": "安裝診斷報告缺失的元件。Gaming Services 必須從 Microsoft Store 安裝。",
+          "official_once": "透過 Microsoft Store 或 Xbox 應用安裝一次 Minecraft 並成功啟動，然後重試。這是最常見的解決辦法，之後可以解除安裝商店版。",
+          "proxy": "如果使用代理，在商店安裝元件期間請關閉代理（或將 microsoft.com、xboxlive.com 設為直連）。",
+          "clean_instance": "用一個沒有模組、沒有 LeviLamina 的實例試試。如果能啟動，再逐個啟用模組找出出問題的那個。",
+          "graphics": "更新或重新安裝顯示卡驅動，並關閉疊加層和補幀功能。",
+          "report": "仍然失敗？請更新啟動器、重新安裝實例，並附上啟動器日誌到 GitHub 反饋問題。"
+        }
+      },
+      "game_running": {
+        "cause": {
+          "still_running": "此實例仍在執行，可能已最小化或在後台。",
+          "stuck": "上一次的遊戲程序沒有正常退出，仍佔用著此實例。"
+        },
+        "step": {
+          "close": "關閉正在執行的遊戲後重試，或使用「強制啟動」再啟動一個（僅 GDK 版）。",
+          "end_process": "在「設定 > 其他設定 > 程序管理」中結束殘留的遊戲程序。"
+        }
+      },
+      "game_files": {
+        "cause": {
+          "moved": "實例資料夾被移動、重新命名或刪除，或資料目錄位置發生了變化。",
+          "antivirus": "防毒軟體隔離了遊戲主程式。",
+          "incomplete": "安裝沒有完成。"
+        },
+        "step": {
+          "diagnose": "執行診斷，檢視缺少哪個檔案。",
+          "antivirus": "檢查防毒軟體的隔離區並恢復遊戲檔案，再把啟動器的資料目錄加入排除列表。",
+          "reinstall": "重新安裝此實例：重新下載同一版本並安裝。"
+        }
+      },
+      "launch_window": {
+        "cause": {
+          "loading": "遊戲仍在載入；安裝後第一次啟動或模組較多時可能需要一些時間。",
+          "mods": "某個模組在載入時卡住了。",
+          "graphics": "顯示卡驅動無法建立遊戲視窗。",
+          "components": "缺少執行庫或 Gaming Services。"
+        },
+        "step": {
+          "wait": "等待一分鐘，看遊戲視窗是否出現。",
+          "diagnose": "執行診斷，檢查執行庫和此實例。",
+          "clean_instance": "去掉模組後再試，看是否有模組卡住。",
+          "graphics": "更新顯示卡驅動。",
+          "logs": "檢視遊戲日誌：崩潰日誌位於實例資料夾內的 logs/crash。"
+        }
+      },
+      "write_access": {
+        "cause": {
+          "in_use": "檔案正被執行中的遊戲或其他程式佔用。",
+          "protected": "資料夾受保護：位於 Program Files、系統目錄，或受「受控資料夾訪問」保護。",
+          "antivirus": "防毒軟體正在掃描或攔截這些檔案。",
+          "disk": "磁碟已滿。",
+          "path": "路徑包含中文等非英文字元，或路徑過長。"
+        },
+        "step": {
+          "close_game": "關閉遊戲和佔用實例資料夾的程式；可在「設定 > 其他設定」中結束殘留的遊戲程序。",
+          "data_folder": "使用不在 Program Files 中、只含英文字元的資料目錄（設定 > 基礎設定）。",
+          "antivirus": "在防毒軟體和「Windows 安全中心 > 勒索軟體防護」（受控資料夾訪問）中放行啟動器。",
+          "disk": "清理一些磁碟空間。",
+          "diagnose": "執行診斷，檢查資料目錄、磁碟空間和路徑。"
+        }
+      },
+      "license_not_entitled": {
+        "cause": {
+          "not_owned": "當前登入的微軟帳戶未擁有 Minecraft for Windows（{{channel}}）。",
+          "other_account": "遊戲是在另一個微軟帳戶上購買的，而不是啟動器當前登入的帳戶。",
+          "xbox_only": "在遊戲內登入 Xbox 不等於擁有 PC 版：需要為此帳戶購買 Minecraft for Windows。",
+          "preview_separate": "預覽版需要單獨的授權：請用此帳戶在 Microsoft Store 或 Xbox 應用中獲取一次「Minecraft Preview」。",
+          "region": "當 Windows 區域設為中國大陸時，商店不提供預覽版，只會顯示教育版。",
+          "device_limit": "一個微軟帳戶最多在 10 台裝置上使用商店遊戲，啟動器也算一台。超出上限時授權會被拒絕。",
+          "refund": "購買已退款，或授權來自已到期的 Game Pass 訂閱。"
+        },
+        "step": {
+          "check_account": "開啟右上角的帳戶選單，檢視此帳戶擁有哪些渠道，並切換到購買了遊戲的帳戶。",
+          "diagnose": "執行帳戶診斷，線上重新檢查兩個渠道的授權。",
+          "buy": "如果此帳戶未擁有遊戲，請購買 Minecraft for Windows。",
+          "preview": "預覽版：在 Microsoft Store 中獲取一次 Minecraft Preview。",
+          "region": "在中國大陸使用預覽版：把 Windows 的「國家或地區」改為其他地區（設定 > 時間和語言 > 語言和區域），帳戶本身不會改變。",
+          "devices": "在微軟帳戶中移除不再使用的裝置，然後重試。"
+        }
+      },
+      "license_trial": {
+        "cause": {
+          "not_owned": "此帳戶只擁有遊戲的試用版。",
+          "other_account": "完整版是在另一個微軟帳戶上購買的。",
+          "device_limit": "帳戶使用商店遊戲的裝置已達 10 台上限，因此只發放了試用授權。",
+          "game_pass": "包含此遊戲的 Game Pass 訂閱已到期。"
+        },
+        "step": {
+          "check_account": "開啟帳戶選單，登入擁有完整版的帳戶。",
+          "devices": "在微軟帳戶中移除不再使用的裝置。",
+          "official_once": "透過 Microsoft Store 或 Xbox 應用啟動一次遊戲以重新整理授權。",
+          "diagnose": "執行帳戶診斷，重新檢查授權。"
+        }
+      },
+      "license_network": {
+        "cause": {
+          "network": "從當前網路無法連線微軟的登入或授權伺服器。",
+          "proxy": "代理、VPN 或「網路加速器」攔截或篡改了與微軟的連線。",
+          "clock": "系統時間不正確，導致微軟拒絕請求。",
+          "service": "微軟服務暫時不可用。"
+        },
+        "step": {
+          "diagnose": "執行診斷，測試與微軟的連線和系統時間。",
+          "proxy": "關閉代理或加速器，或將 microsoft.com、live.com、xboxlive.com 設為直連。",
+          "clock": "在 Windows「設定 > 時間和語言」中開啟「自動設定時間」。",
+          "retry": "等幾分鐘後重試。"
+        }
+      },
+      "license_package": {
+        "cause": {
+          "mismatch": "安裝包與微軟發放的授權不匹配（例如渠道不同，或是特殊構建）。",
+          "catalog": "Microsoft Store 目錄返回了意外的產品。"
+        },
+        "step": {
+          "refresh": "重新整理版本列表，下載標準的正式版或預覽版。",
+          "check_account": "確認當前登入的帳戶擁有此渠道。"
+        }
+      },
+      "account": {
+        "cause": {
+          "changed": "自啟動器上次檢查後，微軟帳戶發生了變化。",
+          "elevated": "啟動器以管理員身份執行，Windows 會跳過帳戶選擇器並沿用之前的帳戶。",
+          "cache": "無法讀取啟動器儲存的帳戶資料。"
+        },
+        "step": {
+          "sign_in": "開啟帳戶選單重新登入，或切換帳戶。",
+          "not_admin": "如果啟動器以管理員身份執行，請以普通方式重新啟動它。",
+          "retry": "然後重試。"
+        }
+      },
+      "download_network": {
+        "cause": {
+          "blocked": "從當前網路無法穩定連線下載伺服器。",
+          "proxy": "代理軟體在執行，但沒有設定為 Windows 系統代理，因此啟動器不會使用它。",
+          "stale_proxy": "代理軟體退出時沒有恢復 Windows 代理設定，連線都被髮往一個已不存在的代理。",
+          "mirror": "「使用鏡像來源」已關閉，而當前網路訪問 GitHub 很慢或被阻斷（中國大陸常見）。",
+          "disk": "下載過程中磁碟空間不足。"
+        },
+        "step": {
+          "diagnose": "執行診斷，逐個測試伺服器、代理和磁碟空間。",
+          "mirror": "在「設定 > 套件管理」中開啟「使用鏡像來源」。",
+          "source": "在下載頁執行測速，並切換到其他下載源。",
+          "proxy": "如果使用代理，請開啟其系統代理（或 TUN）模式；如果不使用，請確認 Windows 代理已關閉。",
+          "local": "也可以在其他地方下載安裝包，再作為本地安裝包匯入。"
+        }
+      },
+      "version_list": {
+        "cause": {
+          "github": "版本列表託管在 GitHub 上，當前網路訪問很慢或被阻斷。",
+          "mirror": "「使用鏡像來源」已關閉。",
+          "proxy": "Windows 代理指向一個無回應的代理。"
+        },
+        "step": {
+          "diagnose": "執行診斷，測試 GitHub、鏡像和代理。",
+          "mirror": "在「設定 > 套件管理」中開啟「使用鏡像來源」。",
+          "retry": "重試；列表載入成功一次後會被快取。"
+        }
+      },
+      "lip_install": {
+        "cause": {
+          "github": "無法穩定連線 GitHub，而 LeviLamina 和模組都從那裡下載。",
+          "proxy_down": "「設定 > 套件管理」中的 GitHub 代理不可用或填寫有誤。",
+          "stale_proxy": "Windows 代理指向一個已不在執行的代理軟體（日誌中會出現 127.0.0.1）。",
+          "cache": "下載快取中有損壞的檔案。",
+          "timeout": "連線太慢導致下載超時（「context deadline exceeded」）。"
+        },
+        "step": {
+          "diagnose": "執行診斷，測試 GitHub、GitHub 代理和 Windows 代理。",
+          "mirror": "在「設定 > 套件管理」中開啟「使用鏡像來源」，並換一個 GitHub 代理預設。",
+          "clear_cache": "在同一頁面點擊「清理快取」後重試。安裝 LeviLamina 大約需要一分鐘。",
+          "system_proxy": "如果診斷報告代理無回應，請在 Windows「設定 > 網路和 Internet > 代理」中關閉代理。",
+          "dns": "多試幾次，或更換 DNS 伺服器。",
+          "later": "想先玩的話，可以先不勾選 LeviLamina 安裝遊戲，之後再在實例設定中新增。"
+        }
+      },
+      "lip_package": {
+        "cause": {
+          "unsupported": "該模組不支援此遊戲版本或平台。",
+          "conflict": "它的依賴與已安裝的模組衝突。",
+          "network": "下載失敗。"
+        },
+        "step": {
+          "version": "選擇適配你遊戲版本的模組版本，或使用遊戲版本受支援的實例。",
+          "conflict": "更新或移除衝突的模組。",
+          "diagnose": "如果是下載本身失敗，請執行診斷。"
+        }
+      },
+      "ll_unsupported": {
+        "cause": {
+          "new_version": "此遊戲版本比 LeviLamina 的版本列表更新；LeviLamina 為它釋出後才會加入支援。",
+          "preview": "LeviLamina 通常只支援正式版。",
+          "uwp": "LeviLamina 只會自動安裝到 GDK 實例。"
+        },
+        "step": {
+          "wait": "等待版本列表更新（無需更新啟動器），然後重新整理。",
+          "supported_version": "或安裝 LeviLamina 支援的遊戲版本。",
+          "manual": "進階：使用 lip 手動安裝對應的 LeviLamina。"
+        }
+      },
+      "vcruntime": {
+        "cause": {
+          "missing": "未安裝 Microsoft Visual C++ 2015–2022 執行庫（x64）。",
+          "damaged": "已安裝但已損壞，或登錄檔中只剩殘留。",
+          "system": "Windows 本身缺少系統庫（部分精簡版系統）。"
+        },
+        "step": {
+          "install": "安裝 Visual C++ 執行庫（需要管理員確認）。",
+          "official_once": "如果仍不行，請從 Microsoft Store 安裝一次 Minecraft，商店會安裝遊戲所需的系統庫。",
+          "repair": "如果連商店版也無法執行，請修復 Windows（sfc /scannow）或重新安裝系統。"
+        }
+      },
+      "developer_mode": {
+        "cause": {
+          "off": "Windows 開發者模式未開啟。只有開啟後，Windows 才允許註冊 UWP 實例（以及「註冊到系統」）。",
+          "policy": "在單位或學校的電腦上，管理員策略可能禁止開啟開發者模式。"
+        },
+        "step": {
+          "enable": "開啟開發者模式（需要管理員確認）。",
+          "settings": "或在「設定 > 系統 > 開發者選項」中手動開啟。",
+          "policy": "如果開關是灰色的，請聯絡電腦的管理員。"
+        }
+      },
+      "uwp_conflict": {
+        "cause": {
+          "store": "已安裝 Microsoft Store 版 Minecraft，它佔用了應用註冊。",
+          "other_launcher": "其他啟動器註冊了自己的 Minecraft。"
+        },
+        "step": {
+          "backup": "先備份存檔（com.mojang 資料夾）。",
+          "uninstall": "在「設定 > 應用」中解除安裝另一個副本，或在註冊它的啟動器中取消註冊。",
+          "retry": "然後重新註冊或啟動此實例。"
+        }
+      },
+      "uwp_register": {
+        "cause": {
+          "developer_mode": "開發者模式未開啟。",
+          "conflict": "另一個 Minecraft 註冊與此實例衝突。",
+          "dependency": "缺少遊戲需要的框架包（例如 Microsoft.VCLibs）。",
+          "folder": "實例資料夾不可寫，或路徑中有中文等非英文字元。",
+          "deployment": "Windows 應用部署服務出錯，重啟電腦通常可以解決。"
+        },
+        "step": {
+          "diagnose": "執行診斷，檢查開發者模式、當前註冊情況和實例。",
+          "developer_mode": "確認開發者模式已開啟。",
+          "conflict": "在「設定 > 應用」中移除衝突的 Minecraft（請先備份存檔）。",
+          "restart": "重啟 Windows 後重試。",
+          "logs": "如果仍然失敗，請傳送啟動器日誌和錯誤詳情。"
+        }
+      },
+      "uwp_dependency": {
+        "cause": {
+          "framework": "缺少此遊戲版本需要的 Windows 框架包（例如 Microsoft.VCLibs 或 Microsoft.NET.Native）。",
+          "old_windows": "Windows 版本過舊，無法安裝該框架版本。"
+        },
+        "step": {
+          "store": "從 Microsoft Store 安裝一次 Minecraft，商店會安裝這些框架。",
+          "windows_update": "安裝 Windows 更新。",
+          "other_version": "或選擇其他遊戲版本。"
+        }
+      },
+      "uwp_system_version": {
+        "cause": {
+          "old_windows": "此遊戲版本需要比本機更新的 Windows 版本。",
+          "locked": "這裡無法更新 Windows（例如租用的雲電腦）。"
+        },
+        "step": {
+          "other_version": "選擇相容當前 Windows 版本的遊戲版本。",
+          "windows_update": "或更新 Windows。"
+        }
+      },
+      "package_corrupt": {
+        "cause": {
+          "incomplete": "下載被中斷或不完整。",
+          "disk": "寫入時磁碟出錯或空間不足。",
+          "antivirus": "防毒軟體修改或鎖定了檔案。",
+          "format": "該檔案不是完整的 Windows x64 Minecraft 安裝包。"
+        },
+        "step": {
+          "redownload": "在下載頁刪除已下載的安裝包，然後重新下載。",
+          "disk": "清理一些磁碟空間。",
+          "antivirus": "安裝期間暫停防毒軟體對啟動器資料目錄的掃描。"
+        }
+      },
+      "install_failed": {
+        "cause": {
+          "vcruntime": "Visual C++ 執行庫缺失或損壞（安裝時會閃退，或只留下空資料夾）。",
+          "disk": "磁碟空間不足。",
+          "path": "資料目錄路徑包含中文等非英文字元，或位於受保護的位置。",
+          "antivirus": "防毒軟體攔截瞭解壓。",
+          "license": "帳戶未擁有此版本。"
+        },
+        "step": {
+          "diagnose": "執行診斷，檢查帳戶授權、執行庫、磁碟空間和網路。",
+          "vcruntime": "安裝 Visual C++ 執行庫。",
+          "path": "使用不在 Program Files 中、只含英文字元的資料目錄。",
+          "antivirus": "在防毒軟體中放行啟動器。",
+          "report": "如果仍然失敗，請附上啟動器日誌到 GitHub 反饋。"
+        }
+      },
+      "gaming_services": {
+        "cause": {
+          "missing": "未安裝 Gaming Services，而 GDK 版 Minecraft 需要它。",
+          "ltsc": "LTSC 和精簡版 Windows 沒有 Microsoft Store，無法按常規方式安裝，且 Xbox 相關服務常被禁用。",
+          "broken": "已安裝但已損壞，或其 Windows 服務被禁用。",
+          "proxy": "開啟代理時，Microsoft Store 安裝它可能會卡住。"
+        },
+        "step": {
+          "store": "從 Microsoft Store 安裝（下方按鈕），裝好後回來重新檢測。",
+          "official_once": "從商店或 Xbox 應用安裝並啟動一次 Minecraft，也會順帶安裝它。",
+          "ltsc": "LTSC 系統：請參閱常見問題中不經商店安裝 Gaming Services 的方法，並在 services.msc 中把 Xbox 相關服務設為「自動」。",
+          "diagnose": "執行診斷，檢視它是否已安裝、服務是否已啟用。",
+          "repair": "如果已安裝但仍提示缺失，請解除安裝它、重啟 Windows，再從商店重新安裝。",
+          "ignore": "如果只使用 UWP 實例，可以忽略此提示。"
+        }
+      },
+      "update_failed": {
+        "cause": {
+          "network": "無法下載更新（GitHub 或鏡像無法訪問）。",
+          "permission": "啟動器所在資料夾不可寫（例如位於 Program Files 且沒有管理員許可權）。",
+          "asset": "該版本沒有適用於此啟動器的更新包（舊版本需要手動更新）。",
+          "antivirus": "防毒軟體阻止了替換啟動器。"
+        },
+        "step": {
+          "retry": "關閉並重新開啟啟動器以重試。",
+          "mirror": "在「設定 > 套件管理」中開啟「使用鏡像來源」。",
+          "manual": "從 GitHub Releases（或官方鏡像）下載最新版，覆蓋安裝。",
+          "admin": "如果啟動器安裝在 Program Files 下，更新時請允許管理員許可權請求。"
+        }
+      },
+      "migration": {
+        "cause": {
+          "running": "Minecraft 正在執行，佔用著遊戲檔案。",
+          "locked": "防毒軟體或其他程式鎖定了遊戲主程式。",
+          "permission": "某個實例資料夾不可寫。"
+        },
+        "step": {
+          "close": "關閉 Minecraft（可在「設定 > 其他設定」中結束殘留程序）。",
+          "retry": "重新啟動啟動器；在仍需要遷移時它會再次嘗試。",
+          "logs": "如果再次失敗，請傳送啟動器日誌。"
+        }
+      }
+    }
+  },
+  "diagnostics": {
+    "title_running": "正在執行診斷…",
+    "title_failed": "診斷無法執行",
+    "title_problems_other": "發現 {{count}} 個問題",
+    "title_ok": "未發現問題",
+    "scope_instance": "{{topic}} · {{instance}}",
+    "running_label": "正在檢查",
+    "running_body": "正在檢查執行庫、Windows 設定、網路和帳戶。最多需要一分鐘，不會更改電腦上的任何設定。",
+    "elapsed": "已用時 {{seconds}} 秒",
+    "failed_body": "診斷無法執行。請重新啟動啟動器後再試。",
+    "no_problems_body": "檢查的專案均正常。如果問題仍然存在，常見問題中還有更多情況；反饋問題時附上啟動器日誌會很有幫助。",
+    "problems_heading": "問題",
+    "notes_heading": "值得注意",
+    "passed_heading_other": "{{count}} 項檢查透過",
+    "duration": "用時 {{seconds}} 秒。",
+    "copy_report": "複製報告",
+    "copied": "報告已複製",
+    "run_again": "重新診斷",
+    "clock_ahead": "快了",
+    "clock_behind": "慢了",
+    "status": {
+      "ok": "透過",
+      "info": "提示",
+      "skip": "已跳過",
+      "warn": "警告",
+      "fail": "問題"
+    },
+    "channel": {
+      "release": "正式版",
+      "preview": "預覽版",
+      "this": "此版本"
+    },
+    "topic": {
+      "launch": "啟動遊戲",
+      "install": "安裝遊戲版本",
+      "download": "下載",
+      "lip": "LeviLamina 與模組",
+      "license": "帳戶與授權",
+      "uwp": "UWP 註冊",
+      "full": "全面檢查"
+    },
+    "reason": {
+      "timeout": "檢查未能按時完成。"
+    },
+    "endpoint": {
+      "ok": "可以訪問（{{latency}} 秒）。",
+      "slow": "可以訪問但很慢（{{latency}} 秒），從這裡下載可能會超時。",
+      "dns": "無法解析伺服器域名（DNS）。請檢查網路或 DNS 設定，或換一個 DNS 伺服器。",
+      "tls": "無法建立安全連線。請檢查系統時間，並關閉會攔截 HTTPS 的代理、「網路加速器」或安全軟體。",
+      "timeout": "8 秒內沒有回應，網路或防火牆可能阻止了連線。",
+      "proxy": "代理導致連線失敗。請檢查代理軟體，或關閉系統代理。",
+      "refused": "連線被拒絕。",
+      "reset": "連線被中斷。防火牆、代理或網路不穩定可能是原因。",
+      "other": "無法連線。",
+      "rate_limited": "伺服器正在限制請求（HTTP 429），請等幾分鐘。",
+      "server_error": "伺服器報告了錯誤（HTTP {{http}}），這是伺服器端的問題，請稍後再試。",
+      "http_error": "伺服器返回 HTTP {{http}}，檔案可能已移動。"
+    },
+    "check": {
+      "vcruntime": {
+        "title": "Visual C++ 執行庫",
+        "ok": "已安裝。",
+        "missing": "未安裝 Microsoft Visual C++ 2015–2022 執行庫（x64）。遊戲、LeviLamina 和原生模組都需要它，缺少時安裝遊戲版本也可能閃退。"
+      },
+      "gameinput": {
+        "title": "GameInput",
+        "ok": "已安裝。",
+        "missing": "未安裝 Microsoft GameInput。GDK 版 Minecraft 需要它來處理輸入裝置。",
+        "uwp": "UWP 實例不需要。"
+      },
+      "gaming_services": {
+        "title": "Microsoft Gaming Services",
+        "ok": "已安裝並啟用。",
+        "missing": "未安裝 Gaming Services，GDK 版 Minecraft 沒有它無法啟動。請從 Microsoft Store 安裝；LTSC 或精簡版 Windows 請參閱常見問題中的手動安裝方法。",
+        "disabled": "Gaming Services 已安裝，但其 Windows 服務被禁用。請開啟「服務」（services.msc），把「Gaming Services」設為「自動」，然後重啟 Windows。",
+        "uwp": "UWP 實例不需要。"
+      },
+      "xbox_services": {
+        "title": "Xbox 服務",
+        "ok": "未被禁用。",
+        "disabled": "以下 Xbox 服務被禁用：{{services}}。LTSC 和「最佳化」過的 Windows 常會禁用它們，導致 Xbox 登入和 Gaming Services 無法工作。請在「服務」（services.msc）中把它們設為「手動」或「自動」。",
+        "uwp": "UWP 實例不需要。"
+      },
+      "developer_mode": {
+        "title": "Windows 開發者模式",
+        "ok": "已開啟。",
+        "fail_off": "開發者模式未開啟。只有開啟後 Windows 才會註冊 UWP 實例，因此此實例無法啟動或註冊。",
+        "info_off": "未開啟。只有 UWP 實例和「註冊到系統」需要它。",
+        "gdk": "啟動 GDK 實例不需要。"
+      },
+      "webview2": {
+        "title": "WebView2 執行時",
+        "ok": "已安裝。",
+        "missing": "缺失；啟動器視窗啟動時會自動安裝。"
+      },
+      "data_root": {
+        "title": "資料目錄",
+        "ok": "{{path}} 可寫入。",
+        "not_writable": "啟動器無法寫入 {{path}}。請在「設定 > 基礎設定」中選擇不在受保護位置（如 Program Files）的資料目錄，或檢查其許可權和「受控資料夾訪問」。",
+        "non_ascii": "資料目錄 {{path}} 包含中文等非英文字元。部分遊戲元件和模組在這類路徑下會出錯；只含英文字母和數字的路徑最穩妥。",
+        "unknown": "未設定資料目錄。"
+      },
+      "disk_space": {
+        "title": "可用磁碟空間",
+        "ok": "{{path}} 所在磁碟還有 {{free}} GB 可用空間。",
+        "low": "{{path}} 所在磁碟只剩 {{free}} GB 可用空間。安裝一個遊戲版本約需 10 GB（安裝包加解壓後的遊戲）。",
+        "unknown": "無法讀取可用空間。"
+      },
+      "appdata_link": {
+        "title": "Minecraft 資料資料夾",
+        "ok": "未發現其他工具建立的連結。",
+        "link": "{{path}} 是符號連結或目錄聯接，通常由 BedrockBoot 等工具建立。它與版本隔離衝突，可能導致存檔和模組「丟失」或提示儲存空間不足。請關閉該工具的版本隔離，或刪除該連結（請先備份存檔）。"
+      },
+      "elevation": {
+        "title": "管理員許可權",
+        "ok": "啟動器未以管理員身份執行。",
+        "warn_elevated": "啟動器正以管理員身份執行。此時 Windows 登入時不會顯示帳戶選擇器，切換帳戶看起來總是回到原來的帳戶。請以非管理員身份重新啟動啟動器。",
+        "info_elevated": "啟動器正以管理員身份執行。"
+      },
+      "account": {
+        "title": "微軟帳戶",
+        "ok": "已登入。",
+        "signed_out": "未登入微軟帳戶。下載和安裝遊戲版本需要登入擁有 Minecraft 的帳戶。"
+      },
+      "license": {
+        "title": "遊戲授權",
+        "summary": "正式版：{{release_state}}；預覽版：{{preview_state}}。",
+        "ok": "兩個渠道都已授權。",
+        "channel_authorized": "此帳戶擁有{{channel}}。",
+        "channel_not_entitled": "此帳戶未擁有{{channel}}。",
+        "channel_trial": "微軟只為{{channel}}發放了試用授權。",
+        "channel_error": "無法檢查{{channel}}的授權。",
+        "signed_out": "請先登入。"
+      },
+      "proxy": {
+        "title": "代理",
+        "ok_none": "未設定代理，啟動器直接連線。",
+        "info_manual": "連線經過 Windows 系統代理 {{address}}，該代理有回應。如果下載仍然失敗，請確認代理軟體放行了啟動器，或使用其 TUN 模式。",
+        "info_env": "連線經過環境變數中設定的代理（{{address}}），該代理有回應。",
+        "info_pac": "Windows 使用代理指令碼（{{pac}}），連線按指令碼進行。",
+        "info_auto": "Windows 會自動檢測代理設定，連線按其結果進行。",
+        "unreachable": "Windows 中設定的代理 {{address}} 沒有回應。這通常是代理軟體退出時沒有恢復設定，導致所有連線都失敗（日誌中出現「connection to 127.0.0.1 failed」）。請在 Windows「設定 > 網路和 Internet > 代理」中關閉代理，或啟動代理軟體。",
+        "unknown": "無法讀取代理設定。"
+      },
+      "mirror": {
+        "title": "鏡像源",
+        "info_on": "「使用鏡像來源」已開啟：GitHub 下載經由鏡像。",
+        "info_off": "「使用鏡像來源」已關閉：直接訪問 GitHub，當前網路可以正常訪問。",
+        "github_unreachable": "「使用鏡像來源」已關閉，而當前網路無法快速訪問 GitHub。請在「設定 > 套件管理」中開啟，之後版本列表、LeviLamina 和更新都會經由鏡像。"
+      },
+      "clock": {
+        "title": "系統時間",
+        "ok": "系統時間正確。",
+        "skew": "系統時間{{direction}} {{skew}} 分鐘。時間不正確會導致安全連線、微軟登入和授權檢查失敗。請在 Windows「設定 > 時間和語言」中開啟「自動設定時間」。",
+        "no_server": "沒有伺服器回應，無法比對時間。"
+      },
+      "ep_microsoft_auth": {
+        "title": "微軟登入（login.live.com）"
+      },
+      "ep_xbox_store": {
+        "title": "Microsoft Store 目錄（授權）"
+      },
+      "ep_xbox_packages": {
+        "title": "Xbox 下載服務（遊戲安裝包）"
+      },
+      "ep_version_db": {
+        "title": "遊戲版本列表（GitHub）"
+      },
+      "ep_github": {
+        "title": "GitHub（LeviLamina 與模組）"
+      },
+      "ep_levimc": {
+        "title": "levimc.org（模組目錄）"
+      },
+      "ep_github_proxy": {
+        "title": "GitHub 代理（{{proxy}}）",
+        "inactive_ok": "未使用（鏡像源已關閉），但可以訪問：在當前網路開啟「使用鏡像來源」是可行的。",
+        "inactive_fail": "未使用，且在當前網路也無法訪問。"
+      },
+      "ep_ll_db": {
+        "title": "LeviLamina 版本列表",
+        "ok": "已載入（列出 {{count}} 個遊戲版本）。"
+      },
+      "ll_support": {
+        "title": "此版本的 LeviLamina 支援",
+        "ok": "遊戲版本 {{version}} 受支援（最新 LeviLamina {{latest}}）。",
+        "unsupported": "遊戲版本 {{version}} 還不在 LeviLamina 的版本列表中。新遊戲版本要等 LeviLamina 為其釋出後才會加入；請等待，或使用受支援的版本。",
+        "uwp": "LeviLamina 只會自動安裝到 GDK 實例。",
+        "db_unavailable": "無法載入 LeviLamina 版本列表。",
+        "unknown_version": "此實例的遊戲版本未知。"
+      },
+      "instance_files": {
+        "title": "實例檔案",
+        "ok": "已找到（{{type}} {{version}}）。",
+        "dir_missing": "實例資料夾 {{path}} 不存在，可能已被移動或刪除，或資料目錄發生了變化。",
+        "manifest_missing": "{{path}} 中缺少 AppxManifest.xml，實例不完整，請重新安裝。",
+        "exe_missing": "遊戲主程式缺失（{{path}}）。可能被防毒軟體隔離，或安裝沒有完成。請從隔離區恢復，或重新安裝實例。"
+      },
+      "instance_path": {
+        "title": "實例路徑",
+        "ok": "路徑正常。",
+        "non_ascii": "實例路徑 {{path}} 包含中文等非英文字元。部分元件和模組在這類路徑下會出錯；請重新命名實例，或把資料目錄移到只含英文的路徑。",
+        "long": "實例路徑過長（{{path}}）。請縮短實例名稱，或把資料目錄移到更靠近磁碟機代號根目錄的位置。"
+      },
+      "instance_running": {
+        "title": "執行中的遊戲",
+        "ok": "此實例未在執行。",
+        "running": "此實例正在執行。再次啟動或修改其檔案前，請先關閉遊戲（或在「設定 > 其他設定 > 程序管理」中結束它）。"
+      },
+      "registration": {
+        "title": "系統註冊",
+        "ok_this": "此實例就是在 Windows 中註冊的{{channel}} Minecraft 應用。",
+        "info_none": "Windows 中沒有註冊{{channel}} Minecraft 應用。UWP 實例會在啟動時自動註冊。",
+        "warn_other": "Windows 中註冊了另一個{{channel}} Minecraft（{{path}}），例如 Microsoft Store 版或其他啟動器註冊的版本。它可能阻止此實例：請先備份存檔，再在「設定 > 應用」中解除安裝它。",
+        "info_other": "Windows 中註冊了另一個{{channel}} Minecraft（{{path}}）。只有使用「註冊到系統」時才需要注意。"
+      }
+    }
+  },
+  "errorDetail": {
+    "causes_title": "可能的原因",
+    "technical_title": "技術詳情",
+    "copy": "複製詳情",
+    "copied": "已複製詳情",
+    "copy_failed": "複製詳情失敗",
+    "open_logs": "開啟日誌資料夾",
+    "log_hint": "完整日誌儲存在啟動器日誌資料夾中。"
   }
 }

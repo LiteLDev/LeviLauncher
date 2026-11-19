@@ -12,6 +12,7 @@ import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageContainer } from "@/components/PageContainer";
 import { PageHeader } from "@/components/PageHeader";
 import { LAYOUT } from "@/constants/layout";
+import { ErrorDetail } from "@/components/ErrorDetail";
 
 const UPDATE_ERROR_SEPARATOR = "::";
 
@@ -84,6 +85,7 @@ export default function UpdatingPage() {
   const mountedRef = useRef(false);
   const [running, setRunning] = useState<boolean>(true);
   const [errorCode, setErrorCode] = useState<string>("");
+  const [errorDetail, setErrorDetail] = useState<string>("");
   const [status, setStatus] = useState<string>("checking");
   const [downloaded, setDownloaded] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
@@ -142,6 +144,7 @@ export default function UpdatingPage() {
       }
       safeSet(() => {
         setErrorCode(parsed.code);
+        setErrorDetail(parsed.detail);
       });
     });
 
@@ -162,6 +165,7 @@ export default function UpdatingPage() {
         console.error("Update request failed:", error);
         safeSet(() => {
           setErrorCode("ERR_UPDATE_GENERIC");
+          setErrorDetail(String((error as Error)?.message || error || ""));
         });
       } finally {
         safeSet(() => {
@@ -336,9 +340,10 @@ export default function UpdatingPage() {
         <div role="alert" className="select-text text-foreground text-sm wrap-break-word whitespace-pre-wrap">
           {errorText}
         </div>
-        <ModalDescription className="mt-3">
+        <ModalDescription>
           {t("audit.mods.update_recovery")}
         </ModalDescription>
+        <ErrorDetail code={errorCode} detail={errorDetail} topic="download" alwaysShowLogs />
       </UnifiedModal>
     </PageContainer>
   );

@@ -62,6 +62,8 @@ import {
   GetVersionsDir,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { Browser, Dialogs } from "@wailsio/runtime";
+import { useDiagnostics } from "@/utils/DiagnosticsContext";
+import { faqIndexUrl } from "@/utils/troubleshoot";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
@@ -137,6 +139,7 @@ const lipGithubProxyLabel = (url: string) =>
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const settings = useSettings(i18n);
+  const { openDiagnostics } = useDiagnostics();
   const {
     navigate,
     appVersion,
@@ -271,7 +274,7 @@ export const SettingsPage: React.FC = () => {
     { tab: "personalization", section: "wallpaper", keys: ["audit.usability.appearance_wallpaper", "settings.appearance.background_image", "settings.appearance.background_blur", "settings.appearance.background_brightness", "settings.appearance.background_opacity"] },
     { tab: "personalization", section: "material", keys: ["audit.usability.appearance_material"] },
     { tab: "components", keys: ["settings.tabs.components", "settings.mirror_source.title", "settings.lip.title", "settings.lip.desc", "settings.lip.cache_clean_button", "settings.lip.github_proxy.title"] },
-    { tab: "others", keys: ["settings.process.title", "settings.experimental.title", "settings.experimental.instance_backup.title"] },
+    { tab: "others", keys: ["settings.troubleshoot.title", "settings.process.title", "settings.experimental.title", "settings.experimental.instance_backup.title"] },
     { tab: "privacy", keys: ["settings.tabs.privacy", "settings.privacy.analytics.title"] },
     { tab: "updates", keys: ["settings.tabs.updates", "settings.beta_updates.title"] },
     { tab: "about", keys: ["settings.tabs.about"] },
@@ -2760,6 +2763,35 @@ export const SettingsPage: React.FC = () => {
               )}
               {selectedTab === "others" && (
                 <div className="flex flex-col gap-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <p className="font-medium">
+                        {t("settings.troubleshoot.title")}
+                      </p>
+                      <p className="text-xs text-muted dark:text-zinc-400 max-w-2xl">
+                        {t("settings.troubleshoot.desc")}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Button
+                        onPress={() => void Browser.OpenURL(faqIndexUrl(i18n.language))}
+                        variant={"ghost"}
+                        className={"rounded-full"}
+                      >
+                        {t("troubleshoot.open_faq_index")}
+                      </Button>
+                      <Button
+                        onPress={() => openDiagnostics({ topic: "full" })}
+                        variant={"outline"}
+                        className={"rounded-full"}
+                      >
+                        {t("settings.troubleshoot.run")}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Separator className="bg-surface-tertiary/50" />
+
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col gap-1">
                       <p className="font-medium">

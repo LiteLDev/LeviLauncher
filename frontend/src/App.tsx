@@ -21,6 +21,7 @@ import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
 import { useThemeManager } from "@/utils/useThemeManager";
 import { DownloadsProvider } from "@/utils/DownloadsContext";
 import { LipTaskConsoleProvider } from "@/utils/LipTaskConsoleContext";
+import { DiagnosticsProvider } from "@/utils/DiagnosticsContext";
 import { CurrentVersionProvider } from "@/utils/CurrentVersionContext";
 import { ModIntelligenceProvider } from "@/utils/ModIntelligenceContext";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
@@ -271,6 +272,7 @@ function App() {
               <LeviLaminaProvider>
                 <CurseForgeProvider>
                   <NavigationHistoryProvider>
+                    <DiagnosticsProvider>
                     <LipTaskConsoleProvider>
                       <ToastProvider
                         placement="top"
@@ -510,6 +512,7 @@ function App() {
                         ) : null}
                       </div>
                     </LipTaskConsoleProvider>
+                    </DiagnosticsProvider>
                   </NavigationHistoryProvider>
                 </CurseForgeProvider>
               </LeviLaminaProvider>

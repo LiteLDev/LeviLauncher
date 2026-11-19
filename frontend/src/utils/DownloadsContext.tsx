@@ -225,10 +225,11 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
             return next;
           });
         }
-        toast(undefined, {
-          description: msg.includes("ERR_UWP_") ? resolveInstallError(msg, t) : msg,
+        toast(t("troubleshoot.download_failed_title"), {
+          description: `${msg.includes("ERR_UWP_") ? resolveInstallError(msg, t) : msg}
+${t("troubleshoot.download_failed_hint")}`,
           variant: "danger",
-          timeout: 2000,
+          timeout: 8000,
         });
       }),
     );
@@ -351,10 +352,11 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
       });
       return true;
     } catch (e) {
-      toast(undefined, {
-        description: String(e).includes("ERR_UWP_") ? resolveInstallError(String(e), t) : String(e),
+      toast(t("troubleshoot.download_start_failed_title"), {
+        description: `${String(e).includes("ERR_UWP_") ? resolveInstallError(String(e), t) : String(e)}
+${t("troubleshoot.download_failed_hint")}`,
         variant: "danger",
-        timeout: 2000,
+        timeout: 8000,
       });
       return false;
     } finally {

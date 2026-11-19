@@ -52,8 +52,9 @@ import { useLauncher } from "@/hooks/useLauncher";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { resolveInstallError } from "@/utils/installError";
-import { splitErrorResult } from "@/utils/errorDetail";
-import { ErrorDetail } from "@/components/ErrorDetail";
+import { explainErrorDetail, splitErrorResult } from "@/utils/errorDetail";
+import { ErrorDetail, TroubleshootGuide } from "@/components/ErrorDetail";
+import { GUIDES, guideFor, guideIdForCode } from "@/utils/troubleshoot";
 
 const LAUNCH_TIP_KEYS = [
   "version_selector",
@@ -200,8 +201,12 @@ export const LauncherPage = (args: any) => {
     const fallback = t("errors.ERR_LAUNCH_GAME") as unknown as string;
     if (fallback && fallback !== "errors.ERR_LAUNCH_GAME") return fallback;
 
-    return "Launch failed";
+    return t("launcherpage.launch.failed.title") as unknown as string;
   }, [launchCode, t]);
+  const launchHasGuide = useMemo(
+    () => Boolean(guideFor(launchCode, explainErrorDetail(launchDetail), "launch")),
+    [launchCode, launchDetail],
+  );
 
   const versionMenuItems = useMemo(
     () => buildVersionMenuItems(t("common.empty") as string),
@@ -894,10 +899,19 @@ export const LauncherPage = (args: any) => {
             <ModalDescription>
               {launchErrorMessage}
             </ModalDescription>
-            <ModalDescription>
-              {t("launcherpage.launch.failed.content") as unknown as string}
-            </ModalDescription>
-            <ErrorDetail code={launchCode} detail={launchDetail} alwaysShowLogs />
+            {!launchHasGuide && (
+              <ModalDescription>
+                {t("launcherpage.launch.failed.content") as unknown as string}
+              </ModalDescription>
+            )}
+            <ErrorDetail
+              code={launchCode}
+              detail={launchDetail}
+              alwaysShowLogs
+              topic={launchCode.startsWith("ERR_UWP_") ? "uwp" : "launch"}
+              instance={currentVersionName || undefined}
+              onLeave={launchFailedDisclosure.close}
+            />
             {launchCode && (
               <Chip
                 size="sm"
@@ -1023,6 +1037,12 @@ export const LauncherPage = (args: any) => {
           <ModalDescription>
             {t("launcherpage.gs.missing.body")}
           </ModalDescription>
+          <TroubleshootGuide
+            guide={GUIDES.gaming_services}
+            quietDiagnose
+            instance={currentVersionName || undefined}
+            onLeave={gamingServicesMissingDisclosure.close}
+          />
         </UnifiedModal>
 
         {/* Install Confirm (GameInput / GamingServices) */}
@@ -1081,7 +1101,15 @@ export const LauncherPage = (args: any) => {
           icon={<FaCogs className="w-6 h-6" />}
         >
           {migrateError ? (
-            <ModalDescription>{migrateError}</ModalDescription>
+            <>
+              <ModalDescription>{t("launcherpage.loader_migration.failed")}</ModalDescription>
+              <ErrorDetail
+                detail={migrateError}
+                guide="migration"
+                alwaysShowLogs
+                onLeave={loaderMigrationDisclosure.close}
+              />
+            </>
           ) : (
             <ModalProgress
               label={t("launcherpage.loader_migration.title")}
@@ -1257,7 +1285,15 @@ export const LauncherPage = (args: any) => {
               })()}
             </ModalDescription>
           </ModalNotice>
-          <ErrorDetail code={launchCode} detail={launchDetail} alwaysShowLogs />
+          <ErrorDetail
+            code={launchCode}
+            detail={launchDetail}
+            alwaysShowLogs
+            topic="uwp"
+            guide={guideIdForCode(launchCode) ? undefined : "uwp_register"}
+            instance={currentVersionName || undefined}
+            onLeave={registerFailedDisclosure.close}
+          />
           </div>
         </UnifiedModal>
       </PageContainer>

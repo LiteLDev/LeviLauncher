@@ -15,14 +15,29 @@ import {
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { useStartupInteractive } from "@/utils/startupState";
 import { useProcessElevation } from "@/hooks/useProcessElevation";
+import { Browser } from "@wailsio/runtime";
+import { FiActivity, FiExternalLink } from "react-icons/fi";
+import { OPEN_ACCOUNT_EVENT, useDiagnostics } from "@/utils/DiagnosticsContext";
+import { publishLicenses } from "@/utils/licenseStore";
+import { faqUrl, licenseInsight, type LicenseState } from "@/utils/troubleshoot";
+import type { FaqId } from "@/utils/faqEntries";
 
-type LicenseState = "checking" | "authorized" | "trial" | "not_entitled" | "error";
+// FAQ question that explains each license situation.
+const LICENSE_FAQ: Record<string, FaqId> = {
+  preview_only: "license_not_entitled",
+  release_only: "preview_license",
+  trial: "preview_license",
+  none: "license_not_entitled",
+  error: "license_not_entitled",
+  partial_error: "license_not_entitled",
+};
 type LicenseResult = { xuid: string; release: LicenseState; preview: LicenseState };
 const licenseState = (value: string): LicenseState =>
   ["authorized", "trial", "not_entitled"].includes(value) ? value as LicenseState : "error";
 
 export const UserAvatar = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { openDiagnostics } = useDiagnostics();
   const startupInteractive = useStartupInteractive();
   const elevated = useProcessElevation();
   const [gamertag, setGamertag] = useState("");
@@ -191,6 +206,39 @@ export const UserAvatar = () => {
     };
   }, [open, reloadNonce, startupInteractive, xuid]);
 
+  // Share the license states with pages that warn before a download the
+  // account cannot license.
+  useEffect(() => {
+    if (!startupInteractive || loading) return;
+    if (!xuid) {
+      publishLicenses({ known: true, xuid: "", release: "not_entitled", preview: "not_entitled" });
+      return;
+    }
+    const current = licenses?.xuid === xuid ? licenses : null;
+    publishLicenses({
+      known: true,
+      xuid,
+      release: current?.release ?? "checking",
+      preview: current?.preview ?? "checking",
+    });
+  }, [licenses, loading, startupInteractive, xuid]);
+
+  // Troubleshooting steps open this menu ("Check the signed-in account").
+  const signInRef = React.useRef(signIn);
+  signInRef.current = signIn;
+  useEffect(() => {
+    const onOpen = () => {
+      if (gamertag) setOpen(true);
+      else void signInRef.current();
+    };
+    window.addEventListener(OPEN_ACCOUNT_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_ACCOUNT_EVENT, onOpen);
+  }, [gamertag]);
+
+  const releaseState: LicenseState = licenses?.xuid === xuid ? licenses.release : "checking";
+  const previewState: LicenseState = licenses?.xuid === xuid ? licenses.preview : "checking";
+  const insight = licenseInsight(releaseState, previewState);
+
   if (!startupInteractive || loading) {
     return (
       <div className="flex size-10 shrink-0 items-center justify-center">
@@ -334,13 +382,45 @@ export const UserAvatar = () => {
                   return (
                   <div key={channel} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2.5">
                     <dt className="text-sm font-medium">{channel === "release" ? "Release" : "Preview"}</dt>
-                    <dd role="status" className={cn("flex items-center gap-1.5 text-xs font-medium", state === "authorized" ? "text-success" : "text-muted")}>
+                    <dd role="status" className={cn(
+                      "flex items-center gap-1.5 text-xs font-medium",
+                      state === "authorized" ? "text-success"
+                        : state === "trial" || state === "not_entitled" ? "text-warning"
+                        : state === "error" ? "text-danger" : "text-muted",
+                    )}>
                       {state === "checking" ? <Spinner size="sm" /> : <StatusIcon aria-hidden="true" />}
                       {t(`useravatar.authorization.${state}`)}
                     </dd>
                   </div>
                 );})}
               </dl>
+              {insight && (
+                <div role="note" className="mt-2 rounded-xl border border-border bg-surface-secondary/60 p-3 text-xs leading-5">
+                  <p className="font-semibold text-foreground">{t(`troubleshoot.license.${insight}.title`)}</p>
+                  <p className="mt-1 text-foreground/80">{t(`troubleshoot.license.${insight}.body`)}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onPress={() => {
+                        setOpen(false);
+                        openDiagnostics({ topic: "license" });
+                      }}
+                    >
+                      <FiActivity aria-hidden="true" />
+                      {t("troubleshoot.action.diagnose")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onPress={() => void Browser.OpenURL(faqUrl(LICENSE_FAQ[insight] ?? "license_not_entitled", i18n.language))}
+                    >
+                      {t("troubleshoot.learn_more")}
+                      <FiExternalLink aria-hidden="true" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </section>
 
             {elevated && (

@@ -84,7 +84,8 @@
     "loader_migration": {
       "title": "Updating the loader",
       "body": "Updating your installed instances to work with the new LeviLauncher loader. This runs only once. Please wait…",
-      "preparing": "Preparing update…"
+      "preparing": "Preparing update…",
+      "failed": "The one-time move of your instances to the new mod loader setup failed. Your instances were not changed."
     },
     "mclaunch": {
       "loading": {
@@ -541,6 +542,11 @@
       "on_exit_close": "Close launcher",
       "minimize_to_tray": "Hide to tray on close",
       "minimize_to_tray_desc": "Clicking the close button hides the launcher to the system tray instead of exiting; the minimize button still minimizes to the taskbar"
+    },
+    "troubleshoot": {
+      "title": "Troubleshooting",
+      "desc": "Check the runtimes, Windows settings, network, proxy and account licenses the launcher depends on. Takes up to a minute and changes nothing.",
+      "run": "Run diagnostics"
     }
   },
   "downloadmodal": {
@@ -1643,5 +1649,658 @@
     "open_content_dir": "Open UWP content folder",
     "not_specified": "Choose a UWP installer or download this version first.",
     "resolving_download": "Resolving…"
+  },
+  "troubleshoot": {
+    "causes_title": "Possible causes",
+    "steps_title": "How to fix it",
+    "open_faq": "Read more in the FAQ",
+    "open_faq_index": "Browse the FAQ",
+    "learn_more": "Learn more",
+    "how_to_fix": "Possible causes and fixes",
+    "action_failed": "Could not open it",
+    "action_failed_body": "Windows could not open the link or settings page.",
+    "installer_started": "Installer started",
+    "installer_started_body": "Follow the Windows prompts. Run diagnostics again when it finishes.",
+    "developer_mode_enabled": "Developer Mode is on",
+    "developer_mode_failed": "Developer Mode was not turned on",
+    "developer_mode_failed_body": "The administrator prompt was declined or blocked. Turn it on in Settings > System > For developers.",
+    "download_failed_title": "Download failed",
+    "download_start_failed_title": "Could not start the download",
+    "download_failed_hint": "The Download manager shows possible causes and a diagnostics button.",
+    "version_list_failed_hint": "The version list comes from GitHub. If this keeps failing, turn on “Use mirror sources” in Settings or run diagnostics.",
+    "action": {
+      "diagnose": "Run diagnostics",
+      "install_vcruntime": "Install Visual C++ runtime",
+      "install_gameinput": "Install GameInput",
+      "open_gaming_services": "Get Gaming Services",
+      "open_minecraft_store": "Open Minecraft in the Store",
+      "open_preview_store": "Get Minecraft Preview",
+      "open_buy": "Buy Minecraft",
+      "open_devices": "Manage devices",
+      "open_orders": "Order history",
+      "enable_developer_mode": "Turn on Developer Mode",
+      "open_developer_settings": "Open developer settings",
+      "open_proxy_settings": "Open proxy settings",
+      "open_date_settings": "Open date & time settings",
+      "open_region_settings": "Open region settings",
+      "open_apps_settings": "Open installed apps",
+      "open_storage_settings": "Open storage settings",
+      "open_mirror_settings": "Open package management settings",
+      "open_data_settings": "Open data folder settings",
+      "open_process_settings": "Open running processes",
+      "open_update_settings": "Open update settings",
+      "open_download_page": "Go to the Download page",
+      "open_account": "Open account menu",
+      "open_logs": "Open logs folder",
+      "open_releases": "Open GitHub Releases"
+    },
+    "license": {
+      "preview_only": {
+        "title": "Release is not available on this account, but Preview is",
+        "body": "Microsoft refused this account's Release license while Preview is licensed. Usually the game was bought on another Microsoft account, the purchase was refunded or came from a Game Pass subscription that ended, or the account reached its limit of 10 devices. Check your Microsoft Store library and order history, remove devices you no longer use, then refresh.",
+        "banner": "Release versions will fail to download or install with this account; Preview versions work."
+      },
+      "release_only": {
+        "title": "Preview is not available on this account",
+        "body": "Release is licensed, but Preview needs its own license: get “Minecraft Preview” once from the Microsoft Store or Xbox app with this account. In mainland China, first set Windows' region to another country, because the Store does not offer Preview there.",
+        "banner": "Release versions can be installed; Preview versions will fail until this account gets the Preview license."
+      },
+      "trial": {
+        "title": "Only a trial license",
+        "body": "Microsoft granted only a trial license. Usually the account does not own the full game, the full game is on another account, or the account reached its limit of 10 devices.",
+        "banner": "Installing game versions will fail until this account has a full license."
+      },
+      "none": {
+        "title": "This account does not own Minecraft for Windows",
+        "body": "Neither Release nor Preview is licensed. Sign in with the Microsoft account that bought Minecraft for Windows (signing in to Xbox inside the game is not enough), or buy it.",
+        "banner": "Downloading and installing game versions needs an account that owns Minecraft for Windows."
+      },
+      "error": {
+        "title": "Licenses could not be checked",
+        "body": "The launcher could not reach Microsoft to check the licenses. A proxy, VPN, “network accelerator” or a wrong system clock is the usual cause. Run diagnostics to find out."
+      },
+      "partial_error": {
+        "title": "One license could not be checked",
+        "body": "The license check for one channel failed (network or Microsoft service). Refresh to try again, and run diagnostics if it keeps failing."
+      },
+      "signed_out": {
+        "title": "Not signed in",
+        "banner": "Sign in with the Microsoft account that owns Minecraft to download and install game versions."
+      }
+    },
+    "guide": {
+      "launch_game": {
+        "cause": {
+          "components": "A component the game needs is missing or damaged: the Visual C++ runtime, or for the GDK edition GameInput and Microsoft Gaming Services.",
+          "first_run": "Minecraft has never been installed and started from the Microsoft Store or Xbox app on this PC (common after reinstalling Windows), so the system components it relies on were never set up.",
+          "stale_login": "After a long break, the Xbox sign-in data the game keeps has expired; starting the official game once refreshes it.",
+          "mods": "A mod, add-on, resource pack or shader does not work with this game version (if it only happens with mods).",
+          "graphics": "The graphics driver is outdated or damaged, or an overlay or frame-generation tool interferes with the game.",
+          "outdated": "The launcher itself is outdated."
+        },
+        "step": {
+          "diagnose": "Run diagnostics to check the runtimes, Gaming Services and this instance's files.",
+          "components": "Install whatever diagnostics reports missing. Gaming Services must come from the Microsoft Store.",
+          "official_once": "Install Minecraft from the Microsoft Store or Xbox app once and start it successfully, then try again. This is the most common fix; you can uninstall the Store copy afterwards.",
+          "proxy": "If you use a proxy, turn it off (or set microsoft.com and xboxlive.com to direct) while the Store installs components.",
+          "clean_instance": "Try an instance without mods or LeviLamina. If that starts, turn your mods back on one at a time to find the one that fails.",
+          "graphics": "Update or reinstall the graphics driver, and turn off overlays and frame generation.",
+          "report": "Still failing? Update the launcher, reinstall the instance, and report the problem on GitHub with the launcher log."
+        }
+      },
+      "game_running": {
+        "cause": {
+          "still_running": "This instance is still running, possibly minimized or in the background.",
+          "stuck": "A previous game process did not exit properly and still holds the instance."
+        },
+        "step": {
+          "close": "Close the running game and try again, or use “Force Launch” to start another copy (GDK only).",
+          "end_process": "End leftover game processes in Settings > Others > Process Manager."
+        }
+      },
+      "game_files": {
+        "cause": {
+          "moved": "The instance folder was moved, renamed or deleted, or the data folder location changed.",
+          "antivirus": "Antivirus software quarantined the game executable.",
+          "incomplete": "The installation did not finish."
+        },
+        "step": {
+          "diagnose": "Run diagnostics to see which file is missing.",
+          "antivirus": "Look in your antivirus quarantine, restore the game files, and add the launcher's data folder to its exclusions.",
+          "reinstall": "Reinstall the instance: download the same version again and install it."
+        }
+      },
+      "launch_window": {
+        "cause": {
+          "loading": "The game is still loading; the first start after installing, or with many mods, can take a while.",
+          "mods": "A mod is stuck while loading.",
+          "graphics": "The graphics driver cannot create the game window.",
+          "components": "A runtime or Gaming Services is missing."
+        },
+        "step": {
+          "wait": "Wait a minute and check whether the game window appears.",
+          "diagnose": "Run diagnostics to check the runtimes and this instance.",
+          "clean_instance": "Try without mods to see whether one of them hangs.",
+          "graphics": "Update the graphics driver.",
+          "logs": "Check the game logs: crash logs are in logs/crash inside the instance folder."
+        }
+      },
+      "write_access": {
+        "cause": {
+          "in_use": "A file is in use by the running game or another program.",
+          "protected": "The folder is protected: Program Files, a system folder, or a folder guarded by Controlled folder access.",
+          "antivirus": "Antivirus software is scanning or blocking the files.",
+          "disk": "The disk is full.",
+          "path": "The path contains non-English characters or is too long."
+        },
+        "step": {
+          "close_game": "Close the game and any program using the instance folder; end leftover game processes in Settings > Others.",
+          "data_folder": "Use a data folder outside Program Files with an English-only path (Settings > Basic Settings).",
+          "antivirus": "Allow the launcher in your antivirus and in Windows Security > Ransomware protection (Controlled folder access).",
+          "disk": "Free some disk space.",
+          "diagnose": "Run diagnostics to check the data folder, disk space and paths."
+        }
+      },
+      "license_not_entitled": {
+        "cause": {
+          "not_owned": "The signed-in Microsoft account does not own Minecraft for Windows ({{channel}}).",
+          "other_account": "The game was bought on a different Microsoft account than the one signed in to the launcher.",
+          "xbox_only": "Signing in to Xbox inside the game is not owning the PC version: Minecraft for Windows must be bought for this account.",
+          "preview_separate": "Preview needs its own license: get “Minecraft Preview” once from the Microsoft Store or Xbox app with this account.",
+          "region": "The Store does not offer Preview when Windows' region is mainland China; it then shows only the Education Edition.",
+          "device_limit": "A Microsoft account can use Store games on at most 10 devices, and the launcher counts as one. Over the limit, licenses are refused.",
+          "refund": "The purchase was refunded, or it came from a Game Pass subscription that has ended."
+        },
+        "step": {
+          "check_account": "Open the account menu (top right) to see which channels this account owns, and switch to the account that bought the game.",
+          "diagnose": "Run the account diagnostics to check both licenses again online.",
+          "buy": "If this account does not own the game, buy Minecraft for Windows.",
+          "preview": "For Preview: get Minecraft Preview from the Microsoft Store once.",
+          "region": "For Preview in mainland China: set Windows' Country or region to another region (Settings > Time & language > Language & region). Your account does not change.",
+          "devices": "Remove devices you no longer use from your Microsoft account, then try again."
+        }
+      },
+      "license_trial": {
+        "cause": {
+          "not_owned": "This account owns only the trial of the game.",
+          "other_account": "The full game was bought on a different Microsoft account.",
+          "device_limit": "The account reached its limit of 10 devices for Store games, so only a trial license was issued.",
+          "game_pass": "A Game Pass subscription that included the game has ended."
+        },
+        "step": {
+          "check_account": "Open the account menu and sign in with the account that owns the full game.",
+          "devices": "Remove unused devices from your Microsoft account.",
+          "official_once": "Start the game once from the Microsoft Store or Xbox app to refresh the license.",
+          "diagnose": "Run the account diagnostics to check the licenses again."
+        }
+      },
+      "license_network": {
+        "cause": {
+          "network": "Microsoft's sign-in or licensing servers cannot be reached from this network.",
+          "proxy": "A proxy, VPN or “network accelerator” blocks or alters the connection to Microsoft.",
+          "clock": "The system clock is wrong, so Microsoft rejects the request.",
+          "service": "Microsoft's service is temporarily unavailable."
+        },
+        "step": {
+          "diagnose": "Run diagnostics to test the connection to Microsoft and the system clock.",
+          "proxy": "Turn off the proxy or accelerator, or set microsoft.com, live.com and xboxlive.com to direct.",
+          "clock": "Turn on “Set time automatically” in Windows Settings > Time & language.",
+          "retry": "Wait a few minutes and try again."
+        }
+      },
+      "license_package": {
+        "cause": {
+          "mismatch": "The installer package does not match the license Microsoft issued (for example another channel or an unusual build).",
+          "catalog": "The Microsoft Store catalog returned an unexpected product."
+        },
+        "step": {
+          "refresh": "Refresh the version list and download a standard Release or Preview version.",
+          "check_account": "Check that the signed-in account owns this channel."
+        }
+      },
+      "account": {
+        "cause": {
+          "changed": "The Microsoft account changed since the launcher last checked it.",
+          "elevated": "The launcher runs as administrator, so Windows skips the account picker and keeps the previous account.",
+          "cache": "The account data the launcher saved cannot be read."
+        },
+        "step": {
+          "sign_in": "Open the account menu and sign in again, or switch account.",
+          "not_admin": "If the launcher runs as administrator, restart it normally.",
+          "retry": "Then try again."
+        }
+      },
+      "download_network": {
+        "cause": {
+          "blocked": "The download server cannot be reached reliably from this network.",
+          "proxy": "Your proxy app runs but is not set as the Windows system proxy, so the launcher does not use it.",
+          "stale_proxy": "A proxy app was closed without restoring the Windows proxy settings, so connections go to a proxy that no longer exists.",
+          "mirror": "“Use mirror sources” is off and GitHub is slow or blocked on this network (common in mainland China).",
+          "disk": "The disk ran out of space during the download."
+        },
+        "step": {
+          "diagnose": "Run diagnostics to test each server, the proxy and disk space.",
+          "mirror": "Turn on “Use mirror sources” in Settings > Package Management.",
+          "source": "On the Download page, run the speed test and switch to another download source.",
+          "proxy": "If you use a proxy, turn on its system proxy (or TUN) mode; if you don't, make sure the Windows proxy is off.",
+          "local": "You can also download the installer elsewhere and import it as a local package."
+        }
+      },
+      "version_list": {
+        "cause": {
+          "github": "The version list is hosted on GitHub, which is slow or blocked on this network.",
+          "mirror": "“Use mirror sources” is off.",
+          "proxy": "The Windows proxy points to a proxy that does not answer."
+        },
+        "step": {
+          "diagnose": "Run diagnostics to test GitHub, the mirrors and the proxy.",
+          "mirror": "Turn on “Use mirror sources” in Settings > Package Management.",
+          "retry": "Retry; once the list loads it is cached."
+        }
+      },
+      "lip_install": {
+        "cause": {
+          "github": "GitHub, where LeviLamina and mods are downloaded from, cannot be reached reliably.",
+          "proxy_down": "The GitHub proxy set in Settings > Package Management is down or entered incorrectly.",
+          "stale_proxy": "The Windows proxy points to a proxy app that is no longer running (the log then shows 127.0.0.1).",
+          "cache": "A damaged file in the download cache.",
+          "timeout": "The connection is too slow, so the download timed out (“context deadline exceeded”)."
+        },
+        "step": {
+          "diagnose": "Run diagnostics to test GitHub, the GitHub proxy and the Windows proxy.",
+          "mirror": "In Settings > Package Management, turn on “Use mirror sources” and try another GitHub proxy preset.",
+          "clear_cache": "Use “Clean Cache” there and retry. Installing LeviLamina takes about a minute.",
+          "system_proxy": "If diagnostics reports an unreachable proxy, turn the proxy off in Windows Settings > Network & internet > Proxy.",
+          "dns": "Retry a few times, or switch to another DNS server.",
+          "later": "To play now, install the game without LeviLamina and add it later from the instance settings."
+        }
+      },
+      "lip_package": {
+        "cause": {
+          "unsupported": "The mod does not support this game version or platform.",
+          "conflict": "Its dependencies conflict with mods already installed.",
+          "network": "The download failed."
+        },
+        "step": {
+          "version": "Pick a mod version made for your game version, or use an instance with a supported game version.",
+          "conflict": "Update or remove the conflicting mods.",
+          "diagnose": "Run diagnostics if the download itself fails."
+        }
+      },
+      "ll_unsupported": {
+        "cause": {
+          "new_version": "This game version is newer than LeviLamina's version list; support is added after LeviLamina is released for it.",
+          "preview": "LeviLamina usually supports Release versions only.",
+          "uwp": "LeviLamina is installed automatically only into GDK instances."
+        },
+        "step": {
+          "wait": "Wait for the version list to be updated (no launcher update is needed), then refresh.",
+          "supported_version": "Or install a game version that LeviLamina supports.",
+          "manual": "Advanced: install a matching LeviLamina manually with lip."
+        }
+      },
+      "vcruntime": {
+        "cause": {
+          "missing": "The Microsoft Visual C++ 2015–2022 runtime (x64) is not installed.",
+          "damaged": "It is installed but damaged, or only leftovers in the registry remain.",
+          "system": "Windows itself lacks system libraries (some stripped-down Windows builds)."
+        },
+        "step": {
+          "install": "Install the Visual C++ runtime (needs administrator approval).",
+          "official_once": "If that is not enough, install Minecraft from the Microsoft Store once; it installs the system libraries the game needs.",
+          "repair": "If even the Store version does not run, repair Windows (sfc /scannow) or reinstall it."
+        }
+      },
+      "developer_mode": {
+        "cause": {
+          "off": "Windows Developer Mode is off. Windows only registers UWP instances (and “Register to system”) with it on.",
+          "policy": "On a work or school PC, a policy set by the administrator may block Developer Mode."
+        },
+        "step": {
+          "enable": "Turn on Developer Mode (needs administrator approval).",
+          "settings": "Or turn it on yourself in Settings > System > For developers.",
+          "policy": "If the switch is greyed out, ask the PC's administrator."
+        }
+      },
+      "uwp_conflict": {
+        "cause": {
+          "store": "Minecraft from the Microsoft Store is installed and holds the app registration.",
+          "other_launcher": "Another launcher registered its own copy of Minecraft."
+        },
+        "step": {
+          "backup": "Back up your worlds first (the com.mojang folder).",
+          "uninstall": "Uninstall the other copy in Settings > Apps, or unregister it in the launcher that registered it.",
+          "retry": "Then register or launch this instance again."
+        }
+      },
+      "uwp_register": {
+        "cause": {
+          "developer_mode": "Developer Mode is off.",
+          "conflict": "Another Minecraft registration conflicts with this one.",
+          "dependency": "A framework package the game needs (such as Microsoft.VCLibs) is missing.",
+          "folder": "The instance folder is not writable, or its path has non-English characters.",
+          "deployment": "Windows' app deployment service failed; a restart often fixes it."
+        },
+        "step": {
+          "diagnose": "Run diagnostics to check Developer Mode, the current registration and the instance.",
+          "developer_mode": "Make sure Developer Mode is on.",
+          "conflict": "Remove conflicting Minecraft installations in Settings > Apps (back up worlds first).",
+          "restart": "Restart Windows and try again.",
+          "logs": "If it still fails, send the launcher log with the error details."
+        }
+      },
+      "uwp_dependency": {
+        "cause": {
+          "framework": "A Windows framework package this game version requires (for example Microsoft.VCLibs or Microsoft.NET.Native) is missing.",
+          "old_windows": "Windows is too old for that framework version."
+        },
+        "step": {
+          "store": "Install Minecraft from the Microsoft Store once; it installs these frameworks.",
+          "windows_update": "Install Windows updates.",
+          "other_version": "Or choose another game version."
+        }
+      },
+      "uwp_system_version": {
+        "cause": {
+          "old_windows": "This game version needs a newer Windows version than this PC has.",
+          "locked": "Windows cannot be updated here (for example on a rented cloud PC)."
+        },
+        "step": {
+          "other_version": "Choose a game version that works with this Windows version.",
+          "windows_update": "Or update Windows."
+        }
+      },
+      "package_corrupt": {
+        "cause": {
+          "incomplete": "The download was interrupted or is incomplete.",
+          "disk": "Disk errors or too little free space while writing.",
+          "antivirus": "Antivirus software changed or locked the file.",
+          "format": "The file is not a complete Windows x64 Minecraft package."
+        },
+        "step": {
+          "redownload": "Delete the downloaded package on the Download page and download it again.",
+          "disk": "Free some disk space.",
+          "antivirus": "Pause antivirus scanning of the launcher's data folder while installing."
+        }
+      },
+      "install_failed": {
+        "cause": {
+          "vcruntime": "The Visual C++ runtime is missing or damaged (installing then crashes or leaves an empty folder).",
+          "disk": "Not enough free disk space.",
+          "path": "The data folder path contains non-English characters or is protected.",
+          "antivirus": "Antivirus software blocks the extraction.",
+          "license": "The account does not own this version."
+        },
+        "step": {
+          "diagnose": "Run diagnostics to check the account license, runtimes, disk space and network.",
+          "vcruntime": "Install the Visual C++ runtime.",
+          "path": "Use a data folder with an English-only path outside Program Files.",
+          "antivirus": "Allow the launcher in your antivirus.",
+          "report": "If it still fails, report it on GitHub with the launcher log."
+        }
+      },
+      "gaming_services": {
+        "cause": {
+          "missing": "Gaming Services is not installed. The GDK edition of Minecraft needs it.",
+          "ltsc": "LTSC and stripped-down Windows builds have no Microsoft Store, so it cannot be installed the usual way, and their Xbox services are often disabled.",
+          "broken": "It is installed but damaged, or its Windows service is disabled.",
+          "proxy": "A proxy can make the Microsoft Store hang while installing it."
+        },
+        "step": {
+          "store": "Install it from the Microsoft Store (button below), then come back and check again.",
+          "official_once": "Installing and starting Minecraft from the Store or Xbox app once also installs it.",
+          "ltsc": "On LTSC, see the FAQ for installing Gaming Services without the Store, and set the Xbox services to Automatic in services.msc.",
+          "diagnose": "Run diagnostics to see whether it is installed and its service enabled.",
+          "repair": "If it is installed but still reported missing, uninstall it, restart Windows and install it again from the Store.",
+          "ignore": "If you only use UWP instances, you can ignore this message."
+        }
+      },
+      "update_failed": {
+        "cause": {
+          "network": "The update could not be downloaded (GitHub or the mirror is unreachable).",
+          "permission": "The launcher's folder is not writable (for example under Program Files without administrator rights).",
+          "asset": "The release has no update package for this launcher (old versions must be updated by hand).",
+          "antivirus": "Antivirus software blocked replacing the launcher."
+        },
+        "step": {
+          "retry": "Close the launcher and start it again to retry.",
+          "mirror": "Turn on “Use mirror sources” in Settings > Package Management.",
+          "manual": "Download the latest version from GitHub Releases (or the official mirror) and install it over this one.",
+          "admin": "If the launcher is installed under Program Files, allow the administrator prompt when updating."
+        }
+      },
+      "migration": {
+        "cause": {
+          "running": "Minecraft is running and holds the game files.",
+          "locked": "Antivirus software or another program locks a game executable.",
+          "permission": "An instance folder is not writable."
+        },
+        "step": {
+          "close": "Close Minecraft (end leftover processes in Settings > Others).",
+          "retry": "Restart the launcher; it tries the migration again while it is still needed.",
+          "logs": "If it fails again, send the launcher log."
+        }
+      }
+    }
+  },
+  "diagnostics": {
+    "title_running": "Running diagnostics…",
+    "title_failed": "Diagnostics could not run",
+    "title_problems_one": "Found {{count}} problem",
+    "title_problems_other": "Found {{count}} problems",
+    "title_ok": "No problems found",
+    "scope_instance": "{{topic}} · {{instance}}",
+    "running_label": "Running checks",
+    "running_body": "Checking runtimes, Windows settings, network and account. This takes up to a minute and changes nothing on your PC.",
+    "elapsed": "{{seconds}} s elapsed",
+    "failed_body": "The diagnostics could not run. Restart the launcher and try again.",
+    "no_problems_body": "Everything checked looks fine. If the problem continues, the FAQ covers more cases, and the launcher log helps when you report it.",
+    "problems_heading": "Problems",
+    "notes_heading": "Worth knowing",
+    "passed_heading_one": "{{count}} check passed",
+    "passed_heading_other": "{{count}} checks passed",
+    "duration": "Finished in {{seconds}} s.",
+    "copy_report": "Copy report",
+    "copied": "Report copied",
+    "run_again": "Run again",
+    "clock_ahead": "ahead",
+    "clock_behind": "behind",
+    "status": {
+      "ok": "passed",
+      "info": "note",
+      "skip": "skipped",
+      "warn": "warning",
+      "fail": "problem"
+    },
+    "channel": {
+      "release": "Release",
+      "preview": "Preview",
+      "this": "this version"
+    },
+    "topic": {
+      "launch": "Launching a game",
+      "install": "Installing a game version",
+      "download": "Downloads",
+      "lip": "LeviLamina and mods",
+      "license": "Account and licenses",
+      "uwp": "UWP registration",
+      "full": "Full check"
+    },
+    "reason": {
+      "timeout": "The check did not finish in time."
+    },
+    "endpoint": {
+      "ok": "Reachable ({{latency}} s).",
+      "slow": "Reachable but slow ({{latency}} s); downloads from here may time out.",
+      "dns": "The server name could not be resolved (DNS). Check the network or DNS settings, or try another DNS server.",
+      "tls": "A secure connection could not be set up. Check the system clock, and turn off any proxy, “network accelerator” or security software that intercepts HTTPS.",
+      "timeout": "No answer within 8 seconds. The network or a firewall may be blocking it.",
+      "proxy": "The proxy failed the connection. Check the proxy app, or turn the system proxy off.",
+      "refused": "The connection was refused.",
+      "reset": "The connection was dropped. A firewall, proxy or unstable network may be interfering.",
+      "other": "Could not connect.",
+      "rate_limited": "The server is limiting requests (HTTP 429). Wait a few minutes.",
+      "server_error": "The server reported an error (HTTP {{http}}). This is on the server side; try again later.",
+      "http_error": "The server answered HTTP {{http}}; the file may have moved."
+    },
+    "check": {
+      "vcruntime": {
+        "title": "Visual C++ runtime",
+        "ok": "Installed.",
+        "missing": "The Microsoft Visual C++ 2015–2022 runtime (x64) is not installed. The game, LeviLamina and native mods need it, and installing a game version can crash without it."
+      },
+      "gameinput": {
+        "title": "GameInput",
+        "ok": "Installed.",
+        "missing": "Microsoft GameInput is not installed. The GDK edition of Minecraft needs it for input devices.",
+        "uwp": "Not needed by UWP instances."
+      },
+      "gaming_services": {
+        "title": "Microsoft Gaming Services",
+        "ok": "Installed and enabled.",
+        "missing": "Gaming Services is not installed. The GDK edition of Minecraft cannot start without it. Install it from the Microsoft Store; on LTSC or stripped-down Windows, see the FAQ for the manual installer.",
+        "disabled": "Gaming Services is installed but its Windows service is disabled. Open Services (services.msc), set “Gaming Services” to Automatic and restart Windows.",
+        "uwp": "Not needed by UWP instances."
+      },
+      "xbox_services": {
+        "title": "Xbox services",
+        "ok": "Not disabled.",
+        "disabled": "These Xbox services are disabled: {{services}}. LTSC and “optimized” Windows builds often disable them, which breaks Xbox sign-in and Gaming Services. In Services (services.msc), set them to Manual or Automatic.",
+        "uwp": "Not needed by UWP instances."
+      },
+      "developer_mode": {
+        "title": "Windows Developer Mode",
+        "ok": "On.",
+        "fail_off": "Developer Mode is off. Windows only registers UWP instances when it is on, so this instance cannot be launched or registered.",
+        "info_off": "Off. It is needed only for UWP instances and “Register to system”.",
+        "gdk": "Not needed to launch GDK instances."
+      },
+      "webview2": {
+        "title": "WebView2 runtime",
+        "ok": "Installed.",
+        "missing": "Missing; the launcher window installs it when it starts."
+      },
+      "data_root": {
+        "title": "Data folder",
+        "ok": "{{path}} is writable.",
+        "not_writable": "The launcher cannot write to {{path}}. Choose a data folder outside protected locations (such as Program Files) in Settings > Basic Settings, or check its permissions and Controlled folder access.",
+        "non_ascii": "The data folder {{path}} contains non-English characters. Some game components and mods fail on such paths; a path with only English letters and digits is safest.",
+        "unknown": "The data folder is not set."
+      },
+      "disk_space": {
+        "title": "Free disk space",
+        "ok": "{{free}} GB free on the drive of {{path}}.",
+        "low": "Only {{free}} GB is free on the drive of {{path}}. Installing a game version needs about 10 GB (the package plus the extracted game).",
+        "unknown": "Could not read the free space."
+      },
+      "appdata_link": {
+        "title": "Minecraft data folders",
+        "ok": "No links made by other tools were found.",
+        "link": "{{path}} is a symbolic link or junction, usually made by BedrockBoot or a similar tool. It conflicts with version isolation and can make worlds and mods seem lost or report insufficient storage. Turn off that tool's version isolation or remove the link (back up your worlds first)."
+      },
+      "elevation": {
+        "title": "Administrator rights",
+        "ok": "The launcher is not running as administrator.",
+        "warn_elevated": "The launcher is running as administrator. Windows then signs in without showing the account picker, so switching accounts seems to go back to the old one. Restart the launcher without administrator rights.",
+        "info_elevated": "The launcher is running as administrator."
+      },
+      "account": {
+        "title": "Microsoft account",
+        "ok": "Signed in.",
+        "signed_out": "No Microsoft account is signed in. Downloading and installing game versions needs the account that owns Minecraft."
+      },
+      "license": {
+        "title": "Game licenses",
+        "summary": "Release: {{release_state}}; Preview: {{preview_state}}.",
+        "ok": "Both channels are licensed.",
+        "channel_authorized": "This account owns {{channel}}.",
+        "channel_not_entitled": "This account does not own {{channel}}.",
+        "channel_trial": "Microsoft granted only a trial license for {{channel}}.",
+        "channel_error": "The {{channel}} license could not be checked.",
+        "signed_out": "Sign in first."
+      },
+      "proxy": {
+        "title": "Proxy",
+        "ok_none": "No proxy is set; the launcher connects directly.",
+        "info_manual": "Connections go through the Windows system proxy {{address}}, which answers. If downloads still fail, make sure the proxy app allows the launcher, or use its TUN mode.",
+        "info_env": "Connections go through the proxy from environment variables ({{address}}), which answers.",
+        "info_pac": "Windows uses a proxy setup script ({{pac}}); connections follow it.",
+        "info_auto": "Windows detects proxy settings automatically; connections follow them.",
+        "unreachable": "The proxy {{address}} set in Windows does not answer. This usually means a proxy app was closed without restoring the settings, so every connection fails (“connection to 127.0.0.1 failed”). Turn the proxy off in Windows Settings > Network & internet > Proxy, or start the proxy app.",
+        "unknown": "Could not read the proxy settings."
+      },
+      "mirror": {
+        "title": "Mirror source",
+        "info_on": "“Use mirror sources” is on: GitHub downloads go through mirrors.",
+        "info_off": "“Use mirror sources” is off: GitHub is reached directly, which works on this network.",
+        "github_unreachable": "“Use mirror sources” is off, and GitHub cannot be reached quickly on this network. Turn it on in Settings > Package Management; version lists, LeviLamina and updates then go through mirrors."
+      },
+      "clock": {
+        "title": "System clock",
+        "ok": "The system clock is correct.",
+        "skew": "The system clock is {{skew}} min {{direction}}. A wrong clock breaks secure connections, Microsoft sign-in and license checks. Turn on “Set time automatically” in Windows Settings > Time & language.",
+        "no_server": "No server answered, so the clock could not be compared."
+      },
+      "ep_microsoft_auth": {
+        "title": "Microsoft sign-in (login.live.com)"
+      },
+      "ep_xbox_store": {
+        "title": "Microsoft Store catalog (licenses)"
+      },
+      "ep_xbox_packages": {
+        "title": "Xbox download service (game packages)"
+      },
+      "ep_version_db": {
+        "title": "Game version list (GitHub)"
+      },
+      "ep_github": {
+        "title": "GitHub (LeviLamina and mods)"
+      },
+      "ep_levimc": {
+        "title": "levimc.org (mod catalogue)"
+      },
+      "ep_github_proxy": {
+        "title": "GitHub proxy ({{proxy}})",
+        "inactive_ok": "Not in use (mirrors are off), but reachable: turning on “Use mirror sources” would work on this network.",
+        "inactive_fail": "Not in use, and not reachable on this network either."
+      },
+      "ep_ll_db": {
+        "title": "LeviLamina version list",
+        "ok": "Loaded ({{count}} game versions listed)."
+      },
+      "ll_support": {
+        "title": "LeviLamina support for this version",
+        "ok": "Game version {{version}} is supported (latest LeviLamina {{latest}}).",
+        "unsupported": "Game version {{version}} is not in LeviLamina's version list yet. Support for a new game version is added after LeviLamina is released for it; wait, or use a supported version.",
+        "uwp": "LeviLamina is installed automatically only into GDK instances.",
+        "db_unavailable": "The LeviLamina version list could not be loaded.",
+        "unknown_version": "The instance's game version is unknown."
+      },
+      "instance_files": {
+        "title": "Instance files",
+        "ok": "Found ({{type}} {{version}}).",
+        "dir_missing": "The instance folder {{path}} does not exist. It may have been moved or deleted, or the data folder changed.",
+        "manifest_missing": "AppxManifest.xml is missing from {{path}}; the instance is incomplete. Reinstall it.",
+        "exe_missing": "The game executable is missing ({{path}}). Antivirus software may have quarantined it, or the installation did not finish. Restore it from quarantine or reinstall the instance."
+      },
+      "instance_path": {
+        "title": "Instance path",
+        "ok": "The path is fine.",
+        "non_ascii": "The instance path {{path}} contains non-English characters. Some components and mods fail on such paths; rename the instance or move the data folder to an English-only path.",
+        "long": "The instance path is very long ({{path}}). Shorten the instance name or move the data folder closer to the drive root."
+      },
+      "instance_running": {
+        "title": "Running game",
+        "ok": "This instance is not running.",
+        "running": "This instance is running. Close the game (or end it in Settings > Others > Process Manager) before launching it again or changing its files."
+      },
+      "registration": {
+        "title": "Registration with Windows",
+        "ok_this": "This instance is the {{channel}} Minecraft app registered with Windows.",
+        "info_none": "No {{channel}} Minecraft app is registered with Windows. UWP instances are registered automatically when launched.",
+        "warn_other": "Windows has another {{channel}} Minecraft registered ({{path}}), such as the Microsoft Store version or one registered by another launcher. It can block this instance: back up your worlds, then uninstall it in Settings > Apps.",
+        "info_other": "Windows has another {{channel}} Minecraft registered ({{path}}). This only matters if you use “Register to system”."
+      }
+    }
   }
 }

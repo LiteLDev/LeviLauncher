@@ -716,6 +716,7 @@ func main() {
 			application.NewService(modsService),
 			application.NewService(userService),
 			application.NewService(versionService),
+			application.NewService(app.NewDiagnosticsService()),
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),

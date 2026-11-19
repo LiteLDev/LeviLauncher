@@ -99,7 +99,7 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
                     <div key={idx} className="flex min-w-0 flex-col gap-1">
                       <span className="font-mono font-medium">{it.name}</span>
                       <span>{resolveImportError(it.err, t)}</span>
-                      <ErrorDetail code={code} detail={detail} className="mt-1 text-foreground" />
+                      <ErrorDetail code={code} detail={detail} showGuide={false} className="mt-1 text-foreground" />
                     </div>
                   );
                 })}

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/constants/routes";
 import { openDirectory } from "@/utils/explorer";
 import { resolveInstallError } from "@/utils/installError";
+import { FailureHelp } from "@/components/FailureHelp";
 import { PageHeader } from "@/components/PageHeader";
 import { isDownloadActive, isDownloadTerminal, useDownloads } from "@/utils/DownloadsContext";
 import { useTranslation } from "react-i18next";
@@ -230,8 +231,15 @@ export const DownloadManagerPage: React.FC = () => {
                     </div>
 
                     {task.error && (
-                      <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-2xl">
-                        {task.error.includes("ERR_UWP_") ? resolveInstallError(task.error, t) : task.error}
+                      <div className="flex flex-col gap-3">
+                        <div role="alert" className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-2xl [overflow-wrap:anywhere]">
+                          {task.error.includes("ERR_UWP_") ? resolveInstallError(task.error, t) : task.error}
+                        </div>
+                        <FailureHelp
+                          error={task.error}
+                          topic="download"
+                          fallback="download_network"
+                        />
                       </div>
                     )}
                   </div>

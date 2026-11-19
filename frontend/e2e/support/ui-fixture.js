@@ -47,12 +47,53 @@
   Object.assign(state.uwpRoots, { comMojangRoot: state.uwpRoots.base, worlds: state.uwpRoots.base + '\\minecraftWorlds', resourcePacks: state.uwpRoots.base + '\\resource_packs', behaviorPacks: state.uwpRoots.base + '\\behavior_packs', skinPacks: state.uwpRoots.base + '\\skin_packs', screenshots: state.uwpRoots.base + '\\Screenshots' });
   state.call = async (name, ...args) => {
     state.calls = [...(state.calls || []), { name, args }];
+    if (name === 'Run') {
+      // DiagnosticsService.Run(topic, instance, channel)
+      const [topic, instance, channel] = args;
+      await new Promise(resolve => setTimeout(resolve, scenario === 'diagnostics-slow' ? 4000 : 1200));
+      const checks = {
+        launch: [
+          { id: 'instance_files', status: 'ok', params: { path: 'C:/Fixture/Instances/' + instance, version: '1.21.120.4', type: 'gdk' } },
+          { id: 'vcruntime', status: 'ok' },
+          { id: 'gameinput', status: 'ok' },
+          { id: 'gaming_services', status: 'fail', params: { reason: 'missing' } },
+          { id: 'xbox_services', status: 'warn', params: { reason: 'disabled', services: 'XblAuthManager, XblGameSave' } },
+          { id: 'developer_mode', status: 'skip', params: { reason: 'gdk' } },
+          { id: 'registration', status: 'info', params: { channel: 'release', state: 'none' } },
+          { id: 'instance_running', status: 'ok' },
+          { id: 'instance_path', status: 'ok', params: { path: 'C:/Fixture/Instances/' + instance } },
+          { id: 'appdata_link', status: 'ok' },
+          { id: 'disk_space', status: 'ok', params: { free: String(120 * 1024 ** 3), path: 'C:/Fixture' } },
+        ],
+        license: [
+          { id: 'account', status: 'ok' },
+          { id: 'license', status: 'warn', params: { release: 'not_entitled', preview: 'authorized', channel: channel || '' } },
+          { id: 'elevation', status: 'ok' },
+          { id: 'proxy', status: 'fail', params: { mode: 'manual', reason: 'unreachable', address: '127.0.0.1:7890', local: 'true' }, detail: 'dial tcp 127.0.0.1:7890: connectex: No connection could be made because the target machine actively refused it.' },
+          { id: 'clock', status: 'ok', params: { skew: '3' } },
+          { id: 'ep_microsoft_auth', status: 'ok', params: { latency: '310', http: '200' } },
+          { id: 'ep_xbox_store', status: 'ok', params: { latency: '420', http: '200' } },
+        ],
+      }[topic] || [
+        { id: 'proxy', status: 'ok', params: { mode: 'none' } },
+        { id: 'mirror', status: 'warn', params: { enabled: 'false', reason: 'github_unreachable' } },
+        { id: 'clock', status: 'ok', params: { skew: '1' } },
+        { id: 'ep_version_db', status: 'fail', params: { reason: 'timeout', latency: '8000' }, detail: 'context deadline exceeded' },
+        { id: 'ep_github', status: 'warn', params: { reason: 'slow', latency: '6100', http: '200' } },
+        { id: 'ep_github_proxy', status: 'ok', params: { proxy: 'https://gh-proxy.org/https://github.com', active: 'false', latency: '280', http: '200' } },
+        { id: 'ep_xbox_packages', status: 'ok', params: { latency: '150', http: '404' } },
+        { id: 'disk_space', status: 'warn', params: { reason: 'low', free: String(6.4 * 1024 ** 3), path: 'C:/Fixture' } },
+      ];
+      return { topic, instance, checks: scenario === 'diagnostics-clean' ? checks.map(c => ({ ...c, status: c.status === 'skip' ? 'skip' : 'ok', params: { ...c.params, reason: undefined } })) : checks, durationMs: 1200 };
+    }
+    if (name === 'IsDeveloperModeEnabled' || name === 'EnableDeveloperMode') return true;
     if (scenario === 'licenses') {
       const xuid = state.licenseAccount || '101';
       if (name === 'GetLocalUserId') return xuid;
       if (name === 'GetLocalUserGamertag') return xuid === '101' ? 'License account A' : 'License account B';
       if (name === 'XUserGetState') return 0;
       if (name === 'ResetSession') return '';
+      if (/^(IsGameInputInstalled|IsGamingServicesInstalled|IsVcRuntimeInstalled)$/.test(name)) return true;
       if (name === 'SignIn') { state.licenseAccount = '202'; return ''; }
       if (name === 'CheckGameLicenses' || name === 'RefreshGameLicenses') return {
         xuid,

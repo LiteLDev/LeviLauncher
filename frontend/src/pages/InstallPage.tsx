@@ -11,6 +11,7 @@ import {
   ListBox,
   Select,
   ProgressBar,
+  Spinner,
   Switch,
   TextField,
   toast,
@@ -51,7 +52,6 @@ import {
   ValidateVersionFolderName,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { WineSetup } from "@/components/WineSetup";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -171,8 +171,17 @@ export default function InstallPage() {
     : normalizePackageType(location?.state?.packageType);
   const isUWP = packageType === "uwp";
   const requiresWine = !isUWP && System.IsMac();
-  const [wineReady, setWineReady] = useState(false);
-  const canInstall = !requiresWine || wineReady;
+  const [wineReady, setWineReady] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!requiresWine) return;
+    let active = true;
+    minecraft.GetWineSettings().then((settings) => minecraft.CheckWineSettings(settings)).then(
+      () => { if (active) setWineReady(true); },
+      () => { if (active) setWineReady(false); },
+    );
+    return () => { active = false; };
+  }, [requiresWine]);
+  const canInstall = !requiresWine || wineReady === true;
   // Unknown local packages can request isolation; their manifest is checked after extraction.
   const isolationSupported = (isUWP && !!customInstallerPath && !mirrorVersion.trim()) ||
     supportsVersionIsolation(packageType, mirrorVersion);
@@ -963,13 +972,20 @@ export default function InstallPage() {
                 </Card>
               )}
 
-              {requiresWine && (
+              {requiresWine && wineReady !== true && (
                 <Card className={LAYOUT.GLASS_CARD.BASE}>
                   <Card.Header className={LAYOUT.GLASS_CARD.HEADER}>
                     <h3 className="text-lg font-medium">{t("settings.wine.setup.title")}</h3>
                   </Card.Header>
                   <Card.Content className="p-6">
-                    <WineSetup onReadyChange={setWineReady} />
+                    {wineReady === null ? <Spinner size="sm" aria-label={t("settings.wine.working")} /> : (
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p>{t("settings.wine.managed.required")}</p>
+                        <Button variant="primary" onPress={() => navigate(ROUTES.settings, { state: { tab: "wine" } })}>
+                          {t("settings.wine.managed.open_settings")}
+                        </Button>
+                      </div>
+                    )}
                   </Card.Content>
                 </Card>
               )}

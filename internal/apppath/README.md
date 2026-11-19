@@ -136,4 +136,5 @@ N9 保留的名称：
 
 - `Accounts/` 使用带版本头的认证加密格式，密钥由 macOS 钥匙串保护。
 - `wine.json` 保存 Wine 运行时、prefix、图形和同步配置。首次配置可通过界面选择 Wine，也可由 `LEVI_WINE_APP`、`LEVI_WINE_EXECUTABLE` 和 `LEVI_WINEPREFIX` 指定路径。自定义 Wine 可执行文件默认使用 `~/.wine`。
-- `install-wine.command` 由启动器生成，用于在终端安装 Sikarugir。
+- `wine-download.json` 保存 Wine 安装使用的镜像开关和 GitHub 代理。
+- `Runtimes/Sikarugir/Levi Wine.app` 是自动安装的 Wine 容器，下载包放在当前数据目录的 `Cache/Wine/` 中。

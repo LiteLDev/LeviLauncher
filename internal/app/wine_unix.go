@@ -4,6 +4,8 @@ package app
 
 import (
 	"context"
+
+	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/gameruntime"
 	"github.com/liteldev/LeviLauncher/internal/types"
 )
@@ -17,5 +19,17 @@ func (a *Minecraft) CheckWineSettings(ctx context.Context, s types.WineSettings)
 func (a *Minecraft) ScanWineInstallations(ctx context.Context) ([]types.WineInstallation, error) {
 	return gameruntime.Scan(ctx)
 }
-func (a *Minecraft) GetWineInstallPlan() types.WineInstallPlan { return gameruntime.InstallPlan() }
-func (a *Minecraft) StartWineInstaller() error                 { return gameruntime.StartInstaller() }
+func (a *Minecraft) GetWineDownloadSettings() (types.WineDownloadSettings, error) {
+	return gameruntime.LoadDownloadSettings()
+}
+func (a *Minecraft) SaveWineDownloadSettings(settings types.WineDownloadSettings) error {
+	return gameruntime.SaveDownloadSettings(settings)
+}
+func (a *Minecraft) WineNeedsRosetta(ctx context.Context) bool {
+	return gameruntime.NeedsRosetta(ctx)
+}
+func (a *Minecraft) StartWineInstaller(ctx context.Context, consent bool) (types.WineSettings, error) {
+	return gameruntime.InstallManagedWine(ctx, consent, func(progress types.WineInstallProgress) {
+		eventsink.From(ctx).Emit("wine.install.progress", progress)
+	})
+}

@@ -36,7 +36,7 @@ import {
 } from "react-icons/fa";
 import { ModCard } from "@/components/ModdedCard";
 import { ContentDownloadCard } from "@/components/ContentDownloadCard";
-import { Browser } from "@wailsio/runtime";
+import { Browser, System } from "@wailsio/runtime";
 import { QuitLauncher } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -591,7 +591,7 @@ export const LauncherPage = (args: any) => {
                       >
                         {!currentVersion && <p className="px-3 py-2 text-xs text-muted">{t("audit.primary.select_instance_first")}</p>}
                         <Dropdown.Menu
-                          disabledKeys={currentVersion ? [] : ["shortcut", "folder", "register"]}
+                          disabledKeys={currentVersion ? [] : System.IsMac() ? ["folder"] : ["shortcut", "folder", "register"]}
                           aria-label={t("launcherpage.tip.quick_actions_menu")}
                         >
                           <Dropdown.Item
@@ -617,18 +617,20 @@ export const LauncherPage = (args: any) => {
                             </Label>
                             <Dropdown.ItemIndicator />
                           </Dropdown.Item>
-                          <Dropdown.Item
-                            key="shortcut"
-                            id={"shortcut"}
-                            textValue={t("launcherpage.shortcut.create_button")}
-                            onAction={doCreateShortcut}
-                          >
-                            {<FaDesktop />}
-                            <Label>
-                              {t("launcherpage.shortcut.create_button")}
-                            </Label>
-                            <Dropdown.ItemIndicator />
-                          </Dropdown.Item>
+                          {!System.IsMac() && (
+                            <Dropdown.Item
+                              key="shortcut"
+                              id={"shortcut"}
+                              textValue={t("launcherpage.shortcut.create_button")}
+                              onAction={doCreateShortcut}
+                            >
+                              {<FaDesktop />}
+                              <Label>
+                                {t("launcherpage.shortcut.create_button")}
+                              </Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                          )}
                           <Dropdown.Item
                             key="folder"
                             id={"folder"}
@@ -639,25 +641,27 @@ export const LauncherPage = (args: any) => {
                             <Label>{t("launcherpage.open_exe_dir")}</Label>
                             <Dropdown.ItemIndicator />
                           </Dropdown.Item>
-                          <Dropdown.Item
-                            key="register"
-                            id={"register"}
-                            textValue={
-                              isCurrentVersionRegistered
-                                ? t("versions.edit.unregister_button")
-                                : t("launcherpage.register_system_button")
-                            }
-                            onAction={() => void doRegister()}
-                            isDisabled={!currentVersion || registrationPendingAction !== null || launchPending}
-                          >
-                            {<FaWindows />}
-                            <Label>
-                              {isCurrentVersionRegistered
-                                ? t("versions.edit.unregister_button")
-                                : t("launcherpage.register_system_button")}
-                            </Label>
-                            <Dropdown.ItemIndicator />
-                          </Dropdown.Item>
+                          {!System.IsMac() && (
+                            <Dropdown.Item
+                              key="register"
+                              id={"register"}
+                              textValue={
+                                isCurrentVersionRegistered
+                                  ? t("versions.edit.unregister_button")
+                                  : t("launcherpage.register_system_button")
+                              }
+                              onAction={() => void doRegister()}
+                              isDisabled={!currentVersion || registrationPendingAction !== null || launchPending}
+                            >
+                              {<FaWindows />}
+                              <Label>
+                                {isCurrentVersionRegistered
+                                  ? t("versions.edit.unregister_button")
+                                  : t("launcherpage.register_system_button")}
+                              </Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                          )}
                         </Dropdown.Menu>
                       </Dropdown.Popover>
                     </Dropdown>
@@ -877,6 +881,14 @@ export const LauncherPage = (args: any) => {
           title={t("launcherpage.launch.failed.title")}
           footer={
             <>
+              {System.IsMac() && launchCode === "ERR_WINE_RUNTIME" && (
+                <ModalAction variant="primary" onPress={() => {
+                  launchFailedDisclosure.close();
+                  navigate(ROUTES.settings, { state: { tab: "wine" } });
+                }}>
+                  {t("settings.wine.managed.open_settings")}
+                </ModalAction>
+              )}
               {launchCode === "ERR_GAME_ALREADY_RUNNING" && (
                 <ModalAction
                   isDisabled={currentVersionInfo?.packageType === "uwp"}

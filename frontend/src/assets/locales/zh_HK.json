@@ -328,6 +328,44 @@
   },
   "settings": {
     "wine": {
+      "managed": {
+        "install": "自動安裝 Wine",
+        "retry": "重試安裝 Wine",
+        "failed": "Wine 安裝失敗",
+        "ready": "Wine 已準備並選用",
+        "progress": "正在準備 Wine",
+        "required": "請先設定 Wine，再安裝 Minecraft。",
+        "open_settings": "前往 Wine 設定",
+        "mirror_desc": "Wine 下載優先使用 GitHub 鏡像，鏡像失敗時自動嘗試 GitHub 原始網址。",
+        "rosetta_title": "安裝 Rosetta",
+        "rosetta_body": "配備 Apple 晶片的 Mac 需要 Rosetta 才能透過 Wine 執行 Windows 遊戲。按下「同意並安裝」即表示同意 Apple 的 Rosetta 軟件許可。安裝後 Levi 會自動繼續。",
+        "rosetta_info": "查看 Apple 的 Rosetta 安裝說明",
+        "rosetta_confirm": "同意並安裝",
+        "stage": {
+          "rosetta": "檢查 Rosetta",
+          "template": "下載和校驗 Wine 範本",
+          "engine": "下載和校驗 Wine 引擎",
+          "container": "建立 Wine 容器",
+          "initialize": "初始化容器",
+          "select": "驗證並選用 Wine"
+        },
+        "status": {
+          "working": "正在處理",
+          "installing": "正在安裝 Rosetta。如果 macOS 顯示提示，請確認。",
+          "downloading": "正在下載",
+          "verifying": "正在校驗 SHA-256",
+          "fallback": "鏡像連線失敗，正在嘗試 GitHub 原始網址。",
+          "done": "完成"
+        }
+      },
+      "errors": {
+        "ERR_WINE_DOWNLOAD_STALLED": "下載長時間沒有進度，請重試以繼續下載。",
+      "ERR_WINE_INVALID_GITHUB_PROXY": "請輸入有效的 HTTP 或 HTTPS 代理網址。",
+        "ERR_WINE_ROSETTA_INSTALL": "Rosetta 安裝失敗，請檢查網絡或 macOS 權限後重試。",
+        "ERR_WINE_INSTALL_BUSY": "Wine 正在安裝。",
+        "ERR_WINE_ASSET_CHECKSUM": "下載檔案校驗失敗，請重試下載。",
+        "ERR_WINE_CONTAINER_INIT": "Wine 容器初始化未完成，請重試。"
+      },
       "setup": {
         "next": "下一步",
         "back_to_list": "返回 Wine 清單",

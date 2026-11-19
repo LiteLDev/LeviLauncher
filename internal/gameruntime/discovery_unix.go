@@ -50,7 +50,12 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 			return
 		}
 		seen[key] = true
-		s.Graphics, s.Sync = "auto", "auto"
+		if s.Graphics == "" {
+			s.Graphics = "auto"
+		}
+		if s.Sync == "" {
+			s.Sync = "auto"
+		}
 		status := "ready"
 		if !supported {
 			status = "unsupported"

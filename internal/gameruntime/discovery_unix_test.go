@@ -138,15 +138,3 @@ func TestCrossOverHostedApplicationSymlinkIsRecognized(t *testing.T) {
 		}
 	}
 }
-
-func TestInstallerOnlyInstallsTheOfficialPackageAndQuotesPaths(t *testing.T) {
-	script := installerScript("/tmp/with space/it's brew")
-	if !strings.Contains(script, "'/tmp/with space/it'\\''s brew' install --cask Sikarugir-App/sikarugir/sikarugir") {
-		t.Fatalf("invalid installer quoting: %s", script)
-	}
-	for _, forbidden := range []string{"--no-quarantine", "brew upgrade", "brew trust", "sudo ", "curl ", "eval "} {
-		if strings.Contains(script, forbidden) {
-			t.Errorf("unexpected installer action %q", forbidden)
-		}
-	}
-}

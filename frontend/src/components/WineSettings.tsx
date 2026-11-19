@@ -6,11 +6,7 @@ import { CheckWineSettings, GetWineSettings, SaveWineSettings } from "bindings/g
 import type { WineSettings as Settings } from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
-export const WineSettings: React.FC<{
-  selection?: Settings | null;
-  onConfigured?: (settings: Settings, version: string) => void;
-  onCancel?: () => void;
-}> = ({ selection, onConfigured, onCancel }) => {
+export function WineSettings() {
   const { t } = useTranslation();
   const [settings, setSettings] = React.useState<Settings | null>(null);
   const [saved, setSaved] = React.useState("");
@@ -30,12 +26,6 @@ export const WineSettings: React.FC<{
     finally { setBusy(false); }
   };
   React.useEffect(() => { void load(); }, []);
-  React.useEffect(() => {
-    if (!selection) return;
-    setSettings({ ...selection });
-    setResult("");
-    setError("");
-  }, [selection]);
 
   const change = (patch: Partial<Settings>) => {
     setSettings((previous) => previous ? { ...previous, ...patch } : previous);
@@ -52,8 +42,6 @@ export const WineSettings: React.FC<{
   const changePath = (field: "app" | "executable" | "prefix", path: string) => {
     if (field === "app") {
       changeApp(path);
-    } else if (onConfigured && field === "executable") {
-      change({ app: "", executable: path });
     } else {
       change({ [field]: path });
     }
@@ -81,12 +69,6 @@ export const WineSettings: React.FC<{
     setResult("");
     try {
       if (action === "save") {
-        if (onConfigured) {
-          const version = await CheckWineSettings(settings);
-          await SaveWineSettings(settings);
-          onConfigured(settings, version);
-          return;
-        }
         await SaveWineSettings(settings);
         const current = await GetWineSettings();
         setSettings(current);
@@ -146,9 +128,8 @@ export const WineSettings: React.FC<{
       {error && <p role="alert" className="break-words text-sm text-danger">{error}</p>}
       {result && <p role="status" className="break-words text-sm text-success">{result}</p>}
       <div className="flex flex-wrap items-center gap-2">
-        {onCancel && <Button variant="ghost" isDisabled={busy} onPress={onCancel}>{t("settings.wine.setup.back_to_list")}</Button>}
-        <Button variant="primary" isDisabled={busy || !settings || (!onConfigured && JSON.stringify(settings) === saved)} onPress={() => void run("save")}>
-          {t(onConfigured ? "settings.wine.setup.use" : "settings.wine.save")}
+        <Button variant="primary" isDisabled={busy || !settings || (JSON.stringify(settings) === saved)} onPress={() => void run("save")}>
+          {t("settings.wine.save")}
         </Button>
         <Button variant="outline" isDisabled={busy || !settings} onPress={() => void run("check")}>{t("settings.wine.check")}</Button>
         <Button variant="ghost" isDisabled={busy} onPress={() => void load()}>{t("settings.wine.reload")}</Button>
@@ -156,4 +137,4 @@ export const WineSettings: React.FC<{
       </div>
     </section>
   );
-};
+}

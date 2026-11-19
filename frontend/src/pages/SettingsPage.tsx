@@ -1,3 +1,4 @@
+import { GITHUB_PROXY_PRESETS as LIP_GITHUB_PROXY_PRESETS, githubProxyLabel as lipGithubProxyLabel } from "@/constants/githubProxy";
 import { openDirectory } from "@/utils/explorer";
 import { ModalAction, ModalPanel, ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
 import {
@@ -118,24 +119,6 @@ const AppearanceNumberField = ({ label, value, min, max, onChange }: {
 
 const APPEARANCE_SECTIONS = ["theme", "layout", "wallpaper", "material"] as const;
 type AppearanceSection = typeof APPEARANCE_SECTIONS[number];
-
-// GitHub proxies offered in the LIP GitHub proxy picker; any other URL can
-// still be typed in by hand. lip appends the repository path to the proxy, so
-// proxies that take a whole GitHub URL (gh-proxy.org, ghproxy.vip) end in
-// "/https://github.com".
-const LIP_GITHUB_PROXY_PRESETS = [
-  "https://gh.bibk.top/https://github.com",
-  "https://gh-proxy.org/https://github.com",
-  "https://v4.gh-proxy.org/https://github.com",
-  "https://v6.gh-proxy.org/https://github.com",
-  "https://cdn.gh-proxy.org/https://github.com",
-  "https://axisnow.gh-proxy.org/https://github.com",
-  "https://ghproxy.vip/https://github.com",
-];
-
-// Picker label of a proxy preset: its host, without the GitHub URL suffix.
-const lipGithubProxyLabel = (url: string) =>
-  url.replace(/^https?:\/\//, "").replace(/\/https:\/\/github\.com$/, "");
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();

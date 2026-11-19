@@ -328,6 +328,44 @@
   },
   "settings": {
     "wine": {
+      "managed": {
+        "install": "Install Wine automatically",
+        "retry": "Retry Wine setup",
+        "failed": "Wine setup failed",
+        "ready": "Wine is ready and selected",
+        "progress": "Preparing Wine",
+        "required": "Set up Wine before installing Minecraft.",
+        "open_settings": "Open Wine settings",
+        "mirror_desc": "Use a GitHub mirror for Wine downloads. If it fails, LeviLauncher tries GitHub directly.",
+        "rosetta_title": "Install Rosetta",
+        "rosetta_body": "Wine needs Rosetta to run the Windows game on Apple Silicon. By choosing Agree and install, you agree to Apple’s Rosetta software license. LeviLauncher continues automatically after installation.",
+        "rosetta_info": "Read Apple’s Rosetta installation information",
+        "rosetta_confirm": "Agree and install",
+        "stage": {
+          "rosetta": "Check Rosetta",
+          "template": "Download and check the Wine template",
+          "engine": "Download and check the Wine engine",
+          "container": "Create the Wine container",
+          "initialize": "Initialize Windows in Wine",
+          "select": "Verify and select Wine"
+        },
+        "status": {
+          "working": "In progress",
+          "installing": "Installing Rosetta. Confirm in macOS if asked.",
+          "downloading": "Downloading",
+          "verifying": "Checking SHA-256",
+          "fallback": "The mirror failed. Trying GitHub directly.",
+          "done": "Complete"
+        }
+      },
+      "errors": {
+        "ERR_WINE_DOWNLOAD_STALLED": "The download stopped making progress. Retry to resume it.",
+      "ERR_WINE_INVALID_GITHUB_PROXY": "Enter a valid HTTP or HTTPS proxy URL.",
+        "ERR_WINE_ROSETTA_INSTALL": "Rosetta could not be installed. Check your network or macOS permissions and retry.",
+        "ERR_WINE_INSTALL_BUSY": "Wine setup is already running.",
+        "ERR_WINE_ASSET_CHECKSUM": "The downloaded file failed validation. Retry the download.",
+        "ERR_WINE_CONTAINER_INIT": "Wine did not finish initializing. Retry the setup."
+      },
       "setup": {
         "next": "Next",
         "back_to_list": "Back to Wine list",

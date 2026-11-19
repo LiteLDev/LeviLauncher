@@ -16,8 +16,14 @@ type WineInstallation struct {
 	Status   string       `json:"status"` // ready, needs_prefix, unsupported
 }
 
-type WineInstallPlan struct {
-	CanInstall bool   `json:"canInstall"`
-	Command    string `json:"command"`
-	URL        string `json:"url"`
+type WineDownloadSettings struct {
+	Mirror      bool   `json:"mirror"`
+	GithubProxy string `json:"githubProxy"`
+}
+
+type WineInstallProgress struct {
+	Stage      string `json:"stage"`
+	Status     string `json:"status"`
+	Downloaded int64  `json:"downloaded"`
+	Total      int64  `json:"total"`
 }

@@ -19,7 +19,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { WineSetup } from "@/components/WineSetup";
 import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -34,7 +33,7 @@ import {
   CanWriteToDir,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { normalizeLanguage } from "@/utils/i18nUtils";
-import { Dialogs, System } from "@wailsio/runtime";
+import { Dialogs } from "@wailsio/runtime";
 import { LuHardDrive, LuLanguages } from "react-icons/lu";
 
 type OnboardingErrorKey = "common.load_failed" | "common.save_failed" | null;
@@ -42,9 +41,6 @@ type OnboardingErrorKey = "common.load_failed" | "common.save_failed" | null;
 export default function OnboardingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const supportsWine = System.IsMac();
-  const [wineStep, setWineStep] = React.useState(false);
-  const [wineReady, setWineReady] = React.useState(false);
   const [langNames, setLangNames] = React.useState<
     Array<{ language: string; code: string }>
   >([]);
@@ -135,45 +131,15 @@ export default function OnboardingPage() {
     navigate(ROUTES.home, { replace: true });
   };
 
-  const proceedFromSettings = (verifiedRoot: string) => {
-    if (!supportsWine) {
-      proceedHome(verifiedRoot);
-      return;
-    }
-    unsavedOnClose();
-    setNewBaseRoot(verifiedRoot);
-    setWineReady(false);
-    setWineStep(true);
-  };
-
   const requestFinish = () => {
     if (savingBaseRoot || rootStatus !== "ready") return;
     if (newBaseRoot !== baseRoot) {
       unsavedOnOpen();
       return;
     }
-    proceedFromSettings(baseRoot);
+    proceedHome(baseRoot);
   };
 
-  if (wineStep) {
-    return (
-      <PageContainer>
-        <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <Card.Content className="space-y-6 p-6">
-            <PageHeader title={t("settings.wine.setup.title")} />
-            <WineSetup onReadyChange={setWineReady} />
-            <Separator className="opacity-50" />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <Button variant="ghost" onPress={() => setWineStep(false)}>{t("common.back")}</Button>
-              <Button variant={wineReady ? "primary" : "secondary"} onPress={() => proceedHome(baseRoot)}>
-                {t(wineReady ? "audit.usability.start_using" : "settings.wine.setup.skip")}
-              </Button>
-            </div>
-          </Card.Content>
-        </Card>
-      </PageContainer>
-    );
-  }
 
   return (
     <PageContainer>
@@ -215,7 +181,7 @@ export default function OnboardingPage() {
                       "font-black px-10 h-12 text-lg brand-primary-foreground shadow-lg shadow-brand-500/20",
                     )}
                   >
-                    {t(supportsWine ? "settings.wine.setup.next" : "audit.usability.start_using")}
+                    {t("audit.usability.start_using")}
                   </Button>
                 </div>
               }
@@ -451,11 +417,11 @@ export default function OnboardingPage() {
         footer={
           <div className="flex w-full flex-wrap justify-end gap-2">
             <ModalAction variant="secondary" isDisabled={savingBaseRoot} onPress={unsavedOnClose}>{t("audit.usability.continue_editing")}</ModalAction>
-            <ModalAction variant="secondary" isDisabled={savingBaseRoot || rootStatus !== "ready"} onPress={() => proceedFromSettings(baseRoot)}>{t("audit.primary.onboarding.keep_current")}</ModalAction>
+            <ModalAction variant="secondary" isDisabled={savingBaseRoot || rootStatus !== "ready"} onPress={() => proceedHome(baseRoot)}>{t("audit.primary.onboarding.keep_current")}</ModalAction>
             <ModalAction variant="primary" isPending={savingBaseRoot} isDisabled={!newBaseRoot.trim() || !baseRootWritable} onPress={async () => {
               const path = await persistRoot();
-              if (path) proceedFromSettings(path);
-            }}>{t(supportsWine ? "settings.wine.setup.save_next" : "onboarding.unsaved.save")}</ModalAction>
+              if (path) proceedHome(path);
+            }}>{t("onboarding.unsaved.save")}</ModalAction>
           </div>
         }
       >

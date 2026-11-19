@@ -21,7 +21,13 @@ func (a *Minecraft) CheckWineSettings(ctx context.Context, s types.WineSettings)
 func (a *Minecraft) ScanWineInstallations(ctx context.Context) ([]types.WineInstallation, error) {
 	return nil, errors.New("Wine settings are only available on macOS")
 }
-func (a *Minecraft) GetWineInstallPlan() types.WineInstallPlan { return types.WineInstallPlan{} }
-func (a *Minecraft) StartWineInstaller() error {
-	return errors.New("Wine installation is only available on macOS")
+func (a *Minecraft) GetWineDownloadSettings() (types.WineDownloadSettings, error) {
+	return types.WineDownloadSettings{}, errors.New("Wine settings are only available on macOS")
+}
+func (a *Minecraft) SaveWineDownloadSettings(types.WineDownloadSettings) error {
+	return errors.New("Wine settings are only available on macOS")
+}
+func (a *Minecraft) WineNeedsRosetta(context.Context) bool { return false }
+func (a *Minecraft) StartWineInstaller(context.Context, bool) (types.WineSettings, error) {
+	return types.WineSettings{}, errors.New("Wine installation is only available on macOS")
 }

@@ -81,6 +81,16 @@ func TestHealthySystemHasNoFailures(t *testing.T) {
 	}
 }
 
+func TestPlatformChecksCanBeExcluded(t *testing.T) {
+	env := fakeEnv()
+	env.GamingServices = nil
+	env.SkipCheck = func(id string) bool { return id == "gaming_services" }
+	report := Run(context.Background(), env, Request{Topic: TopicLaunch})
+	if has(report, "gaming_services") || !has(report, "vcruntime") {
+		t.Fatalf("unexpected checks: %+v", report.Checks)
+	}
+}
+
 func TestInstanceChecksNeedAnInstance(t *testing.T) {
 	r := Run(context.Background(), fakeEnv(), Request{Topic: TopicLaunch})
 	for _, id := range []string{"instance_files", "registration", "instance_running", "instance_path"} {

@@ -82,7 +82,7 @@ type plannedCheck struct {
 }
 
 // plan returns the checks of a topic in display order.
-func plan(req Request, inst *Instance) []plannedCheck {
+func plan(req Request, inst *Instance, skipCheck func(string) bool) []plannedCheck {
 	var ids []string
 	hasInst := inst != nil
 	switch req.Topic {
@@ -103,7 +103,7 @@ func plan(req Request, inst *Instance) []plannedCheck {
 	}
 	out := make([]plannedCheck, 0, len(ids))
 	for _, id := range ids {
-		if instanceOnly[id] && !hasInst {
+		if (instanceOnly[id] && !hasInst) || (skipCheck != nil && skipCheck(id)) {
 			continue
 		}
 		if fn, ok := registry[id]; ok {
@@ -140,7 +140,7 @@ func Run(ctx context.Context, env *Env, req Request) Report {
 			}
 		}
 	}
-	planned := plan(req, inst)
+	planned := plan(req, inst, env.SkipCheck)
 	results := make([]Check, len(planned))
 	done := make([]bool, len(planned))
 	var mu sync.Mutex

@@ -78,6 +78,11 @@ func UsesSystemProxy(req *http.Request) bool {
 	return err == nil && proxy != nil
 }
 
+// ProxyForRequest reports the same effective proxy used by the macOS transport.
+func ProxyForRequest(req *http.Request) (*url.URL, error) {
+	return proxyFromUnixSystem(req)
+}
+
 func proxyFromUnixSystem(req *http.Request) (*url.URL, error) {
 	if isImplicitDirectHost(strings.ToLower(req.URL.Hostname())) {
 		return nil, nil

@@ -21,6 +21,7 @@ import {
   LEAVING_ACTIONS,
   useFixAction,
   type DiagnosticsRequest,
+  isFixActionAvailable,
 } from "@/utils/DiagnosticsContext";
 import {
   checkActions,
@@ -149,7 +150,7 @@ export const DiagnosticsModal: React.FC<Props> = ({ request, onClose }) => {
         : "success";
 
   const renderCheck = (check: DiagnosticCheck, withActions: boolean) => {
-    const actions = withActions ? checkActions(check) : [];
+    const actions = withActions ? checkActions(check).filter(isFixActionAvailable) : [];
     const params = checkParams(check, t, i18n.language);
     return (
       <li key={check.id} className="flex min-w-0 items-start gap-3 py-3 first:pt-0 last:pb-0">

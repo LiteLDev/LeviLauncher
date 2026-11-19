@@ -1,6 +1,6 @@
 import React from "react";
 import { toast } from "@heroui/react";
-import { Browser } from "@wailsio/runtime";
+import { Browser, System } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
@@ -111,6 +111,23 @@ export const LEAVING_ACTIONS: ReadonlySet<FixActionId> = new Set<FixActionId>([
   "open_download_page",
   "open_account",
 ]);
+
+const WINDOWS_ACTIONS: ReadonlySet<FixActionId> = new Set([
+  "install_vcruntime",
+  "open_gaming_services",
+  "open_minecraft_store",
+  "open_preview_store",
+  "enable_developer_mode",
+  "open_developer_settings",
+  "open_proxy_settings",
+  "open_date_settings",
+  "open_region_settings",
+  "open_apps_settings",
+  "open_storage_settings",
+]);
+
+export const isFixActionAvailable = (action: FixActionId): boolean =>
+  !System.IsMac() || !WINDOWS_ACTIONS.has(action);
 
 // useFixAction returns the handler for a troubleshooting step's button.
 // "diagnose" opens diagnostics for the given request.

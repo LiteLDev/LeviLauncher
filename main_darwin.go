@@ -46,7 +46,7 @@ func main() {
 		Description:    "Minecraft Bedrock launcher",
 		Mac:            application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
 		Server:         application.ServerOptions{WriteTimeout: 30 * time.Minute},
-		Services:       []application.Service{application.NewService(mc), application.NewService(app.NewContentService(mc)), application.NewService(app.NewModsService(mc)), application.NewService(user), application.NewService(versions)},
+		Services:       []application.Service{application.NewService(mc), application.NewService(app.NewContentService(mc)), application.NewService(app.NewModsService(mc)), application.NewService(user), application.NewService(versions), application.NewService(app.NewDiagnosticsService())},
 		Assets:         application.AssetOptions{Handler: application.AssetFileServerFS(assets), Middleware: mc.LocalImageMiddleware},
 		SingleInstance: &application.SingleInstanceOptions{UniqueID: "org.levimc.levilauncher.native"},
 	})

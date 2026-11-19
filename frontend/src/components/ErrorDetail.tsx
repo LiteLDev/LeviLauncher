@@ -20,6 +20,7 @@ import {
   LEAVING_ACTIONS,
   useFixAction,
   useHasDiagnostics,
+  isFixActionAvailable,
 } from "@/utils/DiagnosticsContext";
 
 type ErrorDetailProps = {
@@ -86,7 +87,9 @@ export const TroubleshootGuide: React.FC<{
   const canDiagnose = hasDiagnostics && Boolean(guide.topic);
   // "Run diagnostics" is offered once, above the lists; its step stays in
   // the numbered order as text.
-  const steps = guide.steps.filter((s) => s.action !== "diagnose" || canDiagnose);
+  const steps = guide.steps.filter(({ action }) =>
+    action === "diagnose" ? canDiagnose : !action || isFixActionAvailable(action),
+  );
   const showBar = (canDiagnose && !hideDiagnose) || Boolean(guide.faq);
 
   return (

@@ -77,6 +77,7 @@ type LocalUserStatus struct {
 }
 
 func (s *UserService) GetLocalUserStatus() LocalUserStatus {
+	s.restoreAccount()
 	id, err := xbox.GetLocalUserId()
 	if err != nil || id == 0 {
 		return LocalUserStatus{Unreachable: xbox.IsUnreachable(err)}

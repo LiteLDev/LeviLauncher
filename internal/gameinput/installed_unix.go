@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -52,25 +53,69 @@ func runInstaller(ctx context.Context, path string) error {
 }
 
 func runInstallerIn(ctx context.Context, p gameruntime.Profile, path string) error {
-	win, err := p.WindowsPath(path)
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
+	dir := filepath.Dir(path)
+	workaround := p.GameInputServiceWorkaround()
+	if workaround != "" {
+		temp, err := os.MkdirTemp("", "levi-gameinput-")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(temp)
+		path, err = prepareWineInstaller(ctx, p, path, temp)
+		if err != nil {
+			return err
+		}
+		dir = temp
+	}
+	win, err := installerArg(p, path)
 	if err != nil {
 		return err
 	}
-	if strings.ContainsAny(win, "\"\r\n") {
-		return fmt.Errorf("invalid GameInput installer path")
-	}
-	win = strings.ReplaceAll(win, "%", "%%")
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-	defer cancel()
 	var output bytes.Buffer
-	command := `msiexec.exe /i "` + win + `" /passive /norestart /L*v "%TEMP%\LeviGameInputInstall.log"`
-	if workaround := p.GameInputServiceWorkaround(); workaround != "" {
-		// Disable the service in this Wine session after installation.
-		// A separate helper invocation could boot the installed service first.
-		command += "\nif errorlevel 1 exit /b %errorlevel%\n" + workaround
+	command := `msiexec.exe /i ` + win + ` /passive /norestart /L*v "%TEMP%\LeviGameInputInstall.log"`
+	if workaround != "" {
+		const checkExit = "\nif errorlevel 1 exit /b %errorlevel%\n"
+		command = wineMSIDatabase + " -i ServiceInstall.idt" + checkExit + command + checkExit + workaround
 	}
-	if err := p.RunHook(ctx, filepath.Dir(path), command, &output); err != nil {
+	if err := p.RunHook(ctx, dir, command, &output); err != nil {
 		return fmt.Errorf("install GameInput: %w: %s", err, strings.TrimSpace(output.String()))
 	}
 	return nil
+}
+
+const wineMSIDatabase = "msidb.exe -d GameInputRedist.msi -f ."
+
+func prepareWineInstaller(ctx context.Context, p gameruntime.Profile, original, dir string) (string, error) {
+	// Register the service as disabled on this Wine version. Keep the MSI's
+	// configuration action, which places the DLL and writes device mappings.
+	data, err := os.ReadFile(original)
+	if err != nil {
+		return "", err
+	}
+	path := filepath.Join(dir, "GameInputRedist.msi")
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		return "", err
+	}
+	var output bytes.Buffer
+	if err := p.RunHook(ctx, dir, wineMSIDatabase+" -e ServiceInstall", &output); err != nil {
+		return "", fmt.Errorf("export GameInput service table: %w: %s", err, strings.TrimSpace(output.String()))
+	}
+	if err := disableGameInputService(filepath.Join(dir, "ServiceInstall.idt")); err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func installerArg(p gameruntime.Profile, path string) (string, error) {
+	win, err := p.WindowsPath(path)
+	if err != nil {
+		return "", err
+	}
+	if strings.ContainsAny(win, "\"\r\n") {
+		return "", fmt.Errorf("invalid GameInput installer path")
+	}
+	return `"` + strings.ReplaceAll(win, "%", "%%") + `"`, nil
 }

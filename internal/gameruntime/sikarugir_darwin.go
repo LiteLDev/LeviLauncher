@@ -26,17 +26,39 @@ var winrtRegistry []byte
 
 var sikarugirSetupMu sync.Mutex
 
-// PrepareMinecraft fills the selected Sikarugir prefix's Minecraft-specific
-// runtime gaps. Existing dependency binaries are retained.
-func (p Profile) PrepareMinecraft(ctx context.Context) error {
+const sikarugirGameInputServiceVersion = "wine sikarugir 11.0 (revision 1)"
+
+const gameInputServiceCommands = `reg.exe query "HKLM\System\CurrentControlSet\Services\GameInputRedistService" /v Start >nul 2>&1` +
+	"\nif errorlevel 1 exit /b 0\n" +
+	`reg.exe add "HKLM\System\CurrentControlSet\Services\GameInputRedistService" /v Start /t REG_DWORD /d 4 /f` +
+	"\nif errorlevel 1 exit /b %errorlevel%\n" +
+	"sc.exe stop GameInputRedistService >nul 2>&1\nexit /b 0"
+
+// GameInputServiceWorkaround disables and stops the service that crashes on
+// this Sikarugir build. The MSI's input libraries remain installed.
+func (p Profile) GameInputServiceWorkaround() string {
+	if p.sikarugirVersion() == sikarugirGameInputServiceVersion {
+		return gameInputServiceCommands
+	}
+	return ""
+}
+
+func (p Profile) sikarugirVersion() string {
 	support := filepath.Join(p.App, "Contents/SharedSupport")
 	wine := filepath.Join(support, "wine")
 	if p.App == "" || !sameRuntimePath(p.Wine, filepath.Join(wine, "bin/wine")) ||
 		!sameRuntimePath(p.Prefix, filepath.Join(support, "prefix")) {
-		return nil
+		return ""
 	}
-	version, err := os.ReadFile(filepath.Join(wine, "version"))
-	if err != nil || !strings.HasPrefix(strings.TrimSpace(string(version)), "wine sikarugir ") {
+	version, _ := os.ReadFile(filepath.Join(wine, "version"))
+	return strings.TrimSpace(string(version))
+}
+
+// PrepareMinecraft fills the selected Sikarugir prefix's Minecraft-specific
+// runtime gaps. Existing dependency binaries are retained.
+func (p Profile) PrepareMinecraft(ctx context.Context) error {
+	version := p.sikarugirVersion()
+	if !strings.HasPrefix(version, "wine sikarugir ") {
 		return nil
 	}
 
@@ -67,7 +89,11 @@ func (p Profile) PrepareMinecraft(ctx context.Context) error {
 	}
 
 	marker := filepath.Join(p.Prefix, ".levilauncher-minecraft-compat")
-	setupVersion := "1\n" + strings.TrimSpace(string(version))
+	setupVersion := "1\n" + version
+	serviceWorkaround := version == sikarugirGameInputServiceVersion
+	if serviceWorkaround {
+		setupVersion = "2\n" + version
+	}
 	if current, err := os.ReadFile(marker); err == nil && !added && string(current) == setupVersion {
 		return nil
 	}
@@ -88,14 +114,8 @@ func (p Profile) PrepareMinecraft(ctx context.Context) error {
 		return fmt.Errorf("invalid WinRT registry file path")
 	}
 	command := `reg.exe import "` + strings.ReplaceAll(win, "%", "%%") + `"`
-	if strings.TrimSpace(string(version)) == "wine sikarugir 11.0 (revision 1)" {
-		// This engine's GameInput service crashes at NtQueryWnfStateData.
-		// Keep its installed DLL and suppress only the incompatible service.
-		const service = `"HKLM\System\CurrentControlSet\Services\GameInputRedistService"`
-		command += "\nif errorlevel 1 exit /b %errorlevel%\n" +
-			"reg.exe query " + service + " /v Start >nul 2>&1\n" +
-			"if errorlevel 1 exit /b 0\n" +
-			"reg.exe add " + service + " /v Start /t REG_DWORD /d 4 /f"
+	if serviceWorkaround {
+		command += "\nif errorlevel 1 exit /b %errorlevel%\n" + gameInputServiceCommands
 	}
 	var output bytes.Buffer
 	if err := p.RunHook(ctx, temp, command, &output); err != nil {

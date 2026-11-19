@@ -63,7 +63,13 @@ func runInstallerIn(ctx context.Context, p gameruntime.Profile, path string) err
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 	var output bytes.Buffer
-	if err := p.RunHook(ctx, filepath.Dir(path), `msiexec.exe /i "`+win+`" /passive /norestart /L*v "%TEMP%\LeviGameInputInstall.log"`, &output); err != nil {
+	command := `msiexec.exe /i "` + win + `" /passive /norestart /L*v "%TEMP%\LeviGameInputInstall.log"`
+	if workaround := p.GameInputServiceWorkaround(); workaround != "" {
+		// Disable the service in this Wine session after installation.
+		// A separate helper invocation could boot the installed service first.
+		command += "\nif errorlevel 1 exit /b %errorlevel%\n" + workaround
+	}
+	if err := p.RunHook(ctx, filepath.Dir(path), command, &output); err != nil {
 		return fmt.Errorf("install GameInput: %w: %s", err, strings.TrimSpace(output.String()))
 	}
 	return nil

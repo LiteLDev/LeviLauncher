@@ -167,6 +167,10 @@ func HasSystemDLL(name string) bool {
 	if err != nil {
 		return false
 	}
+	return p.HasSystemDLL(name)
+}
+
+func (p Profile) HasSystemDLL(name string) bool {
 	info, err := os.Stat(filepath.Join(p.Prefix, "drive_c/windows/system32", name))
 	return err == nil && info.Mode().IsRegular()
 }

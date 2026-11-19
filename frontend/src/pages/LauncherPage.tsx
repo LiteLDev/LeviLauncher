@@ -105,6 +105,7 @@ export const LauncherPage = (args: any) => {
     registerAction,
     registrationPendingAction,
     launchPending,
+    launchPrepareStage,
     requiresUWPRegistration,
     tipIndex,
 
@@ -1144,8 +1145,8 @@ export const LauncherPage = (args: any) => {
         <UnifiedModal
           isOpen={mcLaunchLoadingDisclosure.isOpen}
           onOpenChange={mcLaunchLoadingDisclosure.setOpen}
-          type="success"
-          title={t("launcherpage.mclaunch.loading.title")}
+          type={launchPrepareStage ? "info" : "success"}
+          title={t(launchPrepareStage ? "launcherpage.mclaunch.preparing.title" : "launcherpage.mclaunch.loading.title")}
           footer={
             <ModalAction
               onPress={mcLaunchLoadingDisclosure.close}
@@ -1164,9 +1165,9 @@ export const LauncherPage = (args: any) => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.25, delay: 0.1 }}
                 >
-                  {t("launcherpage.mclaunch.loading.body")}
+                  {t(launchPrepareStage ? `launcherpage.mclaunch.preparing.${launchPrepareStage}` : "launcherpage.mclaunch.loading.body")}
                 </motion.p>
-                <div className="min-h-[24px] text-sm text-muted">
+                {!launchPrepareStage && <div className="min-h-[24px] text-sm text-muted">
                   <AnimatePresence mode="wait">
                     <motion.span
                       key={`tip-${tipIndex}`}
@@ -1178,10 +1179,10 @@ export const LauncherPage = (args: any) => {
                       {currentLaunchTip}
                     </motion.span>
                   </AnimatePresence>
-                </div>
+                </div>}
               </div>
             </div>
-            <ProgressBar size="sm" isIndeterminate aria-label="Loading">
+            <ProgressBar size="sm" isIndeterminate aria-label={t(launchPrepareStage ? "launcherpage.mclaunch.preparing.title" : "launcherpage.mclaunch.loading.title")}>
               <ProgressBar.Track>
                 <ProgressBar.Fill
                   className={"bg-brand-500 hover:bg-brand-500"}

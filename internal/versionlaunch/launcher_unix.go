@@ -18,9 +18,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
+
+var prepareWineMu sync.Mutex
 
 func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) string {
 	dir, code := resolveVersionDir(name)
@@ -45,14 +48,8 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	if err != nil {
 		return "ERR_WINE_RUNTIME: " + err.Error()
 	}
-	if !vcruntime.IsInstalled() {
-		return "ERR_VCRUNTIME_MISSING"
-	}
-	if !gameinput.IsInstalled() {
-		return "ERR_GAMEINPUT_MISSING"
-	}
-	if err := p.PrepareMinecraft(ctx); err != nil {
-		return "ERR_WINE_RUNTIME: " + err.Error()
+	if code := prepareWineForLaunch(ctx, p); code != "" {
+		return code
 	}
 	accountSession := gameauth.Register(name, p.Prefix)
 	launched := false
@@ -144,6 +141,29 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	}()
 	return ""
 }
+func prepareWineForLaunch(ctx context.Context, p gameruntime.Profile) string {
+	prepareWineMu.Lock()
+	defer prepareWineMu.Unlock()
+	sink := eventsink.From(ctx)
+	if !vcruntime.IsInstalledIn(p) {
+		sink.Emit(launch.EventMcLaunchPrepare, "vcruntime")
+		if err := vcruntime.Install(ctx, p); err != nil {
+			return "ERR_VCRUNTIME_MISSING: " + err.Error()
+		}
+	}
+	if !gameinput.IsInstalledIn(p) {
+		sink.Emit(launch.EventMcLaunchPrepare, "gameinput")
+		if err := gameinput.Install(ctx, p); err != nil {
+			return "ERR_GAMEINPUT_INSTALL: " + err.Error()
+		}
+	}
+	sink.Emit(launch.EventMcLaunchPrepare, "runtime")
+	if err := p.PrepareMinecraft(ctx); err != nil {
+		return "ERR_WINE_RUNTIME: " + err.Error()
+	}
+	return ""
+}
+
 func isProcessRunningAtPath(path string) bool {
 	want, _ := filepath.EvalSymlinks(path)
 	for _, p := range gameruntime.Processes() {

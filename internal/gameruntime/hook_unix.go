@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -22,10 +23,10 @@ func RunHook(ctx context.Context, dir, command string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
-	return p.runHook(ctx, dir, command, output)
+	return p.RunHook(ctx, dir, command, output)
 }
 
-func (p Profile) runHook(ctx context.Context, dir, command string, output io.Writer) error {
+func (p Profile) RunHook(ctx context.Context, dir, command string, output io.Writer) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -35,7 +36,9 @@ func (p Profile) runHook(ctx context.Context, dir, command string, output io.Wri
 	}
 	defer os.RemoveAll(temp)
 	name := filepath.Join(temp, "hook.cmd")
-	text := "@echo off\r\nchcp 65001 >nul\r\n" + strings.ReplaceAll(strings.ReplaceAll(command, "\r\n", "\n"), "\n", "\r\n") + "\r\n"
+	// The wrapper may inherit the launcher's macOS PATH. Make Wine's
+	// system tools available before running the Windows commands.
+	text := "@echo off\r\nset \"PATH=%SystemRoot%\\system32;%SystemRoot%;%PATH%\"\r\nchcp 65001 >nul\r\n" + strings.ReplaceAll(strings.ReplaceAll(command, "\r\n", "\n"), "\n", "\r\n") + "\r\n"
 	if err := os.WriteFile(name, []byte(text), 0600); err != nil {
 		return err
 	}
@@ -53,6 +56,8 @@ func (p Profile) runHook(ctx context.Context, dir, command string, output io.Wri
 		// The Sikarugir wrapper returns before cmd.exe exits. Publish the
 		// guest exit code only after its output is closed.
 		const supervisor = "@echo off\r\nsetlocal DisableDelayedExpansion\r\n" +
+			"mkdir \"%~dp0started\" 2>nul\r\n" +
+			"if errorlevel 1 exit /b 0\r\n" +
 			"cd /d \"%LEVI_HOOK_DIRECTORY%\" > \"%~dp0hook.log\" 2>&1\r\n" +
 			"if not errorlevel 1 call \"%~dp0hook.cmd\" >> \"%~dp0hook.log\" 2>&1\r\n" +
 			" >\"%~dp0exit.tmp\" echo %errorlevel%\r\n" +
@@ -62,6 +67,20 @@ func (p Profile) runHook(ctx context.Context, dir, command string, output io.Wri
 		}
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("start Windows package hook: %w", err)
+		}
+		// The SDK can return without forwarding the command while it is
+		// winding down a previous launch. Retry only if the guest hasn't
+		// started the script. The guest's mkdir prevents duplicate work.
+		started, err := waitForHookStart(ctx, temp)
+		if err != nil {
+			return err
+		}
+		if !started {
+			retry := exec.CommandContext(ctx, cmd.Path, cmd.Args[1:]...)
+			retry.Env = cmd.Env
+			if err := retry.Run(); err != nil {
+				return fmt.Errorf("restart Windows package hook: %w", err)
+			}
 		}
 		return waitForHook(ctx, temp, output)
 	}
@@ -78,6 +97,28 @@ func (p Profile) runHook(ctx context.Context, dir, command string, output io.Wri
 		return fmt.Errorf("Windows package hook failed: %w", err)
 	}
 	return nil
+}
+
+func waitForHookStart(ctx context.Context, dir string) (bool, error) {
+	started := filepath.Join(dir, "started")
+	timer := time.NewTimer(4 * time.Second)
+	defer timer.Stop()
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		if _, err := os.Stat(started); err == nil {
+			return true, nil
+		} else if !os.IsNotExist(err) {
+			return false, err
+		}
+		select {
+		case <-ctx.Done():
+			return false, ctx.Err()
+		case <-timer.C:
+			return false, nil
+		case <-ticker.C:
+		}
+	}
 }
 
 func waitForHook(ctx context.Context, dir string, output io.Writer) error {

@@ -3,6 +3,7 @@
 package gameruntime
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -15,23 +16,37 @@ type Process struct {
 }
 
 func Processes() []Process {
-	data, err := exec.Command("/bin/ps", "-axo", "pid=,comm=").Output()
+	data, err := exec.Command("/bin/ps", "-axww", "-o", "pid=,comm=").Output()
 	if err != nil {
 		return nil
 	}
 	var result []Process
 	for _, line := range strings.Split(string(data), "\n") {
-		words := strings.Fields(line)
-		if len(words) < 2 || !strings.Contains(strings.ToLower(line), "minecraft.windows.exe") {
+		line = strings.TrimSpace(line)
+		i := strings.IndexAny(line, " \t")
+		if i < 0 {
 			continue
 		}
-		pid, err := strconv.Atoi(words[0])
+		command := strings.TrimSpace(line[i:])
+		if !strings.Contains(strings.ToLower(command), "minecraft.windows.exe") {
+			continue
+		}
+		pidString := line[:i]
+		pid, err := strconv.Atoi(pidString)
 		if err != nil {
 			continue
 		}
+		// With Wine's native process title, ps can identify the instance
+		// even when lsof cannot see the executable's mapping.
+		if filepath.IsAbs(command) && strings.EqualFold(filepath.Base(command), "Minecraft.Windows.exe") {
+			if info, err := os.Stat(command); err == nil && info.Mode().IsRegular() {
+				result = append(result, Process{pid, command})
+				continue
+			}
+		}
 		// Finder launches can omit /usr/sbin from PATH. lsof can also return
 		// useful mappings with a nonzero status when another file is inaccessible.
-		files, _ := exec.Command("/usr/sbin/lsof", "-p", words[0], "-Fn").Output()
+		files, _ := exec.Command("/usr/sbin/lsof", "-p", pidString, "-Fn").Output()
 		if len(files) == 0 {
 			continue
 		}

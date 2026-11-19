@@ -98,7 +98,7 @@ func (p Profile) PrepareMinecraft(ctx context.Context) error {
 			"reg.exe add " + service + " /v Start /t REG_DWORD /d 4 /f"
 	}
 	var output bytes.Buffer
-	if err := p.runHook(ctx, temp, command, &output); err != nil {
+	if err := p.RunHook(ctx, temp, command, &output); err != nil {
 		return fmt.Errorf("register Wine compatibility components: %w: %s", err, strings.TrimSpace(output.String()))
 	}
 	return fsx.WriteFileAtomic(marker, []byte(setupVersion), 0600)

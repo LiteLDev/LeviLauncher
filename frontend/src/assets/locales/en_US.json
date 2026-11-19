@@ -88,6 +88,12 @@
       "failed": "The one-time move of your instances to the new mod loader setup failed. Your instances were not changed."
     },
     "mclaunch": {
+      "preparing": {
+        "title": "Preparing Minecraft",
+        "vcruntime": "Installing the Visual C++ runtime…",
+        "gameinput": "Installing GameInput…",
+        "runtime": "Preparing Wine compatibility components…"
+      },
       "loading": {
         "title": "Launching Minecraft",
         "body": "Waiting for the game window to appear, please wait…"
@@ -1110,6 +1116,7 @@
     "ERR_INHERIT_TYPE_MISMATCH": "The instances are different types, so data cannot be inherited",
     "ERR_INHERIT_COPY_FAILED": "Failed to copy inherited data",
     "ERR_NO_GAME_DATA": "No game data found for the selected source",
+    "ERR_GAMEINPUT_INSTALL": "GameInput could not be installed in the selected Wine environment.",
     "ERR_VCRUNTIME_MISSING": "A required runtime is missing. Install the Microsoft Visual C++ Runtime, then try again.",
     "ERR_SHORTCUT_CREATE_FAILED": "Failed to create desktop shortcut",
     "ERR_UNREGISTER_FAILED": "Unregister failed",

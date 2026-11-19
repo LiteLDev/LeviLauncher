@@ -95,6 +95,7 @@ export const useLauncher = (args: any) => {
 
   const navigate = useNavigate();
   const [launchErrorCode, setLaunchErrorCode] = React.useState<string>("");
+  const [launchPrepareStage, setLaunchPrepareStage] = React.useState<"vcruntime" | "gameinput" | "runtime" | null>(null);
   const [contentCounts, setContentCounts] = React.useState<{
     worlds: number;
     resourcePacks: number;
@@ -281,6 +282,7 @@ export const useLauncher = (args: any) => {
       saveCurrentVersionName(name);
       launchRequestActiveRef.current = true;
       setLaunchPending(true);
+      setLaunchPrepareStage(null);
       const launch = versionService?.LaunchVersionByName;
       if (typeof launch === "function") {
         launch(name)
@@ -978,8 +980,21 @@ export const useLauncher = (args: any) => {
   }, [refreshContentCounts, currentVersion]);
 
   useEffect(() => {
+    const unlistenMcPrepare = Events.On("mc.launch.prepare", ({ data: stage }) => {
+      if (!System.IsMac() || !launchRequestActiveRef.current) return;
+      if (stage === "vcruntime" || stage === "gameinput" || stage === "runtime") {
+        setLaunchPrepareStage(stage);
+        mcLaunchLoadingDisclosure.open();
+      }
+    });
+
+    const unlistenMcProcessReady = Events.On("mc.launch.process_ready", () => {
+      if (System.IsMac()) mcLaunchLoadingDisclosure.close();
+    });
+
     const unlistenMcStart = Events.On("mc.launch.start", () => {
       if (!launchRequestActiveRef.current) return;
+      setLaunchPrepareStage(null);
       mcLaunchLoadingDisclosure.open();
     });
 
@@ -998,6 +1013,8 @@ export const useLauncher = (args: any) => {
     });
 
     return () => {
+      unlistenMcPrepare();
+      unlistenMcProcessReady();
       try {
         unlistenMcStart && (unlistenMcStart as any)();
       } catch {}
@@ -1337,6 +1354,7 @@ export const useLauncher = (args: any) => {
     registerAction,
     registrationPendingAction,
     launchPending,
+    launchPrepareStage,
     requiresUWPRegistration,
     tipIndex,
 

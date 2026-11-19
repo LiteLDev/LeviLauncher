@@ -2,7 +2,7 @@ package launch
 
 import (
 	"context"
-
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -18,9 +18,11 @@ import (
 )
 
 const (
-	EventMcLaunchStart  = "mc.launch.start"
-	EventMcLaunchDone   = "mc.launch.done"
-	EventMcLaunchFailed = "mc.launch.failed"
+	EventMcLaunchPrepare      = "mc.launch.prepare"
+	EventMcLaunchProcessReady = "mc.launch.process_ready"
+	EventMcLaunchStart        = "mc.launch.start"
+	EventMcLaunchDone         = "mc.launch.done"
+	EventMcLaunchFailed       = "mc.launch.failed"
 )
 
 var (
@@ -202,6 +204,12 @@ func monitorWithTimeouts(ctx context.Context, versionDir string, launchPID int, 
 			discord.SetLauncherIdle()
 		}
 		return
+	}
+
+	if gui && runtime.GOOS == "darwin" {
+		// Keep monitoring for the window and exit behavior. The launcher
+		// can stop showing progress once Wine has started this executable.
+		sink.Emit(EventMcLaunchProcessReady, struct{}{})
 	}
 
 	// An early observer already saw this instance's window. The user may

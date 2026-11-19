@@ -88,6 +88,12 @@
       "failed": "将实例迁移到新模组加载方式的一次性操作失败了。实例本身未被改动。"
     },
     "mclaunch": {
+      "preparing": {
+        "title": "正在准备 Minecraft",
+        "vcruntime": "正在安装 Visual C++ 运行库…",
+        "gameinput": "正在安装 GameInput…",
+        "runtime": "正在准备 Wine 兼容组件…"
+      },
       "loading": {
         "title": "正在启动 Minecraft",
         "body": "正在等待游戏窗口出现，请稍候…"
@@ -1110,6 +1116,7 @@
     "ERR_INHERIT_TYPE_MISMATCH": "两个实例类型不同，无法继承数据",
     "ERR_INHERIT_COPY_FAILED": "复制继承数据失败",
     "ERR_NO_GAME_DATA": "当前来源没有任何游戏数据",
+    "ERR_GAMEINPUT_INSTALL": "无法在当前 Wine 环境中安装 GameInput。",
     "ERR_VCRUNTIME_MISSING": "缺少必要的运行库。请安装 Microsoft Visual C++ 运行库后重试。",
     "ERR_SHORTCUT_CREATE_FAILED": "创建桌面快捷方式失败",
     "ERR_UNREGISTER_FAILED": "取消注册失败",

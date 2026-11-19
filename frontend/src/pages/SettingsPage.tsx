@@ -976,37 +976,40 @@ export const SettingsPage: React.FC = () => {
                     </Select>
                   </div>
 
-                  <Separator className="bg-surface-tertiary/50" />
+                  {!System.IsMac() && (
+                    <>
+                      <Separator className="bg-surface-tertiary/50" />
 
-                  {/* Minimize to tray on close */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <p className="font-medium">
-                        {t("settings.game_behavior.minimize_to_tray")}
-                      </p>
-                      <p className="text-xs text-muted dark:text-zinc-400">
-                        {t("settings.game_behavior.minimize_to_tray_desc")}
-                      </p>
-                    </div>
-                    <Switch
-                      aria-label={t("settings.game_behavior.minimize_to_tray")}
-                      size="sm"
-                      isSelected={minimizeToTray}
-                      onChange={(isSelected: boolean) => {
-                        setMinimizeToTray(isSelected);
-                      }}
-                      className={"group"}
-                    >
-                      <Switch.Content>
-                        <Switch.Control
-                          className={"group-data-[selected]:bg-brand-500"}
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-1">
+                          <p className="font-medium">
+                            {t("settings.game_behavior.minimize_to_tray")}
+                          </p>
+                          <p className="text-xs text-muted dark:text-zinc-400">
+                            {t("settings.game_behavior.minimize_to_tray_desc")}
+                          </p>
+                        </div>
+                        <Switch
+                          aria-label={t("settings.game_behavior.minimize_to_tray")}
+                          size="sm"
+                          isSelected={minimizeToTray}
+                          onChange={(isSelected: boolean) => {
+                            setMinimizeToTray(isSelected);
+                          }}
+                          className={"group"}
                         >
-                          <Switch.Thumb></Switch.Thumb>
-                        </Switch.Control>
-                        <span></span>
-                      </Switch.Content>
-                    </Switch>
-                  </div>
+                          <Switch.Content>
+                            <Switch.Control
+                              className={"group-data-[selected]:bg-brand-500"}
+                            >
+                              <Switch.Thumb></Switch.Thumb>
+                            </Switch.Control>
+                            <span></span>
+                          </Switch.Content>
+                        </Switch>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
               {selectedTab === "personalization" && (

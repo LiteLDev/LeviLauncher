@@ -68,12 +68,14 @@ type Env struct {
 	// registered with Windows for channel, "" when none is.
 	Registered func(channel string) string
 	SamePath   func(a, b string) bool
-	XUID       func() string
-	Licenses   func(ctx context.Context, xuid string) (release, preview string)
-	Proxy      func() (ProxyInfo, error)
-	Dial       func(ctx context.Context, address string) error
-	Get        func(ctx context.Context, url string) ProbeResult
-	Mirror     func() bool
+	// XUID is the signed-in account; unreachable tells a network failure
+	// confirming it from being signed out.
+	XUID     func() (xuid string, unreachable bool)
+	Licenses func(ctx context.Context, xuid string) (release, preview string)
+	Proxy    func() (ProxyInfo, error)
+	Dial     func(ctx context.Context, address string) error
+	Get      func(ctx context.Context, url string) ProbeResult
+	Mirror   func() bool
 	// GithubProxy is the GitHub proxy mods are installed through, "" for
 	// direct; GithubProxyCustom tells whether the user set it.
 	GithubProxy       func() string

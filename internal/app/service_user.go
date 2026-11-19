@@ -50,6 +50,22 @@ func (s *UserService) GetLocalUserId() string {
 	return strconv.FormatUint(id, 10)
 }
 
+// LocalUserStatus is the signed-in account, or why there is none.
+type LocalUserStatus struct {
+	Xuid string `json:"xuid"`
+	// Unreachable is true when an account is selected but Xbox Live could
+	// not be reached to confirm it, so the user is not actually signed out.
+	Unreachable bool `json:"unreachable"`
+}
+
+func (s *UserService) GetLocalUserStatus() LocalUserStatus {
+	id, err := xbox.GetLocalUserId()
+	if err != nil || id == 0 {
+		return LocalUserStatus{Unreachable: xbox.IsUnreachable(err)}
+	}
+	return LocalUserStatus{Xuid: strconv.FormatUint(id, 10)}
+}
+
 func (s *UserService) GetLocalUserGamertag() string {
 	tag, err := xbox.GetLocalUserGamertag()
 	if err != nil {

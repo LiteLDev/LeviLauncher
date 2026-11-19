@@ -99,12 +99,12 @@ func newDiagnoseEnv() *diagnose.Env {
 			ca, cb := utils.CanonicalWindowsPath(a), utils.CanonicalWindowsPath(b)
 			return ca != "" && strings.EqualFold(ca, cb)
 		},
-		XUID: func() string {
+		XUID: func() (string, bool) {
 			id, err := xbox.GetLocalUserId()
 			if err != nil || id == 0 {
-				return ""
+				return "", xbox.IsUnreachable(err)
 			}
-			return strconv.FormatUint(id, 10)
+			return strconv.FormatUint(id, 10), false
 		},
 		Licenses: func(ctx context.Context, xuid string) (string, string) {
 			l := nativeinstall.RefreshGameLicenses(ctx, apppath.AccountsDir(), xuid)

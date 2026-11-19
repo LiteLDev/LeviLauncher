@@ -9,6 +9,9 @@ export type LicenseSnapshot = {
   // an empty xuid.
   known: boolean;
   xuid: string;
+  // With no xuid: an account is selected but Xbox Live could not be reached
+  // to confirm it, so the user is not actually signed out.
+  unreachable?: boolean;
   release: LicenseState;
   preview: LicenseState;
 };
@@ -20,6 +23,7 @@ export const publishLicenses = (next: LicenseSnapshot) => {
   if (
     next.known === snapshot.known &&
     next.xuid === snapshot.xuid &&
+    Boolean(next.unreachable) === Boolean(snapshot.unreachable) &&
     next.release === snapshot.release &&
     next.preview === snapshot.preview
   ) {

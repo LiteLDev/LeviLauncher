@@ -30,6 +30,7 @@ const LICENSE_FAQ: Record<string, FaqId> = {
   none: "license_not_entitled",
   error: "license_not_entitled",
   partial_error: "license_not_entitled",
+  unreachable: "download_failing",
 };
 type LicenseResult = { xuid: string; release: LicenseState; preview: LicenseState };
 const licenseState = (value: string): LicenseState =>
@@ -49,6 +50,9 @@ export const UserAvatar = () => {
   const [open, setOpen] = useState(false);
 
   const [signingIn, setSigningIn] = useState(false);
+  // An account is selected but Xbox Live could not be reached to confirm it:
+  // a network problem, not a sign-out.
+  const [unreachable, setUnreachable] = useState(false);
   const [licenses, setLicenses] = useState<LicenseResult | null>(null);
 
   const clearUserState = React.useCallback(() => {
@@ -121,8 +125,12 @@ export const UserAvatar = () => {
 
         await refreshSessionIfNeeded();
 
-        const id = await userService.GetLocalUserId();
+        const status = typeof userService.GetLocalUserStatus === "function"
+          ? await userService.GetLocalUserStatus()
+          : { xuid: await userService.GetLocalUserId(), unreachable: false };
         if (cancelled) return;
+        const id = String(status?.xuid || "");
+        setUnreachable(!id && Boolean(status?.unreachable));
         if (!id) {
           clearUserState();
           return;
@@ -211,7 +219,7 @@ export const UserAvatar = () => {
   useEffect(() => {
     if (!startupInteractive || loading) return;
     if (!xuid) {
-      publishLicenses({ known: true, xuid: "", release: "not_entitled", preview: "not_entitled" });
+      publishLicenses({ known: true, xuid: "", unreachable, release: "not_entitled", preview: "not_entitled" });
       return;
     }
     const current = licenses?.xuid === xuid ? licenses : null;
@@ -221,19 +229,24 @@ export const UserAvatar = () => {
       release: current?.release ?? "checking",
       preview: current?.preview ?? "checking",
     });
-  }, [licenses, loading, startupInteractive, xuid]);
+  }, [licenses, loading, startupInteractive, unreachable, xuid]);
 
   // Troubleshooting steps open this menu ("Check the signed-in account").
   const signInRef = React.useRef(signIn);
   signInRef.current = signIn;
   useEffect(() => {
     const onOpen = () => {
-      if (gamertag) setOpen(true);
+      if (gamertag || unreachable) setOpen(true);
       else void signInRef.current();
     };
     window.addEventListener(OPEN_ACCOUNT_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_ACCOUNT_EVENT, onOpen);
-  }, [gamertag]);
+  }, [gamertag, unreachable]);
+
+  const retry = () => {
+    setLoading(true);
+    setReloadNonce((v) => v + 1);
+  };
 
   const releaseState: LicenseState = licenses?.xuid === xuid ? licenses.release : "checking";
   const previewState: LicenseState = licenses?.xuid === xuid ? licenses.preview : "checking";
@@ -253,6 +266,65 @@ export const UserAvatar = () => {
           <Avatar.Fallback>{"?"}</Avatar.Fallback>
         </Avatar>
       </div>
+    );
+  }
+
+  if (!gamertag && unreachable) {
+    const label = t("troubleshoot.license.unreachable.title");
+    return (
+      <Popover isOpen={open} onOpenChange={setOpen}>
+        <Button
+          isIconOnly
+          size="sm"
+          variant="ghost"
+          aria-label={label}
+          className="relative size-10 shrink-0 rounded-full p-0 wails-no-drag"
+        >
+          <FaUser size={20} aria-hidden="true" />
+          <FaExclamationCircle
+            aria-hidden="true"
+            className="absolute bottom-1 right-1 size-3.5 rounded-full bg-background text-warning"
+          />
+        </Button>
+        <Popover.Content
+          className="p-0 bg-overlay border border-border/70 dark:border-zinc-700/60 shadow-2xl rounded-2xl"
+          placement="bottom end"
+        >
+          <Popover.Arrow />
+          <Popover.Dialog aria-label={label} className="p-0">
+            <div role="alert" className="w-80 max-w-[calc(100vw-2rem)] p-4 text-sm">
+              <p className="flex items-center gap-2 font-semibold text-foreground">
+                <FaExclamationCircle className="shrink-0 text-warning" aria-hidden="true" />
+                {label}
+              </p>
+              <p className="mt-2 text-xs leading-5 text-foreground/80">{t("troubleshoot.license.unreachable.body")}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onPress={() => {
+                    setOpen(false);
+                    openDiagnostics({ topic: "license" });
+                  }}
+                >
+                  <FiActivity aria-hidden="true" />
+                  {t("troubleshoot.action.diagnose")}
+                </Button>
+                <Button size="sm" variant="secondary" onPress={() => { setOpen(false); retry(); }}>
+                  <FaSync aria-hidden="true" />
+                  {t("download_manager.actions.retry")}
+                </Button>
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-3">
+                <span className="text-xs text-muted">{t("troubleshoot.license.unreachable.other_account")}</span>
+                <Button size="sm" variant="ghost" isPending={signingIn} onPress={() => void signIn()}>
+                  {t("useravatar.sign_in")}
+                </Button>
+              </div>
+            </div>
+          </Popover.Dialog>
+        </Popover.Content>
+      </Popover>
     );
   }
 

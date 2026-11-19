@@ -131,14 +131,18 @@ export function WineSettings() {
               <span className="text-xs text-muted">{t("settings.wine.left_command_is_ctrl_desc")}</span>
             </div>
             <Switch
+              size="sm"
+              className="shrink-0"
               aria-label={t("settings.wine.left_command_is_ctrl")}
               isSelected={!!settings.leftCommandIsCtrl}
               isDisabled={busy}
               onChange={(selected) => change({ leftCommandIsCtrl: selected })}
             >
-              <Switch.Control>
-                <Switch.Thumb />
-              </Switch.Control>
+              <Switch.Content>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Content>
             </Switch>
           </div>
         )}

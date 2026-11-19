@@ -18,6 +18,12 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/types"
 )
 
+var (
+	ErrExecutableMissing   = errors.New("Wine executable is missing or is not executable")
+	ErrPrefixUninitialized = errors.New("Wine prefix is not initialized (drive_c is missing)")
+	ErrD3DMetalUnavailable = errors.New("D3DMetal is missing from the selected Wine runtime")
+)
+
 func settingsPath() string { return filepath.Join(apppath.ConfigDir(), "wine.json") }
 
 func LoadSettings() (types.WineSettings, error) { return loadSettings(settingsPath()) }
@@ -88,6 +94,9 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 	if err != nil {
 		return p, err
 	}
+	if s.Executable == "" {
+		return p, ErrExecutableMissing
+	}
 	for _, path := range []string{s.Executable, s.Prefix} {
 		if !filepath.IsAbs(path) {
 			return p, errors.New("Wine executable and prefix must be absolute paths")
@@ -103,11 +112,11 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 	}
 	info, err := os.Stat(s.Executable)
 	if err != nil || !info.Mode().IsRegular() || info.Mode()&0111 == 0 {
-		return p, errors.New("Wine executable is missing or is not executable")
+		return p, ErrExecutableMissing
 	}
 	info, err = os.Stat(filepath.Join(s.Prefix, "drive_c"))
 	if err != nil || !info.IsDir() {
-		return p, errors.New("Wine prefix is not initialized (drive_c is missing)")
+		return p, ErrPrefixUninitialized
 	}
 	if p.crossOverRoot() != "" {
 		if _, err := os.Stat(filepath.Join(s.Prefix, "cxbottle.conf")); err != nil {
@@ -119,15 +128,15 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 	case "d3dmetal":
 		if root := p.crossOverRoot(); root != "" {
 			if _, err := os.Stat(filepath.Join(root, "lib64/apple_gptk")); err != nil {
-				return p, errors.New("D3DMetal is missing from the selected Wine runtime")
+				return p, ErrD3DMetalUnavailable
 			}
 			break
 		}
 		if s.App == "" {
-			return p, errors.New("D3DMetal requires a compatible Wine app bundle")
+			return p, ErrD3DMetalUnavailable
 		}
 		if _, err := os.Stat(filepath.Join(s.App, "Contents/SharedSupport/renderer/d3dmetal/wine")); err != nil {
-			return p, errors.New("D3DMetal is missing from the selected Wine app")
+			return p, ErrD3DMetalUnavailable
 		}
 	default:
 		return p, errors.New("unknown Wine graphics backend")
@@ -164,6 +173,11 @@ func CheckSettings(ctx context.Context, s types.WineSettings) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return p.CheckVersion(ctx)
+}
+
+// CheckVersion probes the engine of a validated profile.
+func (p Profile) CheckVersion(ctx context.Context) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
 	defer cancel()
 	output, err := p.Command(ctx, "--version").CombinedOutput()

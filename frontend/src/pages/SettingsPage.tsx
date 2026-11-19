@@ -2760,17 +2760,19 @@ export const SettingsPage: React.FC = () => {
                         {t("settings.troubleshoot.title")}
                       </p>
                       <p className="text-xs text-muted dark:text-zinc-400 max-w-2xl">
-                        {t("settings.troubleshoot.desc")}
+                        {t(hasWineSettings ? "settings.troubleshoot.mac_desc" : "settings.troubleshoot.desc")}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-wrap gap-2">
-                      <Button
-                        onPress={() => void Browser.OpenURL(faqIndexUrl(i18n.language))}
-                        variant={"ghost"}
-                        className={"rounded-full"}
-                      >
-                        {t("troubleshoot.open_faq_index")}
-                      </Button>
+                      {!hasWineSettings && (
+                        <Button
+                          onPress={() => void Browser.OpenURL(faqIndexUrl(i18n.language))}
+                          variant={"ghost"}
+                          className={"rounded-full"}
+                        >
+                          {t("troubleshoot.open_faq_index")}
+                        </Button>
+                      )}
                       <Button
                         onPress={() => openDiagnostics({ topic: "full" })}
                         variant={"outline"}

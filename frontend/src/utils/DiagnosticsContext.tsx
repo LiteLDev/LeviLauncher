@@ -106,6 +106,7 @@ const openLogs = async () => {
 export const LEAVING_ACTIONS: ReadonlySet<FixActionId> = new Set<FixActionId>([
   "open_mirror_settings",
   "open_data_settings",
+  "open_wine_settings",
   "open_process_settings",
   "open_update_settings",
   "open_download_page",
@@ -127,7 +128,7 @@ const WINDOWS_ACTIONS: ReadonlySet<FixActionId> = new Set([
 ]);
 
 export const isFixActionAvailable = (action: FixActionId): boolean =>
-  !System.IsMac() || !WINDOWS_ACTIONS.has(action);
+  action === "open_wine_settings" ? System.IsMac() : !System.IsMac() || !WINDOWS_ACTIONS.has(action);
 
 // useFixAction returns the handler for a troubleshooting step's button.
 // "diagnose" opens diagnostics for the given request.
@@ -206,6 +207,9 @@ export const useFixAction = (diagnose?: DiagnosticsRequest) => {
           return openExternal(SETTINGS_URIS.storage, failedToOpen);
         case "open_mirror_settings":
           settingsTab("components");
+          return;
+        case "open_wine_settings":
+          settingsTab("wine");
           return;
         case "open_data_settings":
           settingsTab("general");

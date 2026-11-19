@@ -1,6 +1,6 @@
 import React from "react";
 import { Button, toast } from "@heroui/react";
-import { Clipboard } from "@wailsio/runtime";
+import { Browser, Clipboard, System } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 import {
   FiAlertTriangle,
@@ -34,7 +34,6 @@ import {
   type DiagnosticReport,
 } from "@/utils/diagnostics";
 import { faqIndexUrl, type FixActionId } from "@/utils/troubleshoot";
-import { Browser } from "@wailsio/runtime";
 
 type Props = {
   request: DiagnosticsRequest;
@@ -60,6 +59,7 @@ const StatusIcon: React.FC<{ status: string }> = ({ status }) => {
 // was checked and found fine.
 export const DiagnosticsModal: React.FC<Props> = ({ request, onClose }) => {
   const { t, i18n } = useTranslation();
+  const isMac = System.IsMac();
   const [open, setOpen] = React.useState(true);
   const [report, setReport] = React.useState<DiagnosticReport | null>(null);
   const [failed, setFailed] = React.useState(false);
@@ -246,7 +246,7 @@ export const DiagnosticsModal: React.FC<Props> = ({ request, onClose }) => {
       {running && (
         <ModalProgress
           label={t("diagnostics.running_label")}
-          description={t("diagnostics.running_body")}
+          description={t(isMac ? "diagnostics.running_body_mac" : "diagnostics.running_body")}
           detail={t("diagnostics.elapsed", { seconds: elapsed })}
         />
       )}
@@ -262,14 +262,19 @@ export const DiagnosticsModal: React.FC<Props> = ({ request, onClose }) => {
           </div>
           {problems.length === 0 ? (
             <ModalNotice tone="info">
-              <span className="block">{t("diagnostics.no_problems_body")}</span>
+              <span className="block">
+                {t(isMac ? "diagnostics.no_problems_body_mac" : "diagnostics.no_problems_body")}
+              </span>
               <Button
                 size="sm"
                 variant="tertiary"
                 className="mt-2"
-                onPress={() => void Browser.OpenURL(faqIndexUrl(i18n.language))}
+                onPress={() => {
+                  if (isMac) void runFix("open_logs");
+                  else void Browser.OpenURL(faqIndexUrl(i18n.language));
+                }}
               >
-                {t("troubleshoot.open_faq_index")}
+                {t(isMac ? "troubleshoot.action.open_logs" : "troubleshoot.open_faq_index")}
               </Button>
             </ModalNotice>
           ) : (
@@ -295,7 +300,7 @@ export const DiagnosticsModal: React.FC<Props> = ({ request, onClose }) => {
           {passed.length > 0 && (
             <details className="rounded-xl border border-border/70">
               <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-foreground/80">
-                {t("diagnostics.passed_heading", { count: passed.length })}
+                {t(isMac ? "diagnostics.other_checks" : "diagnostics.passed_heading", { count: passed.length })}
               </summary>
               <ul className="divide-y divide-border/70 border-t border-border/70 p-4">
                 {passed.map((check) => renderCheck(check, false))}

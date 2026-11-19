@@ -642,6 +642,7 @@
     "troubleshoot": {
       "title": "Troubleshooting",
       "desc": "Check the runtimes, Windows settings, network, proxy and account licenses the launcher depends on. Takes up to a minute and changes nothing.",
+      "mac_desc": "Check Wine, Rosetta, game runtimes, network access and account licenses. This runs without changing your settings.",
       "run": "Run diagnostics"
     }
   },
@@ -1786,6 +1787,7 @@
       "open_apps_settings": "Open installed apps",
       "open_storage_settings": "Open storage settings",
       "open_mirror_settings": "Open package management settings",
+      "open_wine_settings": "Open Wine settings",
       "open_data_settings": "Open data folder settings",
       "open_process_settings": "Open running processes",
       "open_update_settings": "Open update settings",
@@ -2198,13 +2200,16 @@
     "scope_instance": "{{topic}} · {{instance}}",
     "running_label": "Running checks",
     "running_body": "Checking runtimes, Windows settings, network and account. This takes up to a minute and changes nothing on your PC.",
+    "running_body_mac": "Checking Wine, game runtimes, network access and account licenses. This takes up to a minute.",
     "elapsed": "{{seconds}} s elapsed",
     "failed_body": "The diagnostics could not run. Restart the launcher and try again.",
     "no_problems_body": "Everything checked looks fine. If the problem continues, the FAQ covers more cases, and the launcher log helps when you report it.",
+    "no_problems_body_mac": "Diagnostics are complete. If the problem continues, you can open the launcher logs.",
     "problems_heading": "Problems",
     "notes_heading": "Worth knowing",
     "passed_heading_one": "{{count}} check passed",
     "passed_heading_other": "{{count}} checks passed",
+    "other_checks": "Other checks ({{count}})",
     "caused_by_one": "Because of this, 1 more check did not pass:",
     "caused_by_other": "Because of this, {{count}} more checks did not pass:",
     "duration": "Finished in {{seconds}} s.",
@@ -2252,6 +2257,39 @@
       "http_error": "The server answered HTTP {{http}}; the file may have moved."
     },
     "check": {
+      "wine_rosetta": {
+        "title": "Rosetta 2",
+        "ok": "Rosetta 2 is available.",
+        "fail": "Rosetta 2 is unavailable. Run automatic installation in Wine settings."
+      },
+      "wine_runtime": {
+        "title": "Wine runtime",
+        "ok": "Found {{version}}. The selected container is initialized.",
+        "missing": "No executable Wine engine was found at the configured path.",
+        "prefix": "The selected Wine container is not initialized. Create or select an initialized container in Wine settings.",
+        "graphics": "The selected Wine runtime lacks D3DMetal. Select a compatible container or graphics backend in Wine settings.",
+        "invalid": "The Wine configuration is invalid. Check the engine and container in Wine settings.",
+        "unavailable": "The selected Wine engine did not report its version. Check the path or select a different engine.",
+        "skip_rosetta": "The engine check requires Rosetta 2.",
+        "fail": "The Wine check could not finish."
+      },
+      "wine_graphics": {
+        "title": "Wine graphics backend",
+        "info": "Configured backend: {{backend}}.",
+        "skip": "A valid Wine configuration is required to check the graphics backend."
+      },
+      "wine_vcruntime": {
+        "title": "Visual C++ runtime in Wine",
+        "ok": "Found in the selected container.",
+        "info": "Missing from the selected container. The launcher will install it when starting Minecraft.",
+        "skip": "A valid Wine configuration is required to check this dependency."
+      },
+      "wine_gameinput": {
+        "title": "GameInput in Wine",
+        "ok": "Found in the selected container.",
+        "info": "Missing from the selected container. The launcher will install it when starting Minecraft.",
+        "skip": "A valid Wine configuration is required to check this dependency."
+      },
       "vcruntime": {
         "title": "Visual C++ runtime",
         "ok": "Installed.",

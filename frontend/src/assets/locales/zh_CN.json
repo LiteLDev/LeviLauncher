@@ -642,6 +642,7 @@
     "troubleshoot": {
       "title": "故障排查",
       "desc": "检查启动器依赖的运行库、Windows 设置、网络、代理和账户授权。最多耗时一分钟，不会更改任何设置。",
+      "mac_desc": "检查 Wine、Rosetta、游戏运行库、网络和账户授权。诊断期间不会修改设置。",
       "run": "运行诊断"
     }
   },
@@ -1786,6 +1787,7 @@
       "open_apps_settings": "打开已安装的应用",
       "open_storage_settings": "打开存储设置",
       "open_mirror_settings": "打开包管理设置",
+      "open_wine_settings": "前往 Wine 设置",
       "open_data_settings": "打开数据目录设置",
       "open_process_settings": "打开运行中的进程",
       "open_update_settings": "打开更新设置",
@@ -2197,12 +2199,15 @@
     "scope_instance": "{{topic}} · {{instance}}",
     "running_label": "正在检查",
     "running_body": "正在检查运行库、Windows 设置、网络和账户。最多需要一分钟，不会更改电脑上的任何设置。",
+    "running_body_mac": "正在检查 Wine、游戏运行库、网络和账户授权。最多需要一分钟。",
     "elapsed": "已用时 {{seconds}} 秒",
     "failed_body": "诊断无法运行。请重新启动启动器后再试。",
     "no_problems_body": "检查的项目均正常。如果问题仍然存在，常见问题中还有更多情况；反馈问题时附上启动器日志会很有帮助。",
+    "no_problems_body_mac": "诊断已完成。如果问题仍然存在，可以打开启动器日志查看。",
     "problems_heading": "问题",
     "notes_heading": "值得注意",
     "passed_heading_other": "{{count}} 项检查通过",
+    "other_checks": "其他检查（{{count}} 项）",
     "caused_by_one": "受此影响，另有 {{count}} 项检查未通过：",
     "caused_by_other": "受此影响，另有 {{count}} 项检查未通过：",
     "duration": "用时 {{seconds}} 秒。",
@@ -2250,6 +2255,39 @@
       "http_error": "服务器返回 HTTP {{http}}，文件可能已移动。"
     },
     "check": {
+      "wine_rosetta": {
+        "title": "Rosetta 2",
+        "ok": "Rosetta 2 可用。",
+        "fail": "Rosetta 2 不可用。可在 Wine 设置中运行自动安装。"
+      },
+      "wine_runtime": {
+        "title": "Wine 运行环境",
+        "ok": "已检测到 {{version}}，所选容器已初始化。",
+        "missing": "在配置的路径上找不到可执行的 Wine 引擎。",
+        "prefix": "所选 Wine 容器尚未初始化。请在 Wine 设置中创建或选择已初始化的容器。",
+        "graphics": "所选 Wine 环境缺少 D3DMetal。请在 Wine 设置中选择兼容的容器或图形后端。",
+        "invalid": "当前 Wine 配置无效。请在 Wine 设置中检查所选引擎和容器。",
+        "unavailable": "所选 Wine 引擎未能报告版本。请检查路径或重新选择引擎。",
+        "skip_rosetta": "检测 Wine 引擎需要 Rosetta 2。",
+        "fail": "Wine 检查未能完成。"
+      },
+      "wine_graphics": {
+        "title": "Wine 图形后端",
+        "info": "当前配置为 {{backend}}。",
+        "skip": "Wine 配置可用后可检查图形后端。"
+      },
+      "wine_vcruntime": {
+        "title": "Wine 内的 Visual C++ 运行库",
+        "ok": "所选容器中已找到 Visual C++ 运行库。",
+        "info": "所选容器缺少 Visual C++ 运行库，启动 Minecraft 时会自动安装。",
+        "skip": "Wine 配置可用后可检查此依赖。"
+      },
+      "wine_gameinput": {
+        "title": "Wine 内的 GameInput",
+        "ok": "所选容器中已找到 GameInput。",
+        "info": "所选容器缺少 GameInput，启动 Minecraft 时会自动安装。",
+        "skip": "Wine 配置可用后可检查此依赖。"
+      },
       "vcruntime": {
         "title": "Visual C++ 运行库",
         "ok": "已安装。",

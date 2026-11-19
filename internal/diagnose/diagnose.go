@@ -82,7 +82,7 @@ type plannedCheck struct {
 }
 
 // plan returns the checks of a topic in display order.
-func plan(req Request, inst *Instance, skipCheck func(string) bool) []plannedCheck {
+func plan(req Request, inst *Instance, env *Env) []plannedCheck {
 	var ids []string
 	hasInst := inst != nil
 	switch req.Topic {
@@ -101,9 +101,19 @@ func plan(req Request, inst *Instance, skipCheck func(string) bool) []plannedChe
 	default: // TopicFull
 		ids = []string{"vcruntime", "gameinput", "gaming_services", "xbox_services", "developer_mode", "webview2", "data_root", "disk_space", "appdata_link", "elevation", "account", "license", "proxy", "mirror", "lip_proxy", "clock", "ep_microsoft_auth", "ep_xbox_store", "ep_xbox_packages", "ep_version_db", "ep_github", "ep_github_proxy", "ep_levimc"}
 	}
-	out := make([]plannedCheck, 0, len(ids))
+	out := make([]plannedCheck, 0, len(ids)+len(env.RuntimeChecks))
+	switch req.Topic {
+	case "", TopicFull, TopicLaunch, TopicInstall:
+		if !isUWP(inst) {
+			for _, check := range env.RuntimeChecks {
+				out = append(out, plannedCheck{id: check.ID, run: func(ctx context.Context, _ *Env, _ Request, _ *Instance) Check {
+					return check.Run(ctx)
+				}})
+			}
+		}
+	}
 	for _, id := range ids {
-		if (instanceOnly[id] && !hasInst) || (skipCheck != nil && skipCheck(id)) {
+		if (instanceOnly[id] && !hasInst) || (env.SkipCheck != nil && env.SkipCheck(id)) {
 			continue
 		}
 		if fn, ok := registry[id]; ok {
@@ -140,7 +150,7 @@ func Run(ctx context.Context, env *Env, req Request) Report {
 			}
 		}
 	}
-	planned := plan(req, inst, env.SkipCheck)
+	planned := plan(req, inst, env)
 	results := make([]Check, len(planned))
 	done := make([]bool, len(planned))
 	var mu sync.Mutex

@@ -7,6 +7,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/gameauth"
+	"github.com/liteldev/LeviLauncher/internal/gameconsole"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -22,6 +23,9 @@ import (
 var assets embed.FS
 
 func main() {
+	if len(os.Args) >= 2 && os.Args[1] == "--attach-console" {
+		os.Exit(gameconsole.RunCLI(os.Args[2:]))
+	}
 	if err := apppath.EnsureDirs(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -62,6 +66,11 @@ func main() {
 		log.Printf("Game account bridge unavailable: %v", err)
 	} else {
 		defer broker.Close()
+	}
+	if consoleBroker, err := gameconsole.Start(); err != nil {
+		log.Printf("Game console bridge unavailable: %v", err)
+	} else {
+		defer consoleBroker.Close()
 	}
 	if err := a.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

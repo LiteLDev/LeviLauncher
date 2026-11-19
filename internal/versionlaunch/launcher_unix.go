@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/gameauth"
+	"github.com/liteldev/LeviLauncher/internal/gameconsole"
 	"github.com/liteldev/LeviLauncher/internal/gameinput"
 	"github.com/liteldev/LeviLauncher/internal/gameruntime"
 	"github.com/liteldev/LeviLauncher/internal/launch"
@@ -51,14 +52,21 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		return code
 	}
 	accountSession := gameauth.Register(name, p.Prefix)
+	var consoleSession *gameconsole.Session
+	if meta.EnableConsole {
+		consoleSession = gameconsole.Register(name)
+	}
 	launched := false
-	if accountSession != nil {
-		defer func() {
-			if !launched {
+	defer func() {
+		if !launched {
+			if accountSession != nil {
 				accountSession.Close()
 			}
-		}()
-	}
+			if consoleSession != nil {
+				consoleSession.Close()
+			}
+		}
+	}()
 	if _, err = leviloader.PatchAndActivateForWine(ctx, dir); err != nil {
 		return "ERR_LOADER_PREPARE: " + err.Error()
 	}
@@ -101,6 +109,11 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		// when it is unavailable the original game prompt remains usable.
 		env["XGR_SIGNIN_NOMSGBOX"] = "0"
 	}
+	if consoleSession != nil {
+		for k, v := range consoleSession.Environment() {
+			env[k] = v
+		}
+	}
 	cmd.Env = nil
 	for k, v := range env {
 		cmd.Env = append(cmd.Env, k+"="+v)
@@ -117,6 +130,11 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		return "ERR_LAUNCH_GAME: " + err.Error()
 	}
 	launched = true
+	if consoleSession != nil {
+		if err := gameconsole.OpenDefaultTerminal(name, consoleSession.Address(), consoleSession.AuthToken()); err != nil {
+			fmt.Fprintln(logFile, "Failed to open console terminal:", err)
+		}
+	}
 	pid := cmd.Process.Pid
 	if detached {
 		// Sikarugir delegates to its SDK and exits before the game's window.
@@ -133,6 +151,9 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		launch.MonitorGameProcess(ctx, dir, pid)
 		if accountSession != nil {
 			accountSession.Close()
+		}
+		if consoleSession != nil {
+			consoleSession.Close()
 		}
 	}()
 	return ""

@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-func TestProcessesWithoutSystemToolsInPath(t *testing.T) {
-	root := filepath.Join(t.TempDir(), "game directory with spaces")
+func TestProcessesWithChinesePathInDesktopEnvironment(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "中文实例 with spaces")
 	if err := os.Mkdir(root, 0700); err != nil {
 		t.Fatal(err)
 	}
@@ -32,6 +32,7 @@ func TestProcessesWithoutSystemToolsInPath(t *testing.T) {
 		_ = command.Wait()
 	})
 	t.Setenv("PATH", "/usr/bin:/bin")
+	t.Setenv("LC_ALL", "C")
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
 		for _, process := range Processes() {
@@ -49,5 +50,5 @@ func TestProcessesWithoutSystemToolsInPath(t *testing.T) {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	t.Fatal("game process was not detected with the desktop application's PATH")
+	t.Fatal("game process was not detected with the desktop application's PATH and locale")
 }

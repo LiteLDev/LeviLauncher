@@ -15,8 +15,16 @@ type Process struct {
 	Executable string
 }
 
+func processCommand(tool string, args ...string) *exec.Cmd {
+	cmd := exec.Command(tool, args...)
+	// Finder may launch the app with the C locale, which causes both
+	// tools to escape Unicode paths before returning them.
+	cmd.Env = append(os.Environ(), "LC_ALL=en_US.UTF-8")
+	return cmd
+}
+
 func Processes() []Process {
-	data, err := exec.Command("/bin/ps", "-axww", "-o", "pid=,comm=").Output()
+	data, err := processCommand("/bin/ps", "-axww", "-o", "pid=,comm=").Output()
 	if err != nil {
 		return nil
 	}
@@ -46,7 +54,7 @@ func Processes() []Process {
 		}
 		// Finder launches can omit /usr/sbin from PATH. lsof can also return
 		// useful mappings with a nonzero status when another file is inaccessible.
-		files, _ := exec.Command("/usr/sbin/lsof", "-p", pidString, "-Fn").Output()
+		files, _ := processCommand("/usr/sbin/lsof", "-p", pidString, "-Fn").Output()
 		if len(files) == 0 {
 			continue
 		}

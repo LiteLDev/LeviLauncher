@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/gameauth"
-	"github.com/liteldev/LeviLauncher/internal/gameclient"
 	"github.com/liteldev/LeviLauncher/internal/gameinput"
 	"github.com/liteldev/LeviLauncher/internal/gameruntime"
 	"github.com/liteldev/LeviLauncher/internal/launch"
@@ -59,9 +58,6 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 				accountSession.Close()
 			}
 		}()
-		if err := gameclient.Ensure(dir); err != nil {
-			return "ERR_GAME_CLIENT_PREPARE: " + err.Error()
-		}
 	}
 	if _, err = leviloader.PatchAndActivateForWine(ctx, dir); err != nil {
 		return "ERR_LOADER_PREPARE: " + err.Error()

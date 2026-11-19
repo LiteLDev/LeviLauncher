@@ -2,10 +2,8 @@
 
 Run from the repository root on macOS with the Xcode command-line tools,
 the Go version in `go.mod`, Wails v3, Node.js/npm, and Python 3. Place the
-Windows x64 loader and Xbox sign-in plugin at
-`internal/leviloader/LeviLauncher.dll` and
-`internal/gameclient/XboxSignInFix.dll`. The existing `macos.py` builder
-also accepts these artifacts through `--loader` and `--game-client`.
+Windows x64 loader at `internal/leviloader/LeviLauncher.dll`, or pass the
+artifact to `macos.py` through `--loader`.
 
 ```sh
 wails3 task package

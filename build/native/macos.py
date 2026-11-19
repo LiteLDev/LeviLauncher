@@ -6,19 +6,12 @@ p = argparse.ArgumentParser()
 p.add_argument('--output', type=pathlib.Path, default=root/'bin/LeviLauncher.app')
 p.add_argument('--skip-frontend', action='store_true')
 p.add_argument('--loader', type=pathlib.Path, help='Windows x64 loader built from native/levilauncher')
-p.add_argument('--game-client', type=pathlib.Path, help='Windows x64 XboxSignInFix.dll built from wzyyyyyyy/XboxSignInFix')
 args = p.parse_args()
 loader = root/'internal/leviloader/LeviLauncher.dll'
 if args.loader:
     if args.loader.resolve() != loader.resolve(): shutil.copyfile(args.loader, loader)
 if not loader.is_file():
     p.error('Build the Windows x64 native loader first, or supply --loader with that artifact.')
-game_client = root/'internal/gameclient/XboxSignInFix.dll'
-if args.game_client and args.game_client.resolve() != game_client.resolve():
-    game_client.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(args.game_client, game_client)
-if not game_client.is_file():
-    p.error('Build https://github.com/wzyyyyyyy/XboxSignInFix and supply --game-client with dist/XboxSignInFix.dll.')
 env = dict(os.environ, MACOSX_DEPLOYMENT_TARGET='14.6', CGO_ENABLED='1')
 env['CGO_CFLAGS'] = env.get('CGO_CFLAGS', '')+' -mmacosx-version-min=14.6'
 env['CGO_LDFLAGS'] = env.get('CGO_LDFLAGS', '')+' -mmacosx-version-min=14.6'

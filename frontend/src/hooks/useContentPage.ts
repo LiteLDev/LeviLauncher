@@ -19,7 +19,7 @@ import {
   getPathBaseName,
   normalizeDroppedFiles,
 } from "@/utils/fs";
-import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
+import { getPlayerGamertagMap, listPlayers, resolveContentPath } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import * as contentService from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 
@@ -168,7 +168,7 @@ export const useContentPage = (t: TFunc) => {
 
           const loadCounts = async (player: string) => {
             if (player) {
-              const wp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
+              const wp = resolveContentPath(safe, "minecraftWorlds", player);
               setWorldsCount(await countDirectories(wp));
               if (isShared) {
                 if (safe.resourcePacks) {
@@ -268,7 +268,7 @@ export const useContentPage = (t: TFunc) => {
         setScreenshotsCount(0);
         return;
       }
-      const wp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
+      const wp = resolveContentPath(roots, "minecraftWorlds", player);
       setWorldsCount(await countDirectories(wp));
       if (isSharedMode) {
         if (roots.resourcePacks) {

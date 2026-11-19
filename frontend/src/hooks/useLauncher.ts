@@ -19,7 +19,7 @@ import * as contentService from "bindings/github.com/liteldev/LeviLauncher/inter
 import * as modsService from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 import * as versionService from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
-import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
+import { getPlayerGamertagMap, listPlayers, resolveContentPath } from "@/utils/content";
 import { ROUTES } from "@/constants/routes";
 import { normalizePackageType } from "@/utils/packageType";
 
@@ -929,7 +929,7 @@ export const useLauncher = (args: any) => {
           let nextPlayer = players[0] || "";
 
           if (nextPlayer) {
-            const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
+            const wp = resolveContentPath(safe, "minecraftWorlds", nextPlayer);
             const defaultWorlds = await countDir(wp);
             setContentCounts({
               worlds: defaultWorlds,
@@ -959,7 +959,7 @@ export const useLauncher = (args: any) => {
                 }
 
                 if (matchedPlayer && matchedPlayer !== nextPlayer) {
-                  const wp = `${safe.usersRoot}\\${matchedPlayer}\\games\\com.mojang\\minecraftWorlds`;
+                  const wp = resolveContentPath(safe, "minecraftWorlds", matchedPlayer);
                   const newWorlds = await countDir(wp);
                   setContentCounts((prev) => ({ ...prev, worlds: newWorlds }));
                 }

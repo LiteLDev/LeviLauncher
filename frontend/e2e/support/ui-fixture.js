@@ -188,7 +188,7 @@
         return scenario === 'uwp-registration-lost' || !registered ? 'ERR_UWP_NOT_REGISTERED: register the selected UWP instance first' : '';
       }
       if (name === 'FetchUWPVersions') { if (scenario === 'uwp-error' && !state.recovered) throw new Error('Fixture: UWP version database unavailable'); return state.uwpVersions; }
-      if (name === 'FetchHistoricalVersions') return { releaseVersions: [{ version: 'Release 1.26.0', urls: ['https://example.com/game.msixvc'] }], previewVersions: [] };
+      if (name === 'FetchHistoricalVersions') return { releaseVersions: [{ version: 'Release 1.26.0', urls: ['https://example.com/game.msixvc'] }], previewVersions: [], _source: 'https://example.com/versions.json' };
       if (name === 'GetContentRoots') {
         const meta = state.uwpMetas.find(meta => meta.name === args[0]);
         const isPreview = meta?.type === 'preview';

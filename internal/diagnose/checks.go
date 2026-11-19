@@ -235,8 +235,13 @@ func checkElevation(_ context.Context, env *Env, req Request, _ *Instance) Check
 }
 
 func checkAccount(_ context.Context, env *Env, req Request, _ *Instance) Check {
-	if strings.TrimSpace(env.XUID()) != "" {
+	xuid, unreachable := env.XUID()
+	if strings.TrimSpace(xuid) != "" {
 		return Check{Status: StatusOK}
+	}
+	if unreachable {
+		// Signed in, but Xbox Live cannot be reached to confirm it.
+		return Check{Status: StatusFail, Params: p("reason", "unreachable")}
 	}
 	if req.Topic == TopicFull {
 		return Check{Status: StatusWarn, Params: p("reason", "signed_out")}
@@ -247,8 +252,12 @@ func checkAccount(_ context.Context, env *Env, req Request, _ *Instance) Check {
 // checkLicense asks Microsoft which channels the account owns. Params
 // "release" and "preview" are authorized, trial, not_entitled or error.
 func checkLicense(ctx context.Context, env *Env, req Request, _ *Instance) Check {
-	xuid := strings.TrimSpace(env.XUID())
+	xuid, unreachable := env.XUID()
+	xuid = strings.TrimSpace(xuid)
 	if xuid == "" {
+		if unreachable {
+			return Check{Status: StatusSkip, Params: p("reason", "unreachable")}
+		}
 		return Check{Status: StatusSkip, Params: p("reason", "signed_out")}
 	}
 	lctx, cancel := context.WithTimeout(ctx, LicenseTimeout)

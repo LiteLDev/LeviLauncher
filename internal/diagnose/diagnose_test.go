@@ -33,7 +33,7 @@ func fakeEnv() *Env {
 		RunningExes:     func() []string { return nil },
 		Registered:      func(string) string { return "" },
 		SamePath:        func(a, b string) bool { return strings.EqualFold(a, b) },
-		XUID:            func() string { return "2535400000000000" },
+		XUID:            func() (string, bool) { return "2535400000000000", false },
 		Licenses: func(context.Context, string) (string, string) {
 			return "authorized", "authorized"
 		},
@@ -163,13 +163,25 @@ func TestLicenseReleaseMissingPreviewOwned(t *testing.T) {
 
 func TestSignedOutSkipsLicense(t *testing.T) {
 	env := fakeEnv()
-	env.XUID = func() string { return "" }
+	env.XUID = func() (string, bool) { return "", false }
 	r := Run(context.Background(), env, Request{Topic: TopicLicense})
 	if c := find(t, r, "account"); c.Status != StatusFail {
 		t.Errorf("account = %s", c.Status)
 	}
 	if c := find(t, r, "license"); c.Status != StatusSkip {
 		t.Errorf("license = %s", c.Status)
+	}
+}
+
+func TestUnreachableAccountIsNotSignedOut(t *testing.T) {
+	env := fakeEnv()
+	env.XUID = func() (string, bool) { return "", true }
+	r := Run(context.Background(), env, Request{Topic: TopicFull})
+	if c := find(t, r, "account"); c.Status != StatusFail || c.Params["reason"] != "unreachable" {
+		t.Errorf("account = %+v", c)
+	}
+	if c := find(t, r, "license"); c.Status != StatusSkip || c.Params["reason"] != "unreachable" {
+		t.Errorf("license = %+v", c)
 	}
 }
 

@@ -1726,6 +1726,12 @@
       "signed_out": {
         "title": "Not signed in",
         "banner": "Sign in with the Microsoft account that owns Minecraft to download and install game versions."
+      },
+      "unreachable": {
+        "title": "Cannot reach Xbox Live",
+        "body": "Your account is still selected, but the launcher could not reach Xbox Live to confirm it, so downloads and license checks will fail. This is usually caused by a proxy, VPN, firewall or “network accelerator”, or a wrong system clock. Run diagnostics to find out which.",
+        "banner": "Your account is still selected, but Xbox Live cannot be reached, so game versions cannot be downloaded right now. Run diagnostics to find out why.",
+        "other_account": "Using a different account?"
       }
     },
     "guide": {
@@ -2099,6 +2105,8 @@
     "notes_heading": "Worth knowing",
     "passed_heading_one": "{{count}} check passed",
     "passed_heading_other": "{{count}} checks passed",
+    "caused_by_one": "Because of this, 1 more check did not pass:",
+    "caused_by_other": "Because of this, {{count}} more checks did not pass:",
     "duration": "Finished in {{seconds}} s.",
     "copy_report": "Copy report",
     "copied": "Report copied",
@@ -2207,7 +2215,8 @@
       "account": {
         "title": "Microsoft account",
         "ok": "Signed in.",
-        "signed_out": "No Microsoft account is signed in. Downloading and installing game versions needs the account that owns Minecraft."
+        "signed_out": "No Microsoft account is signed in. Downloading and installing game versions needs the account that owns Minecraft.",
+        "unreachable": "An account is selected, but Xbox Live could not be reached to confirm it. This is a connection problem, not a sign-out: signing in again will not help until the connection works."
       },
       "license": {
         "title": "Game licenses",
@@ -2217,7 +2226,8 @@
         "channel_not_entitled": "This account does not own {{channel}}.",
         "channel_trial": "Microsoft granted only a trial license for {{channel}}.",
         "channel_error": "The {{channel}} license could not be checked.",
-        "signed_out": "Sign in first."
+        "signed_out": "Sign in first.",
+        "unreachable": "Xbox Live could not be reached, so the licenses were not checked."
       },
       "proxy": {
         "title": "Proxy",
@@ -2227,6 +2237,7 @@
         "info_pac": "Windows uses a proxy setup script ({{pac}}); connections follow it.",
         "info_auto": "Windows detects proxy settings automatically; connections follow them.",
         "unreachable": "The proxy {{address}} set in Windows does not answer. This usually means a proxy app was closed without restoring the settings, so every connection fails (“connection to 127.0.0.1 failed”). Turn the proxy off in Windows Settings > Network & internet > Proxy, or start the proxy app.",
+        "unreachable_env": "The proxy {{address}} from the HTTP_PROXY / HTTPS_PROXY environment variables does not answer, so every connection fails. Start the proxy app, or delete those variables (search Windows for “Edit environment variables for your account”) and restart the launcher.",
         "unknown": "Could not read the proxy settings."
       },
       "mirror": {

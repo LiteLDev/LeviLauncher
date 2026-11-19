@@ -26,6 +26,7 @@ import {
   checkActions,
   checkMessage,
   checkParams,
+  foldConsequences,
   reportText,
   sortChecks,
   type DiagnosticCheck,
@@ -101,8 +102,8 @@ export const DiagnosticsModal: React.FC<Props> = ({ request, onClose }) => {
   };
 
   const running = !report && !failed;
-  const checks = React.useMemo(
-    () => sortChecks(report?.checks ?? []),
+  const { checks, causedBy } = React.useMemo(
+    () => foldConsequences(sortChecks(report?.checks ?? [])),
     [report],
   );
   const problems = checks.filter((c) => c.status === "fail" || c.status === "warn");
@@ -168,6 +169,23 @@ export const DiagnosticsModal: React.FC<Props> = ({ request, onClose }) => {
             <p className="select-text font-mono text-xs leading-5 text-muted [overflow-wrap:anywhere]">
               {check.detail}
             </p>
+          )}
+          {withActions && causedBy[check.id] && (
+            <div className="mt-1 rounded-lg bg-surface/70 px-3 py-2">
+              <p className="text-xs font-medium text-foreground/80">
+                {t("diagnostics.caused_by", { count: causedBy[check.id].length })}
+              </p>
+              <ul className="mt-1 flex flex-col gap-1">
+                {causedBy[check.id].map((affected) => (
+                  <li key={affected.id} className="flex min-w-0 items-start gap-2 text-xs text-foreground/75">
+                    <StatusIcon status={affected.status} />
+                    <span className="min-w-0 [overflow-wrap:anywhere]">
+                      {t(`diagnostics.check.${affected.id}.title`, checkParams(affected, t, i18n.language))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {actions.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-2">

@@ -315,6 +315,9 @@ export const DownloadPage: React.FC = () => {
         ? await minecraft.IsMirrorEnabled()
         : false;
     const data = await minecraft.FetchHistoricalVersions(preferCN);
+    // Every source failed: the backend answers with empty lists and no
+    // source rather than an error; show it as a failure, not as no versions.
+    if (!data?._source) throw new Error("version catalog unavailable");
     return (["Preview", "Release"] as const).flatMap((type) =>
       ((type === "Preview" ? data.previewVersions : data.releaseVersions) || []).map((v: any) => ({
         version: v.version,
@@ -1610,8 +1613,9 @@ const LicenseBanner: React.FC = () => {
   const { openDiagnostics } = useDiagnostics();
   const license = useLicenseSnapshot();
   if (!license.known) return null;
-  const signedOut = !license.xuid;
-  const insight = signedOut ? "signed_out" : licenseInsight(license.release, license.preview);
+  const unreachable = !license.xuid && license.unreachable;
+  const signedOut = !license.xuid && !unreachable;
+  const insight = unreachable ? "unreachable" : signedOut ? "signed_out" : licenseInsight(license.release, license.preview);
   if (!insight || insight === "error" || insight === "partial_error") return null;
   return (
     <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border/60 p-3 text-sm bg-surface-secondary/60 text-foreground">

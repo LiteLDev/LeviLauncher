@@ -2,7 +2,13 @@
 
 package xbox
 
-import "strconv"
+import (
+	"context"
+	"errors"
+	"net"
+	"net/url"
+	"strconv"
+)
 
 const (
 	stateSignedIn  uint32 = 0
@@ -39,4 +45,18 @@ func XUserGetState() (uint32, error) {
 func ResetSession() error {
 	resetCache()
 	return nil
+}
+
+// IsUnreachable reports whether err means Xbox Live could not be reached
+// (network, proxy, firewall) rather than that no account is signed in.
+func IsUnreachable(err error) bool {
+	if err == nil || errors.Is(err, ErrInteractionRequired) {
+		return false
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var uerr *url.Error
+	var nerr net.Error
+	return errors.As(err, &uerr) || errors.As(err, &nerr)
 }

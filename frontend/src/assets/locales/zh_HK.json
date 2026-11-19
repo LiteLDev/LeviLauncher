@@ -1717,6 +1717,12 @@
       "signed_out": {
         "title": "未登入",
         "banner": "請登入擁有 Minecraft 的微軟帳戶，才能下載和安裝遊戲版本。"
+      },
+      "unreachable": {
+        "title": "無法連線 Xbox Live",
+        "body": "你的帳戶仍處於選取狀態，但啟動器無法連線 Xbox Live 進行確認，因此下載和授權檢查都會失敗。常見原因是代理、VPN、防火牆、「網路加速器」或系統時間不正確。執行診斷即可找出原因。",
+        "banner": "帳戶仍處於選取狀態，但無法連線 Xbox Live，因此暫時無法下載遊戲版本。執行診斷可以找出原因。",
+        "other_account": "要使用其他帳戶？"
       }
     },
     "guide": {
@@ -2088,6 +2094,8 @@
     "problems_heading": "問題",
     "notes_heading": "值得注意",
     "passed_heading_other": "{{count}} 項檢查透過",
+    "caused_by_one": "受此影響，另有 {{count}} 項檢查未通過：",
+    "caused_by_other": "受此影響，另有 {{count}} 項檢查未通過：",
     "duration": "用時 {{seconds}} 秒。",
     "copy_report": "複製報告",
     "copied": "報告已複製",
@@ -2196,7 +2204,8 @@
       "account": {
         "title": "微軟帳戶",
         "ok": "已登入。",
-        "signed_out": "未登入微軟帳戶。下載和安裝遊戲版本需要登入擁有 Minecraft 的帳戶。"
+        "signed_out": "未登入微軟帳戶。下載和安裝遊戲版本需要登入擁有 Minecraft 的帳戶。",
+        "unreachable": "已選擇帳戶，但無法連線 Xbox Live 確認登入狀態。這是網路問題，並不是登出了：網路恢復之前，重新登入也沒有用。"
       },
       "license": {
         "title": "遊戲授權",
@@ -2206,7 +2215,8 @@
         "channel_not_entitled": "此帳戶未擁有{{channel}}。",
         "channel_trial": "微軟只為{{channel}}發放了試用授權。",
         "channel_error": "無法檢查{{channel}}的授權。",
-        "signed_out": "請先登入。"
+        "signed_out": "請先登入。",
+        "unreachable": "無法連線 Xbox Live，因此沒有檢查授權。"
       },
       "proxy": {
         "title": "代理",
@@ -2216,6 +2226,7 @@
         "info_pac": "Windows 使用代理指令碼（{{pac}}），連線按指令碼進行。",
         "info_auto": "Windows 會自動檢測代理設定，連線按其結果進行。",
         "unreachable": "Windows 中設定的代理 {{address}} 沒有回應。這通常是代理軟體退出時沒有恢復設定，導致所有連線都失敗（日誌中出現「connection to 127.0.0.1 failed」）。請在 Windows「設定 > 網路和 Internet > 代理」中關閉代理，或啟動代理軟體。",
+        "unreachable_env": "環境變數 HTTP_PROXY / HTTPS_PROXY 中設定的代理 {{address}} 沒有回應，導致所有連線都失敗。請啟動代理軟體，或刪除這些環境變數（在 Windows 中搜尋「編輯帳戶的環境變數」）後重新啟動啟動器。",
         "unknown": "無法讀取代理設定。"
       },
       "mirror": {

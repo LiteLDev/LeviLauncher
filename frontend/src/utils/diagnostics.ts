@@ -120,6 +120,8 @@ export const checkMessage = (
     raw.enabled === undefined ? undefined : raw.enabled === "true" ? "on" : "off",
   ].filter(Boolean) as string[];
   const keys: string[] = [];
+  // A reason can read differently per proxy mode ("unreachable_env").
+  if (reason && raw.mode) keys.push(`${base}.${reason}_${raw.mode}`);
   for (const d of discriminators) keys.push(`${base}.${check.status}_${d}`, `${base}.${d}`);
   keys.push(`${base}.${check.status}`);
   if (reason) keys.push(`diagnostics.reason.${reason}`);
@@ -147,7 +149,7 @@ export const checkActions = (check: DiagnosticCheck): FixActionId[] => {
     case "disk_space":
       return ["open_storage_settings"];
     case "account":
-      return ["open_account"];
+      return reason === "unreachable" ? [] : ["open_account"];
     case "license": {
       if (!problem) return [];
       const release = check.params?.release;
@@ -164,7 +166,8 @@ export const checkActions = (check: DiagnosticCheck): FixActionId[] => {
       return actions;
     }
     case "proxy":
-      return problem ? ["open_proxy_settings"] : [];
+      // Windows' proxy page cannot change a proxy set by environment variables.
+      return problem && check.params?.mode !== "env" ? ["open_proxy_settings"] : [];
     case "mirror":
       return problem ? ["open_mirror_settings"] : [];
     case "clock":
@@ -187,6 +190,37 @@ export const checkActions = (check: DiagnosticCheck): FixActionId[] => {
       return [];
   }
   return [];
+};
+
+// A proxy that does not answer makes every request through it fail; those
+// failures say nothing new, so they are listed under the proxy instead of as
+// problems of their own.
+const isProxyConsequence = (check: DiagnosticCheck): boolean => {
+  if (check.status !== "fail" && check.status !== "warn") return false;
+  const reason = check.params?.reason;
+  return (
+    reason === "proxy" ||
+    (check.id === "account" && reason === "unreachable") ||
+    (check.id === "mirror" && reason === "github_unreachable")
+  );
+};
+
+export type FoldedChecks = {
+  checks: DiagnosticCheck[];
+  // Checks that failed only because of another one, by that check's id.
+  causedBy: Record<string, DiagnosticCheck[]>;
+};
+
+// foldConsequences keeps the root cause and moves what it broke under it.
+export const foldConsequences = (checks: DiagnosticCheck[]): FoldedChecks => {
+  const proxyDown = checks.some((c) => c.id === "proxy" && c.status === "fail" && c.params?.reason === "unreachable");
+  if (!proxyDown) return { checks, causedBy: {} };
+  const consequences = checks.filter((c) => c.id !== "proxy" && isProxyConsequence(c));
+  if (consequences.length === 0) return { checks, causedBy: {} };
+  return {
+    checks: checks.filter((c) => !consequences.includes(c)),
+    causedBy: { proxy: consequences },
+  };
 };
 
 // reportText is the copyable report: one line per check with its raw

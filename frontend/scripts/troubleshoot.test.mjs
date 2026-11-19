@@ -132,6 +132,9 @@ const SAMPLES = [
   { id: "registration", status: "ok", params: { state: "this", channel: "release" } },
   { id: "registration", status: "warn", params: { state: "other", channel: "preview", path: "C:\\Program Files\\WindowsApps\\x" } },
   { id: "instance_files", status: "fail", params: { reason: "timeout" } },
+  { id: "proxy", status: "fail", params: { mode: "env", reason: "unreachable", address: "127.0.0.1:7890", local: "true" } },
+  { id: "account", status: "fail", params: { reason: "unreachable" } },
+  { id: "license", status: "skip", params: { reason: "unreachable" } },
 ];
 
 test("every diagnostics result has a title and a message", () => {
@@ -172,4 +175,38 @@ test("problems sort first and the report hides paths", () => {
   );
   assert.ok(!text.includes("C:\\Users\\name"));
   assert.match(text, /\[warn\] data_root reason=non_ascii/);
+});
+
+test("an environment proxy is not sent to Windows' proxy page", () => {
+  const t = tFor(LOCALES.en_US);
+  const check = { id: "proxy", status: "fail", params: { mode: "env", reason: "unreachable", address: "127.0.0.1:7890" } };
+  assert.match(diag.checkMessage(check, t, diag.checkParams(check, t)), /environment variables/);
+  assert.deepEqual([...diag.checkActions(check)], []);
+  const manual = { ...check, params: { ...check.params, mode: "manual" } };
+  assert.match(diag.checkMessage(manual, t, diag.checkParams(manual, t)), /set in Windows/);
+  assert.deepEqual([...diag.checkActions(manual)], ["open_proxy_settings"]);
+});
+
+test("failures a dead proxy causes are folded under it", () => {
+  const checks = [
+    { id: "proxy", status: "fail", params: { mode: "env", reason: "unreachable" } },
+    { id: "ep_github", status: "fail", params: { reason: "proxy" } },
+    { id: "account", status: "fail", params: { reason: "unreachable" } },
+    { id: "mirror", status: "warn", params: { enabled: "false", reason: "github_unreachable" } },
+    { id: "disk_space", status: "warn", params: { reason: "low" } },
+    { id: "vcruntime", status: "ok" },
+  ];
+  const folded = diag.foldConsequences(checks);
+  assert.deepEqual(folded.checks.map((c) => c.id), ["proxy", "disk_space", "vcruntime"]);
+  assert.deepEqual(folded.causedBy.proxy.map((c) => c.id), ["ep_github", "account", "mirror"]);
+  // Without a dead proxy nothing is folded.
+  const alone = diag.foldConsequences(checks.slice(1));
+  assert.equal(alone.checks.length, 5);
+  assert.deepEqual({ ...alone.causedBy }, {});
+  for (const [name, json] of Object.entries(LOCALES)) {
+    assert.equal(typeof lookup(json, "diagnostics.caused_by_other"), "string", name);
+    for (const key of ["title", "body", "banner", "other_account"]) {
+      assert.equal(typeof lookup(json, `troubleshoot.license.unreachable.${key}`), "string", `${name}: ${key}`);
+    }
+  }
 });

@@ -95,6 +95,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 			env[k] = v
 		}
 	}
+	env["LEVI_WINE_INPUT_FIX"] = "1"
 	for _, e := range strings.Split(meta.EnvVars, "\n") {
 		k, v, ok := strings.Cut(strings.TrimSpace(e), "=")
 		if ok && k != "" {
@@ -176,6 +177,9 @@ func prepareWineForLaunch(ctx context.Context, p gameruntime.Profile) string {
 	}
 	sink.Emit(launch.EventMcLaunchPrepare, "runtime")
 	if err := p.PrepareMinecraft(ctx); err != nil {
+		return "ERR_WINE_RUNTIME: " + err.Error()
+	}
+	if err := p.ApplyMacInputSettings(ctx); err != nil {
 		return "ERR_WINE_RUNTIME: " + err.Error()
 	}
 	return ""

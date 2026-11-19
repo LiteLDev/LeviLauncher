@@ -1,5 +1,5 @@
 import React from "react";
-import { Button, Input, Label, ListBox, Select, Spinner, TextField, toast } from "@heroui/react";
+import { Button, Input, Label, ListBox, Select, Spinner, Switch, TextField, toast } from "@heroui/react";
 import { Dialogs, System } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 import { CheckWineSettings, GetWineSettings, SaveWineSettings } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
@@ -124,6 +124,24 @@ export function WineSettings() {
             </Select>
           ))}
         </div>
+        {System.IsMac() && (
+          <div className="flex items-start justify-between gap-4 rounded-xl border border-border/60 p-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium">{t("settings.wine.left_command_is_ctrl")}</span>
+              <span className="text-xs text-muted">{t("settings.wine.left_command_is_ctrl_desc")}</span>
+            </div>
+            <Switch
+              aria-label={t("settings.wine.left_command_is_ctrl")}
+              isSelected={!!settings.leftCommandIsCtrl}
+              isDisabled={busy}
+              onChange={(selected) => change({ leftCommandIsCtrl: selected })}
+            >
+              <Switch.Control>
+                <Switch.Thumb />
+              </Switch.Control>
+            </Switch>
+          </div>
+        )}
       </>}
       {error && <p role="alert" className="break-words text-sm text-danger">{error}</p>}
       {result && <p role="status" className="break-words text-sm text-success">{result}</p>}

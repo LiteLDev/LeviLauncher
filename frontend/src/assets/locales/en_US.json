@@ -415,6 +415,8 @@
       "sync_msync": "MSync",
       "sync_esync": "ESync",
       "sync_none": "Disabled",
+      "left_command_is_ctrl": "Map Left Command to Ctrl",
+      "left_command_is_ctrl_desc": "Map Left Command to Ctrl in-game (enables Cmd+C/V, sprinting, and Cmd+Q stack drop without quitting; maps Left Option to Alt).",
       "save": "Save",
       "check": "Check version",
       "reload": "Reload",

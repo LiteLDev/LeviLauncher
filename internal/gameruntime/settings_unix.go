@@ -90,7 +90,14 @@ func resolveSettings(s types.WineSettings) (types.WineSettings, error) {
 
 func profileFromSettings(s types.WineSettings) (Profile, error) {
 	s, err := resolveSettings(s)
-	p := Profile{App: s.App, Wine: s.Executable, Prefix: s.Prefix, Graphics: s.Graphics, Sync: s.Sync}
+	p := Profile{
+		App:               s.App,
+		Wine:              s.Executable,
+		Prefix:            s.Prefix,
+		Graphics:          s.Graphics,
+		Sync:              s.Sync,
+		LeftCommandIsCtrl: s.LeftCommandIsCtrl,
+	}
 	if err != nil {
 		return p, err
 	}

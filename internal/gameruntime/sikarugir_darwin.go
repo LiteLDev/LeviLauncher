@@ -124,6 +124,47 @@ func (p Profile) PrepareMinecraft(ctx context.Context) error {
 	return fsx.WriteFileAtomic(marker, []byte(setupVersion), 0600)
 }
 
+// ApplyMacInputSettings syncs macOS-only Wine Mac Driver key mapping preferences
+// into the selected prefix. Launches stay zero-overhead when the setting is
+// unchanged.
+func (p Profile) ApplyMacInputSettings(ctx context.Context) error {
+	if p.Prefix == "" {
+		return nil
+	}
+	desired := "0"
+	if p.LeftCommandIsCtrl {
+		desired = "1"
+	}
+	marker := filepath.Join(p.Prefix, ".levilauncher-mac-input")
+	current, err := os.ReadFile(marker)
+	if err == nil && strings.TrimSpace(string(current)) == desired {
+		return nil
+	}
+	if os.IsNotExist(err) && desired == "0" {
+		return nil
+	}
+
+	sikarugirSetupMu.Lock()
+	defer sikarugirSetupMu.Unlock()
+	if current, err := os.ReadFile(marker); err == nil && strings.TrimSpace(string(current)) == desired {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	cmd := `reg.exe add "HKCU\Software\Wine\Mac Driver" /v LeftCommandIsCtrl /t REG_SZ /d N /f`
+	if p.LeftCommandIsCtrl {
+		cmd = `reg.exe add "HKCU\Software\Wine\Mac Driver" /v LeftCommandIsCtrl /t REG_SZ /d Y /f` +
+			"\nif errorlevel 1 exit /b %errorlevel%\n" +
+			`reg.exe add "HKCU\Software\Wine\Mac Driver" /v LeftOptionIsAlt /t REG_SZ /d Y /f`
+	}
+	var output bytes.Buffer
+	if err := p.RunHook(ctx, p.Prefix, cmd, &output); err != nil {
+		return fmt.Errorf("apply macOS Wine input settings: %w: %s", err, strings.TrimSpace(output.String()))
+	}
+	return fsx.WriteFileAtomic(marker, []byte(desired+"\n"), 0600)
+}
+
 func configureMinecraftWrapper(ctx context.Context, plist string) error {
 	const field = "CLI Custom Commands"
 	read := exec.CommandContext(ctx, "/usr/bin/plutil", "-extract", field, "raw", "-o", "-", plist)

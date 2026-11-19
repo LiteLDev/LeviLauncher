@@ -14,11 +14,12 @@ import (
 )
 
 type Profile struct {
-	App      string
-	Wine     string
-	Prefix   string
-	Graphics string
-	Sync     string
+	App               string
+	Wine              string
+	Prefix            string
+	Graphics          string
+	Sync              string
+	LeftCommandIsCtrl bool
 }
 
 func Default() (Profile, error) {

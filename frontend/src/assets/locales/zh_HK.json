@@ -415,6 +415,8 @@
       "sync_msync": "MSync",
       "sync_esync": "ESync",
       "sync_none": "關閉",
+      "left_command_is_ctrl": "左側 Command 映射為 Ctrl",
+      "left_command_is_ctrl_desc": "在遊戲內將左 ⌘ 映射為 Ctrl（支援 ⌘+C/V、疾跑與 ⌘+Q 丟棄整組物品並防誤觸退出；同時將左 Option 映射為 Alt）。",
       "save": "儲存",
       "check": "檢查版本",
       "reload": "重新讀取",

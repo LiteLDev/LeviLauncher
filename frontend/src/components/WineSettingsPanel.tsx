@@ -10,6 +10,7 @@ import {
 import type {
   WineDownloadSettings, WineInstallation, WineSettings as Settings,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
+import { InstallProgressRow } from "@/components/InstallProgressRow";
 import { formatBytes } from "@/utils/formatting";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { WineSettings } from "@/components/WineSettings";
@@ -131,7 +132,10 @@ export function WineSettingsPanel() {
   };
 
   const stageIndex = stages.findIndex((stage) => stage === progress.stage);
-  const downloading = progress.status === "downloading" && progress.total > 0;
+  const downloadPercent = progress.total > 0
+    ? Math.min(100, Math.max(0, (progress.downloaded / progress.total) * 100))
+    : undefined;
+  const statusLabel = t(`settings.wine.managed.status.${progress.status}`);
 
   return (
     <div className="flex flex-col gap-5">
@@ -252,12 +256,18 @@ export function WineSettingsPanel() {
                 <div className="min-w-0 flex-1">
                   <span className={current ? "font-medium" : undefined}>{t(`settings.wine.managed.stage.${stage}`)}</span>
                   {current && !done && installPending && (
-                    <div className="mt-1 text-xs text-muted">
-                      <span role="status">
-                        {t(`settings.wine.managed.status.${progress.status}`)}
-                        {downloading ? ` · ${formatBytes(progress.downloaded)} / ${formatBytes(progress.total)}` : ""}
-                      </span>
-                      {downloading && <progress className="mt-1 block h-1.5 w-full max-w-xs accent-current" aria-label={t(`settings.wine.managed.stage.${stage}`)} max={progress.total} value={progress.downloaded} />}
+                    <div className="mt-1">
+                      {progress.status === "downloading" ? (
+                        <InstallProgressRow
+                          label={statusLabel}
+                          amount={progress.total > 0
+                            ? `${formatBytes(progress.downloaded)} / ${formatBytes(progress.total)}`
+                            : progress.downloaded > 0 ? formatBytes(progress.downloaded) : undefined}
+                          value={downloadPercent}
+                        />
+                      ) : (
+                        <span role="status" className="block text-xs text-muted">{statusLabel}</span>
+                      )}
                     </div>
                   )}
                 </div>

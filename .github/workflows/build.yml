@@ -314,28 +314,14 @@ jobs:
             --app bin/LeviLauncher.app \
             --output bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
 
-      - name: Archive macOS application bundle
-        run: |
-          ditto -c -k --keepParent \
-            bin/LeviLauncher.app \
-            bin/LeviLauncher-macos-${{ matrix.build.archs }}.app.zip
-
       - name: Verify build outputs
         run: |
           echo "Checking build outputs for macOS ${{ matrix.build.archs }}"
           test -d bin/LeviLauncher.app
-          test -f bin/LeviLauncher-macos-${{ matrix.build.archs }}.app.zip
           test -f bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
           codesign --verify --deep --strict bin/LeviLauncher.app
           hdiutil verify bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
           ls -la bin
-
-      - name: Upload standalone macOS app artifact
-        uses: actions/upload-artifact@v7.0.0
-        with:
-          path: bin/LeviLauncher-macos-${{ matrix.build.archs }}.app.zip
-          archive: false
-          if-no-files-found: error
 
       - name: Upload macOS DMG installer artifact
         uses: actions/upload-artifact@v7.0.0

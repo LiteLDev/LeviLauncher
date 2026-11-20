@@ -81,67 +81,6 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  quality-macos:
-    name: Quality gates (macOS)
-    needs: quality
-    runs-on: macos-15
-    permissions:
-      contents: read
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Download native loader artifact
-        uses: actions/download-artifact@v8.0.0
-        with:
-          name: native-loader-windows-x64
-          path: internal/leviloader
-
-      - name: Verify native loader artifact
-        run: test -f internal/leviloader/LeviLauncher.dll
-
-      - uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Test and vet macOS Go code
-        env:
-          MACOSX_DEPLOYMENT_TARGET: "14.6"
-        run: |
-          set -euo pipefail
-          PKGS=(
-            ./internal/app
-            ./internal/apppath
-            ./internal/config
-            ./internal/diagnose
-            ./internal/downloader
-            ./internal/explorer
-            ./internal/gameauth
-            ./internal/gameconsole
-            ./internal/gameinput
-            ./internal/gameruntime
-            ./internal/httpx
-            ./internal/launch
-            ./internal/leviloader
-            ./internal/lip
-            ./internal/lipcore/archive
-            ./internal/lipcore/install
-            ./internal/mods
-            ./internal/nativeinstall
-            ./internal/oslang
-            ./internal/peeditor
-            ./internal/processinfo
-            ./internal/registry
-            ./internal/update
-            ./internal/utils
-            ./internal/versionlaunch
-            ./internal/versions
-            ./internal/xbox
-          )
-          go vet "${PKGS[@]}"
-          go test -count=1 "${PKGS[@]}"
-
   build:
     needs: quality
     strategy:
@@ -278,8 +217,7 @@ jobs:
           if-no-files-found: error
 
   build-macos:
-    name: Build (macOS)
-    needs: [quality, quality-macos]
+    needs: quality
     strategy:
       fail-fast: false
       matrix:
@@ -312,6 +250,43 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Test and vet macOS Go code
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "14.6"
+        run: |
+          set -euo pipefail
+          PKGS=(
+            ./internal/app
+            ./internal/apppath
+            ./internal/config
+            ./internal/diagnose
+            ./internal/downloader
+            ./internal/explorer
+            ./internal/gameauth
+            ./internal/gameconsole
+            ./internal/gameinput
+            ./internal/gameruntime
+            ./internal/httpx
+            ./internal/launch
+            ./internal/leviloader
+            ./internal/lip
+            ./internal/lipcore/archive
+            ./internal/lipcore/install
+            ./internal/mods
+            ./internal/nativeinstall
+            ./internal/oslang
+            ./internal/peeditor
+            ./internal/processinfo
+            ./internal/registry
+            ./internal/update
+            ./internal/utils
+            ./internal/versionlaunch
+            ./internal/versions
+            ./internal/xbox
+          )
+          go vet "${PKGS[@]}"
+          go test -count=1 "${PKGS[@]}"
 
       - uses: actions/setup-node@v6
         with:

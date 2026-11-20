@@ -218,6 +218,9 @@ jobs:
 
   build-macos:
     needs: quality
+    permissions:
+      contents: read
+      actions: write
     strategy:
       fail-fast: false
       matrix:
@@ -311,14 +314,28 @@ jobs:
             --app bin/LeviLauncher.app \
             --output bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
 
+      - name: Archive macOS application bundle
+        run: |
+          ditto -c -k --keepParent \
+            bin/LeviLauncher.app \
+            bin/LeviLauncher-macos-${{ matrix.build.archs }}.app.zip
+
       - name: Verify build outputs
         run: |
           echo "Checking build outputs for macOS ${{ matrix.build.archs }}"
           test -d bin/LeviLauncher.app
+          test -f bin/LeviLauncher-macos-${{ matrix.build.archs }}.app.zip
           test -f bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
           codesign --verify --deep --strict bin/LeviLauncher.app
           hdiutil verify bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
           ls -la bin
+
+      - name: Upload standalone macOS app artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          path: bin/LeviLauncher-macos-${{ matrix.build.archs }}.app.zip
+          archive: false
+          if-no-files-found: error
 
       - name: Upload macOS DMG installer artifact
         uses: actions/upload-artifact@v7.0.0
@@ -326,6 +343,17 @@ jobs:
           path: bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
           archive: false
           if-no-files-found: error
+
+      - name: Delete temporary native loader artifact
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          artifact_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+            --jq '.artifacts[] | select(.name == "native-loader-windows-x64" and .expired == false) | .id' | head -n 1 || true)
+          if [ -n "$artifact_id" ]; then
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}" || \
+              echo "Skipping cleanup: token lacks actions:write (e.g. fork PR); artifact expires automatically in 1 day."
+          fi
 
   release:
     name: Create Release

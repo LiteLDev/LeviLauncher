@@ -17,6 +17,7 @@ const localeLoaders = {
   it_IT: () => import("@/assets/locales/it_IT.json"),
   pt_PT: () => import("@/assets/locales/pt_PT.json"),
   pl_PL: () => import("@/assets/locales/pl_PL.json"),
+  th_TH: () => import("@/assets/locales/th_TH.json"),
 } as const;
 
 type SupportedLocale = keyof typeof localeLoaders;
@@ -58,7 +59,9 @@ const supportedLngs = [
   "pl_PL",
   "pl-PL",
   "pl",
-
+  "th_TH",
+  "th-TH",
+  "th",
 ] as const;
 
 const resolveLocale = (language: string): SupportedLocale => {

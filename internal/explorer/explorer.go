@@ -3,15 +3,14 @@ package explorer
 import (
 	"errors"
 	"fmt"
-	"log"
+
 	"os"
-	"os/exec"
+
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
-	"github.com/liteldev/LeviLauncher/internal/utils"
+
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -36,20 +35,6 @@ func openPath(dir string, open func(string) error) error {
 		return fmt.Errorf("open directory %s: %w", d, err)
 	}
 	return nil
-}
-
-func SelectFile(path string) bool {
-	p := strings.TrimSpace(path)
-	if p == "" || !utils.FileExists(p) {
-		return false
-	}
-	cmd := exec.Command("explorer", "/select,\""+p+"\"")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	if err := cmd.Run(); err != nil {
-		log.Println("explorer.SelectFile error:", err)
-		return false
-	}
-	return true
 }
 
 func OpenMods(name string) error {

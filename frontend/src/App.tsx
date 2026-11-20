@@ -5,6 +5,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import React, { useEffect, useState, Suspense, lazy } from "react";
 
 import { GlobalNavbar } from "@/components/GlobalNavbar";
+import { GameSignInNotice } from "@/components/GameSignInNotice";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { NavigationFrame } from "@/components/NavigationFrame";
@@ -438,6 +439,7 @@ function App() {
                           </Suspense>
                         </main>
 
+                        <GameSignInNotice />
                         <TermsModal
                           isOpen={
                             termsOpen && !isOnboardingMode && !isUpdatingMode

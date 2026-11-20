@@ -2,7 +2,7 @@ import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
 import { useOverlayState } from "@heroui/react";
 import React, { useEffect } from "react";
 
-import { Events } from "@wailsio/runtime";
+import { Events, System } from "@wailsio/runtime";
 import { useNavigate } from "react-router-dom";
 import { compareVersions } from "@/utils/version";
 import {
@@ -19,7 +19,7 @@ import * as contentService from "bindings/github.com/liteldev/LeviLauncher/inter
 import * as modsService from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 import * as versionService from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
-import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
+import { getPlayerGamertagMap, listPlayers, resolveContentPath } from "@/utils/content";
 import { ROUTES } from "@/constants/routes";
 import { normalizePackageType } from "@/utils/packageType";
 
@@ -95,6 +95,7 @@ export const useLauncher = (args: any) => {
 
   const navigate = useNavigate();
   const [launchErrorCode, setLaunchErrorCode] = React.useState<string>("");
+  const [launchPrepareStage, setLaunchPrepareStage] = React.useState<"vcruntime" | "gameinput" | "runtime" | null>(null);
   const [contentCounts, setContentCounts] = React.useState<{
     worlds: number;
     resourcePacks: number;
@@ -281,6 +282,7 @@ export const useLauncher = (args: any) => {
       saveCurrentVersionName(name);
       launchRequestActiveRef.current = true;
       setLaunchPending(true);
+      setLaunchPrepareStage(null);
       const launch = versionService?.LaunchVersionByName;
       if (typeof launch === "function") {
         launch(name)
@@ -298,6 +300,10 @@ export const useLauncher = (args: any) => {
               }
               launchRequestActiveRef.current = false;
               mcLaunchLoadingDisclosure.close();
+              if (s === "ERR_GAMEINPUT_MISSING") {
+                gameInputMissingDisclosure.open();
+                return;
+              }
               setLaunchErrorCode(s);
               launchFailedDisclosure.open();
             }
@@ -323,6 +329,7 @@ export const useLauncher = (args: any) => {
     navigate,
     launchFailedDisclosure,
     mcLaunchLoadingDisclosure,
+    gameInputMissingDisclosure,
   ]);
 
   const doForceLaunch = React.useCallback(() => {
@@ -610,6 +617,9 @@ export const useLauncher = (args: any) => {
   }, [requiresUWPRegistration, doRegister, doLaunch]);
 
   useEffect(() => {
+    // A native first run must reach Wine settings before any Windows
+    // runtime prerequisites can be checked or installed.
+    if (System.IsMac()) return;
     let disposed = false;
     let vcRuntimeRetryTimer: number | null = null;
 
@@ -652,7 +662,7 @@ export const useLauncher = (args: any) => {
         } catch {}
       }
       // The native DLL loader needs the desktop VC runtime on UWP too.
-      // GameInput and Gaming Services remain GDK-specific dependencies.
+      // GameInput remains a GDK dependency in Wine too.
       if (currentPackageType !== "gdk") return;
       if (
         !hasSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput)
@@ -677,7 +687,9 @@ export const useLauncher = (args: any) => {
             });
         } catch {}
       }
+      // Gaming Services is a Windows Store service; native hosts launch via Wine.
       if (
+        !System.IsMac() &&
         !hasSessionDependencyCheckRun(
           DEPENDENCY_CHECK_SESSION_KEYS.gamingServices,
         )
@@ -917,7 +929,7 @@ export const useLauncher = (args: any) => {
           let nextPlayer = players[0] || "";
 
           if (nextPlayer) {
-            const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
+            const wp = resolveContentPath(safe, "minecraftWorlds", nextPlayer);
             const defaultWorlds = await countDir(wp);
             setContentCounts({
               worlds: defaultWorlds,
@@ -947,7 +959,7 @@ export const useLauncher = (args: any) => {
                 }
 
                 if (matchedPlayer && matchedPlayer !== nextPlayer) {
-                  const wp = `${safe.usersRoot}\\${matchedPlayer}\\games\\com.mojang\\minecraftWorlds`;
+                  const wp = resolveContentPath(safe, "minecraftWorlds", matchedPlayer);
                   const newWorlds = await countDir(wp);
                   setContentCounts((prev) => ({ ...prev, worlds: newWorlds }));
                 }
@@ -968,8 +980,21 @@ export const useLauncher = (args: any) => {
   }, [refreshContentCounts, currentVersion]);
 
   useEffect(() => {
+    const unlistenMcPrepare = Events.On("mc.launch.prepare", ({ data: stage }) => {
+      if (!System.IsMac() || !launchRequestActiveRef.current) return;
+      if (stage === "vcruntime" || stage === "gameinput" || stage === "runtime") {
+        setLaunchPrepareStage(stage);
+        mcLaunchLoadingDisclosure.open();
+      }
+    });
+
+    const unlistenMcProcessReady = Events.On("mc.launch.process_ready", () => {
+      if (System.IsMac()) mcLaunchLoadingDisclosure.close();
+    });
+
     const unlistenMcStart = Events.On("mc.launch.start", () => {
       if (!launchRequestActiveRef.current) return;
+      setLaunchPrepareStage(null);
       mcLaunchLoadingDisclosure.open();
     });
 
@@ -988,6 +1013,8 @@ export const useLauncher = (args: any) => {
     });
 
     return () => {
+      unlistenMcPrepare();
+      unlistenMcProcessReady();
       try {
         unlistenMcStart && (unlistenMcStart as any)();
       } catch {}
@@ -1327,6 +1354,7 @@ export const useLauncher = (args: any) => {
     registerAction,
     registrationPendingAction,
     launchPending,
+    launchPrepareStage,
     requiresUWPRegistration,
     tipIndex,
 

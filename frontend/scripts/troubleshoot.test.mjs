@@ -94,6 +94,17 @@ test("FAQ links follow the reader's language", () => {
 // Results the backend produces (internal/diagnose); every one must read as
 // a sentence in each maintained language, never as a key.
 const SAMPLES = [
+  { id: "wine_rosetta", status: "ok" },
+  { id: "wine_rosetta", status: "fail" },
+  { id: "wine_runtime", status: "ok", params: { version: "wine-11.0" } },
+  ...["missing", "prefix", "graphics", "invalid", "unavailable"].map((reason) => ({
+    id: "wine_runtime", status: "fail", params: { reason },
+  })),
+  { id: "wine_runtime", status: "skip", params: { reason: "rosetta" } },
+  { id: "wine_graphics", status: "info", params: { backend: "auto" } },
+  { id: "wine_graphics", status: "skip" },
+  { id: "wine_vcruntime", status: "info" },
+  { id: "wine_gameinput", status: "ok" },
   { id: "vcruntime", status: "ok" },
   { id: "vcruntime", status: "fail", params: { reason: "missing" } },
   { id: "gameinput", status: "skip", params: { reason: "uwp" } },
@@ -136,6 +147,19 @@ const SAMPLES = [
   { id: "account", status: "fail", params: { reason: "unreachable" } },
   { id: "license", status: "skip", params: { reason: "unreachable" } },
 ];
+
+test("Wine diagnostics link to the Wine configuration and translate the graphics backend", () => {
+  for (const id of ["wine_rosetta", "wine_runtime"]) {
+    assert.deepEqual([...diag.checkActions({ id, status: "fail" })], ["open_wine_settings"]);
+  }
+  assert.deepEqual([...diag.checkActions({ id: "wine_gameinput", status: "info" })], []);
+  for (const json of Object.values(LOCALES)) {
+    const t = tFor(json);
+    const check = { id: "wine_graphics", status: "info", params: { backend: "auto" } };
+    assert.ok(diag.checkMessage(check, t, diag.checkParams(check, t)).includes(t("settings.wine.graphics_auto")));
+    assert.equal(typeof lookup(json, "troubleshoot.action.open_wine_settings"), "string");
+  }
+});
 
 test("every diagnostics result has a title and a message", () => {
   for (const [name, json] of Object.entries(LOCALES)) {

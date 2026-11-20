@@ -1,3 +1,5 @@
+//go:build windows
+
 package main
 
 import (
@@ -30,12 +32,9 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/launch"
-	"github.com/liteldev/LeviLauncher/internal/leviloader"
-	"github.com/liteldev/LeviLauncher/internal/lip"
-	"github.com/liteldev/LeviLauncher/internal/mcservice"
-	"github.com/liteldev/LeviLauncher/internal/msixvc"
+
 	"github.com/liteldev/LeviLauncher/internal/oslang"
-	"github.com/liteldev/LeviLauncher/internal/peeditor"
+
 	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	"github.com/liteldev/LeviLauncher/internal/storage"
 	"github.com/liteldev/LeviLauncher/internal/tray"
@@ -520,54 +519,6 @@ func ensureSingleInstance(autoLaunchVersion string, waitForPreviousInstance bool
 	return true, nil
 }
 
-func init() {
-	//minecraft
-	application.RegisterEvent[struct{}](app.EventGameInputEnsureStart)
-	application.RegisterEvent[struct{}](app.EventGameInputEnsureDone)
-	application.RegisterEvent[int64](app.EventGameInputDownloadStart)
-	application.RegisterEvent[app.GameInputDownloadProgress](app.EventGameInputDownloadProgress)
-	application.RegisterEvent[struct{}](app.EventGameInputDownloadDone)
-	application.RegisterEvent[string](app.EventGameInputDownloadError)
-	application.RegisterEvent[string](mcservice.EventExtractError)
-	application.RegisterEvent[string](mcservice.EventExtractDone)
-	application.RegisterEvent[types.ExtractProgress](mcservice.EventExtractProgress)
-	application.RegisterEvent[types.InstanceBackupRestoreProgress](mcservice.EventInstanceBackupRestoreProgress)
-	application.RegisterEvent[types.InstanceBackupCreateProgress](mcservice.EventInstanceBackupCreateProgress)
-	application.RegisterEvent[types.InstanceBackupRestoreProgress](mcservice.EventInstanceBackupPreviewProgress)
-	// launch
-	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
-	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)
-	application.RegisterEvent[string](launch.EventMcLaunchFailed)
-	//msixvc
-	application.RegisterEvent[msixvc.DownloadStatus](msixvc.EventDownloadStatus)
-	application.RegisterEvent[msixvc.DownloadProgress](msixvc.EventDownloadProgress)
-	application.RegisterEvent[msixvc.DownloadDone](msixvc.EventDownloadDone)
-	application.RegisterEvent[msixvc.DownloadError](msixvc.EventDownloadError)
-	application.RegisterEvent[bool](msixvc.EventAppxInstallLoading)
-	// peeditor
-	application.RegisterEvent[struct{}](peeditor.EventEnsureStart)
-	application.RegisterEvent[bool](peeditor.EventEnsureDone)
-	// vcruntime
-	application.RegisterEvent[struct{}](vcruntime.EventEnsureStart)
-	application.RegisterEvent[vcruntime.EnsureProgress](vcruntime.EventEnsureProgress)
-	application.RegisterEvent[bool](vcruntime.EventEnsureDone)
-	// loader migration
-	application.RegisterEvent[struct{}](leviloader.EventMigrateStart)
-	application.RegisterEvent[leviloader.MigrateProgress](leviloader.EventMigrateProgress)
-	application.RegisterEvent[int](leviloader.EventMigrateDone)
-	application.RegisterEvent[string](leviloader.EventMigrateError)
-	// app update
-	application.RegisterEvent[string](update.EventAppUpdateStatus)
-	application.RegisterEvent[update.AppUpdateProgress](update.EventAppUpdateProgress)
-	application.RegisterEvent[string](update.EventAppUpdateError)
-	// lip daemon task stream
-	application.RegisterEvent[lip.LipTaskStartedEvent](lip.EventLipTaskStarted)
-	application.RegisterEvent[lip.LipTaskLogEvent](lip.EventLipTaskLog)
-	application.RegisterEvent[lip.LipTaskProgressEvent](lip.EventLipTaskProgress)
-	application.RegisterEvent[lip.LipTaskFinishedEvent](lip.EventLipTaskFinished)
-	application.RegisterEvent[types.FilesDroppedEvent]("files-dropped")
-}
-
 func launcherWindowTitle() string {
 	if processinfo.IsElevated() {
 		return "LeviLauncher [Administrator]"
@@ -699,6 +650,9 @@ func main() {
 		Icon:        appIcon,
 		Logger:      diagnostics.Logger(),
 		LogLevel:    slog.LevelDebug,
+		// Device-code sign-in waits for user interaction; installations can also
+		// outlast the server's 30-second default response deadline.
+		Server: application.ServerOptions{WriteTimeout: 30 * time.Minute},
 		ErrorHandler: func(err error) {
 			diagnostics.HandleError("Wails/WebView2 error", err)
 		},

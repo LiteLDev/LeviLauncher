@@ -1,16 +1,20 @@
 # LeviLauncher
 
-A desktop launcher for **Minecraft Bedrock Edition (GDK / UWP)** on **Windows**.
+A desktop launcher for **Minecraft Bedrock Edition** on **Windows and macOS**. Windows supports GDK and UWP. The native macOS launcher runs the GDK game through Wine.
 
 ## Background
 
 LeviLauncher helps you install, manage, isolate, mod, and launch Release or Preview builds while keeping content and tooling easier to organize.
 
-This repository is the **Windows version** of LeviLauncher. The **Android version** is developed in [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android); both are documented in one guide at https://levimc.org/LeviLauncher/ (Windows / Android tabs). Developer docs for Android native mods are in the [LeviLamina docs](https://levimc.org/LeviLamina/developer_guides/android/). There is no iOS version, and none is planned.
+The **Android version** is developed in [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android). The [LeviLauncher guide](https://levimc.org/LeviLauncher/) covers Windows and Android. Developer docs for Android native mods are in the [LeviLamina docs](https://levimc.org/LeviLamina/developer_guides/android/). There is no iOS version, and none is planned.
 
 ## Install
 
-### Requirements
+### macOS
+
+See [macOS installer build instructions](build/native/README.md).
+
+### Windows requirements
 
 - Windows 10/11
 - A legitimate licensed copy of Minecraft Bedrock Edition
@@ -21,7 +25,7 @@ This repository is the **Windows version** of LeviLauncher. The **Android versio
 
 UWP x64 instances support the console toggle under **Instance Settings → Launch Options** and compatible `preload-native` mods imported through **Manage Mods** as `.mcmod` packages (`.zip` packages and bare `.dll` files can still be picked via **All files**). Instance isolation is available for UWP x64 version 1.19.70.2 and later; non-isolated UWP instances keep using the app channel's shared `LocalState` content. Installation deploys the loader; launching a registered instance prepares native loading while preserving Windows app activation. Vanilla x86/ARM64 packages can still launch, but the bundled native loader currently supports x64 only. Automatic LeviLamina installation remains limited to supported GDK versions.
 
-### Downloads
+### Windows downloads
 
 - **GitHub Releases:** https://github.com/LiteLDev/LeviLauncher/releases
 - **Lanzou Cloud:** https://levimc.lanzoue.com/b016ke39hc (Password: `levi`)

@@ -81,6 +81,33 @@ func TestHealthySystemHasNoFailures(t *testing.T) {
 	}
 }
 
+func TestPlatformChecksCanBeExcluded(t *testing.T) {
+	env := fakeEnv()
+	env.GamingServices = nil
+	env.SkipCheck = func(id string) bool { return id == "gaming_services" }
+	report := Run(context.Background(), env, Request{Topic: TopicLaunch})
+	if has(report, "gaming_services") || !has(report, "vcruntime") {
+		t.Fatalf("unexpected checks: %+v", report.Checks)
+	}
+}
+
+func TestRuntimeChecksMatchTopic(t *testing.T) {
+	env := fakeEnv()
+	env.RuntimeChecks = []RuntimeCheck{
+		{ID: "wine_runtime", Run: func(context.Context) Check { return Check{Status: StatusOK} }},
+	}
+	for _, topic := range []string{"", TopicFull, TopicInstall, TopicLaunch, TopicLicense, TopicDownload, TopicUWP, TopicLIP} {
+		report := Run(context.Background(), env, Request{Topic: topic})
+		want := topic == "" || topic == TopicFull || topic == TopicInstall || topic == TopicLaunch
+		if has(report, "wine_runtime") != want {
+			t.Errorf("topic %q: expected Wine check presence %v", topic, want)
+		}
+	}
+	if report := Run(context.Background(), fakeEnv(), Request{Topic: TopicFull}); has(report, "wine_runtime") {
+		t.Fatal("runtime check ran without a platform implementation")
+	}
+}
+
 func TestInstanceChecksNeedAnInstance(t *testing.T) {
 	r := Run(context.Background(), fakeEnv(), Request{Topic: TopicLaunch})
 	for _, id := range []string{"instance_files", "registration", "instance_running", "instance_path"} {

@@ -1,6 +1,6 @@
 import React from "react";
 import { toast } from "@heroui/react";
-import { Browser } from "@wailsio/runtime";
+import { Browser, System } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
@@ -106,11 +106,29 @@ const openLogs = async () => {
 export const LEAVING_ACTIONS: ReadonlySet<FixActionId> = new Set<FixActionId>([
   "open_mirror_settings",
   "open_data_settings",
+  "open_wine_settings",
   "open_process_settings",
   "open_update_settings",
   "open_download_page",
   "open_account",
 ]);
+
+const WINDOWS_ACTIONS: ReadonlySet<FixActionId> = new Set([
+  "install_vcruntime",
+  "open_gaming_services",
+  "open_minecraft_store",
+  "open_preview_store",
+  "enable_developer_mode",
+  "open_developer_settings",
+  "open_proxy_settings",
+  "open_date_settings",
+  "open_region_settings",
+  "open_apps_settings",
+  "open_storage_settings",
+]);
+
+export const isFixActionAvailable = (action: FixActionId): boolean =>
+  action === "open_wine_settings" ? System.IsMac() : !System.IsMac() || !WINDOWS_ACTIONS.has(action);
 
 // useFixAction returns the handler for a troubleshooting step's button.
 // "diagnose" opens diagnostics for the given request.
@@ -189,6 +207,9 @@ export const useFixAction = (diagnose?: DiagnosticsRequest) => {
           return openExternal(SETTINGS_URIS.storage, failedToOpen);
         case "open_mirror_settings":
           settingsTab("components");
+          return;
+        case "open_wine_settings":
+          settingsTab("wine");
           return;
         case "open_data_settings":
           settingsTab("general");

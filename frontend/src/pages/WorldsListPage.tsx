@@ -83,6 +83,7 @@ import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes } from "@/utils/formatting";
 import { compareVersions } from "@/utils/version";
 import { getPathBaseName } from "@/utils/fs";
+import { System } from "@wailsio/runtime";
 
 interface WorldInfo {
   Path: string;
@@ -103,6 +104,7 @@ import { SelectionBar } from "@/components/SelectionBar";
 
 export default function WorldsListPage() {
   const { t } = useTranslation();
+  const isMac = System.IsMac();
   const navigate = useNavigate();
   const location = useLocation();
   const currentVersionName =
@@ -889,8 +891,11 @@ export default function WorldsListPage() {
                     if (selection.isSelectMode) selection.toggleSelect(w.Path);
                   }}
                 >
-                  <div className="relative shrink-0">
-                    <div className="h-24 sm:h-28 aspect-video rounded-2xl bg-surface-secondary/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                  <div className={cn("relative shrink-0", isMac && "w-40 sm:w-50")}>
+                    <div className={cn(
+                      "aspect-video rounded-2xl bg-surface-secondary/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow",
+                      isMac ? "w-full" : "h-24 sm:h-28",
+                    )}>
                       <img
                         src={w.IconBase64 || DefaultWorldPreview}
                         alt={w.FolderName}
@@ -931,7 +936,7 @@ export default function WorldsListPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-col flex-1 min-w-0">
+                  <div className={cn("flex flex-col flex-1 min-w-0", isMac && "justify-center gap-2")}>
                     <div className="flex justify-between items-start gap-2 mb-1">
                       <h3
                         className="text-lg font-bold text-foreground dark:text-white truncate"
@@ -941,7 +946,10 @@ export default function WorldsListPage() {
                       </h3>
                     </div>
 
-                    <div className="flex items-end justify-between mt-auto">
+                    <div className={cn(
+                      "flex justify-between",
+                      isMac ? "flex-wrap items-center gap-x-4 gap-y-2" : "items-end mt-auto",
+                    )}>
                       <div className="flex flex-wrap items-center gap-4 text-xs text-muted dark:text-zinc-500">
                         <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
                           <FaHdd className="text-muted" />
@@ -949,13 +957,16 @@ export default function WorldsListPage() {
                         </div>
                         <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
                           <FaClock className="text-muted" />
-                          <span>
+                          <span className={isMac ? "whitespace-nowrap" : undefined}>
                             {new Date(w.LastModified * 1000).toLocaleString(getIntlLocale())}
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity ml-4">
+                      <div className={cn(
+                        "flex gap-2",
+                        isMac ? "shrink-0" : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity ml-4",
+                      )}>
                         <Tooltip>
                           <Button
                             isIconOnly

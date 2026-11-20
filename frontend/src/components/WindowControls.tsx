@@ -3,7 +3,7 @@ import { Button } from "@heroui/react";
 import React, { useEffect, useState } from "react";
 
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
-import { Events, Window } from "@wailsio/runtime";
+import { Events, System, Window } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 
 // Several WindowControls can be mounted at once (top bar and navbar layouts),
@@ -119,6 +119,10 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
       console.warn("Failed to toggle window maximization", error);
     });
   };
+
+  // macOS owns the traffic lights. Keep the effects above mounted so the
+  // native close hook still protects an install/update in progress.
+  if (System.IsMac()) return null;
 
   return (
     <div className={cn("flex shrink-0 items-center gap-1", className)}>

@@ -8,8 +8,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
@@ -18,16 +20,30 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/xbox"
 )
 
-type UserService struct{ window *application.WebviewWindow }
+type UserService struct {
+	window             *application.WebviewWindow
+	restoreAccountOnce sync.Once
+}
 
 func (s *UserService) IsElevated() bool {
 	return processinfo.IsElevated()
 }
 
 func NewUserService(_ *Minecraft) *UserService {
-	// Restore identity before any avatar or installation request can select a default account.
-	_ = nativeinstall.RestoreSharedAccount(context.Background(), apppath.AccountsDir())
-	return &UserService{}
+	s := &UserService{}
+	if runtime.GOOS == "windows" {
+		s.restoreAccount()
+	}
+	return s
+}
+
+func (s *UserService) restoreAccount() {
+	// Native credential access may ask for Keychain permission. Defer it to
+	// account requests so it cannot block the main thread before Wails opens.
+	// Every account request still waits for the same restoration to finish.
+	s.restoreAccountOnce.Do(func() {
+		_ = nativeinstall.RestoreSharedAccount(context.Background(), apppath.AccountsDir())
+	})
 }
 
 func (s *UserService) GetGamertagByXuid(xuidStr string) string {
@@ -35,6 +51,7 @@ func (s *UserService) GetGamertagByXuid(xuidStr string) string {
 	if err != nil {
 		return ""
 	}
+	s.restoreAccount()
 	tag, err := xbox.GetGamertagByXuid(xuid)
 	if err != nil {
 		return ""
@@ -43,6 +60,7 @@ func (s *UserService) GetGamertagByXuid(xuidStr string) string {
 }
 
 func (s *UserService) GetLocalUserId() string {
+	s.restoreAccount()
 	id, err := xbox.GetLocalUserId()
 	if err != nil {
 		return ""
@@ -59,6 +77,7 @@ type LocalUserStatus struct {
 }
 
 func (s *UserService) GetLocalUserStatus() LocalUserStatus {
+	s.restoreAccount()
 	id, err := xbox.GetLocalUserId()
 	if err != nil || id == 0 {
 		return LocalUserStatus{Unreachable: xbox.IsUnreachable(err)}
@@ -67,6 +86,7 @@ func (s *UserService) GetLocalUserStatus() LocalUserStatus {
 }
 
 func (s *UserService) GetLocalUserGamertag() string {
+	s.restoreAccount()
 	tag, err := xbox.GetLocalUserGamertag()
 	if err != nil {
 		return ""
@@ -75,6 +95,7 @@ func (s *UserService) GetLocalUserGamertag() string {
 }
 
 func (s *UserService) GetLocalUserGamerPicture(size int) string {
+	s.restoreAccount()
 	bin, err := xbox.GetLocalUserGamerPicture(size)
 	if err != nil {
 		return ""
@@ -87,6 +108,7 @@ func (s *UserService) GetUserGamertagMap(usersRoot string) map[string]string {
 	if usersRoot == "" {
 		return map[string]string{}
 	}
+	s.restoreAccount()
 
 	cachePath := apppath.GamertagsPath()
 	out := map[string]string{}
@@ -192,7 +214,20 @@ func (s *UserService) GetUserGamertagMap(usersRoot string) map[string]string {
 	return out
 }
 
+// SignOut removes the saved browser account from the launcher on macOS.
+func (s *UserService) SignOut() string {
+	if runtime.GOOS != "darwin" {
+		return "ERR_AUTH_FAILED"
+	}
+	s.restoreAccount()
+	if err := nativeinstall.ForgetSharedAccount(apppath.AccountsDir()); err != nil {
+		return nativeinstall.AuthErrorCode(err)
+	}
+	return ""
+}
+
 func (s *UserService) ResetSession() string {
+	s.restoreAccount()
 	if err := xbox.ResetSession(); err != nil {
 		return err.Error()
 	}
@@ -200,6 +235,7 @@ func (s *UserService) ResetSession() string {
 }
 
 func (s *UserService) XUserGetState() int {
+	s.restoreAccount()
 	state, err := xbox.XUserGetState()
 	if err != nil {
 		return 1
@@ -208,10 +244,12 @@ func (s *UserService) XUserGetState() int {
 }
 
 func (s *UserService) CheckGameLicenses(ctx context.Context, xuid string) nativeinstall.GameLicenses {
+	s.restoreAccount()
 	return nativeinstall.CheckGameLicenses(ctx, apppath.AccountsDir(), xuid)
 }
 
 func (s *UserService) RefreshGameLicenses(ctx context.Context, xuid string) nativeinstall.GameLicenses {
+	s.restoreAccount()
 	return nativeinstall.RefreshGameLicenses(ctx, apppath.AccountsDir(), xuid)
 }
 
@@ -220,11 +258,26 @@ func (s *UserService) RefreshGameLicenses(ctx context.Context, xuid string) nati
 //wails:ignore
 func (s *UserService) Attach(window *application.WebviewWindow) { s.window = window }
 
-func (s *UserService) SignIn(ctx context.Context) string {
+func (s *UserService) SignIn(ctx context.Context, requestID string) string {
 	if s.window == nil {
 		return "ERR_AUTH_FAILED"
 	}
-	err := nativeinstall.SignInSharedAccount(ctx, apppath.AccountsDir(), uintptr(s.window.NativeWindow()), application.InvokeSync)
+	s.restoreAccount()
+	dir := apppath.AccountsDir()
+	hwnd := uintptr(s.window.NativeWindow())
+	var err error
+	if runtime.GOOS != "windows" || hwnd == 0 {
+		err = nativeinstall.SignInBrowserAccount(ctx, dir, func(code xbox.BrowserSignInCode) {
+			application.Get().Event.Emit("microsoft.browser.signin", map[string]any{
+				"requestID":       requestID,
+				"userCode":        code.UserCode,
+				"verificationURL": code.VerificationURL,
+				"expiresIn":       code.ExpiresIn,
+			})
+		})
+	} else {
+		err = nativeinstall.SignInSharedAccount(ctx, dir, hwnd, application.InvokeSync)
+	}
 	if err == nil {
 		return ""
 	}

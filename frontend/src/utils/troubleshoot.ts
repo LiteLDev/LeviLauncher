@@ -38,6 +38,7 @@ export type FixActionId =
   | "open_storage_settings"
   | "open_mirror_settings"
   | "open_data_settings"
+  | "open_wine_settings"
   | "open_process_settings"
   | "open_update_settings"
   | "open_download_page"

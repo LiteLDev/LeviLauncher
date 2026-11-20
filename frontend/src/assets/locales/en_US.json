@@ -88,6 +88,12 @@
       "failed": "The one-time move of your instances to the new mod loader setup failed. Your instances were not changed."
     },
     "mclaunch": {
+      "preparing": {
+        "title": "Preparing Minecraft",
+        "vcruntime": "Installing the Visual C++ runtime…",
+        "gameinput": "Installing GameInput…",
+        "runtime": "Preparing Wine compatibility components…"
+      },
       "loading": {
         "title": "Launching Minecraft",
         "body": "Waiting for the game window to appear, please wait…"
@@ -327,11 +333,103 @@
     }
   },
   "settings": {
+    "wine": {
+      "managed": {
+        "install": "Install Wine automatically",
+        "retry": "Retry Wine setup",
+        "failed": "Wine setup failed",
+        "ready": "Wine is ready and selected",
+        "progress": "Preparing Wine",
+        "required": "Set up Wine before installing Minecraft.",
+        "open_settings": "Open Wine settings",
+        "mirror_desc": "Use a GitHub mirror for Wine downloads. If it fails, LeviLauncher tries GitHub directly.",
+        "rosetta_title": "Install Rosetta",
+        "rosetta_body": "Wine needs Rosetta to run the Windows game on Apple Silicon. By choosing Agree and install, you agree to Apple’s Rosetta software license. LeviLauncher continues automatically after installation.",
+        "rosetta_info": "Read Apple’s Rosetta installation information",
+        "rosetta_confirm": "Agree and install",
+        "stage": {
+          "rosetta": "Check Rosetta",
+          "template": "Download and check the Wine template",
+          "engine": "Download and check the Wine engine",
+          "container": "Create the Wine container",
+          "initialize": "Initialize Windows in Wine",
+          "select": "Verify and select Wine"
+        },
+        "status": {
+          "working": "In progress",
+          "installing": "Installing Rosetta. Confirm in macOS if asked.",
+          "downloading": "Downloading",
+          "verifying": "Checking SHA-256",
+          "fallback": "The mirror failed. Trying GitHub directly.",
+          "done": "Complete"
+        }
+      },
+      "errors": {
+        "ERR_WINE_DOWNLOAD_STALLED": "The download stopped making progress. Retry to resume it.",
+      "ERR_WINE_INVALID_GITHUB_PROXY": "Enter a valid HTTP or HTTPS proxy URL.",
+        "ERR_WINE_ROSETTA_INSTALL": "Rosetta could not be installed. Check your network or macOS permissions and retry.",
+        "ERR_WINE_INSTALL_BUSY": "Wine setup is already running.",
+        "ERR_WINE_ASSET_CHECKSUM": "The downloaded file failed validation. Retry the download.",
+        "ERR_WINE_CONTAINER_INIT": "Wine did not finish initializing. Retry the setup."
+      },
+      "setup": {
+        "next": "Next",
+        "back_to_list": "Back to Wine list",
+        "title": "Set up Wine",
+        "ready": "Wine is ready",
+        "change": "Change Wine",
+        "keep_current": "Keep current Wine",
+        "choose_or_install": "Select a Wine environment or install Wine to run Minecraft.",
+        "rescan": "Scan again",
+        "manual": "Choose paths…",
+        "needs_prefix": "Prefix not initialized",
+        "use": "Use this Wine",
+        "install_help": "Install Sikarugir Creator to set up Wine.",
+        "install_next": "In Sikarugir Creator, install a template and a Wine engine. Create a wrapper, run it once to initialize it, then scan again here.",
+        "terminal_started": "Finish the installation in Terminal, set up your wrapper in Sikarugir Creator, then scan again.",
+        "skip": "Set up later",
+        "save_next": "Save and Continue"
+      },
+      "scan": "Scan this Mac / PC",
+      "install": "Install Wine…",
+      "found": "Found {{count}} Wine installation(s)",
+      "empty": "No Wine installation found.",
+      "use": "Select",
+      "install_terminal": "Install in Terminal",
+      "install_instructions": "Official installation instructions",
+      "install_help": "Installs Sikarugir in Terminal.",
+      "install_manual": "Open the official installation instructions.",
+      "installer_started": "Installer opened in Terminal.",
+      "title": "Wine",
+      "app": "Wine app bundle (optional)",
+      "executable": "Wine executable",
+      "prefix": "Wine prefix",
+      "choose": "Choose…",
+      "choose_path": "Choose {{field}}",
+      "graphics": "Graphics backend",
+      "graphics_auto": "Runtime default",
+      "graphics_d3dmetal": "D3DMetal",
+      "graphics_wined3d": "WineD3D (OpenGL)",
+      "sync": "Synchronization",
+      "sync_auto": "Runtime default",
+      "sync_msync": "MSync",
+      "sync_esync": "ESync",
+      "sync_none": "Disabled",
+      "left_command_is_ctrl": "Map Left Command to Ctrl",
+      "left_command_is_ctrl_desc": "Map Left Command to Ctrl in-game (enables Cmd+C/V, sprinting, and Cmd+Q stack drop without quitting; maps Left Option to Alt).",
+      "save": "Save",
+      "check": "Check version",
+      "reload": "Reload",
+      "working": "Checking Wine settings",
+      "saved": "Saved.",
+      "checked": "{{version}}"
+    },
     "layout": {
       "title_navbar": "Use Top Navigation Bar",
       "desc_navbar": "Enable to use the top navigation bar instead of the default vertical sidebar"
     },
     "tabs": {
+      "wine": "Wine",
       "general": "Basic Settings",
       "personalization": "Personalization",
       "components": "Package Management",
@@ -546,6 +644,7 @@
     "troubleshoot": {
       "title": "Troubleshooting",
       "desc": "Check the runtimes, Windows settings, network, proxy and account licenses the launcher depends on. Takes up to a minute and changes nothing.",
+      "mac_desc": "Check Wine, Rosetta, game runtimes, network access and account licenses. This runs without changing your settings.",
       "run": "Run diagnostics"
     }
   },
@@ -660,6 +759,8 @@
       "error": "Check failed",
       "description": "Release and Preview licenses are checked after you sign in. Select refresh to check again."
     },
+    "sign_out": "Sign out",
+    "signout_failed": "Could not sign out",
     "sign_in": "Sign in with Microsoft",
     "switch_account": "Switch account",
     "signin_failed": "Microsoft sign-in failed"
@@ -1018,6 +1119,7 @@
     "ERR_INHERIT_TYPE_MISMATCH": "The instances are different types, so data cannot be inherited",
     "ERR_INHERIT_COPY_FAILED": "Failed to copy inherited data",
     "ERR_NO_GAME_DATA": "No game data found for the selected source",
+    "ERR_GAMEINPUT_INSTALL": "GameInput could not be installed in the selected Wine environment.",
     "ERR_VCRUNTIME_MISSING": "A required runtime is missing. Install the Microsoft Visual C++ Runtime, then try again.",
     "ERR_SHORTCUT_CREATE_FAILED": "Failed to create desktop shortcut",
     "ERR_UNREGISTER_FAILED": "Unregister failed",
@@ -1053,6 +1155,7 @@
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Some managed packages were not restored",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Some managed package versions do not match the backup",
     "ERR_AUTH_FAILED": "Microsoft sign-in or authorization failed. Check your connection and retry.",
+    "ERR_AUTH_BROWSER_STORE_UNAVAILABLE": "Microsoft Store installation authorization is unavailable. Sign in again with the Microsoft account that owns the game, then retry.",
     "ERR_AUTH_TIMEOUT": "Sign-in timed out. Please try again.",
     "ERR_AUTH_DEVICE_CACHE": "The device authorization cache could not be read. Check the Windows user and file permissions.",
     "ERR_AUTH_DEVICE_BUSY": "The account is in use by another operation. Please try again later.",
@@ -1686,6 +1789,7 @@
       "open_apps_settings": "Open installed apps",
       "open_storage_settings": "Open storage settings",
       "open_mirror_settings": "Open package management settings",
+      "open_wine_settings": "Open Wine settings",
       "open_data_settings": "Open data folder settings",
       "open_process_settings": "Open running processes",
       "open_update_settings": "Open update settings",
@@ -2098,13 +2202,16 @@
     "scope_instance": "{{topic}} · {{instance}}",
     "running_label": "Running checks",
     "running_body": "Checking runtimes, Windows settings, network and account. This takes up to a minute and changes nothing on your PC.",
+    "running_body_mac": "Checking Wine, game runtimes, network access and account licenses. This takes up to a minute.",
     "elapsed": "{{seconds}} s elapsed",
     "failed_body": "The diagnostics could not run. Restart the launcher and try again.",
     "no_problems_body": "Everything checked looks fine. If the problem continues, the FAQ covers more cases, and the launcher log helps when you report it.",
+    "no_problems_body_mac": "Diagnostics are complete. If the problem continues, you can open the launcher logs.",
     "problems_heading": "Problems",
     "notes_heading": "Worth knowing",
     "passed_heading_one": "{{count}} check passed",
     "passed_heading_other": "{{count}} checks passed",
+    "other_checks": "Other checks ({{count}})",
     "caused_by_one": "Because of this, 1 more check did not pass:",
     "caused_by_other": "Because of this, {{count}} more checks did not pass:",
     "duration": "Finished in {{seconds}} s.",
@@ -2152,6 +2259,39 @@
       "http_error": "The server answered HTTP {{http}}; the file may have moved."
     },
     "check": {
+      "wine_rosetta": {
+        "title": "Rosetta 2",
+        "ok": "Rosetta 2 is available.",
+        "fail": "Rosetta 2 is unavailable. Run automatic installation in Wine settings."
+      },
+      "wine_runtime": {
+        "title": "Wine runtime",
+        "ok": "Found {{version}}. The selected container is initialized.",
+        "missing": "No executable Wine engine was found at the configured path.",
+        "prefix": "The selected Wine container is not initialized. Create or select an initialized container in Wine settings.",
+        "graphics": "The selected Wine runtime lacks D3DMetal. Select a compatible container or graphics backend in Wine settings.",
+        "invalid": "The Wine configuration is invalid. Check the engine and container in Wine settings.",
+        "unavailable": "The selected Wine engine did not report its version. Check the path or select a different engine.",
+        "skip_rosetta": "The engine check requires Rosetta 2.",
+        "fail": "The Wine check could not finish."
+      },
+      "wine_graphics": {
+        "title": "Wine graphics backend",
+        "info": "Configured backend: {{backend}}.",
+        "skip": "A valid Wine configuration is required to check the graphics backend."
+      },
+      "wine_vcruntime": {
+        "title": "Visual C++ runtime in Wine",
+        "ok": "Found in the selected container.",
+        "info": "Missing from the selected container. The launcher will install it when starting Minecraft.",
+        "skip": "A valid Wine configuration is required to check this dependency."
+      },
+      "wine_gameinput": {
+        "title": "GameInput in Wine",
+        "ok": "Found in the selected container.",
+        "info": "Missing from the selected container. The launcher will install it when starting Minecraft.",
+        "skip": "A valid Wine configuration is required to check this dependency."
+      },
       "vcruntime": {
         "title": "Visual C++ runtime",
         "ok": "Installed.",
@@ -2313,5 +2453,24 @@
         "info_other": "Windows has another {{channel}} Minecraft registered ({{path}}). This only matters if you use “Register to system”."
       }
     }
+  },
+  "gameaccount": {
+    "title": "Minecraft sign-in",
+    "success": "Signed in to Minecraft",
+    "failed": "Game sign-in was not completed",
+    "expired": "Sign-in code expired",
+    "closed": "Game sign-in ended",
+    "waiting": "The Microsoft verification page is open. Confirm your account in the browser.",
+    "browser_error": "The browser could not be opened. Try the button below.",
+    "copy_error": "Could not copy the code. Select and copy it manually.",
+    "code": "Microsoft sign-in code",
+    "collapse": "Collapse sign-in notice",
+    "open": "Open verification",
+    "copy": "Copy code",
+    "copied": "Copied",
+    "keep_game_open": "Keep the game open while verifying",
+    "expires": "Code time remaining",
+    "return_to_game": "Verification is complete. Return to your game.",
+    "retry_in_game": "Return to the game and choose sign-in again."
   }
 }

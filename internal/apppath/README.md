@@ -129,3 +129,12 @@ N9 保留的名称：
 - **快捷方式：** 迁移后第一次启动时，后台把桌面上 `Minecraft - *.lnk` 的图标指向新位置。实例被改名为 `-legacy` 时，`--launch=` 参数也改成新名字。
 - **实例名以文件夹为准：** 列出实例时，元数据里的名字与文件夹名不同（改名为 `-legacy` 的实例，或者在启动器外改过名的文件夹），就把名字改成文件夹名并写回。
 - **实例内文件按需迁移：** `version.json` 在第一次读取时原样搬到 `.levilauncher\instance.json`；两个都在时以较新的为准。LeviLauncher.dll 读取的也是两者中较新的一个。Xbox 验证标记在第一次使用时搬过去。图标在下次生成时写到新位置，旧的 `LargeLogo.ico` 保留，因为未修复的快捷方式可能还指向它。
+
+## 原生 macOS
+
+原生 macOS 的配置与本机数据均默认位于 `~/Library/Application Support/LeviLauncher/`。`APPDATA` 和 `LOCALAPPDATA` 可分别覆盖配置与数据目录。
+
+- `Accounts/` 使用带版本头的认证加密格式，密钥由 macOS 钥匙串保护。
+- `wine.json` 保存 Wine 运行时、prefix、图形和同步配置。首次配置可通过界面选择 Wine，也可由 `LEVI_WINE_APP`、`LEVI_WINE_EXECUTABLE` 和 `LEVI_WINEPREFIX` 指定路径。自定义 Wine 可执行文件默认使用 `~/.wine`。
+- `wine-download.json` 保存 Wine 安装使用的镜像开关和 GitHub 代理。
+- `Runtimes/Sikarugir/Levi Wine.app` 是自动安装的 Wine 容器，下载包放在当前数据目录的 `Cache/Wine/` 中。

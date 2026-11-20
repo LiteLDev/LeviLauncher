@@ -66,7 +66,8 @@ export function resolveContentPath(
     return direct || (roots.comMojangRoot ? `${roots.comMojangRoot}\\${kind}` : "");
   }
   if (!roots.usersRoot || !player || player === "." || player === ".." || /[\\/:]/.test(player)) return "";
-  return `${roots.usersRoot}\\${player}\\games\\com.mojang\\${kind}`;
+  const separator = roots.usersRoot.startsWith("/") ? "/" : "\\";
+  return [roots.usersRoot, player, "games", "com.mojang", kind].join(separator);
 }
 
 export async function listPlayers(usersRoot: string, throwOnError = false): Promise<string[]> {

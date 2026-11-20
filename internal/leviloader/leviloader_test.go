@@ -6,6 +6,7 @@ import (
 	"debug/pe"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
@@ -198,6 +199,9 @@ func TestRunMigrationRetriesFailedVersions(t *testing.T) {
 }
 
 func TestRunMigrationReportsConfigWriteFailure(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("POSIX permits replacing a read-only file in a writable directory")
+	}
 	t.Setenv("APPDATA", t.TempDir())
 	t.Setenv("LOCALAPPDATA", t.TempDir())
 	if _, err := config.Reload(); err != nil {

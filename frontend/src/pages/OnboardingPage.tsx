@@ -140,6 +140,7 @@ export default function OnboardingPage() {
     proceedHome(baseRoot);
   };
 
+
   return (
     <PageContainer>
       <div className="flex flex-col gap-6">

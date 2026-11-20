@@ -1,4 +1,5 @@
 import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
+import { InstallProgressRow } from "@/components/InstallProgressRow";
 import { ModalDescription } from "@/components/ModalPrimitives";
 import {
   Button,
@@ -10,7 +11,7 @@ import {
   Label,
   ListBox,
   Select,
-  ProgressBar,
+  Spinner,
   Switch,
   TextField,
   toast,
@@ -36,7 +37,7 @@ import { splitErrorResult } from "@/utils/errorDetail";
 import { saveCurrentVersionName } from "@/utils/currentVersion";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clipboard, Dialogs, Events } from "@wailsio/runtime";
+import { Clipboard, Dialogs, Events, System } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   CopyVersionDataFromGDK,
@@ -79,50 +80,6 @@ function formatInstallSize(n: number): string {
   if (n >= mb) return (n / mb).toFixed(2) + " MB";
   if (n >= kb) return (n / kb).toFixed(2) + " KB";
   return n + " B";
-}
-
-// Mirrors LipTaskProgressView's row (label + amount/percent above a small
-// bar) so the extract bar and the LeviLamina step look the same in one slot.
-function InstallProgressRow({
-  label,
-  amount,
-  value,
-  className,
-}: {
-  label: string;
-  amount?: string;
-  value?: number;
-  className?: string;
-}) {
-  return (
-    <div className={cn("min-w-0 space-y-1.5", className)}>
-      <div className="flex min-w-0 items-baseline justify-between gap-3 text-xs leading-5">
-        <span className="min-w-0 truncate font-semibold text-foreground">
-          {label}
-        </span>
-        <div className="flex shrink-0 items-baseline gap-2 tabular-nums text-muted">
-          {amount ? <span>{amount}</span> : null}
-          {value !== undefined ? (
-            <span className="min-w-9 text-right font-medium text-foreground/80 dark:text-zinc-300">
-              {`${Math.floor(value)}%`}
-            </span>
-          ) : null}
-        </div>
-      </div>
-      <ProgressBar
-        aria-label={label}
-        value={value}
-        isIndeterminate={value === undefined}
-        size="sm"
-        color="accent"
-        className="w-full"
-      >
-        <ProgressBar.Track>
-          <ProgressBar.Fill />
-        </ProgressBar.Track>
-      </ProgressBar>
-    </div>
-  );
 }
 
 export default function InstallPage() {
@@ -169,6 +126,18 @@ export default function InstallPage() {
     ? isAppxInstaller(customInstallerPath) ? "uwp" : "gdk"
     : normalizePackageType(location?.state?.packageType);
   const isUWP = packageType === "uwp";
+  const requiresWine = !isUWP && System.IsMac();
+  const [wineReady, setWineReady] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!requiresWine) return;
+    let active = true;
+    minecraft.GetWineSettings().then((settings) => minecraft.CheckWineSettings(settings)).then(
+      () => { if (active) setWineReady(true); },
+      () => { if (active) setWineReady(false); },
+    );
+    return () => { active = false; };
+  }, [requiresWine]);
+  const canInstall = !requiresWine || wineReady === true;
   // Unknown local packages can request isolation; their manifest is checked after extraction.
   const isolationSupported = (isUWP && !!customInstallerPath && !mirrorVersion.trim()) ||
     supportsVersionIsolation(packageType, mirrorVersion);
@@ -454,6 +423,7 @@ export default function InstallPage() {
   };
 
   const proceedInstall = async () => {
+    if (!canInstall) return;
     setFailureDetails("");
     setInstallError("");
     setResultMsg("");
@@ -653,6 +623,7 @@ export default function InstallPage() {
   };
 
   const handleInstall = async () => {
+    if (!canInstall) return;
     if (!isUWP && installLeviLamina && mirrorVersion) {
       const targetLLVersion = String(
         selectedLLVersion || getLatestLLVersion(mirrorVersion),
@@ -728,6 +699,7 @@ export default function InstallPage() {
                       </Button>
                       <Button
                         onPress={handleInstall}
+                        isDisabled={!canInstall}
                         variant={"secondary"}
                         className={cn(
                           "rounded-full",
@@ -950,8 +922,26 @@ export default function InstallPage() {
                       channel={mirrorType === "Preview" ? "preview" : "release"}
                     />
                     <div className="flex flex-wrap gap-2">
-                      <Button variant="primary" size="sm" onPress={handleInstall}>{t("download_manager.actions.retry")}</Button>
+                      <Button variant="primary" size="sm" onPress={handleInstall} isDisabled={!canInstall}>{t("download_manager.actions.retry")}</Button>
                     </div>
+                  </Card.Content>
+                </Card>
+              )}
+
+              {requiresWine && wineReady !== true && (
+                <Card className={LAYOUT.GLASS_CARD.BASE}>
+                  <Card.Header className={LAYOUT.GLASS_CARD.HEADER}>
+                    <h3 className="text-lg font-medium">{t("settings.wine.setup.title")}</h3>
+                  </Card.Header>
+                  <Card.Content className="p-6">
+                    {wineReady === null ? <Spinner size="sm" aria-label={t("settings.wine.working")} /> : (
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p>{t("settings.wine.managed.required")}</p>
+                        <Button variant="primary" onPress={() => navigate(ROUTES.settings, { state: { tab: "wine" } })}>
+                          {t("settings.wine.managed.open_settings")}
+                        </Button>
+                      </div>
+                    )}
                   </Card.Content>
                 </Card>
               )}

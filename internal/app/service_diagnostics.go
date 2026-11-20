@@ -12,9 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/sys/windows"
-	"golang.org/x/sys/windows/svc/mgr"
-
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/diagnose"
@@ -23,13 +20,11 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/nativeinstall"
-	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versions"
-	"github.com/liteldev/LeviLauncher/internal/webview2runtime"
 	"github.com/liteldev/LeviLauncher/internal/xbox"
 )
 
@@ -62,23 +57,12 @@ func (s *DiagnosticsService) EnableDeveloperMode() bool { return registry.TryEna
 
 func newDiagnoseEnv() *diagnose.Env {
 	client := &http.Client{Transport: httpx.NewBlockingProxyTransport()}
-	return &diagnose.Env{
-		Instance:       diagnoseInstance,
-		VCRuntime:      vcruntime.IsInstalled,
-		GameInput:      gameinput.IsInstalled,
-		GamingServices: func() bool { _, err := registry.GetAppxInfo("Microsoft.GamingServices"); return err == nil },
-		Service:        serviceInfo,
-		DevMode:        registry.IsDevModeEnabled,
-		WebView2:       webview2runtime.IsInstalled,
-		Elevated:       processinfo.IsElevated,
-		DataRoot:       apppath.BaseRoot,
-		CanWrite:       utils.CanWriteDir,
-		FreeBytes:      freeBytes,
-		BedrockDataDirs: func() []string {
-			root := apppath.AppData()
-			return []string{filepath.Join(root, "Minecraft Bedrock"), filepath.Join(root, "Minecraft Bedrock Preview")}
-		},
-		IsLink: isLinkOrJunction,
+	env := &diagnose.Env{
+		Instance:  diagnoseInstance,
+		VCRuntime: vcruntime.IsInstalled,
+		GameInput: gameinput.IsInstalled,
+		DataRoot:  apppath.BaseRoot,
+		CanWrite:  utils.CanWriteDir,
 		RunningExes: func() []string {
 			var out []string
 			for _, p := range mcservice.ListMinecraftProcesses() {
@@ -87,17 +71,6 @@ func newDiagnoseEnv() *diagnose.Env {
 				}
 			}
 			return out
-		},
-		Registered: func(channel string) string {
-			release, preview := mcservice.RegisteredPackageLocations()
-			if channel == "preview" {
-				return preview
-			}
-			return release
-		},
-		SamePath: func(a, b string) bool {
-			ca, cb := utils.CanonicalWindowsPath(a), utils.CanonicalWindowsPath(b)
-			return ca != "" && strings.EqualFold(ca, cb)
 		},
 		XUID: func() (string, bool) {
 			id, err := xbox.GetLocalUserId()
@@ -109,14 +82,6 @@ func newDiagnoseEnv() *diagnose.Env {
 		Licenses: func(ctx context.Context, xuid string) (string, string) {
 			l := nativeinstall.RefreshGameLicenses(ctx, apppath.AccountsDir(), xuid)
 			return l.Release, l.Preview
-		},
-		Proxy: func() (diagnose.ProxyInfo, error) {
-			ps, err := httpx.SystemProxySettings()
-			info := diagnose.ProxyInfo{Env: ps.Env, AutoDetect: ps.AutoDetect, PAC: ps.AutoConfigURL}
-			if u := ps.ManualProxyFor("https://github.com"); u != nil {
-				info.Manual = u.Host
-			}
-			return info, err
 		},
 		Dial: func(ctx context.Context, address string) error {
 			var d net.Dialer
@@ -147,6 +112,8 @@ func newDiagnoseEnv() *diagnose.Env {
 			}
 		},
 	}
+	configureDiagnostics(env)
+	return env
 }
 
 func diagnoseInstance(name string) (diagnose.Instance, bool) {
@@ -202,7 +169,7 @@ func probe(ctx context.Context, client *http.Client, url string) diagnose.ProbeR
 	return res
 }
 
-func freeBytes(path string) (uint64, bool) {
+func existingDiagnosticPath(path string) string {
 	p := strings.TrimSpace(path)
 	for p != "" {
 		if _, err := os.Stat(p); err == nil {
@@ -214,67 +181,5 @@ func freeBytes(path string) (uint64, bool) {
 		}
 		p = parent
 	}
-	if p == "" {
-		return 0, false
-	}
-	ptr, err := windows.UTF16PtrFromString(p)
-	if err != nil {
-		return 0, false
-	}
-	var free, total, totalFree uint64
-	if err := windows.GetDiskFreeSpaceEx(ptr, &free, &total, &totalFree); err != nil {
-		return 0, false
-	}
-	return free, true
-}
-
-func isLinkOrJunction(path string) bool {
-	fi, err := os.Lstat(path)
-	if err != nil {
-		return false
-	}
-	if fi.Mode()&os.ModeSymlink != 0 || fi.Mode()&os.ModeIrregular != 0 {
-		return true
-	}
-	ptr, err := windows.UTF16PtrFromString(path)
-	if err != nil {
-		return false
-	}
-	attrs, err := windows.GetFileAttributes(ptr)
-	return err == nil && attrs&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0
-}
-
-// serviceInfo reads a service's state with query-only rights, which do not
-// need administrator approval.
-func serviceInfo(name string) diagnose.ServiceInfo {
-	scm, err := windows.OpenSCManager(nil, nil, windows.SC_MANAGER_CONNECT)
-	if err != nil {
-		return diagnose.ServiceInfo{}
-	}
-	defer windows.CloseServiceHandle(scm)
-	namePtr, err := windows.UTF16PtrFromString(name)
-	if err != nil {
-		return diagnose.ServiceInfo{}
-	}
-	h, err := windows.OpenService(scm, namePtr, windows.SERVICE_QUERY_STATUS|windows.SERVICE_QUERY_CONFIG)
-	if err != nil {
-		return diagnose.ServiceInfo{}
-	}
-	svc := &mgr.Service{Name: name, Handle: h}
-	defer svc.Close()
-	info := diagnose.ServiceInfo{Exists: true}
-	if st, err := svc.Query(); err == nil {
-		info.Running = st.State == 4 // SERVICE_RUNNING
-	}
-	if cfg, err := svc.Config(); err == nil {
-		switch cfg.StartType {
-		case windows.SERVICE_AUTO_START, windows.SERVICE_BOOT_START, windows.SERVICE_SYSTEM_START:
-			info.StartType = "auto"
-		case windows.SERVICE_DEMAND_START:
-			info.StartType = "manual"
-		case windows.SERVICE_DISABLED:
-			info.StartType = "disabled"
-		}
-	}
-	return info
+	return p
 }

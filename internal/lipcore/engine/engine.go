@@ -32,6 +32,9 @@ import (
 
 // Options configure an Engine.
 type Options struct {
+	// RunCommand adapts package hooks to the selected Windows runtime.
+	RunCommand install.CommandRunner
+
 	// GithubProxy is the github_proxy setting (protocol/userspace.md §2);
 	// "" means none. The caller resolves the configuration and any override.
 	GithubProxy string
@@ -104,7 +107,7 @@ func New(dir string, opts Options, r report.Reporter) *Engine {
 		rep:    rep,
 		client: client,
 		cache:  fetch.DefaultHTTPCache(rep),
-		inst:   &install.Installer{Reporter: rep},
+		inst:   &install.Installer{Reporter: rep, RunCommand: opts.RunCommand},
 		newID:  newGUID,
 	}
 	e.git = &remoteGit{

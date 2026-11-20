@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
-	"os/exec"
+
 	"path/filepath"
 	"sync"
 	"time"
@@ -12,23 +12,12 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/fsx"
-	winreg "golang.org/x/sys/windows/registry"
 )
 
 var (
 	mu       sync.Mutex
 	ensuring bool
 )
-
-func IsInstalled() bool {
-	if _, err := winreg.OpenKey(winreg.LOCAL_MACHINE, `SOFTWARE\\Microsoft\\GameInputRedist`, winreg.READ); err == nil {
-		return true
-	}
-	if _, err := winreg.OpenKey(winreg.LOCAL_MACHINE, `SOFTWARE\\Microsoft\\GameInput`, winreg.READ); err == nil {
-		return true
-	}
-	return false
-}
 
 func EnsureInteractive(ctx context.Context) {
 	mu.Lock()
@@ -89,17 +78,12 @@ func EnsureInteractive(ctx context.Context) {
 	eventsink.From(ctx).Emit("gameinput.download.done", struct{}{})
 	log.Println("GameInputRedist prepared:", dlPath)
 
-	cmd := exec.Command("msiexec", "/i", dlPath, "/passive")
-	if err := cmd.Run(); err != nil {
+	if err := runInstaller(ctx, dlPath); err != nil {
 		log.Println("failed to run GameInput installer:", err)
 	}
 	installed := false
 	for i := 0; i < 30; i++ {
-		if _, err := winreg.OpenKey(winreg.LOCAL_MACHINE, `SOFTWARE\\Microsoft\\GameInput`, winreg.READ); err == nil {
-			installed = true
-			break
-		}
-		if _, err := winreg.OpenKey(winreg.LOCAL_MACHINE, `SOFTWARE\\Microsoft\\GameInputRedist`, winreg.READ); err == nil {
+		if IsInstalled() {
 			installed = true
 			break
 		}

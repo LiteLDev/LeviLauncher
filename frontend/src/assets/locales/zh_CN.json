@@ -88,6 +88,12 @@
       "failed": "将实例迁移到新模组加载方式的一次性操作失败了。实例本身未被改动。"
     },
     "mclaunch": {
+      "preparing": {
+        "title": "正在准备 Minecraft",
+        "vcruntime": "正在安装 Visual C++ 运行库…",
+        "gameinput": "正在安装 GameInput…",
+        "runtime": "正在准备 Wine 兼容组件…"
+      },
       "loading": {
         "title": "正在启动 Minecraft",
         "body": "正在等待游戏窗口出现，请稍候…"
@@ -327,11 +333,103 @@
     }
   },
   "settings": {
+    "wine": {
+      "managed": {
+        "install": "自动安装 Wine",
+        "retry": "重试安装 Wine",
+        "failed": "Wine 安装失败",
+        "ready": "Wine 已准备并选用",
+        "progress": "正在准备 Wine",
+        "required": "请先配置 Wine，再安装 Minecraft。",
+        "open_settings": "去 Wine 设置",
+        "mirror_desc": "Wine 下载优先使用 GitHub 镜像，镜像失败时自动尝试 GitHub 原地址。",
+        "rosetta_title": "安装 Rosetta",
+        "rosetta_body": "Apple 芯片的 Mac 需要 Rosetta 才能通过 Wine 运行 Windows 游戏。点击「同意并安装」即表示同意 Apple 的 Rosetta 软件许可。安装完成后 Levi 会自动继续。",
+        "rosetta_info": "查看 Apple 的 Rosetta 安装说明",
+        "rosetta_confirm": "同意并安装",
+        "stage": {
+          "rosetta": "检测 Rosetta",
+          "template": "下载并校验 Wine 模板",
+          "engine": "下载并校验 Wine 引擎",
+          "container": "创建 Wine 容器",
+          "initialize": "初始化容器",
+          "select": "验证并选用 Wine"
+        },
+        "status": {
+          "working": "正在处理",
+          "installing": "正在安装 Rosetta。如果 macOS 弹出提示，请确认。",
+          "downloading": "正在下载",
+          "verifying": "正在校验 SHA-256",
+          "fallback": "镜像连接失败，正在尝试 GitHub 原地址。",
+          "done": "完成"
+        }
+      },
+      "errors": {
+        "ERR_WINE_DOWNLOAD_STALLED": "下载长时间没有进度，请重试以继续下载。",
+      "ERR_WINE_INVALID_GITHUB_PROXY": "请输入有效的 HTTP 或 HTTPS 代理网址。",
+        "ERR_WINE_ROSETTA_INSTALL": "Rosetta 安装失败，请检查网络或 macOS 权限后重试。",
+        "ERR_WINE_INSTALL_BUSY": "Wine 正在安装。",
+        "ERR_WINE_ASSET_CHECKSUM": "下载文件校验失败，请重试下载。",
+        "ERR_WINE_CONTAINER_INIT": "Wine 容器初始化未完成，请重试。"
+      },
+      "setup": {
+        "next": "下一步",
+        "back_to_list": "返回 Wine 列表",
+        "title": "设置 Wine",
+        "ready": "Wine 已就绪",
+        "change": "更换 Wine",
+        "keep_current": "继续使用当前 Wine",
+        "choose_or_install": "选择已有的 Wine 环境，或安装 Wine 来运行 Minecraft。",
+        "rescan": "重新扫描",
+        "manual": "手动选择路径…",
+        "needs_prefix": "容器未初始化",
+        "use": "使用此 Wine",
+        "install_help": "安装 Sikarugir Creator 来配置 Wine。",
+        "install_next": "在 Sikarugir Creator 中安装模板和 Wine 引擎，创建并运行一次容器，然后回到这里重新扫描。",
+        "terminal_started": "请在终端完成安装，在 Sikarugir Creator 中配置容器，然后回来重新扫描。",
+        "skip": "稍后设置",
+        "save_next": "保存并继续"
+      },
+      "scan": "扫描本机 Wine",
+      "install": "安装 Wine…",
+      "found": "发现 {{count}} 个 Wine 安装",
+      "empty": "未找到 Wine。",
+      "use": "选择",
+      "install_terminal": "在终端中安装",
+      "install_instructions": "官方安装说明",
+      "install_help": "将在终端中安装 Sikarugir。",
+      "install_manual": "打开官方安装说明。",
+      "installer_started": "已在终端打开安装程序。",
+      "title": "Wine",
+      "app": "Wine 应用（可选）",
+      "executable": "Wine 可执行文件",
+      "prefix": "Wine 容器目录（prefix）",
+      "choose": "选择…",
+      "choose_path": "选择{{field}}",
+      "graphics": "图形后端",
+      "graphics_auto": "运行时默认",
+      "graphics_d3dmetal": "D3DMetal",
+      "graphics_wined3d": "WineD3D（OpenGL）",
+      "sync": "同步方式",
+      "sync_auto": "运行时默认",
+      "sync_msync": "MSync",
+      "sync_esync": "ESync",
+      "sync_none": "关闭",
+      "left_command_is_ctrl": "左侧 Command 映射为 Ctrl",
+      "left_command_is_ctrl_desc": "在游戏内将左 ⌘ 映射为 Ctrl（支持 ⌘+C/V、疾跑与 ⌘+Q 丢弃整组物品并防误触退出；同时将左 Option 映射为 Alt）。",
+      "save": "保存",
+      "check": "检查版本",
+      "reload": "重新读取",
+      "working": "正在检查 Wine 配置",
+      "saved": "已保存。",
+      "checked": "{{version}}"
+    },
     "layout": {
       "title_navbar": "使用顶部导航栏",
       "desc_navbar": "开启后使用顶部导航栏代替默认的垂直侧边栏"
     },
     "tabs": {
+      "wine": "Wine",
       "general": "基础设置",
       "personalization": "个性化",
       "components": "包管理",
@@ -546,6 +644,7 @@
     "troubleshoot": {
       "title": "故障排查",
       "desc": "检查启动器依赖的运行库、Windows 设置、网络、代理和账户授权。最多耗时一分钟，不会更改任何设置。",
+      "mac_desc": "检查 Wine、Rosetta、游戏运行库、网络和账户授权。诊断期间不会修改设置。",
       "run": "运行诊断"
     }
   },
@@ -660,6 +759,8 @@
       "error": "检查失败",
       "description": "登录后会自动检查正式版和预览版的授权状态。点击刷新可重新检查。"
     },
+    "sign_out": "退出登录",
+    "signout_failed": "退出登录失败",
     "sign_in": "登录微软账户",
     "switch_account": "切换账户",
     "signin_failed": "微软账户登录失败"
@@ -1018,6 +1119,7 @@
     "ERR_INHERIT_TYPE_MISMATCH": "两个实例类型不同，无法继承数据",
     "ERR_INHERIT_COPY_FAILED": "复制继承数据失败",
     "ERR_NO_GAME_DATA": "当前来源没有任何游戏数据",
+    "ERR_GAMEINPUT_INSTALL": "无法在当前 Wine 环境中安装 GameInput。",
     "ERR_VCRUNTIME_MISSING": "缺少必要的运行库。请安装 Microsoft Visual C++ 运行库后重试。",
     "ERR_SHORTCUT_CREATE_FAILED": "创建桌面快捷方式失败",
     "ERR_UNREGISTER_FAILED": "取消注册失败",
@@ -1053,6 +1155,7 @@
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "部分模组包未能恢复",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "部分模组包版本与备份不一致",
     "ERR_AUTH_FAILED": "微软账户登录或授权失败，请检查网络后重试。",
+    "ERR_AUTH_BROWSER_STORE_UNAVAILABLE": "当前登录未获得 Microsoft Store 安装授权，请重新登录拥有游戏的微软账户后重试。",
     "ERR_AUTH_TIMEOUT": "登录已超时，请重试。",
     "ERR_AUTH_DEVICE_CACHE": "无法读取设备授权缓存，请检查当前 Windows 用户和文件权限。",
     "ERR_AUTH_DEVICE_BUSY": "账户正在用于另一项操作，请稍后重试。",
@@ -1686,6 +1789,7 @@
       "open_apps_settings": "打开已安装的应用",
       "open_storage_settings": "打开存储设置",
       "open_mirror_settings": "打开包管理设置",
+      "open_wine_settings": "前往 Wine 设置",
       "open_data_settings": "打开数据目录设置",
       "open_process_settings": "打开运行中的进程",
       "open_update_settings": "打开更新设置",
@@ -2097,12 +2201,15 @@
     "scope_instance": "{{topic}} · {{instance}}",
     "running_label": "正在检查",
     "running_body": "正在检查运行库、Windows 设置、网络和账户。最多需要一分钟，不会更改电脑上的任何设置。",
+    "running_body_mac": "正在检查 Wine、游戏运行库、网络和账户授权。最多需要一分钟。",
     "elapsed": "已用时 {{seconds}} 秒",
     "failed_body": "诊断无法运行。请重新启动启动器后再试。",
     "no_problems_body": "检查的项目均正常。如果问题仍然存在，常见问题中还有更多情况；反馈问题时附上启动器日志会很有帮助。",
+    "no_problems_body_mac": "诊断已完成。如果问题仍然存在，可以打开启动器日志查看。",
     "problems_heading": "问题",
     "notes_heading": "值得注意",
     "passed_heading_other": "{{count}} 项检查通过",
+    "other_checks": "其他检查（{{count}} 项）",
     "caused_by_one": "受此影响，另有 {{count}} 项检查未通过：",
     "caused_by_other": "受此影响，另有 {{count}} 项检查未通过：",
     "duration": "用时 {{seconds}} 秒。",
@@ -2150,6 +2257,39 @@
       "http_error": "服务器返回 HTTP {{http}}，文件可能已移动。"
     },
     "check": {
+      "wine_rosetta": {
+        "title": "Rosetta 2",
+        "ok": "Rosetta 2 可用。",
+        "fail": "Rosetta 2 不可用。可在 Wine 设置中运行自动安装。"
+      },
+      "wine_runtime": {
+        "title": "Wine 运行环境",
+        "ok": "已检测到 {{version}}，所选容器已初始化。",
+        "missing": "在配置的路径上找不到可执行的 Wine 引擎。",
+        "prefix": "所选 Wine 容器尚未初始化。请在 Wine 设置中创建或选择已初始化的容器。",
+        "graphics": "所选 Wine 环境缺少 D3DMetal。请在 Wine 设置中选择兼容的容器或图形后端。",
+        "invalid": "当前 Wine 配置无效。请在 Wine 设置中检查所选引擎和容器。",
+        "unavailable": "所选 Wine 引擎未能报告版本。请检查路径或重新选择引擎。",
+        "skip_rosetta": "检测 Wine 引擎需要 Rosetta 2。",
+        "fail": "Wine 检查未能完成。"
+      },
+      "wine_graphics": {
+        "title": "Wine 图形后端",
+        "info": "当前配置为 {{backend}}。",
+        "skip": "Wine 配置可用后可检查图形后端。"
+      },
+      "wine_vcruntime": {
+        "title": "Wine 内的 Visual C++ 运行库",
+        "ok": "所选容器中已找到 Visual C++ 运行库。",
+        "info": "所选容器缺少 Visual C++ 运行库，启动 Minecraft 时会自动安装。",
+        "skip": "Wine 配置可用后可检查此依赖。"
+      },
+      "wine_gameinput": {
+        "title": "Wine 内的 GameInput",
+        "ok": "所选容器中已找到 GameInput。",
+        "info": "所选容器缺少 GameInput，启动 Minecraft 时会自动安装。",
+        "skip": "Wine 配置可用后可检查此依赖。"
+      },
       "vcruntime": {
         "title": "Visual C++ 运行库",
         "ok": "已安装。",
@@ -2311,5 +2451,24 @@
         "info_other": "Windows 中注册了另一个{{channel}} Minecraft（{{path}}）。只有使用“注册到系统”时才需要注意。"
       }
     }
+  },
+  "gameaccount": {
+    "title": "Minecraft 登录",
+    "success": "已登录 Minecraft",
+    "failed": "游戏登录未完成",
+    "expired": "登录代码已过期",
+    "closed": "本次登录已结束",
+    "waiting": "已打开微软验证页，请在浏览器中确认账户。",
+    "browser_error": "未能打开浏览器，请点击下方按钮重试。",
+    "copy_error": "未能复制代码，请手动选择代码复制。",
+    "code": "微软登录代码",
+    "collapse": "收起登录提示",
+    "open": "打开验证页",
+    "copy": "复制代码",
+    "copied": "已复制",
+    "keep_game_open": "验证期间请保持游戏开启",
+    "expires": "代码剩余有效时间",
+    "return_to_game": "验证完成，可以回到游戏了。",
+    "retry_in_game": "请回到游戏重新点击登录。"
   }
 }

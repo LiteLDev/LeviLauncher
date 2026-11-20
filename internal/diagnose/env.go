@@ -44,9 +44,19 @@ type ProbeResult struct {
 	Latency time.Duration
 }
 
+// RuntimeCheck describes a platform-specific game runtime check.
+type RuntimeCheck struct {
+	ID  string
+	Run func(context.Context) Check
+}
+
 // Env is the system the checks look at. DefaultEnv returns the real one;
 // tests build their own. Every function must be safe for concurrent use.
 type Env struct {
+	// RuntimeChecks apply to full, launch and install reports for GDK games.
+	RuntimeChecks []RuntimeCheck
+	// SkipCheck excludes checks that do not apply on this host.
+	SkipCheck      func(id string) bool
 	Now            func() time.Time
 	Instance       func(name string) (Instance, bool)
 	VCRuntime      func() bool

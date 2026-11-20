@@ -81,3 +81,35 @@ func TestSharedAccountCanceledAfterTokenResponse(t *testing.T) {
 		t.Fatal("canceled response was retained")
 	}
 }
+
+func TestSharedAccountReferenceBinding(t *testing.T) {
+	for _, tc := range []struct {
+		name, selected, reference string
+		accepted                  bool
+	}{
+		{"browser selected", "browser:chosen", "chosen", true},
+		{"browser changed", "browser:chosen", "other", false},
+		{"native selected", "chosen", "chosen", true},
+		{"native changed", "chosen", "other", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			defer clearOperation()
+			active = &installation{
+				ctx:     context.Background(),
+				account: &licenseAccount{id: tc.selected, epoch: selectionEpoch.Load()},
+			}
+			failure := caught(func() {
+				acquireUserTicket(context.Background(), func(context.Context) (string, string, error) {
+					return "ticket", tc.reference, nil
+				})
+			})
+			if tc.accepted {
+				if failure != nil || userTicket != "ticket" || userReference != tc.reference {
+					t.Fatal("selected account reference was not retained")
+				}
+			} else if !errors.Is(failure, xbox.ErrAccountChanged) || userTicket != "" || userReference != "" {
+				t.Fatal("different account reference was accepted or retained")
+			}
+		})
+	}
+}

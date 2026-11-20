@@ -1,3 +1,4 @@
+import { GITHUB_PROXY_PRESETS as LIP_GITHUB_PROXY_PRESETS, githubProxyLabel as lipGithubProxyLabel } from "@/constants/githubProxy";
 import { openDirectory } from "@/utils/explorer";
 import { ModalAction, ModalPanel, ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
 import {
@@ -61,9 +62,10 @@ import {
   GetInstallerDir,
   GetVersionsDir,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
-import { Browser, Dialogs } from "@wailsio/runtime";
+import { Browser, Dialogs, System } from "@wailsio/runtime";
 import { useDiagnostics } from "@/utils/DiagnosticsContext";
 import { faqIndexUrl } from "@/utils/troubleshoot";
+import { WineSettingsPanel } from "@/components/WineSettingsPanel";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
@@ -118,26 +120,9 @@ const AppearanceNumberField = ({ label, value, min, max, onChange }: {
 const APPEARANCE_SECTIONS = ["theme", "layout", "wallpaper", "material"] as const;
 type AppearanceSection = typeof APPEARANCE_SECTIONS[number];
 
-// GitHub proxies offered in the LIP GitHub proxy picker; any other URL can
-// still be typed in by hand. lip appends the repository path to the proxy, so
-// proxies that take a whole GitHub URL (gh-proxy.org, ghproxy.vip) end in
-// "/https://github.com".
-const LIP_GITHUB_PROXY_PRESETS = [
-  "https://gh.bibk.top/https://github.com",
-  "https://gh-proxy.org/https://github.com",
-  "https://v4.gh-proxy.org/https://github.com",
-  "https://v6.gh-proxy.org/https://github.com",
-  "https://cdn.gh-proxy.org/https://github.com",
-  "https://axisnow.gh-proxy.org/https://github.com",
-  "https://ghproxy.vip/https://github.com",
-];
-
-// Picker label of a proxy preset: its host, without the GitHub URL suffix.
-const lipGithubProxyLabel = (url: string) =>
-  url.replace(/^https?:\/\//, "").replace(/\/https:\/\/github\.com$/, "");
-
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const hasWineSettings = System.IsMac();
   const settings = useSettings(i18n);
   const { openDiagnostics } = useDiagnostics();
   const {
@@ -274,6 +259,7 @@ export const SettingsPage: React.FC = () => {
     { tab: "personalization", section: "wallpaper", keys: ["audit.usability.appearance_wallpaper", "settings.appearance.background_image", "settings.appearance.background_blur", "settings.appearance.background_brightness", "settings.appearance.background_opacity"] },
     { tab: "personalization", section: "material", keys: ["audit.usability.appearance_material"] },
     { tab: "components", keys: ["settings.tabs.components", "settings.mirror_source.title", "settings.lip.title", "settings.lip.desc", "settings.lip.cache_clean_button", "settings.lip.github_proxy.title"] },
+    ...(hasWineSettings ? [{ tab: "wine", keys: ["settings.wine.title", "settings.wine.prefix", "settings.wine.graphics"] }] : []),
     { tab: "others", keys: ["settings.troubleshoot.title", "settings.process.title", "settings.experimental.title", "settings.experimental.instance_backup.title"] },
     { tab: "privacy", keys: ["settings.tabs.privacy", "settings.privacy.analytics.title"] },
     { tab: "updates", keys: ["settings.tabs.updates", "settings.beta_updates.title"] },
@@ -540,6 +526,10 @@ export const SettingsPage: React.FC = () => {
                       {t("settings.tabs.components")}
                       <Tabs.Indicator />
                     </Tabs.Tab>
+                    {hasWineSettings && <Tabs.Tab key="wine" id="wine">
+                      {t("settings.tabs.wine")}
+                      <Tabs.Indicator />
+                    </Tabs.Tab>}
                     <Tabs.Tab key="others" id={"others"}>
                       {t("settings.tabs.others")}
                       <Tabs.Indicator />
@@ -986,37 +976,40 @@ export const SettingsPage: React.FC = () => {
                     </Select>
                   </div>
 
-                  <Separator className="bg-surface-tertiary/50" />
+                  {!System.IsMac() && (
+                    <>
+                      <Separator className="bg-surface-tertiary/50" />
 
-                  {/* Minimize to tray on close */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <p className="font-medium">
-                        {t("settings.game_behavior.minimize_to_tray")}
-                      </p>
-                      <p className="text-xs text-muted dark:text-zinc-400">
-                        {t("settings.game_behavior.minimize_to_tray_desc")}
-                      </p>
-                    </div>
-                    <Switch
-                      aria-label={t("settings.game_behavior.minimize_to_tray")}
-                      size="sm"
-                      isSelected={minimizeToTray}
-                      onChange={(isSelected: boolean) => {
-                        setMinimizeToTray(isSelected);
-                      }}
-                      className={"group"}
-                    >
-                      <Switch.Content>
-                        <Switch.Control
-                          className={"group-data-[selected]:bg-brand-500"}
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-1">
+                          <p className="font-medium">
+                            {t("settings.game_behavior.minimize_to_tray")}
+                          </p>
+                          <p className="text-xs text-muted dark:text-zinc-400">
+                            {t("settings.game_behavior.minimize_to_tray_desc")}
+                          </p>
+                        </div>
+                        <Switch
+                          aria-label={t("settings.game_behavior.minimize_to_tray")}
+                          size="sm"
+                          isSelected={minimizeToTray}
+                          onChange={(isSelected: boolean) => {
+                            setMinimizeToTray(isSelected);
+                          }}
+                          className={"group"}
                         >
-                          <Switch.Thumb></Switch.Thumb>
-                        </Switch.Control>
-                        <span></span>
-                      </Switch.Content>
-                    </Switch>
-                  </div>
+                          <Switch.Content>
+                            <Switch.Control
+                              className={"group-data-[selected]:bg-brand-500"}
+                            >
+                              <Switch.Thumb></Switch.Thumb>
+                            </Switch.Control>
+                            <span></span>
+                          </Switch.Content>
+                        </Switch>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
               {selectedTab === "personalization" && (
@@ -2529,6 +2522,7 @@ export const SettingsPage: React.FC = () => {
               {selectedTab === "general" && (
                 <div className="flex flex-col gap-6"></div>
               )}
+              {hasWineSettings && selectedTab === "wine" && <WineSettingsPanel />}
               {selectedTab === "components" && (
                 <div className="flex flex-col gap-6">
                   {/* LIP */}
@@ -2769,17 +2763,19 @@ export const SettingsPage: React.FC = () => {
                         {t("settings.troubleshoot.title")}
                       </p>
                       <p className="text-xs text-muted dark:text-zinc-400 max-w-2xl">
-                        {t("settings.troubleshoot.desc")}
+                        {t(hasWineSettings ? "settings.troubleshoot.mac_desc" : "settings.troubleshoot.desc")}
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-wrap gap-2">
-                      <Button
-                        onPress={() => void Browser.OpenURL(faqIndexUrl(i18n.language))}
-                        variant={"ghost"}
-                        className={"rounded-full"}
-                      >
-                        {t("troubleshoot.open_faq_index")}
-                      </Button>
+                      {!hasWineSettings && (
+                        <Button
+                          onPress={() => void Browser.OpenURL(faqIndexUrl(i18n.language))}
+                          variant={"ghost"}
+                          className={"rounded-full"}
+                        >
+                          {t("troubleshoot.open_faq_index")}
+                        </Button>
+                      )}
                       <Button
                         onPress={() => openDiagnostics({ topic: "full" })}
                         variant={"outline"}

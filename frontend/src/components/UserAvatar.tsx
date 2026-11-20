@@ -15,12 +15,15 @@ import {
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { useStartupInteractive } from "@/utils/startupState";
 import { useProcessElevation } from "@/hooks/useProcessElevation";
-import { Browser } from "@wailsio/runtime";
+import { Browser, Events, System } from "@wailsio/runtime";
 import { FiActivity, FiExternalLink } from "react-icons/fi";
 import { OPEN_ACCOUNT_EVENT, useDiagnostics } from "@/utils/DiagnosticsContext";
 import { publishLicenses } from "@/utils/licenseStore";
 import { faqUrl, licenseInsight, type LicenseState } from "@/utils/troubleshoot";
 import type { FaqId } from "@/utils/faqEntries";
+import { UnifiedModal } from "@/components/UnifiedModal";
+
+type BrowserCode = { requestID: string; userCode: string; verificationURL: string; expiresIn: number };
 
 // FAQ question that explains each license situation.
 const LICENSE_FAQ: Record<string, FaqId> = {
@@ -53,7 +56,71 @@ export const UserAvatar = () => {
   // An account is selected but Xbox Live could not be reached to confirm it:
   // a network problem, not a sign-out.
   const [unreachable, setUnreachable] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [licenses, setLicenses] = useState<LicenseResult | null>(null);
+  const [browserCode, setBrowserCode] = useState<BrowserCode | null>(null);
+  const signInRequest = React.useRef<ReturnType<typeof userService.SignIn> | null>(null);
+  const activeSignInID = React.useRef<string | null>(null);
+
+  useEffect(() => Events.On("microsoft.browser.signin", (event) => {
+    const code = event.data as BrowserCode;
+    if (activeSignInID.current && code?.requestID === activeSignInID.current &&
+        code.userCode && code.verificationURL === "https://www.microsoft.com/link") {
+      setBrowserCode(code);
+    }
+  }), []);
+
+  const browserDialog = (
+    <UnifiedModal
+      isOpen={browserCode !== null}
+      size="compact"
+      title="登录微软账户"
+      type="info"
+      showConfirmButton={false}
+      showCancelButton
+      cancelText="取消登录"
+      onCancel={() => {
+        signInRequest.current?.cancel();
+        setBrowserCode(null);
+      }}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          signInRequest.current?.cancel();
+          setBrowserCode(null);
+        }
+      }}
+    >
+      <div className="flex flex-col gap-4">
+        <p>打开微软验证页面，输入下方代码，再登录你的微软账户。</p>
+        <p className="text-sm text-muted">此登录用于 Xbox 账户和 Microsoft Store 安装授权，请使用拥有游戏的微软账户。</p>
+        <div className="select-all rounded-xl bg-surface-secondary p-4 text-center font-mono text-3xl tracking-widest" aria-label="微软登录代码">
+          {browserCode?.userCode}
+        </div>
+        <a
+          className="font-medium text-accent underline"
+          href={browserCode?.verificationURL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(event) => {
+            // WKWebView does not open target=_blank links in a browser.
+            // Keep the existing WebView2/server behaviour on Windows.
+            if (!System.IsMac()) return;
+            event.preventDefault();
+            if (!browserCode) return;
+            void Browser.OpenURL(browserCode.verificationURL).catch(() => {
+              toast.danger("无法打开浏览器", {
+                description: "请手动打开 https://www.microsoft.com/link 并输入上方代码。",
+              });
+            });
+          }}
+        >打开微软验证页面</a>
+        <p className="text-sm text-muted">完成后此窗口会自动关闭。代码约 {Math.ceil((browserCode?.expiresIn || 0) / 60)} 分钟内有效。</p>
+        {!System.IsMac() && (
+          <p className="text-xs text-muted">兼容模式的登录凭据仅保留到启动器关闭。游戏安装授权将另行检查。</p>
+        )}
+      </div>
+    </UnifiedModal>
+  );
 
   const clearUserState = React.useCallback(() => {
     setGamertag("");
@@ -63,10 +130,14 @@ export const UserAvatar = () => {
   }, []);
 
   const signIn = async () => {
-    if (signingIn) return;
+    if (activeSignInID.current) return;
+    const requestID = crypto.randomUUID();
+    activeSignInID.current = requestID;
     setSigningIn(true);
     try {
-      const code = await userService.SignIn();
+      const request = userService.SignIn(requestID);
+      signInRequest.current = request;
+      const code = await request;
       if (code === "ERR_CANCELED") return;
       if (code) {
         toast.danger(t("useravatar.signin_failed"), { description: t(`errors.${code}`) });
@@ -79,7 +150,28 @@ export const UserAvatar = () => {
     } catch {
       toast.danger(t("useravatar.signin_failed"));
     } finally {
+      signInRequest.current = null;
+      activeSignInID.current = null;
+      setBrowserCode(null);
       setSigningIn(false);
+    }
+  };
+
+  const signOut = async () => {
+    setSigningOut(true);
+    try {
+      const code = await userService.SignOut();
+      if (code) {
+        toast.danger(t("useravatar.signout_failed"), { description: t(`errors.${code}`) });
+        return;
+      }
+      setOpen(false);
+      clearUserState();
+      setReloadNonce((value) => value + 1);
+    } catch {
+      toast.danger(t("useravatar.signout_failed"));
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -330,6 +422,8 @@ export const UserAvatar = () => {
 
   if (!gamertag) {
     return (
+      <>
+      {browserDialog}
       <div className="flex items-center gap-2">
         <Tooltip>
           <Button
@@ -346,10 +440,13 @@ export const UserAvatar = () => {
           <Tooltip.Content>{elevated ? t("app.administrator_description") : t("useravatar.sign_in")}</Tooltip.Content>
         </Tooltip>
       </div>
+      </>
     );
   }
 
   return (
+    <>
+    {browserDialog}
     <Popover
       isOpen={open}
       onOpenChange={async (nextOpen: boolean) => {
@@ -498,8 +595,13 @@ export const UserAvatar = () => {
             {elevated && (
               <p className="mt-3 text-xs text-muted">{t("app.administrator_description")}</p>
             )}
-            <div className="mt-3 flex justify-end">
-              <Button size="sm" variant="secondary" isPending={signingIn} onPress={() => void signIn()}>
+            <div className="mt-3 flex justify-end gap-2">
+              {System.IsMac() && (
+                <Button size="sm" variant="ghost" isPending={signingOut} isDisabled={signingIn} onPress={() => void signOut()}>
+                  {t("useravatar.sign_out")}
+                </Button>
+              )}
+              <Button size="sm" variant="secondary" isPending={signingIn} isDisabled={signingOut} onPress={() => void signIn()}>
                 {t("useravatar.switch_account")}
               </Button>
             </div>
@@ -507,5 +609,6 @@ export const UserAvatar = () => {
         </Popover.Dialog>
       </Popover.Content>
     </Popover>
+    </>
   );
 };

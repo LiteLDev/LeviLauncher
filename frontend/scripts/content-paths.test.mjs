@@ -40,6 +40,14 @@ test("unresolved roots never manufacture relative content paths", () => {
   assert.equal(exports.resolveContentPath({ packageType: "uwp" }, "Screenshots"), "");
 });
 
+test("macOS GDK world paths use the host separators", () => {
+  const usersRoot = "/Users/player/Library/Application Support/LeviLauncher/Instances/中文112233/Minecraft Bedrock/Users";
+  assert.equal(
+    exports.resolveContentPath({ packageType: "gdk", usersRoot }, "minecraftWorlds", "123"),
+    `${usersRoot}/123/games/com.mojang/minecraftWorlds`,
+  );
+});
+
 test("isolated UWP content resolves inside each instance without a player", () => {
   for (const folder of ["Minecraft Bedrock", "Minecraft Bedrock Beta", "Minecraft Bedrock Preview"]) {
     const root = `D:\\instances\\isolated\\${folder}\\games\\com.mojang`;

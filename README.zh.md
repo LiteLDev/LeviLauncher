@@ -1,16 +1,20 @@
 # LeviLauncher
 
-一个面向 **Windows** 的 **Minecraft 基岩版（GDK / UWP）** 桌面启动器。
+一个面向 **Windows 和 macOS** 的 **Minecraft 基岩版**桌面启动器。Windows 版支持 GDK 和 UWP，macOS 原生启动器通过 Wine 运行 GDK 版游戏。
 
 ## 背景
 
 LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版或预览版环境，同时让内容与工具链更容易整理。
 
-本仓库是 LeviLauncher 的 **Windows 版**。**Android 版**在 [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android) 开发，两者共用同一套文档 https://levimc.org/zh-Hans/LeviLauncher/ （按 Windows / Android 标签页区分）。Android 原生模组的开发文档在 [LeviLamina 文档](https://levimc.org/zh-Hans/LeviLamina/developer_guides/android/)。我们没有开发 iOS 版的计划。
+**Android 版**在 [LiteLDev/LeviLauncher-Android](https://github.com/LiteLDev/LeviLauncher-Android) 开发。[LeviLauncher 使用文档](https://levimc.org/zh-Hans/LeviLauncher/)涵盖 Windows 和 Android。Android 原生模组的开发文档在 [LeviLamina 文档](https://levimc.org/zh-Hans/LeviLamina/developer_guides/android/)。我们没有开发 iOS 版的计划。
 
 ## 安装
 
-### 使用要求
+### macOS
+
+参见 [macOS 安装包构建说明](build/native/README.md)。
+
+### Windows 使用要求
 
 - Windows 10/11
 - 拥有 Minecraft 基岩版的正版授权
@@ -21,7 +25,7 @@ LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版�
 
 UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，并通过「管理模组」以 `.mcmod` 模组包导入与游戏版本兼容的 `preload-native` 模组（选择「所有文件」仍可导入 `.zip` 包或单独的 `.dll` 文件）。UWP x64 的 1.19.70.2 及以上版本支持实例隔离；未启用隔离的 UWP 实例继续共享同一应用渠道原有的 `LocalState` 内容。安装时部署加载器，注册后启动时准备原生加载功能，游戏继续使用 Windows 应用激活。x86/ARM64 包仍可普通启动，但当前原生加载器仅支持 x64。LeviLamina 自动安装仍以受支持的 GDK 版本为准。
 
-### 下载地址
+### Windows 下载地址
 
 - **GitHub Releases：** https://github.com/LiteLDev/LeviLauncher/releases
 - **蓝奏云：** <https://levimc.lanzoue.com/b016ke39hc>（密码：`levi`）

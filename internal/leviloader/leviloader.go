@@ -79,6 +79,10 @@ func emit(ctx context.Context, name string, data any) {
 // PatchAndActivate, which
 // only clears it once the import-table loader is confirmed active.
 func EnsureForVersion(ctx context.Context, versionDir string) error {
+	return ensureForVersion(ctx, versionDir, embeddedLoader)
+}
+
+func ensureForVersion(ctx context.Context, versionDir string, loader []byte) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -89,7 +93,7 @@ func EnsureForVersion(ctx context.Context, versionDir string) error {
 	dest := filepath.Join(dir, LoaderDLLName)
 	needWrite := true
 	if fi, err := os.Stat(dest); err == nil && fi.Size() > 0 {
-		if fh, err := fileSHA256(dest); err == nil && bytes.Equal(fh, bytesSHA256(embeddedLoader)) {
+		if fh, err := fileSHA256(dest); err == nil && bytes.Equal(fh, bytesSHA256(loader)) {
 			needWrite = false
 		}
 	}
@@ -97,7 +101,7 @@ func EnsureForVersion(ctx context.Context, versionDir string) error {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return err
 		}
-		if err := fsx.WriteFileAtomic(dest, embeddedLoader, 0o644); err != nil {
+		if err := fsx.WriteFileAtomic(dest, loader, 0o644); err != nil {
 			return err
 		}
 	}
@@ -127,6 +131,10 @@ func SupportsExecutable(exe string) (bool, error) {
 // vcruntime140_1.dll proxy so only one loader initializes. UWP runtime DLLs are
 // preserved. Failed patching leaves the proxy untouched. It is idempotent.
 func PatchAndActivate(ctx context.Context, versionDir string) (bool, error) {
+	return patchAndActivate(ctx, versionDir, embeddedLoader)
+}
+
+func patchAndActivate(ctx context.Context, versionDir string, loader []byte) (bool, error) {
 	meta, _ := versions.ReadMeta(versionDir)
 	isUWP := versions.DetectPackageType(versionDir, meta) == versions.PackageTypeUWP
 	exe := filepath.Join(versionDir, minecraftExeName)
@@ -146,7 +154,7 @@ func PatchAndActivate(ctx context.Context, versionDir string) (bool, error) {
 	if !supported {
 		return false, fmt.Errorf("native loader requires an x64 executable")
 	}
-	if err := EnsureForVersion(ctx, versionDir); err != nil {
+	if err := ensureForVersion(ctx, versionDir, loader); err != nil {
 		return false, fmt.Errorf("deploy %s: %w", LoaderDLLName, err)
 	}
 	added, err := peeditor.EnsureImportedDLL(exe, LoaderDLLName, LoaderEntryName)

@@ -46,6 +46,7 @@ export const checkParams = (
     new Intl.NumberFormat(language?.replace("_", "-") || undefined, {
       maximumFractionDigits: digits,
     }).format(value);
+  if (raw.backend) out.backend = t(`settings.wine.graphics_${raw.backend}`, { defaultValue: raw.backend });
   if (raw.free) out.free = number(Number(raw.free) / GiB);
   if (raw.skew) {
     const seconds = Math.abs(Number(raw.skew));
@@ -136,6 +137,9 @@ export const checkActions = (check: DiagnosticCheck): FixActionId[] => {
   if (status === "ok" || status === "skip") return [];
   const problem = status === "fail" || status === "warn";
   switch (check.id) {
+    case "wine_rosetta":
+    case "wine_runtime":
+      return problem ? ["open_wine_settings"] : [];
     case "vcruntime":
       return ["install_vcruntime"];
     case "gameinput":

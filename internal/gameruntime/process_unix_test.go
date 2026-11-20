@@ -11,11 +11,19 @@ import (
 )
 
 func TestProcessesWithChinesePathInDesktopEnvironment(t *testing.T) {
+	if os.Getenv("LEVI_TEST_SLEEP_HELPER") == "1" {
+		time.Sleep(30 * time.Second)
+		return
+	}
 	root := filepath.Join(t.TempDir(), "中文实例 with spaces")
 	if err := os.Mkdir(root, 0700); err != nil {
 		t.Fatal(err)
 	}
-	binary, err := os.ReadFile("/bin/sleep")
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	binary, err := os.ReadFile(self)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,10 +31,8 @@ func TestProcessesWithChinesePathInDesktopEnvironment(t *testing.T) {
 	if err := os.WriteFile(executable, binary, 0700); err != nil {
 		t.Fatal(err)
 	}
-	if out, err := exec.Command("/usr/bin/codesign", "--force", "--sign", "-", executable).CombinedOutput(); err != nil {
-		t.Fatalf("codesign test executable: %v: %s", err, out)
-	}
-	command := exec.Command(executable, "30")
+	command := exec.Command(executable, "-test.run=^TestProcessesWithChinesePathInDesktopEnvironment$")
+	command.Env = append(os.Environ(), "LEVI_TEST_SLEEP_HELPER=1")
 	if err := command.Start(); err != nil {
 		t.Fatal(err)
 	}

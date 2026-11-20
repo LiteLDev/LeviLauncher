@@ -73,6 +73,75 @@ jobs:
           go vet ./...
           go test -race ./internal/downloader ./internal/curseforge/client
 
+      - name: Upload native loader artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: native-loader-windows-x64
+          path: internal/leviloader/LeviLauncher.dll
+          retention-days: 1
+          if-no-files-found: error
+
+  quality-macos:
+    name: Quality gates (macOS)
+    needs: quality
+    runs-on: macos-15
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download native loader artifact
+        uses: actions/download-artifact@v8.0.0
+        with:
+          name: native-loader-windows-x64
+          path: internal/leviloader
+
+      - name: Verify native loader artifact
+        run: test -f internal/leviloader/LeviLauncher.dll
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test and vet macOS Go code
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "14.6"
+        run: |
+          set -euo pipefail
+          PKGS=(
+            ./internal/app
+            ./internal/apppath
+            ./internal/config
+            ./internal/diagnose
+            ./internal/downloader
+            ./internal/explorer
+            ./internal/gameauth
+            ./internal/gameconsole
+            ./internal/gameinput
+            ./internal/gameruntime
+            ./internal/httpx
+            ./internal/launch
+            ./internal/leviloader
+            ./internal/lip
+            ./internal/lipcore/archive
+            ./internal/lipcore/install
+            ./internal/mods
+            ./internal/nativeinstall
+            ./internal/oslang
+            ./internal/peeditor
+            ./internal/processinfo
+            ./internal/registry
+            ./internal/update
+            ./internal/utils
+            ./internal/versionlaunch
+            ./internal/versions
+            ./internal/xbox
+          )
+          go vet "${PKGS[@]}"
+          go test -count=1 "${PKGS[@]}"
+
   build:
     needs: quality
     strategy:
@@ -208,9 +277,84 @@ jobs:
           archive: false
           if-no-files-found: error
 
+  build-macos:
+    name: Build (macOS)
+    needs: [quality, quality-macos]
+    strategy:
+      fail-fast: false
+      matrix:
+        build:
+          [
+            {
+              name: LeviLauncher,
+              platform: darwin/arm64,
+              archs: arm64,
+              os: macos-15,
+            },
+          ]
+    runs-on: ${{ matrix.build.os }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Download native loader artifact
+        uses: actions/download-artifact@v8.0.0
+        with:
+          name: native-loader-windows-x64
+          path: internal/leviloader
+
+      - name: Verify native loader artifact
+        run: test -f internal/leviloader/LeviLauncher.dll
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Wails3 CLI
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Build macOS application bundle
+        run: |
+          python3 build/native/macos.py \
+            --loader internal/leviloader/LeviLauncher.dll \
+            --output bin/LeviLauncher.app
+
+      - name: Package macOS DMG installer
+        run: |
+          python3 build/native/dmg.py \
+            --app bin/LeviLauncher.app \
+            --output bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
+
+      - name: Verify build outputs
+        run: |
+          echo "Checking build outputs for macOS ${{ matrix.build.archs }}"
+          test -d bin/LeviLauncher.app
+          test -f bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
+          codesign --verify --deep --strict bin/LeviLauncher.app
+          hdiutil verify bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
+          ls -la bin
+
+      - name: Upload macOS DMG installer artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          path: bin/LeviLauncher-macos-${{ matrix.build.archs }}-installer.dmg
+          archive: false
+          if-no-files-found: error
+
   release:
     name: Create Release
-    needs: build
+    needs: [build, build-macos]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
 
@@ -288,6 +432,13 @@ jobs:
             fi
           done
 
+          for dmg_file in ./artifacts/*/*installer.dmg; do
+            if [ -f "$dmg_file" ]; then
+              echo "Uploading macOS installer: $dmg_file"
+              gh release upload ${{ github.ref_name }} "$dmg_file" --clobber
+            fi
+          done
+
           echo "All assets uploaded successfully"
 
       - name: Notify Discord
@@ -296,8 +447,13 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           INSTALLER_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher-amd64-installer.exe"
           STANDALONE_EXE_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher.exe"
+          MACOS_DMG_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher-macos-arm64-installer.dmg"
           TAG_NAME: ${{ github.ref_name }}
         run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "DISCORD_WEBHOOK secret not configured; skipping Discord notification."
+            exit 0
+          fi
           EMBED_TITLE="🚀 LeviLauncher Update!"
           EMBED_DESC="A new version of **LeviLauncher** is ready."
           EMBED_COLOR=5814783
@@ -324,6 +480,11 @@ jobs:
                 {
                   \"name\": \"🧩 Standalone EXE\",
                   \"value\": \"[**Click here to download EXE**]($STANDALONE_EXE_URL)\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"🍎 macOS DMG\",
+                  \"value\": \"[**Click here to download DMG**]($MACOS_DMG_URL)\",
                   \"inline\": true
                 }
               ] 

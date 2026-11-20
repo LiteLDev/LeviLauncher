@@ -1,7 +1,24 @@
 #!/usr/bin/env python3
 """Build the native Wails macOS app. Wine remains an external game runtime."""
-import argparse, hashlib, os, pathlib, plistlib, shutil, subprocess, tempfile
+import argparse, hashlib, os, pathlib, plistlib, re, shutil, subprocess, tempfile
 root = pathlib.Path(__file__).resolve().parents[2]
+
+
+def read_app_version(config_path: pathlib.Path, default: str = '1.1.0') -> str:
+    if not config_path.is_file():
+        return default
+    in_info = False
+    for line in config_path.read_text(encoding='utf-8').splitlines():
+        if re.match(r'^info:\s*$', line):
+            in_info = True
+            continue
+        if in_info and line and not line[0].isspace():
+            break
+        if in_info:
+            match = re.match(r'^\s+version:\s*"([^"]+)"', line)
+            if match:
+                return match.group(1)
+    return default
 p = argparse.ArgumentParser()
 p.add_argument('--output', type=pathlib.Path, default=root/'bin/LeviLauncher.app')
 p.add_argument('--skip-frontend', action='store_true')
@@ -34,7 +51,8 @@ with tempfile.TemporaryDirectory() as scratch:
             target=iconset/f'icon_{size}x{size}{"@2x" if scale==2 else ""}.png'
             subprocess.run(['sips', '-z', str(size*scale), str(size*scale), str(mac_icon), '--out', str(target)], stdout=subprocess.DEVNULL, check=True)
     subprocess.run(['iconutil', '-c', 'icns', str(iconset), '-o', str(resources/'AppIcon.icns')], check=True)
-info={'CFBundleExecutable':'LeviLauncher','CFBundleIdentifier':'org.levimc.levilauncher.native','CFBundleName':'LeviLauncher','CFBundleDisplayName':'LeviLauncher','CFBundlePackageType':'APPL','CFBundleShortVersionString':'1.1.0','CFBundleVersion':'1','CFBundleIconFile':'AppIcon.icns','LSMinimumSystemVersion':'14.6','NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True},'NSSupportsAutomaticGraphicsSwitching':True}
+app_version = read_app_version(root/'build/config.yml')
+info={'CFBundleExecutable':'LeviLauncher','CFBundleIdentifier':'org.levimc.levilauncher.native','CFBundleName':'LeviLauncher','CFBundleDisplayName':'LeviLauncher','CFBundlePackageType':'APPL','CFBundleShortVersionString':app_version,'CFBundleVersion':'1','CFBundleIconFile':'AppIcon.icns','LSMinimumSystemVersion':'14.6','NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True},'NSSupportsAutomaticGraphicsSwitching':True}
 with (app/'Contents/Info.plist').open('wb') as f: plistlib.dump(info,f)
 for name in ('COPYING', 'THIRD_PARTY_NOTICES'):
     shutil.copyfile(root/name, resources/name)

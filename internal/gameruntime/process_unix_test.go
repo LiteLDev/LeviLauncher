@@ -23,6 +23,9 @@ func TestProcessesWithChinesePathInDesktopEnvironment(t *testing.T) {
 	if err := os.WriteFile(executable, binary, 0700); err != nil {
 		t.Fatal(err)
 	}
+	if out, err := exec.Command("/usr/bin/codesign", "--force", "--sign", "-", executable).CombinedOutput(); err != nil {
+		t.Fatalf("codesign test executable: %v: %s", err, out)
+	}
 	command := exec.Command(executable, "30")
 	if err := command.Start(); err != nil {
 		t.Fatal(err)

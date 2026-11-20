@@ -95,6 +95,7 @@ func TestBrokerBidirectionalAndRingReplay(t *testing.T) {
 
 	// Second client attaches and verifies Attach() exits cleanly when game closes.
 	inR, inW := io.Pipe()
+	defer inW.Close()
 	var outBuf, errBuf bytes.Buffer
 	attachDone := make(chan error, 1)
 	go func() {
@@ -110,7 +111,6 @@ func TestBrokerBidirectionalAndRingReplay(t *testing.T) {
 	}
 	_, _ = gameConn.Write([]byte("bye\n"))
 	_ = gameConn.Close()
-	_ = inW.Close()
 
 	select {
 	case err := <-attachDone:

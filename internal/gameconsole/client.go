@@ -63,9 +63,6 @@ func Attach(addr, token, title string, stdin io.Reader, stdout, stderr io.Writer
 
 	go func() {
 		_, _ = io.Copy(conn, stdin)
-		if tc, ok := conn.(*net.TCPConn); ok {
-			_ = tc.CloseWrite()
-		}
 	}()
 
 	_, copyErr := io.Copy(stdout, reader)

@@ -147,7 +147,7 @@ func Parse(raw string) (Request, error) {
 		return Request{}, fmt.Errorf("invalid mod id: %w", err)
 	}
 
-	q, err := url.ParseQuery(u.RawQuery)
+	q, err := parseQuery(u.RawQuery)
 	if err != nil {
 		return Request{}, fmt.Errorf("malformed query: %w", err)
 	}
@@ -182,4 +182,27 @@ func single(q url.Values, key string) (string, error) {
 	default:
 		return "", fmt.Errorf("%s is given more than once", key)
 	}
+}
+
+// parseQuery splits a query like url.ParseQuery, except that '+' stays '+'
+// (url.ParseQuery reads it as a space): a SemVer version's build metadata
+// uses '+', and lip reads lip:// links the same way.
+func parseQuery(raw string) (url.Values, error) {
+	q := url.Values{}
+	for _, part := range strings.Split(raw, "&") {
+		if part == "" {
+			continue
+		}
+		k, v, _ := strings.Cut(part, "=")
+		key, err := url.PathUnescape(k)
+		if err != nil {
+			return nil, err
+		}
+		value, err := url.PathUnescape(v)
+		if err != nil {
+			return nil, err
+		}
+		q[key] = append(q[key], value)
+	}
+	return q, nil
 }

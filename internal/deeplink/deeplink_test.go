@@ -21,6 +21,8 @@ func TestParseAccepts(t *testing.T) {
 			Request{Action: "install", ModulePath: "github.com/a/b", Variant: "client/lua"}},
 		{"build metadata", "levilauncher://install/github.com/a/b?version=1.0.0%2Bbuild.5",
 			Request{Action: "install", ModulePath: "github.com/a/b", Version: "1.0.0+build.5"}},
+		{"literal plus kept", "levilauncher://install/github.com/a/b?version=1.0.0+build.5",
+			Request{Action: "install", ModulePath: "github.com/a/b", Version: "1.0.0+build.5"}},
 		{"trailing slash", "levilauncher://install/github.com/LiteLDev/Arke/?version=0.1.6",
 			Request{Action: "install", ModulePath: "github.com/LiteLDev/Arke", Version: "0.1.6"}},
 		{"percent-encoded path", "levilauncher://install/github.com%2FLiteLDev%2FArke",

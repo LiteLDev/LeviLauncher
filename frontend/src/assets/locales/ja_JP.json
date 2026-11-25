@@ -1610,5 +1610,17 @@
     "open_content_dir": "UWPコンテンツフォルダーを開く",
     "not_specified": "UWPインストーラーを選ぶか、先にこのバージョンをダウンロードしてください。",
     "resolving_download": "ダウンロード先を取得中…"
+  },
+  "deeplink": {
+    "dialog_notice": "Web サイトまたは他のアプリからの levilauncher:// リンクが、この Mod のインストールを求めています。インスタンスを選んで確定するまで、何もインストールされません。",
+    "mod_label": "Mod",
+    "compatible_only": "この Mod が対応するゲームバージョンのインスタンスのみを表示しています。",
+    "no_compatible_instance": "この Mod が対応するゲームバージョンのインスタンスがないため、すべてのインスタンスを表示しています。",
+    "not_in_catalog": "リンクが指定した {{id}} は LeviMC Mod カタログにないか、確認できませんでした。何もインストールされていません。",
+    "load_failed": "リンクが指定したのは {{id}} です。何もインストールされていません。",
+    "version_unavailable": "リンクが指定した {{name}} のバージョン {{version}} には {{platform}} 向けのビルドがありません。何もインストールされていません。下から別のバージョンを選んでください。",
+    "variant_unavailable": "リンクが指定した {{name}} の {{variant}} バリアントには {{platform}} 向けのビルドがありません。何もインストールされていません。",
+    "no_installable_version": "{{name}} には {{platform}} にインストールできるバージョンがありません。何もインストールされていません。",
+    "no_instances": "リンクが Mod のインストールを求めていますが、インスタンスがまだありません。インスタンスを作成してから、もう一度リンクを開いてください。"
   }
 }

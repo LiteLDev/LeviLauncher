@@ -30,6 +30,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/cli"
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/deeplink"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 
@@ -425,14 +426,38 @@ func parseArgs() (initialURL string, autoLaunchVersion string, waitForPreviousIn
 	return initialURL, autoLaunchVersion, waitForPreviousInstance, debugMode
 }
 
+// deepLinkFromArgs returns the levilauncher:// link the launcher was started
+// with (Windows passes it as "%1"), or nil when there is none or it is not a
+// valid link; err explains a rejected one.
+func deepLinkFromArgs(args []string) (*deeplink.Request, error) {
+	raw, ok := deeplink.FromArgs(args)
+	if !ok {
+		return nil, nil
+	}
+	r, err := deeplink.Parse(raw)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+// singleInstanceCommand is the pipe line sent to the running launcher: a
+// link to open, else a version to launch, else just a focus request. The
+// link is sent in its canonical form, which holds no tab or line break.
+func singleInstanceCommand(version string, link *deeplink.Request) string {
+	if link != nil {
+		return "uri\t" + link.String() + "\n"
+	}
+	if v := strings.TrimSpace(version); v != "" {
+		return "launch\t" + v + "\n"
+	}
+	return "focus\t1\n"
+}
+
 // sendToExistingInstance hands the command line over to the launcher that
 // already holds the single-instance mutex. Going through the pipe lets that
 // process act on its own window handle instead of this one guessing at it.
-func sendToExistingInstance(version string) bool {
-	command := "focus\t1\n"
-	if v := strings.TrimSpace(version); v != "" {
-		command = "launch\t" + v + "\n"
-	}
+func sendToExistingInstance(command string) bool {
 	for i := 0; i < 8; i++ {
 		conn, err := npipe.DialTimeout(singleInstancePipe, 200*time.Millisecond)
 		if err == nil && conn != nil {
@@ -447,10 +472,53 @@ func sendToExistingInstance(version string) bool {
 	return false
 }
 
+// singleInstanceActions carries out the pipe commands of a second launcher.
+type singleInstanceActions struct {
+	focus  func()
+	launch func(name string)
+	links  *deeplink.Inbox
+}
+
+// handle carries out one "<command>\t<payload>" line. Anyone on the machine
+// can write to the pipe, so every payload is validated here.
+func (a singleInstanceActions) handle(line string) {
+	cmd, payload, ok := strings.Cut(strings.TrimSpace(line), "\t")
+	if !ok {
+		return
+	}
+	payload = strings.TrimSpace(payload)
+	switch strings.TrimSpace(cmd) {
+	case "focus":
+		a.focus()
+	case "uri":
+		// A link only opens the mod's page (and brings the window up);
+		// installing still needs the user's confirmation there.
+		if _, err := a.links.DeliverRaw(payload); err != nil {
+			log.Printf("Rejected single-instance uri payload: %v", err)
+		}
+	case "launch":
+		if payload == "" {
+			return
+		}
+		if errCode := versionlaunch.ValidateLaunchName(payload); errCode != "" {
+			log.Printf("Rejected single-instance launch payload %q: %s", payload, errCode)
+			return
+		}
+		a.launch(payload)
+	}
+}
+
 func startSingleInstanceServer(versionService *app.VersionService) {
 	ln, err := npipe.Listen(singleInstancePipe)
 	if err != nil {
 		return
+	}
+	actions := singleInstanceActions{
+		focus: func() { go launch.RestoreLauncherWindow() },
+		launch: func(name string) {
+			go func() { _ = versionService.LaunchVersionByNameForce(name) }()
+		},
+		links: deeplink.Default,
 	}
 	go func() {
 		for {
@@ -462,38 +530,14 @@ func startSingleInstanceServer(versionService *app.VersionService) {
 				defer c.Close()
 				s := bufio.NewScanner(c)
 				for s.Scan() {
-					line := strings.TrimSpace(s.Text())
-					if line == "" {
-						continue
-					}
-					parts := strings.SplitN(line, "\t", 2)
-					if len(parts) != 2 {
-						continue
-					}
-					cmd := strings.TrimSpace(parts[0])
-					payload := strings.TrimSpace(parts[1])
-					switch cmd {
-					case "focus":
-						go launch.RestoreLauncherWindow()
-					case "launch":
-						if payload == "" {
-							continue
-						}
-						if errCode := versionlaunch.ValidateLaunchName(payload); errCode != "" {
-							log.Printf("Rejected single-instance launch payload %q: %s", payload, errCode)
-							continue
-						}
-						go func(v string) {
-							_ = versionService.LaunchVersionByNameForce(v)
-						}(payload)
-					}
+					actions.handle(s.Text())
 				}
 			}(conn)
 		}
 	}()
 }
 
-func ensureSingleInstance(autoLaunchVersion string, waitForPreviousInstance bool) (bool, error) {
+func ensureSingleInstance(autoLaunchVersion string, link *deeplink.Request, waitForPreviousInstance bool) (bool, error) {
 	var wait time.Duration
 	if waitForPreviousInstance {
 		wait = 30 * time.Second
@@ -504,7 +548,10 @@ func ensureSingleInstance(autoLaunchVersion string, waitForPreviousInstance bool
 		if waitForPreviousInstance {
 			return false, fmt.Errorf("update handoff timed out after %s: the previous launcher instance is still running", wait)
 		}
-		if !sendToExistingInstance(autoLaunchVersion) {
+		if !sendToExistingInstance(singleInstanceCommand(autoLaunchVersion, link)) {
+			if link != nil {
+				log.Printf("[startup] the running launcher did not take the link %s", link)
+			}
 			focusExistingWindow()
 		}
 		return false, nil
@@ -582,7 +629,16 @@ func main() {
 
 	_ = godotenv.Load()
 
-	isFirstInstance, err := ensureSingleInstance(autoLaunchVersion, waitForPreviousInstance)
+	deepLink, deepLinkErr := deepLinkFromArgs(os.Args[1:])
+	if deepLinkErr != nil {
+		log.Printf("[startup] ignored the levilauncher:// link: %v", deepLinkErr)
+	}
+	if deepLink != nil {
+		// A link opens the window on the mod's page; it never starts a game.
+		autoLaunchVersion = ""
+	}
+
+	isFirstInstance, err := ensureSingleInstance(autoLaunchVersion, deepLink, waitForPreviousInstance)
 	if err != nil {
 		diagnostics.HandleError("single-instance startup failed", err)
 		return
@@ -637,6 +693,13 @@ func main() {
 	modsService := app.NewModsService(mc)
 	userService := app.NewUserService(mc)
 	versionService := app.NewVersionService(mc)
+	if deepLink != nil {
+		// Kept for the frontend to take once it has loaded; the service's
+		// notifier, set next, is for links that come over the pipe later.
+		log.Printf("[startup] opening %s", deepLink)
+		deeplink.Default.Deliver(*deepLink)
+	}
+	deepLinkService := app.NewDeepLinkService()
 
 	assets, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {
@@ -671,6 +734,7 @@ func main() {
 			application.NewService(userService),
 			application.NewService(versionService),
 			application.NewService(app.NewDiagnosticsService()),
+			application.NewService(deepLinkService),
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),

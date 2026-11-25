@@ -2472,5 +2472,17 @@
     "expires": "Code time remaining",
     "return_to_game": "Verification is complete. Return to your game.",
     "retry_in_game": "Return to the game and choose sign-in again."
+  },
+  "deeplink": {
+    "dialog_notice": "A levilauncher:// link, from a website or another app, asked to install this mod. Nothing is installed until you pick an instance and confirm.",
+    "mod_label": "Mod",
+    "compatible_only": "Only instances whose game version this mod supports are listed.",
+    "no_compatible_instance": "None of your instances runs a game version this mod supports, so all of them are listed.",
+    "not_in_catalog": "The link asks for {{id}}, which is not in the LeviMC mod catalogue or could not be looked up. Nothing was installed.",
+    "load_failed": "The link asked for {{id}}. Nothing was installed.",
+    "version_unavailable": "The link asks for version {{version}} of {{name}}, which has no build for {{platform}}. Nothing was installed; pick a version below instead.",
+    "variant_unavailable": "The link asks for the {{variant}} variant of {{name}}, which has no build for {{platform}}. Nothing was installed.",
+    "no_installable_version": "{{name}} has no version that can be installed on {{platform}}. Nothing was installed.",
+    "no_instances": "The link asks to install a mod, but there is no instance yet. Create one, then open the link again."
   }
 }

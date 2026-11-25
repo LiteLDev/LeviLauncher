@@ -40,6 +40,12 @@
       
       <Extensions>
         <desktop:Extension Category="windows.fullTrustProcess" Executable="myfirstapp3.exe" />
+        <!-- levilauncher:// links; a full-trust app gets the link as its command-line argument. -->
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="levilauncher">
+            <uap:DisplayName>LeviLauncher</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
         
       </Extensions>
     </Application>

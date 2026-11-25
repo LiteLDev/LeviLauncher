@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `levilauncher://install/<mod id>[?version=<version>][&variant=<variant>]` links, such as `levilauncher://install/github.com/LiteLDev/Arke?version=0.1.6`, open the mod on the LeviMC Mods page with that version and variant ready to install, in the running launcher or a new one. Nothing is installed until you pick the instance, from those whose game version the mod supports, and confirm; a link to a mod that is not in the catalogue, a version that is not a SemVer version (no branches, tags, URLs or paths) or any other action is refused. Setup and the MSIX package register the scheme on Windows, and the app bundle on macOS
+
 ## [1.1.0] - 2026-11-12
 
 ### Added

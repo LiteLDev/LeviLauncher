@@ -56,6 +56,10 @@ jobs:
         working-directory: frontend
         run: npm run test:lipcatalog
 
+      - name: Test the levilauncher:// link routes
+        working-directory: frontend
+        run: npm run test:deeplink
+
       - name: Generate Wails bindings
         shell: pwsh
         run: |
@@ -263,6 +267,7 @@ jobs:
             ./internal/app
             ./internal/apppath
             ./internal/config
+            ./internal/deeplink
             ./internal/diagnose
             ./internal/downloader
             ./internal/explorer

@@ -6,6 +6,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/app"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/deeplink"
 	"github.com/liteldev/LeviLauncher/internal/gameauth"
 	"github.com/liteldev/LeviLauncher/internal/gameconsole"
 	"github.com/liteldev/LeviLauncher/internal/launch"
@@ -44,15 +45,24 @@ func main() {
 	mc := app.NewMinecraft()
 	user := app.NewUserService(mc)
 	versions := app.NewVersionService(mc)
+	deepLinks := app.NewDeepLinkService()
 	// macOS loads the Dock icon from the app bundle.
 	a := application.New(application.Options{
 		Name: "LeviLauncher", LogLevel: slog.LevelWarn,
 		Description:    "Minecraft Bedrock launcher",
 		Mac:            application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
 		Server:         application.ServerOptions{WriteTimeout: 30 * time.Minute},
-		Services:       []application.Service{application.NewService(mc), application.NewService(app.NewContentService(mc)), application.NewService(app.NewModsService(mc)), application.NewService(user), application.NewService(versions), application.NewService(app.NewDiagnosticsService())},
+		Services:       []application.Service{application.NewService(mc), application.NewService(app.NewContentService(mc)), application.NewService(app.NewModsService(mc)), application.NewService(user), application.NewService(versions), application.NewService(app.NewDiagnosticsService()), application.NewService(deepLinks)},
 		Assets:         application.AssetOptions{Handler: application.AssetFileServerFS(assets), Middleware: mc.LocalImageMiddleware},
 		SingleInstance: &application.SingleInstanceOptions{UniqueID: "org.levimc.levilauncher.native"},
+	})
+	// macOS hands levilauncher:// links (CFBundleURLTypes in the Info.plist
+	// that build/native/macos.py writes) to the running app as an Apple Event,
+	// also when the link started it. The link only opens the mod's page.
+	a.Event.OnApplicationEvent(events.Common.ApplicationLaunchedWithUrl, func(event *application.ApplicationEvent) {
+		if _, err := deeplink.Default.DeliverRaw(event.Context().URL()); err != nil {
+			log.Printf("Ignored levilauncher:// link: %v", err)
+		}
 	})
 	mc.StartupEssential()
 	w := a.Window.NewWithOptions(application.WebviewWindowOptions{Name: "main", Title: "LeviLauncher", Width: 1180, Height: 780, MinWidth: 960, MinHeight: 600, URL: "/", EnableFileDrop: true})

@@ -101,6 +101,9 @@ func TestWantsKeepsLegacyGUIForms(t *testing.T) {
 		{[]string{"--some-future-gui-flag"}, false},
 		{[]string{"/unknown"}, false},
 		{[]string{"-v", "--launch=x"}, false},
+		{[]string{"levilauncher://install/github.com/LiteLDev/Arke?version=0.1.6"}, false},
+		{[]string{"LEVILAUNCHER://install/github.com/a/b"}, false},
+		{[]string{"levilauncher:not-a-valid-link"}, false},
 		// Command line.
 		{[]string{"version"}, true},
 		{[]string{"instance", "list"}, true},

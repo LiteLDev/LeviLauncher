@@ -35,6 +35,7 @@ import { useDocumentAppearance } from "@/hooks/useDocumentAppearance";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { useAppNavigation } from "@/hooks/useAppNavigation";
 import { useAppModals } from "@/hooks/useAppModals";
+import { useDeepLinks } from "@/hooks/useDeepLinks";
 import { ROUTES } from "@/constants/routes";
 import { markStartupVisualReady } from "@/utils/startupState";
 
@@ -261,6 +262,12 @@ function App() {
   }, []);
 
   const effectiveNavLocked = navLocked || isUpdatingMode || isOnboardingMode;
+  // levilauncher:// links wait while navigation is locked or a first-run
+  // modal (terms, analytics) still needs an answer.
+  useDeepLinks(
+    effectiveNavLocked || termsOpen || analyticsPromptOpen,
+    tryNavigate,
+  );
 
   return (
     <BackgroundContext.Provider value={background}>

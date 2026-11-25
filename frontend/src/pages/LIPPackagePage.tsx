@@ -1,5 +1,10 @@
 import DefaultAppIcon from "@/assets/images/appicon.png";
-import { ModalDescription, ModalDetails, ModalProgress } from "@/components/ModalPrimitives";
+import {
+  ModalDescription,
+  ModalDetails,
+  ModalNotice,
+  ModalProgress,
+} from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -276,6 +281,12 @@ const LIPPackagePage: React.FC = () => {
   const [selectedVariantIdentifier, setSelectedVariantIdentifier] =
     useState<string>("");
   const [actionRunning, setActionRunning] = useState<boolean>(false);
+  const [instancesLoaded, setInstancesLoaded] = useState<boolean>(false);
+  // The install dialog was opened by a levilauncher:// link.
+  const [linkDialog, setLinkDialog] = useState<boolean>(false);
+  // Why a levilauncher:// link could not open the install dialog.
+  const [linkProblem, setLinkProblem] = useState<string>("");
+  const handledLinkKeyRef = useRef<string>("");
 
   const tabsRef = useRef<HTMLDivElement>(null);
   const mappingUnavailable = mappingInitialized && !mappingAvailable;
@@ -571,6 +582,7 @@ const LIPPackagePage: React.FC = () => {
         if (cancelled) return;
         setInstanceOptions(names);
         setInstanceGameVersions(gameVersionMap);
+        setInstancesLoaded(true);
         const logoMap: Record<string, string> = {};
         await Promise.all(
           names.map(async (name) => {
@@ -638,6 +650,7 @@ const LIPPackagePage: React.FC = () => {
         setInstanceLogos({});
         setInstanceLLStates({});
         setSelectedInstance("");
+        setInstancesLoaded(true);
       }
     };
 
@@ -1040,6 +1053,167 @@ const LIPPackagePage: React.FC = () => {
     setInstallDialogTriggerVersion("");
   }, [actionRunning]);
 
+  useEffect(() => {
+    if (!installDialogOpen) setLinkDialog(false);
+  }, [installDialogOpen]);
+
+  // A levilauncher:// link (useDeepLinks) opens this page with `link=1`, the
+  // version in `version` and the variant after `#` in the id. It only opens
+  // the install dialog; the user picks the instance and confirms.
+  const linkRequest = useMemo<{ version: string; variant: string } | null>(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("link") !== "1") return null;
+    const hash = identifier.indexOf("#");
+    return {
+      version: String(params.get("version") || "").trim(),
+      variant: hash < 0 ? "" : identifier.slice(hash + 1).trim(),
+    };
+  }, [identifier, location.search]);
+
+  useEffect(() => {
+    setLinkProblem("");
+  }, [location.key]);
+
+  useEffect(() => {
+    if (!linkRequest || loading || !instancesLoaded) return;
+    if (handledLinkKeyRef.current === location.key) return;
+    // A link for a mod that is not in the catalogue, or a catalogue that
+    // could not be loaded, is reported by the page itself.
+    if (!pkg || error) return;
+    if (
+      normalizeIdentifierLookupKey(pkg.identifier || "") !==
+      normalizeIdentifierLookupKey(identifier.split("#")[0])
+    ) {
+      return;
+    }
+    handledLinkKeyRef.current = location.key;
+
+    const name = pkg.name || pkg.identifier;
+    if (
+      linkRequest.variant &&
+      !visiblePackageVariants.some((variant) => variant.key === linkRequest.variant)
+    ) {
+      setLinkProblem(
+        t("deeplink.variant_unavailable", {
+          variant: linkRequest.variant,
+          name,
+          platform: LAUNCHER_PLATFORM,
+        }),
+      );
+      return;
+    }
+    let version = linkRequest.version;
+    if (version) {
+      if (!activeVariantFiles.some((file) => file.version === version)) {
+        setLinkProblem(
+          t("deeplink.version_unavailable", {
+            version,
+            name,
+            platform: LAUNCHER_PLATFORM,
+          }),
+        );
+        return;
+      }
+    } else {
+      const newest = (files: LIPPackageFileInfo[]) =>
+        files
+          .map((file) => file.version)
+          .sort((a, b) => compareVersions(b, a))[0] || "";
+      version =
+        newest(activeVariantFiles.filter((file) => !file.prerelease)) ||
+        newest(activeVariantFiles);
+      if (!version) {
+        setLinkProblem(
+          t("deeplink.no_installable_version", {
+            name,
+            platform: LAUNCHER_PLATFORM,
+          }),
+        );
+        return;
+      }
+    }
+    if (instanceOptions.length === 0) {
+      setLinkProblem(t("deeplink.no_instances"));
+      return;
+    }
+    setLinkDialog(true);
+    openInstallDialog(version);
+  }, [
+    activeVariantFiles,
+    error,
+    identifier,
+    instanceOptions.length,
+    instancesLoaded,
+    linkRequest,
+    loading,
+    location.key,
+    openInstallDialog,
+    pkg,
+    t,
+    visiblePackageVariants,
+  ]);
+
+  /**
+   * Whether an instance runs a game version the dialog's version supports:
+   * from LeviLamina's game-version mapping when the version needs
+   * LeviLamina, else from the catalogue's `gameVersions` (any when empty).
+   */
+  const isInstanceCompatible = useCallback(
+    (instanceName: string): boolean => {
+      const gameVersion = normalizeGameVersion(
+        instanceGameVersions[instanceName] || "",
+      );
+      if (installDialogFileState?.hasLLRequirement) {
+        return (
+          mappingAvailable &&
+          Boolean(gameVersion) &&
+          installDialogFileState.supportedGameVersions.includes(gameVersion)
+        );
+      }
+      const supported = (pkg?.gameVersions || [])
+        .map((value) => normalizeGameVersion(value))
+        .filter(Boolean);
+      if (supported.length === 0) return true;
+      if (!gameVersion) return false;
+      return supported.some(
+        (value) => gameVersion === value || gameVersion.startsWith(value + "."),
+      );
+    },
+    [
+      installDialogFileState,
+      instanceGameVersions,
+      mappingAvailable,
+      normalizeGameVersion,
+      pkg?.gameVersions,
+    ],
+  );
+
+  // A dialog opened by a link lists only the compatible instances, or all of
+  // them, with a notice, when there is none.
+  const linkCompatibleInstances = useMemo<string[]>(
+    () =>
+      linkDialog ? instanceOptions.filter((name) => isInstanceCompatible(name)) : [],
+    [instanceOptions, isInstanceCompatible, linkDialog],
+  );
+  const dialogInstanceOptions = useMemo<string[]>(
+    () =>
+      linkDialog && linkCompatibleInstances.length > 0
+        ? linkCompatibleInstances
+        : instanceOptions,
+    [instanceOptions, linkCompatibleInstances, linkDialog],
+  );
+
+  useEffect(() => {
+    if (!installDialogOpen || !linkDialog) return;
+    if (dialogInstanceOptions.includes(installDialogSelectedInstance)) return;
+    setInstallDialogSelectedInstance(dialogInstanceOptions[0] || "");
+  }, [
+    dialogInstanceOptions,
+    installDialogOpen,
+    installDialogSelectedInstance,
+    linkDialog,
+  ]);
+
   const handleConfirmInstall = useCallback(async () => {
     if (
       !pkg ||
@@ -1211,6 +1385,11 @@ const LIPPackagePage: React.FC = () => {
         <Card className="bg-surface/50 dark:bg-surface/40 launcher-material-blur rounded-4xl p-8">
           <Card.Content className="flex flex-col items-center gap-4">
             <p className="text-xl font-bold text-rose-500">{error}</p>
+            {linkRequest ? (
+              <p className="text-sm text-muted dark:text-zinc-400 text-center max-w-md" role="status">
+                {t("deeplink.load_failed", { id: identifier.split("#")[0] })}
+              </p>
+            ) : null}
             <Button
               onPress={() => void loadPackage(identifier, true)}
               variant={"primary"}
@@ -1234,7 +1413,13 @@ const LIPPackagePage: React.FC = () => {
       <div className="w-full h-full min-h-0 flex flex-col p-4 sm:p-6 gap-4 items-center justify-center">
         <Card className="bg-surface/50 dark:bg-surface/40 launcher-material-blur rounded-4xl p-8">
           <Card.Content className="flex flex-col items-center gap-4">
-            <p className="text-xl font-bold">{t("common.empty")}</p>
+            {linkRequest ? (
+              <p className="text-base font-bold text-amber-600 dark:text-amber-400 text-center max-w-md" role="alert">
+                {t("deeplink.not_in_catalog", { id: identifier.split("#")[0] })}
+              </p>
+            ) : (
+              <p className="text-xl font-bold">{t("common.empty")}</p>
+            )}
             <Button
               onPress={() => navigate(-1)}
               variant={"primary"}
@@ -1253,6 +1438,11 @@ const LIPPackagePage: React.FC = () => {
   return (
     <PageContainer animate={false} className="min-h-0">
       <div className="max-w-7xl mx-auto w-full">
+        {linkProblem ? (
+          <ModalNotice tone="warning" role="alert" className="mb-4">
+            {linkProblem}
+          </ModalNotice>
+        ) : null}
         <motion.div
           data-material-motion
           initial={{ opacity: 0, y: -20 }}
@@ -1614,9 +1804,28 @@ const LIPPackagePage: React.FC = () => {
         }}
       >
         <div className="space-y-4">
+          {linkDialog ? (
+            <ModalNotice tone="info" role="status">
+              {t("deeplink.dialog_notice")}
+            </ModalNotice>
+          ) : null}
           <ModalDescription>
             {t("curseforge.install.select_version_body")}
           </ModalDescription>
+          {linkDialog ? (
+            <div
+              className={cn(
+                "text-xs",
+                linkCompatibleInstances.length > 0
+                  ? "text-muted dark:text-zinc-400"
+                  : "text-amber-600 dark:text-amber-400",
+              )}
+            >
+              {linkCompatibleInstances.length > 0
+                ? t("deeplink.compatible_only")
+                : t("deeplink.no_compatible_instance")}
+            </div>
+          ) : null}
           <Select
             placeholder={t("curseforge.install.select_version_placeholder")}
             isDisabled={actionRunning || instanceOptions.length === 0}
@@ -1638,7 +1847,7 @@ const LIPPackagePage: React.FC = () => {
             </Select.Trigger>
             <Select.Popover className={COMPONENT_STYLES.select.popoverContent}>
               <ListBox className={COMPONENT_STYLES.select.listbox}>
-                {instanceOptions.map((instanceName) => (
+                {dialogInstanceOptions.map((instanceName) => (
                   <ListBox.Item
                     key={instanceName}
                     id={instanceName}
@@ -1676,6 +1885,9 @@ const LIPPackagePage: React.FC = () => {
             </Select.Popover>
           </Select>
           <ModalDetails items={[
+            ...(linkDialog
+              ? [{ label: t("deeplink.mod_label"), value: pkg.identifier, mono: true, fullWidth: true }]
+              : []),
             { label: t("lip.files.variant_label"), value: activeVariantDisplayLabel || t("contentpage.none") },
             { label: t("lip.files.installing_version_label"), value: installDialogTriggerVersion || t("contentpage.none"), mono: true },
             { label: t("lip.files.current_installed_version_label"), value: dialogInstancePackageState?.loading ? t("lip.files.checking_current_installed_version") : dialogInstalledPackageVersion || t("contentpage.none") },

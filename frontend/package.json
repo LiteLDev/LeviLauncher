@@ -20,6 +20,7 @@
     "test:error-detail": "node --test scripts/error-detail.test.mjs",
     "test:troubleshoot": "node --test scripts/troubleshoot.test.mjs",
     "test:lipcatalog": "node --test scripts/lipCatalog.test.mjs",
+    "test:deeplink": "node --test scripts/deeplink.test.mjs",
     "styles:check": "node ./scripts/check-materials.mjs"
   },
   "dependencies": {

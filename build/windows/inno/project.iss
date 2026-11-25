@@ -334,6 +334,16 @@ Source: "{#AppBinaryPath}"; DestDir: "{app}"; DestName: "{#AppExeName}"; Flags: 
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
+[Registry]
+; levilauncher:// links, such as the install buttons on levimc.org/mods. HKA is
+; HKLM here (PrivilegesRequired=admin), like the rest of the install. The
+; launcher validates the link and only opens the mod's page, where the user
+; picks the instance and confirms; the link never installs anything by itself.
+Root: HKA; Subkey: "Software\Classes\levilauncher"; ValueType: string; ValueName: ""; ValueData: "URL:LeviLauncher"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\levilauncher"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKA; Subkey: "Software\Classes\levilauncher\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"",0"
+Root: HKA; Subkey: "Software\Classes\levilauncher\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
+
 [Run]
 ; runasoriginaluser keeps the launcher out of the elevated setup session, so it
 ; reads and writes the signed-in user's AppData rather than the administrator's.

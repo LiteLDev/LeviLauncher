@@ -1610,5 +1610,17 @@
     "open_content_dir": "UWP-Inhaltsordner öffnen",
     "not_specified": "Wähle eine UWP-Installationsdatei oder lade diese Version zuerst herunter.",
     "resolving_download": "Wird ermittelt…"
+  },
+  "deeplink": {
+    "dialog_notice": "Ein levilauncher://-Link von einer Website oder einer anderen App möchte diese Mod installieren. Es wird nichts installiert, bis du eine Instanz auswählst und bestätigst.",
+    "mod_label": "Mod",
+    "compatible_only": "Es werden nur Instanzen mit einer Spielversion angezeigt, die diese Mod unterstützt.",
+    "no_compatible_instance": "Keine deiner Instanzen hat eine Spielversion, die diese Mod unterstützt, daher werden alle angezeigt.",
+    "not_in_catalog": "Der Link verlangt {{id}}, das nicht im LeviMC-Modkatalog ist oder nicht abgerufen werden konnte. Es wurde nichts installiert.",
+    "load_failed": "Der Link verlangte {{id}}. Es wurde nichts installiert.",
+    "version_unavailable": "Der Link verlangt Version {{version}} von {{name}}, für die es keinen Build für {{platform}} gibt. Es wurde nichts installiert; wähle unten eine andere Version.",
+    "variant_unavailable": "Der Link verlangt die Variante {{variant}} von {{name}}, für die es keinen Build für {{platform}} gibt. Es wurde nichts installiert.",
+    "no_installable_version": "{{name}} hat keine Version, die auf {{platform}} installiert werden kann. Es wurde nichts installiert.",
+    "no_instances": "Der Link möchte eine Mod installieren, aber es gibt noch keine Instanz. Erstelle eine und öffne den Link dann erneut."
   }
 }

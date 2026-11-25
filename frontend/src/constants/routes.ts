@@ -29,6 +29,23 @@ export const routeTo = {
     ROUTES.curseForgeMod.replace(":id", encodeURIComponent(String(id))),
   lipPackage: (id: string): string =>
     ROUTES.lipPackage.replace(":id", encodeURIComponent(String(id))),
+  /**
+   * The package page opened by a levilauncher:// link: `link=1` makes the
+   * page open its install dialog for `version` (the latest when empty) of
+   * `variant` (the preferred one when empty), for the user to confirm.
+   */
+  lipPackageFromLink: (link: {
+    modulePath: string;
+    version?: string;
+    variant?: string;
+  }): string => {
+    const id = link.variant
+      ? `${link.modulePath}#${link.variant}`
+      : link.modulePath;
+    const params = new URLSearchParams({ link: "1" });
+    if (link.version) params.set("version", link.version);
+    return `${ROUTES.lipPackage.replace(":id", encodeURIComponent(id))}?${params}`;
+  },
   contentWorldEditor: (path: string): string =>
     `${ROUTES.contentWorldEditor}?path=${encodeURIComponent(path)}`,
 } as const;

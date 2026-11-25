@@ -2,6 +2,8 @@ package cli
 
 import (
 	"strings"
+
+	"github.com/liteldev/LeviLauncher/internal/deeplink"
 )
 
 // Wants reports whether args (os.Args[1:]) are a command-line invocation.
@@ -11,6 +13,7 @@ import (
 //   - the legacy window forms (--launch=<name>, debug, -debug, --debug,
 //     /debug, --self-update=<v>, --post-update-restart,
 //     --webview2-runtime-dir, --uninstall-cleanup...) go to the window;
+//   - a levilauncher:// link goes to the window;
 //   - any other dash or slash argument that is not a CLI global flag goes to
 //     the window, so old scripts keep working;
 //   - otherwise, after skipping the CLI global flags and their values, a
@@ -60,6 +63,11 @@ func isDebugArg(arg string) bool {
 // IsLegacyGUIArg reports whether arg is one of the launcher window's own
 // switches, which always open (or are handled by) the window.
 func IsLegacyGUIArg(arg string) bool {
+	// A levilauncher:// link (Windows passes it as "%1") opens the window,
+	// which validates it; it is never a command, valid or not.
+	if deeplink.IsDeepLink(arg) {
+		return true
+	}
 	a := strings.ToLower(strings.TrimSpace(arg))
 	if strings.HasPrefix(a, "-") || strings.HasPrefix(a, "/") {
 		if isDebugArg(a) {

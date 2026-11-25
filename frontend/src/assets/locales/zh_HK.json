@@ -2469,5 +2469,17 @@
     "expires": "代碼剩餘有效時間",
     "return_to_game": "驗證完成，可以返回遊戲。",
     "retry_in_game": "請返回遊戲重新點擊登入。"
+  },
+  "deeplink": {
+    "dialog_notice": "來自網站或其他應用程式的 levilauncher:// 連結要求安裝此模組。在你選擇實例並確認之前，不會安裝任何內容。",
+    "mod_label": "模組",
+    "compatible_only": "僅列出遊戲版本受此模組支援的實例。",
+    "no_compatible_instance": "你的實例都不是此模組支援的遊戲版本，因此列出全部實例。",
+    "not_in_catalog": "連結要求的 {{id}} 不在 LeviMC 模組目錄中，或無法查詢。未安裝任何內容。",
+    "load_failed": "連結要求的是 {{id}}。未安裝任何內容。",
+    "version_unavailable": "連結要求 {{name}} 的 {{version}} 版本，但該版本沒有適用於 {{platform}} 的建置。未安裝任何內容，請在下方選擇其他版本。",
+    "variant_unavailable": "連結要求 {{name}} 的 {{variant}} 變體，但該變體沒有適用於 {{platform}} 的建置。未安裝任何內容。",
+    "no_installable_version": "{{name}} 沒有可在 {{platform}} 上安裝的版本。未安裝任何內容。",
+    "no_instances": "連結要求安裝模組，但還沒有任何實例。請先建立實例，然後重新開啟連結。"
   }
 }

@@ -1610,5 +1610,17 @@
     "open_content_dir": "Otwórz folder zawartości UWP",
     "not_specified": "Wybierz instalator UWP lub najpierw pobierz tę wersję.",
     "resolving_download": "Ustalanie…"
+  },
+  "deeplink": {
+    "dialog_notice": "Link levilauncher:// ze strony internetowej lub innej aplikacji prosi o zainstalowanie tego moda. Nic nie zostanie zainstalowane, dopóki nie wybierzesz instancji i nie potwierdzisz.",
+    "mod_label": "Mod",
+    "compatible_only": "Wyświetlane są tylko instancje z wersją gry obsługiwaną przez tego moda.",
+    "no_compatible_instance": "Żadna z twoich instancji nie ma wersji gry obsługiwanej przez tego moda, więc wyświetlane są wszystkie.",
+    "not_in_catalog": "Link prosi o {{id}}, którego nie ma w katalogu modów LeviMC lub nie udało się go sprawdzić. Nic nie zostało zainstalowane.",
+    "load_failed": "Link prosił o {{id}}. Nic nie zostało zainstalowane.",
+    "version_unavailable": "Link prosi o wersję {{version}} moda {{name}}, która nie ma kompilacji dla {{platform}}. Nic nie zostało zainstalowane; wybierz inną wersję poniżej.",
+    "variant_unavailable": "Link prosi o wariant {{variant}} moda {{name}}, który nie ma kompilacji dla {{platform}}. Nic nie zostało zainstalowane.",
+    "no_installable_version": "{{name}} nie ma wersji, którą można zainstalować na {{platform}}. Nic nie zostało zainstalowane.",
+    "no_instances": "Link prosi o zainstalowanie moda, ale nie ma jeszcze żadnej instancji. Utwórz ją, a potem otwórz link ponownie."
   }
 }

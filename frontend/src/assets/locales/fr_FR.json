@@ -1610,5 +1610,17 @@
     "open_content_dir": "Ouvrir le dossier de contenu UWP",
     "not_specified": "Choisis un installateur UWP ou télécharge d'abord cette version.",
     "resolving_download": "Récupération du lien…"
+  },
+  "deeplink": {
+    "dialog_notice": "Un lien levilauncher://, venant d'un site web ou d'une autre application, demande d'installer ce mod. Rien n'est installé tant que vous n'avez pas choisi une instance et confirmé.",
+    "mod_label": "Mod",
+    "compatible_only": "Seules les instances dont la version du jeu est prise en charge par ce mod sont listées.",
+    "no_compatible_instance": "Aucune de vos instances n'utilise une version du jeu prise en charge par ce mod ; toutes sont donc listées.",
+    "not_in_catalog": "Le lien demande {{id}}, qui n'est pas dans le catalogue de mods LeviMC ou n'a pas pu être consulté. Rien n'a été installé.",
+    "load_failed": "Le lien demandait {{id}}. Rien n'a été installé.",
+    "version_unavailable": "Le lien demande la version {{version}} de {{name}}, qui n'a pas de build pour {{platform}}. Rien n'a été installé ; choisissez une autre version ci-dessous.",
+    "variant_unavailable": "Le lien demande la variante {{variant}} de {{name}}, qui n'a pas de build pour {{platform}}. Rien n'a été installé.",
+    "no_installable_version": "{{name}} n'a aucune version installable sur {{platform}}. Rien n'a été installé.",
+    "no_instances": "Le lien demande d'installer un mod, mais il n'y a encore aucune instance. Créez-en une, puis rouvrez le lien."
   }
 }

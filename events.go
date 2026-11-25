@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/liteldev/LeviLauncher/internal/app"
+	"github.com/liteldev/LeviLauncher/internal/deeplink"
 
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
@@ -65,4 +66,5 @@ func init() {
 	application.RegisterEvent[lip.LipTaskProgressEvent](lip.EventLipTaskProgress)
 	application.RegisterEvent[lip.LipTaskFinishedEvent](lip.EventLipTaskFinished)
 	application.RegisterEvent[types.FilesDroppedEvent]("files-dropped")
+	application.RegisterEvent[deeplink.Request](deeplink.EventOpen)
 }

@@ -2470,5 +2470,17 @@
     "expires": "代码剩余有效时间",
     "return_to_game": "验证完成，可以回到游戏了。",
     "retry_in_game": "请回到游戏重新点击登录。"
+  },
+  "deeplink": {
+    "dialog_notice": "来自网站或其他应用的 levilauncher:// 链接请求安装此模组。在你选择实例并确认之前，不会安装任何内容。",
+    "mod_label": "模组",
+    "compatible_only": "仅列出游戏版本受此模组支持的实例。",
+    "no_compatible_instance": "你的实例都不是此模组支持的游戏版本，因此列出全部实例。",
+    "not_in_catalog": "链接请求的 {{id}} 不在 LeviMC 模组目录中，或无法查询。未安装任何内容。",
+    "load_failed": "链接请求的是 {{id}}。未安装任何内容。",
+    "version_unavailable": "链接请求 {{name}} 的 {{version}} 版本，但该版本没有适用于 {{platform}} 的构建。未安装任何内容，请在下方选择其他版本。",
+    "variant_unavailable": "链接请求 {{name}} 的 {{variant}} 变体，但该变体没有适用于 {{platform}} 的构建。未安装任何内容。",
+    "no_installable_version": "{{name}} 没有可在 {{platform}} 上安装的版本。未安装任何内容。",
+    "no_instances": "链接请求安装模组，但还没有任何实例。请先创建实例，然后重新打开链接。"
   }
 }

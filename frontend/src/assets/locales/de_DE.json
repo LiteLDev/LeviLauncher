@@ -172,6 +172,8 @@
   "updating": {
     "title": "LeviLauncher wird aktualisiert",
     "body": "Administratorrechte werden angefordert und Update wird durchgeführt. Schließen Sie dieses Fenster während des Updates nicht.",
+    "body_mac": "Das macOS-Installationsimage wird heruntergeladen. Beende den Launcher nach dem Öffnen und ziehe LeviLauncher in den Ordner „Programme“.",
+    "mac_installer_opened": "Das Installationsimage wurde im Finder geöffnet. Beende LeviLauncher und ziehe die neue App in den Ordner „Programme“, um das Update abzuschließen.",
     "failed_title": "Update fehlgeschlagen",
     "phase": {
       "download": "Update-Paket herunterladen",

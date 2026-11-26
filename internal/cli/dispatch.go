@@ -79,7 +79,7 @@ func IsLegacyGUIArg(arg string) bool {
 			return true
 		}
 	}
-	return a == "--post-update-restart"
+	return a == "--post-update-restart" || a == "--attach-console"
 }
 
 // globalArity reports whether a is a CLI global flag (long, short, or a

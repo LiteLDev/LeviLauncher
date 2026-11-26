@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { System } from "@wailsio/runtime";
 import { normalizePackageType, type PackageType } from "@/utils/packageType";
 
 type DownloadFilters = {
@@ -10,15 +11,22 @@ type DownloadFilters = {
 
 const STORAGE_KEY = "download.filters";
 
-function readFilters(): DownloadFilters {
+function readFilters(isMac: boolean): DownloadFilters {
   let saved: Partial<DownloadFilters> = {};
   try {
     saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {};
   } catch {}
+  const savedType =
+    saved.type === "all" || saved.type === "Preview" || (!isMac && saved.type === "Beta")
+      ? saved.type
+      : "Release";
   return {
-    type:
-      saved.type === "all" || saved.type === "Preview" || saved.type === "Beta" ? saved.type : "Release",
-    packageType: saved.packageType === "all" ? "all" : normalizePackageType(saved.packageType),
+    type: savedType,
+    packageType: isMac
+      ? "gdk"
+      : saved.packageType === "all"
+        ? "all"
+        : normalizePackageType(saved.packageType),
     status:
       saved.status === "downloaded" || saved.status === "not_downloaded"
         ? saved.status
@@ -28,11 +36,20 @@ function readFilters(): DownloadFilters {
 }
 
 export function useDownloadFilters() {
-  const [initial] = useState(readFilters);
-  const [typeFilter, setTypeFilter] = useState(initial.type);
+  const isMac = System.IsMac();
+  const [initial] = useState(() => readFilters(isMac));
+  const [typeFilter, setTypeFilterState] = useState(initial.type);
   const [statusFilter, setStatusFilter] = useState(initial.status);
   const [llFilter, setLlFilter] = useState(initial.loader);
-  const [packageFilter, setPackageFilter] = useState(initial.packageType);
+  const [packageFilter, setPackageFilterState] = useState(initial.packageType);
+
+  const setTypeFilter = (next: DownloadFilters["type"]) => {
+    setTypeFilterState(isMac && next === "Beta" ? "Release" : next);
+  };
+
+  const setPackageFilter = (next: DownloadFilters["packageType"]) => {
+    setPackageFilterState(isMac ? "gdk" : next);
+  };
 
   useEffect(() => {
     try {

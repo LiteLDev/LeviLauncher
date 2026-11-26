@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"runtime"
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/update"
@@ -19,6 +20,7 @@ type selfUpdateResult struct {
 	UpdateAvailable bool   `json:"updateAvailable"`
 	Notes           string `json:"notes"`
 	Updated         bool   `json:"updated"`
+	InstallerPath   string `json:"installerPath,omitempty"`
 }
 
 // Seams replaced by tests.
@@ -40,16 +42,13 @@ var (
 )
 
 func init() {
-	Register(&Command{
+	cmd := &Command{
 		Path:    "self-update",
 		Summary: "update LeviLauncher itself to the newest release",
 		Description: `Downloads the newest release and installs it over this program; the new version
 runs from the next start. It refuses while the launcher window or a game
 started from an instance is running. When the program folder is not writable,
-run it from an elevated (administrator) terminal.
-
-Pre-releases are offered with --beta, with 'config set beta-updates on', or
-when this build is itself a pre-release.`,
+run it from an elevated (administrator) terminal.`,
 		Examples: []string{"self-update --check", "self-update --yes", "self-update --beta --check --json"},
 		Flags: []*Flag{
 			BoolFlag("check", "", "only report whether an update exists, with its release notes"),
@@ -57,7 +56,15 @@ when this build is itself a pre-release.`,
 		},
 		Group: GroupSystem,
 		Run:   runSelfUpdate,
-	})
+	}
+	if runtime.GOOS == "darwin" {
+		cmd.Description = `Downloads the newest macOS installer disk image and prints its path. Open it
+and drag LeviLauncher into Applications to finish updating. The download
+requires the launcher window and any games started from instances to be closed.`
+	}
+	cmd.Description += "\n\n" + `Pre-releases are offered with --beta, with 'config set beta-updates on', or
+when this build is itself a pre-release.`
+	Register(cmd)
 }
 
 func vPrefix(v string) string {
@@ -93,8 +100,12 @@ func runSelfUpdate(c *Ctx) error {
 	}
 
 	if suGUIRunning() {
+		closeHint := "close LeviLauncher (also from the tray), then run '%s self-update' again"
+		if runtime.GOOS == "darwin" {
+			closeHint = "quit LeviLauncher, then run '%s self-update' again"
+		}
 		return ConflictError("the launcher window is running").
-			WithHint("close LeviLauncher (also from the tray), then run '%s self-update' again", ProgramName).
+			WithHint(closeHint, ProgramName).
 			withCode("ERR_LAUNCHER_RUNNING")
 	}
 	if games := suGameRunning(); len(games) > 0 {
@@ -116,6 +127,7 @@ func runSelfUpdate(c *Ctx) error {
 		return e
 	}
 	res.Updated = true
+	res.InstallerPath = applied.InstallerPath
 	if applied.To != "" {
 		res.Latest = vPrefix(applied.To)
 	}
@@ -125,6 +137,10 @@ func runSelfUpdate(c *Ctx) error {
 func renderSelfUpdate(c *Ctx, res selfUpdateResult, report bool) error {
 	return c.Render(res, []string{res.Latest}, func(w io.Writer) error {
 		switch {
+		case res.Updated && res.InstallerPath != "":
+			fmt.Fprintf(w, "Downloaded %s installer to %s\n", res.Latest, res.InstallerPath)
+			c.Notice("Open it with: open %s", quoteArg(res.InstallerPath))
+			return nil
 		case res.Updated:
 			fmt.Fprintf(w, "Updated %s -> %s; the new version runs from the next start\n", res.Current, res.Latest)
 			return nil

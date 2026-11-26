@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -25,7 +26,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/uwpdownload"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/liteldev/LeviLauncher/internal/xbox"
-	"golang.org/x/sys/windows"
 )
 
 // This file holds the "installer" commands and the backend plumbing shared
@@ -36,6 +36,7 @@ import (
 
 // gameInstallBackend is every backend call the game-install commands make.
 type gameInstallBackend struct {
+	isDarwin bool
 	// Catalogue and downloads.
 	fetchGDK      func(ctx context.Context) gdkversions.Catalog
 	loadUWP       func() ([]uwpdownload.Version, error)
@@ -75,6 +76,7 @@ var gi = realGameInstallBackend()
 func realGameInstallBackend() gameInstallBackend {
 	gdkClient := gdkversions.NewClient(httpx.NewClient(5*time.Second), xbox.GetPackageUpdateAuthorization)
 	return gameInstallBackend{
+		isDarwin: runtime.GOOS == "darwin",
 		fetchGDK: func(ctx context.Context) gdkversions.Catalog {
 			return gdkClient.Fetch(ctx, utils.IsMirrorEnabled(), apppath.GDKPendingVersionsPath())
 		},
@@ -290,8 +292,25 @@ func giChannelsAndType(c *Ctx) ([]string, string, error) {
 	return channels, typ, nil
 }
 
+// giInstallType limits installable builds on macOS. Local installer
+// management can still list and remove any files left in the cache.
+func giInstallType(channels []string, typ string) (string, error) {
+	if !gi.isDarwin {
+		return typ, nil
+	}
+	if typ == catalog.TypeUWP || containsFold(channels, catalog.ChannelBeta) {
+		return "", Errorf(ExitUsage, "ERR_UWP_UNSUPPORTED_ON_HOST", "UWP and beta builds are available on Windows only").
+			WithHint("select a GDK release or preview build")
+	}
+	return catalog.TypeGDK, nil
+}
+
 // giResolveBuild resolves a version spec against the catalogue.
 func giResolveBuild(c *Ctx, spec string, channels []string, typ string) (catalog.Build, error) {
+	typ, err := giInstallType(channels, typ)
+	if err != nil {
+		return catalog.Build{}, err
+	}
 	spec = strings.TrimSpace(spec)
 	if !catalog.ValidSpec(spec) {
 		return catalog.Build{}, UsageError("%q is not a Minecraft version", spec).
@@ -302,6 +321,9 @@ func giResolveBuild(c *Ctx, spec string, channels []string, typ string) (catalog
 		return catalog.Build{}, err
 	}
 	if loaded.GDKMissing && typ != catalog.TypeUWP {
+		if gi.isDarwin {
+			return catalog.Build{}, Backend("ERR_CATALOG_UNAVAILABLE")
+		}
 		return catalog.Build{}, Errorf(ExitNetwork, "ERR_CATALOG_UNAVAILABLE", "the GDK build catalogue is unreachable").
 			WithHint("check the network connection and try again, or pass --type uwp")
 	}
@@ -550,7 +572,7 @@ func giDownloadError(name string, err error) *Error {
 // giRemoveError maps a failed file removal: a file another process holds
 // open is in use (exit 4).
 func giRemoveError(name string, err error) *Error {
-	if errors.Is(err, windows.ERROR_SHARING_VIOLATION) || errors.Is(err, windows.ERROR_LOCK_VIOLATION) {
+	if isFileSharingError(err) {
 		return Errorf(ExitConflict, "ERR_INSTALLER_IN_USE", "%s is in use by another program", name).
 			WithHint("wait until the download or installation using it ends")
 	}
@@ -609,6 +631,10 @@ exist only for UWP. On a console at most 20 rows are shown; --limit 0 shows all.
 
 func runInstallerSearch(c *Ctx) error {
 	channels, typ, err := giChannelsAndType(c)
+	if err != nil {
+		return err
+	}
+	typ, err = giInstallType(channels, typ)
 	if err != nil {
 		return err
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -30,7 +31,13 @@ var (
 	launchRunMigration   = leviloader.RunMigration
 	launchVCInstalled    = vcruntime.IsInstalled
 	launchGIInstalled    = gameinput.IsInstalled
-	launchGSInstalled    = func() bool { _, err := winreg.GetAppxInfo("Microsoft.GamingServices"); return err == nil }
+	launchGSInstalled    = func() bool {
+		if runtime.GOOS != "windows" {
+			return true
+		}
+		_, err := winreg.GetAppxInfo("Microsoft.GamingServices")
+		return err == nil
+	}
 	launchSleep          = func(ctx context.Context, d time.Duration) {
 		t := time.NewTimer(d)
 		defer t.Stop()

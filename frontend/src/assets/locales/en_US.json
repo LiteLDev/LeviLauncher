@@ -179,6 +179,8 @@
   "updating": {
     "title": "Updating LeviLauncher",
     "body": "Requesting administrator permission and performing update. Do not close this window during update.",
+    "body_mac": "Downloading the macOS installer disk image. Once opened, quit the launcher and drag LeviLauncher into Applications.",
+    "mac_installer_opened": "Installer disk image opened in Finder. Quit LeviLauncher and drag the new app into Applications to finish updating.",
     "failed_title": "Update Failed",
     "phase": {
       "download": "Download Update Package",

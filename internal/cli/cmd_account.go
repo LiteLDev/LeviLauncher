@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -84,14 +85,18 @@ Signed out is not an error: scripts read signedIn from --json.`,
 		Flags:    []*Flag{BoolFlag("refresh", "", "sign in again silently and re-check licences online")},
 		Run:      runAccountStatus,
 	})
-	Register(&Command{
+	login := &Command{
 		Path:    "account login",
 		Summary: "sign in to a Microsoft account, or switch accounts",
 		Description: `Opens the Windows account picker. It needs an interactive desktop session (not
 a service or an SSH session).`,
 		Examples: []string{"account login", "account login --json"},
 		Run:      runAccountLogin,
-	})
+	}
+	if runtime.GOOS == "darwin" {
+		login.Description = "Opens Microsoft sign-in in your browser and waits for you to finish there."
+	}
+	Register(login)
 	Register(&Command{
 		Path:    "account logout",
 		Summary: "forget the launcher's Microsoft account",
@@ -251,8 +256,15 @@ func runAccountStatus(c *Ctx) error {
 }
 
 func runAccountLogin(c *Ctx) error {
-	c.Notice("Choose an account in the Windows account picker")
-	if err := acct.signIn(c.Context()); err != nil {
+	if runtime.GOOS == "windows" {
+		c.Notice("Choose an account in the Windows account picker")
+	} else {
+		c.Notice("Complete Microsoft sign-in in your browser")
+	}
+	ctx := withSignInNotice(c.Context(), func(format string, args ...any) {
+		c.Notice(format, args...)
+	})
+	if err := acct.signIn(ctx); err != nil {
 		return err
 	}
 	st, err := accountIdentity(c.Context(), false)
@@ -260,7 +272,7 @@ func runAccountLogin(c *Ctx) error {
 		return err
 	}
 	if !st.SignedIn {
-		return Errorf(ExitAuth, "ERR_AUTH_FAILED", "the account picker closed without signing in").
+		return Errorf(ExitAuth, "ERR_AUTH_FAILED", "Microsoft sign-in did not complete").
 			WithHint("%s account login", ProgramName)
 	}
 	accountLicensesFor(c, &st, true)

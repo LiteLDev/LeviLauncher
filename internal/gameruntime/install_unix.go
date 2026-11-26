@@ -24,6 +24,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
 	"github.com/liteldev/LeviLauncher/internal/types"
+	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
 const defaultWineProxy = "https://gh-proxy.org/https://github.com"
@@ -48,8 +49,7 @@ func LoadDownloadSettings() (types.WineDownloadSettings, error) {
 	defaults := types.WineDownloadSettings{GithubProxy: defaultWineProxy}
 	data, err := os.ReadFile(downloadSettingsPath())
 	if os.IsNotExist(err) {
-		locale, _ := exec.Command("/usr/bin/defaults", "read", "-g", "AppleLocale").Output()
-		defaults.Mirror = mainlandLocale(string(locale))
+		defaults.Mirror = utils.IsMirrorEnabled()
 		return defaults, nil
 	}
 	if err != nil {
@@ -62,17 +62,7 @@ func LoadDownloadSettings() (types.WineDownloadSettings, error) {
 }
 
 func mainlandLocale(locale string) bool {
-	tag, _, _ := strings.Cut(strings.TrimSpace(locale), "@")
-	parts := strings.FieldsFunc(tag, func(c rune) bool { return c == '_' || c == '-' })
-	for i, part := range parts {
-		if i == 0 {
-			continue
-		}
-		if strings.EqualFold(part, "CN") {
-			return true
-		}
-	}
-	return false
+	return utils.IsMainlandChinaLocale(locale)
 }
 
 func SaveDownloadSettings(settings types.WineDownloadSettings) error {

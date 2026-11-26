@@ -1,17 +1,19 @@
 import { ModalDescription } from "@/components/ModalPrimitives";
-import { Card, ProgressBar } from "@heroui/react";
+import { Button, Card, ProgressBar } from "@heroui/react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useTranslation } from "react-i18next";
 import { FaRocket } from "react-icons/fa";
 import { motion } from "framer-motion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
-import { Events } from "@wailsio/runtime";
+import { Events, System } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageContainer } from "@/components/PageContainer";
 import { PageHeader } from "@/components/PageHeader";
 import { LAYOUT } from "@/constants/layout";
+import { ROUTES } from "@/constants/routes";
 import { ErrorDetail } from "@/components/ErrorDetail";
 
 const UPDATE_ERROR_SEPARATOR = "::";
@@ -82,6 +84,8 @@ const getStatusText = (
 
 export default function UpdatingPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const isMac = System.IsMac();
   const mountedRef = useRef(false);
   const [running, setRunning] = useState<boolean>(true);
   const [errorCode, setErrorCode] = useState<string>("");
@@ -225,7 +229,14 @@ export default function UpdatingPage() {
           <Card.Content className="p-6">
             <PageHeader
               title={t("updating.title")}
-              description={t("updating.body")}
+              description={
+                isMac
+                  ? t("updating.body_mac", {
+                      defaultValue:
+                        "Downloading the macOS installer disk image. Once opened, quit the launcher and drag LeviLauncher into Applications.",
+                    })
+                  : t("updating.body")
+              }
               titleClassName="text-2xl"
               descriptionClassName="text-sm sm:text-base"
               startContent={
@@ -323,6 +334,31 @@ export default function UpdatingPage() {
                 )}
               </div>
             </div>
+
+            {isMac && !running && !errorCode && currentStatus === "installed" ? (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-surface-secondary/50 px-4 py-3 dark:border-white/10">
+                <p className="text-sm text-foreground">
+                  {t("updating.mac_installer_opened", {
+                    defaultValue:
+                      "Installer disk image opened in Finder. Quit LeviLauncher and drag the new app into Applications to finish updating.",
+                  })}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    onPress={() => navigate(ROUTES.home, { replace: true })}
+                  >
+                    {t("common.back")}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onPress={() => minecraft.QuitLauncher()}
+                  >
+                    {t("common.quit_launcher")}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </Card.Content>
         </Card>
       </motion.div>

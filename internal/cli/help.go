@@ -7,9 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// ProgramName is how help and hints name the program.
-const ProgramName = "LeviLauncher.exe"
-
 // everydayEntry is one line of the Everyday section, shown when its target
 // command is registered.
 type everydayEntry struct {
@@ -32,28 +29,24 @@ var groupTitles = []struct {
 	{GroupSystem, "This PC and the launcher:"},
 }
 
-const overviewHead = `LeviLauncher - install, run and manage Minecraft Bedrock from the command line.
+var overviewHead = `LeviLauncher - install, run and manage Minecraft Bedrock from the command line.
 
 Usage:
-  LeviLauncher.exe <command> [arguments] [flags]
-  LeviLauncher.exe                  (no arguments: open the launcher window)
+  ` + ProgramName + ` <command> [arguments] [flags]
+  ` + ProgramName + `                  (no arguments: open the launcher window)
 `
 
-const overviewTail = `Examples:
-  LeviLauncher.exe install latest --loader --use
-  LeviLauncher.exe play
-  LeviLauncher.exe mod install LiteLDev/LegacyMoney
-  LeviLauncher.exe instance list --json
+var overviewTail = `Examples:
+  ` + ProgramName + ` install latest --loader --use
+  ` + ProgramName + ` play
+  ` + ProgramName + ` mod install LiteLDev/LegacyMoney
+  ` + ProgramName + ` instance list --json
 
 Exit codes: 0 ok, 1 failed, 2 usage, 3 not found, 4 conflict, 5 sign-in/licence,
 6 network, 7 partial, 8 needs system change or admin, 9 timeout, 10 cancelled,
 130 interrupted.
-
-The program does not wait in cmd.exe and some shells; use
-'start /wait LeviLauncher.exe ...' or pipe its output to see results and
-%ERRORLEVEL%.
-
-Run 'LeviLauncher.exe help <command>' for details and examples.
+` + overviewShellNote + `
+Run '` + ProgramName + ` help <command>' for details and examples.
 `
 
 // writeOverview prints the tiered top-level help.

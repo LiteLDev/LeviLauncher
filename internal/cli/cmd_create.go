@@ -125,7 +125,7 @@ func runInstanceCreate(c *Ctx) error {
 			return err
 		}
 	} else {
-		if typ == catalog.TypeGDK && g.channel == catalog.ChannelBeta {
+		if !gi.isDarwin && typ == catalog.TypeGDK && g.channel == catalog.ChannelBeta {
 			return UsageError("beta builds exist only for UWP").WithHint("use --channel preview, or --type uwp")
 		}
 		var channels []string
@@ -196,6 +196,9 @@ func (g *giCreate) planLocal(arg, typ string) error {
 	g.local, g.path, g.typ = true, abs, catalog.TypeGDK
 	if catalog.IsAppxInstaller(abs) {
 		g.typ = catalog.TypeUWP
+	}
+	if _, err := giInstallType([]string{g.channel}, g.typ); err != nil {
+		return err
 	}
 	if typ != "" && typ != g.typ {
 		return UsageError("%s is a %s installer, not %s", filepath.Base(abs), giTypeLabel(g.typ), giTypeLabel(typ))

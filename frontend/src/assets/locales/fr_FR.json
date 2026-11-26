@@ -172,6 +172,8 @@
   "updating": {
     "title": "Mise à jour de LeviLauncher",
     "body": "Demande de privilèges administrateur et application de la mise à jour. Ne fermez pas cette fenêtre pendant la mise à jour.",
+    "body_mac": "Téléchargement de l’image disque d’installation pour macOS. Une fois l’image ouverte, quittez le lanceur et faites glisser LeviLauncher dans le dossier Applications.",
+    "mac_installer_opened": "L’image disque d’installation est ouverte dans le Finder. Quittez LeviLauncher et faites glisser la nouvelle application dans le dossier Applications pour terminer la mise à jour.",
     "failed_title": "Échec de la mise à jour",
     "phase": {
       "download": "Téléchargement du paquet de mise à jour",

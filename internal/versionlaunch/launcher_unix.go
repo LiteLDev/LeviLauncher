@@ -41,7 +41,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	if _, err = os.Stat(exe); err != nil {
 		return "ERR_NOT_FOUND_EXE"
 	}
-	if isProcessRunningAtPath(exe) {
+	if checkRunning && isProcessRunningAtPath(exe) {
 		return "ERR_GAME_ALREADY_RUNNING"
 	}
 	p, err := gameruntime.Default()

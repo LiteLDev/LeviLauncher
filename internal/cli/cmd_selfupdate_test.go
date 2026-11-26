@@ -115,3 +115,21 @@ func TestSelfUpdateDevBuild(t *testing.T) {
 		t.Fatalf("dev build: %d %q %q", code, out, errOut)
 	}
 }
+
+func TestSelfUpdateMacDMGInstaller(t *testing.T) {
+	h := newHarness(t)
+	f := installFakeUpdate(t)
+	f.latest = "v1.7.0"
+	suApply = func(context.Context, string, bool) (update.ApplyResult, error) {
+		f.applied++
+		return update.ApplyResult{
+			From:          "v" + f.version,
+			To:            f.latest,
+			InstallerPath: "/tmp/LeviLauncher-macos-arm64-installer.dmg",
+		}, nil
+	}
+	code, out, errOut := h.run("self-update", "--yes")
+	if code != 0 || f.applied != 1 || !strings.Contains(out, "Downloaded v1.7.0 installer to /tmp/LeviLauncher-macos-arm64-installer.dmg") || !strings.Contains(errOut, "open /tmp/LeviLauncher-macos-arm64-installer.dmg") {
+		t.Fatalf("mac dmg apply: %d %q %q", code, out, errOut)
+	}
+}

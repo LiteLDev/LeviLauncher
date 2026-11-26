@@ -5,28 +5,19 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/nativeinstall"
-	"github.com/liteldev/LeviLauncher/internal/winhost"
 )
 
-// SignIn shows the Microsoft account picker and saves the chosen account as
-// the launcher's account, as the window's Sign in button does. The picker is
-// owned by a native window of this process (winhost), so no Wails window is
-// needed. Errors: ERR_NO_INTERACTIVE_DESKTOP (exit 8) in a service or other
-// non-interactive session, ERR_CANCELED (exit 10) when the user closes the
-// picker, ERR_AUTH_* (exit 5) otherwise.
-func SignIn(ctx context.Context) error {
-	if !winhost.InteractiveDesktop() {
-		return Backend("ERR_NO_INTERACTIVE_DESKTOP")
-	}
-	host, err := winhost.New(winhost.Options{Title: "LeviLauncher sign-in"})
-	if err != nil {
-		return Errorf(ExitFailure, "ERR_AUTH_FAILED", "cannot open the sign-in window: %v", err)
-	}
-	defer host.Close()
-	// A broken saved selection must not block choosing a new account.
-	_ = RestoreAccount(ctx)
-	if err := nativeinstall.SignInSharedAccount(ctx, apppath.AccountsDir(), host.HWND(), host.Dispatch); err != nil {
-		return Backend(nativeinstall.AuthErrorCode(err)).WithDetail(err.Error())
+type signInNoticeKey struct{}
+
+// withSignInNotice attaches a notice callback for non-Windows browser sign-in
+// flows so the verification URL and device code are written to stderr.
+func withSignInNotice(ctx context.Context, fn func(format string, args ...any)) context.Context {
+	return context.WithValue(ctx, signInNoticeKey{}, fn)
+}
+
+func signInNoticeFrom(ctx context.Context) func(format string, args ...any) {
+	if fn, ok := ctx.Value(signInNoticeKey{}).(func(format string, args ...any)); ok && fn != nil {
+		return fn
 	}
 	return nil
 }

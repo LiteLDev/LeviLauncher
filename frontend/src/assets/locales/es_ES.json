@@ -172,6 +172,8 @@
   "updating": {
     "title": "Actualizando LeviLauncher",
     "body": "Solicitando permiso de administrador y realizando actualización. No cierre esta ventana durante la actualización.",
+    "body_mac": "Se está descargando la imagen de instalación de macOS. Cuando se abra, cierra el lanzador y arrastra LeviLauncher a Aplicaciones.",
+    "mac_installer_opened": "La imagen de instalación se ha abierto en Finder. Cierra LeviLauncher y arrastra la nueva aplicación a Aplicaciones para completar la actualización.",
     "failed_title": "Actualización fallida",
     "phase": {
       "download": "Descargar paquete de actualización",

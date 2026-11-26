@@ -43,6 +43,8 @@ func newInstFakes(t *testing.T) *instFakes {
 	h := newHarness(t)
 	f := &instFakes{h: h, registered: map[string]string{}, devMode: true, desktop: t.TempDir(),
 		systemData: filepath.Join(t.TempDir(), "Minecraft Bedrock"), running: map[string][]int{}}
+	instSave(f, &instSupportsWindowsCommands)
+	instSupportsWindowsCommands = true
 	instSave(f, &instSaveMeta)
 	instSave(f, &instSaveLogo)
 	instSave(f, &instRemoveLogo)
@@ -555,6 +557,16 @@ func TestInstanceRemove(t *testing.T) {
 	code, out, errOut = f.h.run("instance", "remove", "B", "C", "-y")
 	if code != ExitPartial || out != "Removed B\n" || !strings.Contains(errOut, "error: C:") {
 		t.Fatalf("partial: %d %q %s", code, out, errOut)
+	}
+}
+
+func TestWindowsOnlyInstanceCommands(t *testing.T) {
+	f := newInstFakes(t)
+	instSupportsWindowsCommands = false
+	for _, command := range []string{"register", "unregister", "shortcut"} {
+		if code, _, errs := f.h.run("instance", command, "missing"); code != ExitUsage || !strings.Contains(errs, "available on Windows only") {
+			t.Errorf("instance %s: exit %d, %s", command, code, errs)
+		}
 	}
 }
 

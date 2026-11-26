@@ -179,6 +179,8 @@
   "updating": {
     "title": "正在更新 LeviLauncher",
     "body": "正在請求管理員權限並執行更新。更新期間請勿關閉視窗。",
+    "body_mac": "正在下載 macOS 安裝磁碟映像。開啟後請結束啟動器，並將 LeviLauncher 拖到「應用程式」資料夾。",
+    "mac_installer_opened": "已在 Finder 開啟安裝磁碟映像。請結束 LeviLauncher，並將新版應用程式拖到「應用程式」資料夾以完成更新。",
     "failed_title": "更新失敗",
     "phase": {
       "download": "下載更新包",

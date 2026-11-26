@@ -49,7 +49,7 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import { ROUTES } from "@/constants/routes";
 import { useDownloadFilters } from "@/hooks/useDownloadFilters";
-import { Clipboard } from "@wailsio/runtime";
+import { Clipboard, System } from "@wailsio/runtime";
 import { normalizeVersionChannel, versionStatusKey, type PackageType, type VersionChannel } from "@/utils/packageType";
 
 type ItemType = VersionChannel;
@@ -67,6 +67,7 @@ type VersionItem = {
 
 export const DownloadPage: React.FC = () => {
   const { t } = useTranslation();
+  const isMac = System.IsMac();
   const { openDiagnostics } = useDiagnostics();
   const navigate = useNavigate();
   const { startDownload, isDownloading } = useDownloads();
@@ -299,11 +300,12 @@ export const DownloadPage: React.FC = () => {
   };
 
   const fetchVersionItems = async (packageType = packageFilter): Promise<VersionItem[]> => {
-    if (packageType === "all") {
+    const effectivePackageType = isMac ? "gdk" : packageType;
+    if (effectivePackageType === "all") {
       const catalogs = await Promise.all([fetchVersionItems("gdk"), fetchVersionItems("uwp")]);
       return catalogs.flat();
     }
-    if (packageType === "uwp") {
+    if (effectivePackageType === "uwp") {
       const data = await minecraft.FetchUWPVersions();
       return (data || []).map((v) => ({
         version: v.version, short: v.version,
@@ -601,7 +603,7 @@ export const DownloadPage: React.FC = () => {
                         state: {
                           mirrorVersion: "",
                           mirrorType: "Release",
-                          packageType: packageFilter === "uwp" ? "uwp" : "gdk",
+                          packageType: !isMac && packageFilter === "uwp" ? "uwp" : "gdk",
                           returnTo: ROUTES.download,
                         },
                       })
@@ -614,27 +616,29 @@ export const DownloadPage: React.FC = () => {
                   >
                     {t("audit.primary.local_install")}
                   </Button>
-                  <Dropdown>
-                    <Button variant="secondary" className="rounded-full" aria-label={t("uwp.package_type")} isDisabled={versionsLoading}>
-                      {packageFilter === "all" ? t("downloadpage.topcontent.types_all") : packageFilter.toUpperCase()}
-                    </Button>
-                    <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
-                      <Dropdown.Menu selectionMode="single" disallowEmptySelection selectedKeys={[packageFilter]}
-                        onSelectionChange={(keys) => {
-                          if (versionsLoading) return;
-                          const next = Array.from(keys)[0];
-                          if (next === "all" || next === "gdk" || next === "uwp") {
-                            setPackageFilter(next);
-                            if (next === "uwp") setLlFilter("all");
-                            if (next === "gdk" && typeFilter === "Beta") setTypeFilter("Release");
-                          }
-                        }}>
-                        <Dropdown.Item id="all" textValue={t("downloadpage.topcontent.types_all")}><Label>{t("downloadpage.topcontent.types_all")}</Label><Dropdown.ItemIndicator /></Dropdown.Item>
-                        <Dropdown.Item id="gdk" textValue="GDK"><Label>GDK</Label><Dropdown.ItemIndicator /></Dropdown.Item>
-                        <Dropdown.Item id="uwp" textValue="UWP"><Label>UWP</Label><Dropdown.ItemIndicator /></Dropdown.Item>
-                      </Dropdown.Menu>
-                    </Dropdown.Popover>
-                  </Dropdown>
+                  {!isMac && (
+                    <Dropdown>
+                      <Button variant="secondary" className="rounded-full" aria-label={t("uwp.package_type")} isDisabled={versionsLoading}>
+                        {packageFilter === "all" ? t("downloadpage.topcontent.types_all") : packageFilter.toUpperCase()}
+                      </Button>
+                      <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
+                        <Dropdown.Menu selectionMode="single" disallowEmptySelection selectedKeys={[packageFilter]}
+                          onSelectionChange={(keys) => {
+                            if (versionsLoading) return;
+                            const next = Array.from(keys)[0];
+                            if (next === "all" || next === "gdk" || next === "uwp") {
+                              setPackageFilter(next);
+                              if (next === "uwp") setLlFilter("all");
+                              if (next === "gdk" && typeFilter === "Beta") setTypeFilter("Release");
+                            }
+                          }}>
+                          <Dropdown.Item id="all" textValue={t("downloadpage.topcontent.types_all")}><Label>{t("downloadpage.topcontent.types_all")}</Label><Dropdown.ItemIndicator /></Dropdown.Item>
+                          <Dropdown.Item id="gdk" textValue="GDK"><Label>GDK</Label><Dropdown.ItemIndicator /></Dropdown.Item>
+                          <Dropdown.Item id="uwp" textValue="UWP"><Label>UWP</Label><Dropdown.ItemIndicator /></Dropdown.Item>
+                        </Dropdown.Menu>
+                      </Dropdown.Popover>
+                    </Dropdown>
+                  )}
                   <Dropdown>
                     <Button
                       variant={"secondary"}
@@ -681,9 +685,11 @@ export const DownloadPage: React.FC = () => {
                           </Label>
                           <Dropdown.ItemIndicator />
                         </Dropdown.Item>
-                        <Dropdown.Item id="Beta" textValue={t("uwp.beta")} isDisabled={packageFilter === "gdk"}>
-                          <Label>{t("uwp.beta")}</Label><Dropdown.ItemIndicator />
-                        </Dropdown.Item>
+                        {!isMac && (
+                          <Dropdown.Item id="Beta" textValue={t("uwp.beta")} isDisabled={packageFilter === "gdk"}>
+                            <Label>{t("uwp.beta")}</Label><Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                        )}
                         <Dropdown.Item
                           key="Preview"
                           id={"Preview"}

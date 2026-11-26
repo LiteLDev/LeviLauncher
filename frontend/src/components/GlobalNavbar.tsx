@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { ROUTES, isRouteActive } from "@/constants/routes";
+import { useMacTrafficLightInset } from "@/hooks/useMacTrafficLightInset";
 
 interface GlobalNavbarProps {
   isBeta: boolean;
@@ -39,6 +40,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   tryNavigate,
 }) => {
   const { t } = useTranslation();
+  const showTrafficLightInset = useMacTrafficLightInset();
   const location = useLocation();
 
   const navItems = [
@@ -111,7 +113,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       className="fixed top-0 left-0 right-0 z-50 flex justify-center"
     >
       <div
-        className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} border-b border-border/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 px-4 py-2 flex items-center gap-4`}
+        className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} border-b border-border/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 ${showTrafficLightInset ? "pl-[86px] pr-4" : "px-4"} py-2 flex items-center gap-4`}
       >
         <div className="flex items-center gap-3 shrink-0">
           <Button
@@ -161,7 +163,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                     }
                   }}
                   variant={isActive ? "secondary" : "ghost"}
-                  className={`min-w-0 px-3 h-10 rounded-xl transition-all duration-200 ${item.navbarClass} ${
+                  className={`wails-no-drag min-w-0 px-3 h-10 rounded-xl transition-all duration-200 ${item.navbarClass} ${
                     isActive
                       ? "bg-surface-secondary text-zinc-900 dark:text-zinc-100 font-medium"
                       : "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium"
@@ -183,7 +185,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                 aria-label={t("nav.more")}
                 isDisabled={navLocked}
                 variant={"ghost"}
-                className={moreButtonClass}
+                className={cn("wails-no-drag", moreButtonClass)}
               >
                 {<FaEllipsisH size={18} />}
                 <span className="hidden md:inline">{t("nav.more")}</span>

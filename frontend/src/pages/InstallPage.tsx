@@ -1215,7 +1215,9 @@ export default function InstallPage() {
                               Filters: [
                                 {
                                   DisplayName: "Installer Files",
-                                  Pattern: "*.msixvc;*.appx;*.msix;*.appxbundle;*.msixbundle",
+                                  Pattern: System.IsMac()
+                                    ? "*.msixvc"
+                                    : "*.msixvc;*.appx;*.msix;*.appxbundle;*.msixbundle",
                                 },
                               ],
                               AllowsMultipleSelection: false,

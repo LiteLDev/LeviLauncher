@@ -19,12 +19,14 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/storage"
+	"github.com/liteldev/LeviLauncher/internal/update"
 )
 
 // Run executes a command-line invocation (os.Args[1:]) and returns the
 // process exit code. It attaches to the parent console first.
 func Run(args []string) int {
 	setupConsole()
+	update.Init()
 	return run(args, &Streams{
 		Stdin: os.Stdin, Stdout: os.Stdout, Stderr: os.Stderr,
 		StdinConsole: isConsole(os.Stdin), StdoutConsole: isConsole(os.Stdout), StderrConsole: isConsole(os.Stderr),

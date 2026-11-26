@@ -172,6 +172,8 @@
   "updating": {
     "title": "LeviLauncher 업데이트 중",
     "body": "관리자 권한을 요청하고 업데이트를 수행 중입니다. 업데이트 중이 창을 닫지 마세요.",
+    "body_mac": "macOS 설치 디스크 이미지를 다운로드하는 중입니다. 이미지가 열리면 런처를 종료하고 LeviLauncher를 응용 프로그램 폴더로 드래그하세요.",
+    "mac_installer_opened": "Finder에서 설치 디스크 이미지를 열었습니다. LeviLauncher를 종료하고 새 앱을 응용 프로그램 폴더로 드래그하여 업데이트를 완료하세요.",
     "failed_title": "업데이트 실패",
     "phase": {
       "download": "업데이트 패키지 다운로드",

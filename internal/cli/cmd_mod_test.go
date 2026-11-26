@@ -557,7 +557,9 @@ func TestModSearchAndShow(t *testing.T) {
 	if code != 0 || out != "LiteLDev/LegacyMoney\nSome/Chat\n" {
 		t.Fatalf("by stars = %d %q", code, out)
 	}
-	for _, args := range [][]string{{"--sort", "name"}, {"--reverse"}, {"--license", "oss"}, {"--license", "WTFPL"}} {
+	for _, args := range [][]string{{"--sort", "name"}, {"--reverse"}, {"--license", "oss"}, {"--license", "WTFPL"},
+		// An SPDX id no mod of the catalogue has is not a filter.
+		{"--license", "none,GPL-3.0"}} {
 		if code, _, _ = w.h.run(append([]string{"mod", "search", "--any-version"}, args...)...); code != ExitUsage {
 			t.Fatalf("%v = %d", args, code)
 		}
@@ -570,7 +572,7 @@ func TestModSearchAndShow(t *testing.T) {
 		{[]string{"--tag", "economy"}, "LiteLDev/LegacyMoney\n"},
 		{[]string{"--tag", "-money"}, "Some/Chat\n"},
 		{[]string{"--license", "permissive"}, "LiteLDev/LegacyMoney\n"},
-		{[]string{"--license", "none,GPL-3.0"}, "Some/Chat\n"},
+		{[]string{"--license", "none"}, "Some/Chat\n"},
 		{[]string{"--license", "Permissive"}, "LiteLDev/LegacyMoney\n"},
 		{[]string{"--license", "mit,NONE"}, "LiteLDev/LegacyMoney\nSome/Chat\n"},
 		{[]string{"--dep", "Some/Lib"}, "Some/Chat\n"},

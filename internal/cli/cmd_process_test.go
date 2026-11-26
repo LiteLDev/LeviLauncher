@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/sys/windows"
-
 	"github.com/liteldev/LeviLauncher/internal/types"
 )
 
@@ -107,7 +105,7 @@ func TestProcessStop(t *testing.T) {
 		t.Fatalf("stop instance: %d %q %s", code, out, errOut)
 	}
 	// A PID of a Store game; access denied is exit 8.
-	f.fail[20] = windows.ERROR_ACCESS_DENIED
+	f.fail[20] = testErrProcessAccessDenied
 	code, _, errOut = f.h.run("process", "stop", "20", "-y")
 	if code != ExitSystem || !strings.Contains(errOut, "elevated") {
 		t.Fatalf("denied: %d %s", code, errOut)
@@ -138,7 +136,7 @@ func TestProcessStopDefaultInstance(t *testing.T) {
 	if e := procKillError(errors.New("boom")); e.Code != "ERR_PROCESS_KILL_FAILED" || e.Exit != ExitFailure {
 		t.Fatalf("plain error: %+v", e)
 	}
-	if e := procKillError(windows.ERROR_INVALID_PARAMETER); e != nil {
+	if e := procKillError(testErrProcessGone); e != nil {
 		t.Fatalf("gone process: %+v", e)
 	}
 }

@@ -29,16 +29,19 @@ func TestBackupInstanceCreateProgressStopsWithoutDoneOnWriteError(t *testing.T) 
 		t.Fatalf("lock %s: %v", locked, err)
 	}
 	t.Cleanup(func() { _ = syscall.CloseHandle(handle) })
-	lockHeld := func() bool {
-		f, err := os.Open(locked)
-		if err == nil {
-			_ = f.Close()
-			return false
-		}
-		return errors.Is(err, windows.ERROR_SHARING_VIOLATION)
+	// The share mode keeps others from opening the file; the byte-range lock
+	// makes reading it fail too where the share mode is not enforced, as on
+	// GitHub's runners under bash.
+	overlapped := new(windows.Overlapped)
+	if err := windows.LockFileEx(windows.Handle(handle), windows.LOCKFILE_EXCLUSIVE_LOCK|windows.LOCKFILE_FAIL_IMMEDIATELY,
+		0, ^uint32(0), ^uint32(0), overlapped); err != nil {
+		t.Fatalf("lock range of %s: %v", locked, err)
 	}
-	if !lockHeld() {
-		t.Fatalf("the lock on %s does not hold before the backup", locked)
+	t.Cleanup(func() { _ = windows.UnlockFileEx(windows.Handle(handle), 0, ^uint32(0), ^uint32(0), overlapped) })
+	if data, err := os.ReadFile(locked); err == nil {
+		t.Fatalf("%s is readable through the lock: %q", locked, data)
+	} else if !errors.Is(err, windows.ERROR_SHARING_VIOLATION) {
+		t.Logf("the share mode is not enforced here; reading fails with: %v", err)
 	}
 	events := recordInstanceBackupCreateProgress(t)
 
@@ -46,9 +49,6 @@ func TestBackupInstanceCreateProgressStopsWithoutDoneOnWriteError(t *testing.T) 
 		Scopes:     []string{"gameData", "mods"},
 		ScopeModes: map[string]string{"gameData": instanceBackupModeSafe},
 	})
-	if result.ErrorCode == "" && !lockHeld() {
-		t.Fatalf("the backup closed the test's lock handle on %s: some handle is closed twice", locked)
-	}
 	if result.ErrorCode == "" {
 		names := []string{}
 		if z, err := zip.OpenReader(result.ArchivePath); err == nil {

@@ -1,8 +1,22 @@
 # LeviLauncher
 
-一个面向 **Windows 和 macOS** 的 **Minecraft 基岩版**桌面启动器。Windows 版支持 GDK 和 UWP，macOS 版通过 Wine 运行 GDK 版游戏。
+[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+
+一个面向 Windows 和 macOS 的 Minecraft 基岩版桌面启动器。
+
+[English](README.md) | 简体中文
+
+## 目录
+
+- [背景](#背景)
+- [安装](#安装)
+- [使用](#使用)
+- [参与贡献](#参与贡献)
+- [许可证](#许可证)
 
 ## 背景
+
+Windows 版同时支持 GDK 和 UWP 版游戏，macOS 版通过 Wine 运行 GDK 版游戏。
 
 LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版或预览版环境，同时让内容与工具链更容易整理。
 
@@ -13,7 +27,6 @@ LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版�
 ### 下载地址
 
 - **GitHub Releases（Windows 与 macOS）：** <https://github.com/LiteLDev/LeviLauncher/releases>
-- **蓝奏云（Windows）：** <https://levimc.lanzoue.com/b016ke39hc>（密码：`levi`）
 
 ### Windows
 
@@ -102,6 +115,8 @@ macOS 通过 Wine 运行 GDK 版游戏（支持 LeviLamina、LIP 包及兼容的
 
 ## 参与贡献
 
+欢迎提交 PR。有问题可以在 [Issues](https://github.com/LiteLDev/LeviLauncher/issues)、Discord 或下方的 QQ 群中提问。
+
 ### 问题反馈
 
 - **Issues：** <https://github.com/LiteLDev/LeviLauncher/issues>
@@ -118,4 +133,6 @@ macOS 通过 Wine 运行 GDK 版游戏（支持 LeviLamina、LIP 包及兼容的
 
 ## 许可证
 
-本项目使用 GPL-3.0-only 许可。完整许可文本见 `COPYING`，随附的第三方组件见 `THIRD_PARTY_NOTICES`。
+[GPL-3.0-only](COPYING) © LeviMC
+
+随附的第三方组件见 [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES)。

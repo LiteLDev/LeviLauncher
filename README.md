@@ -1,8 +1,22 @@
 # LeviLauncher
 
-A desktop launcher for **Minecraft Bedrock Edition** on **Windows and macOS**. Windows supports GDK and UWP. The macOS launcher runs the GDK game through Wine.
+[![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+
+A desktop launcher for Minecraft Bedrock Edition on Windows and macOS.
+
+English | [简体中文](README.zh.md)
+
+## Table of Contents
+
+- [Background](#background)
+- [Install](#install)
+- [Usage](#usage)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Background
+
+On Windows, LeviLauncher supports both GDK and UWP builds. On macOS, it runs the GDK game through Wine.
 
 LeviLauncher helps you install, manage, isolate, mod, and launch Release or Preview builds while keeping content and tooling easier to organize.
 
@@ -13,7 +27,6 @@ The **Android version** is developed in [LiteLDev/LeviLauncher-Android](https://
 ### Downloads
 
 - **GitHub Releases (Windows & macOS):** <https://github.com/LiteLDev/LeviLauncher/releases>
-- **Lanzou Cloud (Windows):** <https://levimc.lanzoue.com/b016ke39hc> (Password: `levi`)
 
 ### Windows
 
@@ -102,6 +115,8 @@ Global flags: `-i/--instance <name>`, `-p/--player <id|gamertag>`, `--json` (one
 
 ## Contributing
 
+PRs accepted. Ask questions in [Issues](https://github.com/LiteLDev/LeviLauncher/issues), on Discord or in the QQ group listed below.
+
 ### Issue Reporting
 
 - **Issues:** <https://github.com/LiteLDev/LeviLauncher/issues>
@@ -118,4 +133,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for working on the app and its documentat
 
 ## License
 
-This project is licensed under GPL-3.0-only. The full license text is in `COPYING`, and the bundled third-party components are listed in `THIRD_PARTY_NOTICES`.
+[GPL-3.0-only](COPYING) © LeviMC
+
+Bundled third-party components are listed in [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES).

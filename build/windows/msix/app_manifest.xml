@@ -3,7 +3,9 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10">
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop6="http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
+  IgnorableNamespaces="desktop6">
   
   <Identity 
     Name="com.wails.myfirstapp3"
@@ -16,6 +18,11 @@
     <PublisherDisplayName>My Company</PublisherDisplayName>
     <Description>My Product Description</Description>
     <Logo>Assets\StoreLogo.png</Logo>
+    <!-- Write %APPDATA% and %LOCALAPPDATA% for real, not into the package's
+         private copy: instances, backups and accounts must survive an
+         uninstall and be visible to Explorer, lip and the game's
+         registration (internal/apppath/README.md). -->
+    <desktop6:FileSystemWriteVirtualization>disabled</desktop6:FileSystemWriteVirtualization>
   </Properties>
   
   <Dependencies>
@@ -53,6 +60,7 @@
   
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
+    <rescap:Capability Name="unvirtualizedResources" />
     
   </Capabilities>
 </Package>

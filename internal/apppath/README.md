@@ -132,9 +132,20 @@ N9 保留的名称：
 
 ## 原生 macOS
 
-原生 macOS 的配置与本机数据均默认位于 `~/Library/Application Support/LeviLauncher/`。`APPDATA` 和 `LOCALAPPDATA` 可分别覆盖配置与数据目录。
+原生 macOS 按苹果《File System Programming Guide》放置文件：
+
+| 目录 | 位置 | 内容 |
+| --- | --- | --- |
+| 配置目录、本机目录、默认数据根 | `~/Library/Application Support/LeviLauncher/` | `config.json`、`Accounts/`、`Instances/`、`Backups/`、`Runtimes/`、`wine.json`、`wine-download.json` |
+| 缓存目录 | `~/Library/Caches/LeviLauncher/` | 与 Windows 的 `Cache\` 内容相同，另有 `Wine/`。Time Machine 不备份，系统空间不足时可能清理；不随 `base_root` 移动 |
+| 日志目录 | `~/Library/Logs/LeviLauncher/` | `startup.log`，「控制台」App 可以直接查看 |
+
+- 产品目录按 N1 叫 `LeviLauncher`，不用 bundle id：`~/Library/Caches/org.levimc.levilauncher.native` 和 `~/Library/WebKit/org.levimc.levilauncher.native` 由 WKWebView 自己使用。
+- 不建 `WebView2/`：WKWebView 不用它。
+- `APPDATA` 覆盖配置目录，`LOCALAPPDATA` 覆盖本机目录（供测试和便携用法）。设置了 `LOCALAPPDATA` 时，缓存和日志也放在它下面（`Cache/`、`Logs/`），不写 `~/Library`。
+- 内置 lip 同样用平台目录：配置在 `~/Library/Application Support/lip`，缓存在 `~/Library/Caches/lip`（`internal/lipcore/lipdirs`）。这与独立的 lip 在 macOS 上用的 `~/.config/lip`、`~/.cache/lip` 不同，两者不共用。
 
 - `Accounts/` 使用带版本头的认证加密格式，密钥由 macOS 钥匙串保护。
 - `wine.json` 保存 Wine 运行时、prefix、图形和同步配置。首次配置可通过界面选择 Wine，也可由 `LEVI_WINE_APP`、`LEVI_WINE_EXECUTABLE` 和 `LEVI_WINEPREFIX` 指定路径。自定义 Wine 可执行文件默认使用 `~/.wine`。
 - `wine-download.json` 保存 Wine 安装使用的镜像开关和 GitHub 代理。
-- `Runtimes/Sikarugir/Levi Wine.app` 是自动安装的 Wine 容器，下载包放在当前数据目录的 `Cache/Wine/` 中。
+- `Runtimes/Sikarugir/Levi Wine.app` 是自动安装的 Wine 容器，下载包放在缓存目录的 `Wine/` 中。

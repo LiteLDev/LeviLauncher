@@ -156,9 +156,10 @@ func LocalDir() string {
 	return filepath.Join(LocalAppData(), AppDirName)
 }
 
-// LogsDir is LocalDir\Logs, also in legacy mode: the log is opened before the
-// migration decides the layout.
-func LogsDir() string { return filepath.Join(LocalDir(), LogsDirName) }
+// LogsDir is LocalDir\Logs on Windows, also in legacy mode: the log is
+// opened before the migration decides the layout. On macOS it is
+// ~/Library/Logs/LeviLauncher (logsDir).
+func LogsDir() string { return logsDir() }
 
 func StartupLogPath() string { return filepath.Join(LogsDir(), StartupLogFileName) }
 
@@ -233,8 +234,10 @@ func WorldBackupsDir() string { return filepath.Join(BackupsDir(), WorldBackupsD
 
 func InstanceBackupsDir() string { return filepath.Join(BackupsDir(), InstanceBackupsDirName) }
 
-// CacheDir holds what can be deleted at any time without losing anything.
-func CacheDir() string { return filepath.Join(BaseRoot(), CacheDirName) }
+// CacheDir holds what can be deleted at any time without losing anything:
+// <BaseRoot>\Cache on Windows, ~/Library/Caches/LeviLauncher on macOS
+// (cacheDir).
+func CacheDir() string { return cacheDir() }
 
 // InstallersDir holds downloaded game packages and redistributables.
 func InstallersDir() (string, error) {
@@ -279,7 +282,7 @@ func InstanceStateDir(instanceDir string) string {
 
 // EnsureDirs creates the fixed directories of the layout.
 func EnsureDirs() error {
-	for _, dir := range []string{ConfigDir(), LocalDir(), LogsDir(), AccountsDir(), WebView2Dir(), BaseRoot()} {
+	for _, dir := range fixedDirs() {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return err
 		}

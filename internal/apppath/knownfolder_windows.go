@@ -4,6 +4,7 @@ package apppath
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/sys/windows"
@@ -24,3 +25,11 @@ func knownFolder(env string, id *windows.KNOWNFOLDERID) string {
 func roamingAppData() string { return knownFolder("APPDATA", windows.FOLDERID_RoamingAppData) }
 
 func localAppData() string { return knownFolder("LOCALAPPDATA", windows.FOLDERID_LocalAppData) }
+
+func logsDir() string { return filepath.Join(LocalDir(), LogsDirName) }
+
+func cacheDir() string { return filepath.Join(BaseRoot(), CacheDirName) }
+
+func fixedDirs() []string {
+	return []string{ConfigDir(), LocalDir(), LogsDir(), AccountsDir(), WebView2Dir(), BaseRoot()}
+}

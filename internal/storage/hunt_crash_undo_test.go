@@ -35,15 +35,39 @@ type huntEnv struct {
 	root, droot, roaming, local, legacy string
 }
 
+// huntTempDir is a temporary directory spelled with long names: links
+// resolve to long names, and snapshot finds the roots in their targets only
+// spelled the same way (the temporary directory has 8.3 short names on some
+// machines, C:\Users\RUNNER~1 on GitHub's).
+func huntTempDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	p, err := windows.UTF16PtrFromString(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	buf := make([]uint16, windows.MAX_PATH)
+	for {
+		n, err := windows.GetLongPathName(p, &buf[0], uint32(len(buf)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if int(n) < len(buf) {
+			return windows.UTF16ToString(buf[:n])
+		}
+		buf = make([]uint16, n)
+	}
+}
+
 func huntSetup(t *testing.T, appdataOnD bool) huntEnv {
 	t.Helper()
-	e := huntEnv{root: t.TempDir()}
+	e := huntEnv{root: huntTempDir(t)}
 	// Without a second volume the "D" side is another folder on the same
 	// volume: the reference run is made the same way, so the scenarios
 	// still compare like with like.
 	parent := huntDRoot
 	if !isDir(parent) {
-		parent = t.TempDir()
+		parent = huntTempDir(t)
 	}
 	d, err := os.MkdirTemp(parent, "hunt-cu-")
 	if err != nil {

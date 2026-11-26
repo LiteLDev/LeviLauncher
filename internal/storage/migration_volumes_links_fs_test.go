@@ -1036,7 +1036,9 @@ func vlDACLProtected(t *testing.T, p string) (bool, string) {
 }
 
 // vlOnlyUserAndSystem reports whether every ACE of a DACL in SDDL form
-// grants the current user or SYSTEM.
+// grants the current user or SYSTEM. SDDL abbreviates well-known SIDs, the
+// user's too when it is one ("LA" for the built-in Administrator, the user
+// of GitHub's runners), so the SIDs are compared parsed.
 func vlOnlyUserAndSystem(t *testing.T, sddl string) bool {
 	t.Helper()
 	user, err := windows.GetCurrentProcessToken().GetTokenUser()
@@ -1051,8 +1053,11 @@ func vlOnlyUserAndSystem(t *testing.T, sddl string) bool {
 	for _, ace := range strings.Split(sddl[i:], "(")[1:] {
 		ace = strings.TrimSuffix(strings.SplitN(ace, ")", 2)[0], ")")
 		parts := strings.Split(ace, ";")
-		sid := parts[len(parts)-1]
-		if sid != "SY" && sid != user.User.Sid.String() {
+		sid, err := windows.StringToSid(parts[len(parts)-1])
+		if err != nil {
+			t.Fatalf("ACE %q: %v", ace, err)
+		}
+		if !sid.IsWellKnown(windows.WinLocalSystemSid) && !sid.Equals(user.User.Sid) {
 			return false
 		}
 		aces++

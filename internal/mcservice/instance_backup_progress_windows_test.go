@@ -3,6 +3,7 @@
 package mcservice
 
 import (
+	"archive/zip"
 	"path/filepath"
 	"syscall"
 	"testing"
@@ -32,7 +33,14 @@ func TestBackupInstanceCreateProgressStopsWithoutDoneOnWriteError(t *testing.T) 
 		ScopeModes: map[string]string{"gameData": instanceBackupModeSafe},
 	})
 	if result.ErrorCode == "" {
-		t.Fatalf("expected the locked file to fail the backup")
+		names := []string{}
+		if z, err := zip.OpenReader(result.ArchivePath); err == nil {
+			for _, f := range z.File {
+				names = append(names, f.Name)
+			}
+			_ = z.Close()
+		}
+		t.Fatalf("expected the locked file to fail the backup; the archive %s has %q", result.ArchivePath, names)
 	}
 	if len(*events) < 2 || (*events)[0].Phase != "scanning" || (*events)[1].Phase != "writing" {
 		t.Fatalf("expected scanning then writing events, got %+v", *events)

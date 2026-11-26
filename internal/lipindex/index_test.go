@@ -137,16 +137,20 @@ func TestSharedDetails(t *testing.T) {
 		t.Fatalf("LSE deps = %v", lp.Deps)
 	}
 
+	// PLand's latest versions run on the server only, but its versions up to
+	// 0.10.0 have client entries: some version is enough, as in
+	// frontend/scripts/lipCatalog.test.mjs.
 	pland := sharedDetail(t, "github.com/IceBlcokMC/PLand")
-	if _, ok := ParsePackage(pland); ok {
-		t.Fatal("PLand runs on the server only")
+	if pp, ok := ParsePackage(pland); !ok || pp.Versions[0] != "0.10.0" {
+		t.Fatalf("PLand = %+v %v, want its client versions up to 0.10.0", pp, ok)
 	}
 	if v, _ := ChooseVariant(pland, "", SideServer, "win-x64"); v != "" {
 		t.Fatalf("PLand server = %q", v)
 	}
 
 	idx := Build([]*Detail{arke, lse, pland, sharedDetail(t, "github.com/zimuya4153/LSE_Waila")})
-	if len(idx.Packages) != 2 || idx.Packages[0].Name != "Arke" || idx.Packages[1].Order != 1 {
+	if len(idx.Packages) != 3 || idx.Packages[0].Name != "Arke" || idx.Packages[1].Order != 1 ||
+		idx.Packages[2].Name != "PLand" {
 		t.Fatalf("packages = %d", len(idx.Packages))
 	}
 	if len(idx.SelfVariants) != 1 || idx.SelfVariants[0].Identifier != "github.com/LiteLDev/LegacyScriptEngine" {

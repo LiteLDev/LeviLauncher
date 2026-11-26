@@ -191,6 +191,7 @@ func isProcessRunningAtPath(exePath string) bool {
 	if normalizedTarget == "" {
 		return false
 	}
+	targetName := filepath.Base(normalizedTarget)
 	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
 		return false
@@ -213,6 +214,13 @@ func isProcessRunningAtPath(exePath string) bool {
 				_ = windows.CloseHandle(h)
 				normalizedProcessPath := utils.NormalizeWindowsPath(processPath)
 				if normalizedProcessPath == normalizedTarget {
+					return true
+				}
+				// The image path keeps the names the process was started with
+				// (8.3 short names too): canonicalize it as the target, only
+				// for an image of the same name to keep the scan cheap.
+				if strings.EqualFold(filepath.Base(normalizedProcessPath), targetName) &&
+					utils.CanonicalWindowsPath(processPath) == normalizedTarget {
 					return true
 				}
 			} else {

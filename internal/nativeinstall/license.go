@@ -19,8 +19,12 @@ import (
 var userTicket, userReference string
 var contentKey []byte
 
+// storeTransport makes the transport of every Store request; tests replace
+// it to answer the requests themselves.
+var storeTransport = func() http.RoundTripper { return httpx.NewBlockingProxyTransport() }
+
 func httpClient() *http.Client {
-	return &http.Client{Transport: httpx.NewBlockingProxyTransport(), Timeout: 40 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+	return &http.Client{Transport: storeTransport(), Timeout: 40 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 }
 
 func boundedBody(r io.Reader, max int64) []byte {

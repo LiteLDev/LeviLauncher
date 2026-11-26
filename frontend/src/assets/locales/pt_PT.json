@@ -172,6 +172,8 @@
   "updating": {
     "title": "A atualizar LeviLauncher",
     "body": "A solicitar privilégios de administrador e a aplicar a atualização. Não feche esta janela durante a atualização.",
+    "body_mac": "A descarregar a imagem de disco de instalação para macOS. Depois de abrir a imagem, encerre o lançador e arraste o LeviLauncher para a pasta Aplicações.",
+    "mac_installer_opened": "A imagem de disco de instalação foi aberta no Finder. Encerre o LeviLauncher e arraste a nova aplicação para a pasta Aplicações para concluir a atualização.",
     "failed_title": "Falha na atualização",
     "phase": {
       "download": "Transferência do pacote de atualização",

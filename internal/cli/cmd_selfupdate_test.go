@@ -129,7 +129,7 @@ func TestSelfUpdateMacDMGInstaller(t *testing.T) {
 		}, nil
 	}
 	code, out, errOut := h.run("self-update", "--yes")
-	if code != 0 || f.applied != 1 || !strings.Contains(out, "Downloaded v1.7.0 installer to /tmp/LeviLauncher-macos-arm64-installer.dmg") || !strings.Contains(errOut, "brew upgrade --cask levilauncher") {
+	if code != 0 || f.applied != 1 || !strings.Contains(out, "Downloaded v1.7.0 installer to /tmp/LeviLauncher-macos-arm64-installer.dmg") || !strings.Contains(errOut, "open /tmp/LeviLauncher-macos-arm64-installer.dmg") {
 		t.Fatalf("mac dmg apply: %d %q %q", code, out, errOut)
 	}
 }

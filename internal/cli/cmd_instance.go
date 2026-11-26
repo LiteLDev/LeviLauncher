@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -30,21 +31,22 @@ import (
 // Seams replaced by tests: everything that changes the system or reads
 // state outside the instance folder.
 var (
-	instSaveMeta       = mcservice.SaveVersionMeta
-	instSaveLogo       = mcservice.SaveVersionLogoFromPath
-	instRemoveLogo     = mcservice.RemoveVersionLogo
-	instValidateName   = mcservice.ValidateVersionFolderName
-	instRenameFolder   = mcservice.RenameVersionFolder
-	instDeleteFolder   = mcservice.DeleteVersionFolder
-	instCreateShortcut = mcservice.CreateDesktopShortcut
-	instShortcutPath   = mcservice.DesktopShortcutPath
-	instSetDefault     = config.SetCurrentInstance
-	instRegister       = instancereg.Register
-	instUnregister     = instancereg.Unregister
-	instDevModeEnabled = winreg.IsDevModeEnabled
-	instSystemDataPath = utils.GetMinecraftGDKDataPath
-	instContentRoots   = func(inst Instance) types.ContentRoots { return mcservice.GetContentRoots(inst.Name) }
-	instOpenFolder     = instExplorer
+	instSupportsWindowsCommands = runtime.GOOS == "windows"
+	instSaveMeta                = mcservice.SaveVersionMeta
+	instSaveLogo                = mcservice.SaveVersionLogoFromPath
+	instRemoveLogo              = mcservice.RemoveVersionLogo
+	instValidateName            = mcservice.ValidateVersionFolderName
+	instRenameFolder            = mcservice.RenameVersionFolder
+	instDeleteFolder            = mcservice.DeleteVersionFolder
+	instCreateShortcut          = mcservice.CreateDesktopShortcut
+	instShortcutPath            = mcservice.DesktopShortcutPath
+	instSetDefault              = config.SetCurrentInstance
+	instRegister                = instancereg.Register
+	instUnregister              = instancereg.Unregister
+	instDevModeEnabled          = winreg.IsDevModeEnabled
+	instSystemDataPath          = utils.GetMinecraftGDKDataPath
+	instContentRoots            = func(inst Instance) types.ContentRoots { return mcservice.GetContentRoots(inst.Name) }
+	instOpenFolder              = instExplorer
 )
 
 func init() {
@@ -1441,6 +1443,9 @@ func instRemoveOne(c *Ctx, inst Instance, all []Instance) error {
 // instance register / unregister
 
 func runInstanceRegister(c *Ctx) error {
+	if !instSupportsWindowsCommands {
+		return Errorf(ExitUsage, "ERR_UNSUPPORTED", "instance register is available on Windows only")
+	}
 	inst, err := c.ResolveInstance(c.Arg(0))
 	if err != nil {
 		return err
@@ -1458,6 +1463,9 @@ func runInstanceRegister(c *Ctx) error {
 }
 
 func runInstanceUnregister(c *Ctx) error {
+	if !instSupportsWindowsCommands {
+		return Errorf(ExitUsage, "ERR_UNSUPPORTED", "instance unregister is available on Windows only")
+	}
 	inst, err := c.ResolveInstance(c.Arg(0))
 	if err != nil {
 		return err
@@ -1734,6 +1742,9 @@ type instShortcutResult struct {
 }
 
 func runInstanceShortcut(c *Ctx) error {
+	if !instSupportsWindowsCommands {
+		return Errorf(ExitUsage, "ERR_UNSUPPORTED", "instance shortcut is available on Windows only")
+	}
 	inst, err := c.ResolveInstance(c.Arg(0))
 	if err != nil {
 		return err

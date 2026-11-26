@@ -238,11 +238,20 @@ func selectUpdateRelease(releases []githubRelease, version string) (githubReleas
 }
 
 func selectUpdateReleaseFor(releases []githubRelease, version string, acceptBeta bool) (githubRelease, bool) {
+	return selectUpdateReleaseForPlatform(releases, version, acceptBeta, runtime.GOOS, runtime.GOARCH)
+}
+
+func selectUpdateReleaseForPlatform(releases []githubRelease, version string, acceptBeta bool, goos, arch string) (githubRelease, bool) {
 	cur := strings.TrimPrefix(strings.TrimSpace(version), "v")
 	vCur, err1 := semver.NewVersion(cur)
 	for _, release := range releases {
 		if release.Prerelease && !acceptBeta {
 			continue
+		}
+		if goos == "darwin" {
+			if _, ok := selectMacDMGAsset(release, arch); !ok {
+				continue
+			}
 		}
 		tag := strings.TrimPrefix(strings.TrimSpace(release.TagName), "v")
 		vRel, err := semver.NewVersion(tag)
@@ -473,6 +482,7 @@ func Update(version string) error {
 		if err := openMacInstaller(res.InstallerPath); err != nil {
 			return emitUpdateError("ERR_UPDATE_INSTALL_FAILED", err)
 		}
+		eventsink.From(ctx).Emit(EventAppUpdateStatus, "installed")
 		return nil
 	}
 
@@ -488,7 +498,10 @@ func Update(version string) error {
 }
 
 func openMacInstaller(dmgPath string) error {
-	return exec.Command("/usr/bin/open", dmgPath).Start()
+	if output, err := exec.Command("/usr/bin/open", dmgPath).CombinedOutput(); err != nil {
+		return fmt.Errorf("open installer: %w: %s", err, strings.TrimSpace(string(output)))
+	}
+	return nil
 }
 
 // ApplyResult describes an update found or installed by Apply.
@@ -585,7 +598,6 @@ func apply(ctx context.Context, version string, acceptBeta bool) (ApplyResult, e
 			}
 		}
 		res.InstallerPath = dmgPath
-		sink.Emit(EventAppUpdateStatus, "installed")
 		return res, nil
 	}
 

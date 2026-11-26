@@ -114,7 +114,7 @@ func activeDoctorFixes() []string {
 }
 
 func init() {
-	Register(&Command{
+	cmd := &Command{
 		Path:    "doctor",
 		Summary: "check what Minecraft and mods need on this PC; --fix repairs it",
 		Args:    "[--fix [vcruntime|gameinput|loader-migration|developer-mode]...]",
@@ -138,7 +138,20 @@ fix needed administrator approval that was not given.`,
 		MaxArgs:  Unlimited,
 		Group:    GroupSystem,
 		Run:      runDoctor,
-	})
+	}
+	if runtime.GOOS == "darwin" {
+		cmd.Summary = "check what Minecraft and mods need on this Mac; --fix repairs it"
+		cmd.Args = "[--fix [wine|loader-migration]...]"
+		cmd.Description = `Checks Rosetta 2 on Apple Silicon, Wine and its game dependencies, the loader
+migration, the data folder and the Microsoft account. With -i it also checks
+one instance's game files and LeviLamina status.
+
+--fix sets up Wine and runs the loader migration when needed, or runs only
+the fixes named. Each fix asks first. Visual C++ and GameInput are installed
+in Wine on first game launch when needed.`
+		cmd.Examples = []string{"doctor", "doctor --fix", "doctor --fix wine"}
+	}
+	Register(cmd)
 }
 
 // doctorScope is what the checks are for: one instance (-i), or this PC with

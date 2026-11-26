@@ -172,6 +172,8 @@
   "updating": {
     "title": "Aktualizowanie LeviLauncher",
     "body": "Trwa żądanie uprawnień administratora i aktualizowanie. Nie zamykaj tego okna podczas aktualizacji.",
+    "body_mac": "Pobieranie obrazu dysku instalacyjnego dla macOS. Po otwarciu obrazu zamknij program uruchamiający i przeciągnij LeviLauncher do folderu Aplikacje.",
+    "mac_installer_opened": "Obraz dysku instalacyjnego został otwarty w Finderze. Zamknij LeviLauncher i przeciągnij nową aplikację do folderu Aplikacje, aby ukończyć aktualizację.",
     "failed_title": "Aktualizacja nie powiodła się",
     "phase": {
       "download": "Pobieranie pakietu aktualizacji",

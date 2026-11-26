@@ -14,6 +14,7 @@ import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
 import { ROUTES } from "@/constants/routes";
 import { getRouteLabelKey, ROUTE_LABEL_KEYS } from "@/constants/routeLabels";
 import { System } from "@wailsio/runtime";
+import { useMacTrafficLightInset } from "@/hooks/useMacTrafficLightInset";
 
 interface TopBarProps {
   navLocked: boolean;
@@ -28,6 +29,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const { t } = useTranslation();
   const isMac = System.IsMac();
+  const showTrafficLightInset = useMacTrafficLightInset();
   const location = useLocation();
   const { canGoBack, canGoForward, getBackEntry, getForwardEntry, currentTitle } =
     useNavigationHistory();
@@ -46,8 +48,10 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="flex items-center gap-2 overflow-hidden">
           {isMac ? (
             <>
-              <div className="w-[78px] shrink-0" aria-hidden="true" />
-              <div className="shrink-0 flex items-center justify-center mr-0.5">
+              {showTrafficLightInset && (
+                <div className="w-[78px] shrink-0" aria-hidden="true" />
+              )}
+              <div className={cn("shrink-0 flex items-center justify-center mr-0.5", !showTrafficLightInset && "ml-4")}>
                 <LeviIcon width={26} height={26} />
               </div>
             </>

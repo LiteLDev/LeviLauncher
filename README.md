@@ -46,7 +46,7 @@ Requirements:
 
 Download `LeviLauncher-macos-arm64-installer.dmg` from GitHub Releases, open it, and drag **LeviLauncher** into **Applications**.
 
-macOS runs GDK builds through Wine (including LeviLamina, LIP packages, and compatible native mods) and supports the terminal CLI (`levilauncher` when installed via Homebrew, or `/Applications/LeviLauncher.app/Contents/MacOS/LeviLauncher`); UWP instances are currently Windows-only.
+macOS runs GDK builds through Wine (including LeviLamina, LIP packages, and compatible native mods). Run `/Applications/LeviLauncher.app/Contents/MacOS/LeviLauncher` to use the CLI. UWP instances are currently Windows-only.
 
 **Build from source (macOS):** requires Xcode Command Line Tools, the Go version in `go.mod`, Wails v3, Node.js/npm, Python 3, and the Windows x64 loader at `internal/leviloader/LeviLauncher.dll` (or passed to `build/native/macos.py` via `--loader`). Run `wails3 task package` from the repository root to build `bin/LeviLauncher.app` and `bin/LeviLauncher-macos-installer.dmg`. To package an existing `.app` bundle, run `wails3 task darwin:create:dmg` or `python3 build/native/dmg.py --app "/path/to/LeviLauncher.app" --output "/path/to/LeviLauncher.dmg"`.
 
@@ -59,7 +59,7 @@ See the user docs:
 
 ### Command Line
 
-Running `LeviLauncher.exe` (Windows) or `levilauncher` (macOS) with no arguments opens the launcher window. With a command it runs in the terminal and exits, using a `<noun> <verb>` grammar:
+Running the launcher executable with no arguments opens the launcher window. With a command it runs in the terminal and exits, using a `<noun> <verb>` grammar:
 
 ```text
 Everyday:

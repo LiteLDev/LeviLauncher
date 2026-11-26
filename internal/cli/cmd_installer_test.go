@@ -19,6 +19,47 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/versions"
 )
 
+func TestMacInstallerOnlyOffersGDK(t *testing.T) {
+	h := newHarness(t)
+	f := newFakeInstall(t, h)
+	gi.isDarwin = true
+	gi.loadUWP = func() ([]uwpdownload.Version, error) {
+		t.Error("macOS install commands loaded the UWP catalogue")
+		return nil, nil
+	}
+
+	code, out, errs := h.run("installer", "search", "--json")
+	var items []installerSearchItem
+	if code != ExitOK || json.Unmarshal([]byte(out), &items) != nil || len(items) == 0 {
+		t.Fatalf("search: %d %s %s", code, out, errs)
+	}
+	for _, item := range items {
+		if item.Type != catalog.TypeGDK {
+			t.Errorf("search returned a non-GDK build: %+v", item)
+		}
+	}
+
+	local := filepath.Join(t.TempDir(), "Minecraft.appx")
+	if err := os.WriteFile(local, []byte("unused"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"installer", "search", "--type", "uwp"},
+		{"installer", "search", "--channel", "beta"},
+		{"installer", "download", "latest", "--type", "uwp"},
+		{"install", "latest", "--type", "uwp"},
+		{"install", "latest", "--channel", "beta"},
+		{"install", local},
+	} {
+		if code, _, errs := h.run(args...); code != ExitUsage || !strings.Contains(errs, "ERR_UWP_UNSUPPORTED_ON_HOST") {
+			t.Errorf("%v: exit %d, %s", args, code, errs)
+		}
+	}
+	if len(f.calls) != 0 {
+		t.Fatalf("unsupported installer commands touched the backend: %v", f.calls)
+	}
+}
+
 // fakeInstall is a game-install backend without network, accounts or real
 // instances. Instances it creates are added to the harness.
 type fakeInstall struct {

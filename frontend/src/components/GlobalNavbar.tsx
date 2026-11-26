@@ -22,7 +22,7 @@ import { useTranslation } from "react-i18next";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { ROUTES, isRouteActive } from "@/constants/routes";
-import { System } from "@wailsio/runtime";
+import { useMacTrafficLightInset } from "@/hooks/useMacTrafficLightInset";
 
 interface GlobalNavbarProps {
   isBeta: boolean;
@@ -40,7 +40,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   tryNavigate,
 }) => {
   const { t } = useTranslation();
-  const isMac = System.IsMac();
+  const showTrafficLightInset = useMacTrafficLightInset();
   const location = useLocation();
 
   const navItems = [
@@ -113,7 +113,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       className="fixed top-0 left-0 right-0 z-50 flex justify-center"
     >
       <div
-        className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} border-b border-border/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 ${isMac ? "pl-[86px] pr-4" : "px-4"} py-2 flex items-center gap-4`}
+        className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} border-b border-border/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 ${showTrafficLightInset ? "pl-[86px] pr-4" : "px-4"} py-2 flex items-center gap-4`}
       >
         <div className="flex items-center gap-3 shrink-0">
           <Button

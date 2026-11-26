@@ -1,6 +1,6 @@
 # LeviLauncher
 
-一个面向 **Windows 和 macOS** 的 **Minecraft 基岩版**桌面启动器。Windows 版支持 GDK 和 UWP，macOS 原生启动器通过 Wine 运行 GDK 版游戏。
+一个面向 **Windows 和 macOS** 的 **Minecraft 基岩版**桌面启动器。Windows 版支持 GDK 和 UWP，macOS 版通过 Wine 运行 GDK 版游戏。
 
 ## 背景
 
@@ -10,11 +10,14 @@ LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版�
 
 ## 安装
 
-### macOS
+### 下载地址
 
-参见 [macOS 安装包构建说明](build/native/README.md)。
+- **GitHub Releases（Windows 与 macOS）：** <https://github.com/LiteLDev/LeviLauncher/releases>
+- **蓝奏云（Windows）：** <https://levimc.lanzoue.com/b016ke39hc>（密码：`levi`）
 
-### Windows 使用要求
+### Windows
+
+使用要求：
 
 - Windows 10/11
 - 拥有 Minecraft 基岩版的正版授权
@@ -25,17 +28,32 @@ LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版�
 
 UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，并通过「管理模组」以 `.mcmod` 模组包导入与游戏版本兼容的 `preload-native` 模组（选择「所有文件」仍可导入 `.zip` 包或单独的 `.dll` 文件）。UWP x64 的 1.19.70.2 及以上版本支持实例隔离；未启用隔离的 UWP 实例继续共享同一应用渠道原有的 `LocalState` 内容。安装时部署加载器，注册后启动时准备原生加载功能，游戏继续使用 Windows 应用激活。x86/ARM64 包仍可普通启动，但当前原生加载器仅支持 x64。LeviLamina 自动安装仍以受支持的 GDK 版本为准。
 
-### Windows 下载地址
+**从源码构建（Windows）：** 需要 `go.mod` 对应的 Go 版本、Wails v3、Node.js/npm、xmake（`3.0+`）与 MSVC（用于构建原生加载器），以及 Inno Setup（`iscc`，仅打包安装程序时需要）。先在 `native/levilauncher` 目录构建并部署原生加载器到 `internal/leviloader/LeviLauncher.dll`：
 
-- **GitHub Releases：** https://github.com/LiteLDev/LeviLauncher/releases
-- **蓝奏云：** <https://levimc.lanzoue.com/b016ke39hc>（密码：`levi`）
+```sh
+xmake f -p windows -a x64 -m release --toolchain=msvc --deploy=y -y
+xmake -y
+```
+
+然后在仓库根目录运行 `wails3 task build PRODUCTION=true` 构建 `bin/LeviLauncher.exe`，或运行 `wails3 task package` 同时生成安装程序 `bin/LeviLauncher-amd64-installer.exe`。
+
+### macOS
+
+使用要求：
+
+- macOS 14.6 及以上（预构建版本面向 Apple Silicon `arm64`）
+- 拥有 Minecraft 基岩版的正版授权
+
+从 GitHub Releases 下载 `LeviLauncher-macos-arm64-installer.dmg`，打开后将 **LeviLauncher** 拖入 **Applications** 即可。macOS 通过 Wine 运行 GDK 版游戏（支持 LeviLamina、LIP 包及兼容的原生模组）；UWP 实例与命令行工具目前仅支持 Windows。
+
+**从源码构建（macOS）：** 需要 Xcode 命令行工具、`go.mod` 对应的 Go 版本、Wails v3、Node.js/npm、Python 3，以及位于 `internal/leviloader/LeviLauncher.dll` 的 Windows x64 加载器（或通过 `build/native/macos.py --loader` 指定）。在仓库根目录运行 `wails3 task package` 即可构建 `bin/LeviLauncher.app` 与 `bin/LeviLauncher-macos-installer.dmg`；如需仅将已有的 `.app` 打包为 DMG，可运行 `wails3 task darwin:create:dmg` 或 `python3 build/native/dmg.py --app "/path/to/LeviLauncher.app" --output "/path/to/LeviLauncher.dmg"`。
 
 ## 使用
 
 请参阅用户文档：
 
-- **用户文档：** https://levimc.org/LeviLauncher/
-- **中文文档：** https://levimc.org/zh-Hans/LeviLauncher/
+- **用户文档：** <https://levimc.org/LeviLauncher/>
+- **中文文档：** <https://levimc.org/zh-Hans/LeviLauncher/>
 
 ### 命令行
 
@@ -84,13 +102,13 @@ UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，�
 
 ### 问题反馈
 
-- **Issues：** https://github.com/LiteLDev/LeviLauncher/issues
-- 提交时建议附带 Windows 版本、LeviLauncher 版本、复现步骤，以及相关日志或截图。
+- **Issues：** <https://github.com/LiteLDev/LeviLauncher/issues>
+- 提交时建议附带操作系统版本（Windows 或 macOS）、LeviLauncher 版本、复现步骤，以及相关日志或截图。
 
 ### 社区
 
-- **Discord：** https://discord.gg/v5R5P4vRZk
-- **QQ 群：** https://qm.qq.com/q/1z791rJgJG
+- **Discord：** <https://discord.gg/v5R5P4vRZk>
+- **QQ 群：** <https://qm.qq.com/q/1z791rJgJG>
 
 ### 开发
 

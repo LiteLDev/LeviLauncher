@@ -304,7 +304,18 @@
         "hint": "預設使用安裝包目錄中已下載的檔案"
       },
       "levilamina_unsupported": "此遊戲版本不支援 LeviLamina",
-      "title": "安裝"
+      "title": "安裝",
+      "wine_bridge_label": "同時安裝 LeviWineBridge",
+      "wine_bridge_recommended": "推薦",
+      "wine_bridge_desc": "最佳化 macOS 遊玩體驗：啟動器內 Xbox 登入、防止視角甩動與 Cmd 快捷鍵修復、原生終端控制台及中文字型修復。",
+      "wine_bridge_checking": "正在檢查 LeviWineBridge 相容性…",
+      "wine_bridge_incompatible": "暫未支援所選的 LeviLamina 版本。",
+      "wine_bridge_unavailable": "暫時無法取得 LeviWineBridge 版本資訊，可重試或稍後於模組目錄安裝。",
+      "wine_bridge_installing": "正在安裝 LeviWineBridge…",
+      "wine_bridge_failed_toast": "遊戲與 LeviLamina 已安裝完成，但 LeviWineBridge 安裝失敗。",
+      "wine_bridge_failed_title": "LeviWineBridge 安裝未完成",
+      "wine_bridge_failed_body": "遊戲與 LeviLamina 已就緒，你可以直接啟動遊戲，或稍後前往模組目錄重新安裝 LeviWineBridge。",
+      "wine_bridge_open_catalog": "前往安裝 LeviWineBridge"
     },
     "customappx": {
       "modal": {
@@ -366,7 +377,7 @@
       },
       "errors": {
         "ERR_WINE_DOWNLOAD_STALLED": "下載長時間沒有進度，請重試以繼續下載。",
-      "ERR_WINE_INVALID_GITHUB_PROXY": "請輸入有效的 HTTP 或 HTTPS 代理網址。",
+        "ERR_WINE_INVALID_GITHUB_PROXY": "請輸入有效的 HTTP 或 HTTPS 代理網址。",
         "ERR_WINE_ROSETTA_INSTALL": "Rosetta 安裝失敗，請檢查網絡或 macOS 權限後重試。",
         "ERR_WINE_INSTALL_BUSY": "Wine 正在安裝。",
         "ERR_WINE_ASSET_CHECKSUM": "下載檔案校驗失敗，請重試下載。",
@@ -1016,7 +1027,18 @@
         "ll_select_guidance": "請選擇你要安裝、升級、降級或重裝的 LeviLamina 版本。",
         "ll_remove_confirm_title": "確認移除 LeviLamina",
         "ll_remove_confirm_body": "將從目前實例中移除 LeviLamina。",
-        "ll_remove_confirm_warning": "此操作不可復原。"
+        "ll_remove_confirm_warning": "此操作不可復原。",
+        "wine_bridge_status_enabled": "已啟用",
+        "wine_bridge_status_disabled": "已停用",
+        "wine_bridge_status_not_installed": "未安裝",
+        "wine_bridge_requires_ll": "請先安裝 LeviLamina 後再安裝 LeviWineBridge。",
+        "wine_bridge_view_details": "檢視詳情",
+        "wine_bridge_install": "安裝",
+        "wine_bridge_install_success": "LeviWineBridge 已安裝。",
+        "wine_bridge_update_success": "LeviWineBridge 已更新。",
+        "wine_bridge_install_failed": "LeviWineBridge 安裝失敗。",
+        "wine_bridge_enable_success": "LeviWineBridge 已啟用。",
+        "wine_bridge_enable_failed": "啟用 LeviWineBridge 失敗。"
       }
     },
     "logo": {

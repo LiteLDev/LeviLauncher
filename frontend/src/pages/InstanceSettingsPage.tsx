@@ -20,7 +20,7 @@ import {
 
 import { cn } from "@/utils/cn";
 
-import { Dialogs } from "@wailsio/runtime";
+import { Dialogs, System } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { ErrorDetail } from "@/components/ErrorDetail";
 import { splitErrorResult } from "@/utils/errorDetail";
@@ -47,6 +47,7 @@ import {
   useLipTaskProgress,
 } from "@/utils/LipTaskConsoleContext";
 import { OpenModsExplorer } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
+import { WineBridgeLoaderRow } from "@/components/WineBridgeLoaderRow";
 
 type RestoreConflictDiffField = {
   key: string;
@@ -773,6 +774,17 @@ export default function InstanceSettingsPage() {
                       )}
                     </div>
                   </div>
+                  {System.IsMac() && (
+                    <>
+                      <Separator className="opacity-50" />
+                      <WineBridgeLoaderRow
+                        targetName={vs.targetName}
+                        isLLInstalled={vs.isLLInstalled}
+                        currentLLVersion={vs.currentLLVersion}
+                        busy={vs.installingLL || vs.uninstallingLL}
+                      />
+                    </>
+                  )}
                 </div>
               )}
               {vs.selectedTab === "features" && (

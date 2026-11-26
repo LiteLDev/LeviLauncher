@@ -297,7 +297,18 @@
         "hint": "Domyślnie LeviLauncher używa plików znajdujących się już w folderze instalatorów"
       },
       "levilamina_unsupported": "LeviLamina nie jest obsługiwana dla tej wersji gry",
-      "title": "Instalacja"
+      "title": "Instalacja",
+      "wine_bridge_label": "Zainstaluj LeviWineBridge",
+      "wine_bridge_recommended": "Zalecane",
+      "wine_bridge_desc": "Poprawia działanie Minecrafta na macOS: logowanie Xbox w launcherze, poprawki wejścia Wine i skrótów Cmd, natywny terminal oraz czcionki CJK.",
+      "wine_bridge_checking": "Sprawdzanie zgodności LeviWineBridge…",
+      "wine_bridge_incompatible": "Żadne wydanie LeviWineBridge nie pasuje jeszcze do wybranej wersji LeviLamina.",
+      "wine_bridge_unavailable": "Nie udało się sprawdzić dostępności LeviWineBridge. Możesz spróbować ponownie lub zainstalować je później z katalogu modów.",
+      "wine_bridge_installing": "Instalowanie LeviWineBridge…",
+      "wine_bridge_failed_toast": "Gra i LeviLamina zostały zainstalowane, ale instalacja LeviWineBridge nie powiodła się.",
+      "wine_bridge_failed_title": "Nie zainstalowano LeviWineBridge",
+      "wine_bridge_failed_body": "Minecraft i LeviLamina są gotowe do gry. LeviWineBridge możesz zainstalować później z katalogu modów.",
+      "wine_bridge_open_catalog": "Zainstaluj LeviWineBridge"
     },
     "customappx": {
       "modal": {
@@ -909,7 +920,18 @@
         "ll_select_guidance": "Wybierz wersję LeviLamina, którą chcesz zainstalować, uaktualnić, cofnąć lub zainstalować ponownie.",
         "ll_remove_confirm_title": "Potwierdź usunięcie LeviLamina",
         "ll_remove_confirm_body": "LeviLamina zostanie usunięta z tej instancji.",
-        "ll_remove_confirm_warning": "Tej operacji nie można cofnąć."
+        "ll_remove_confirm_warning": "Tej operacji nie można cofnąć.",
+        "wine_bridge_status_enabled": "Włączony",
+        "wine_bridge_status_disabled": "Wyłączony",
+        "wine_bridge_status_not_installed": "Nie zainstalowano",
+        "wine_bridge_requires_ll": "Najpierw zainstaluj LeviLamina, zanim zainstalujesz LeviWineBridge.",
+        "wine_bridge_view_details": "Szczegóły",
+        "wine_bridge_install": "Zainstaluj",
+        "wine_bridge_install_success": "Zainstalowano LeviWineBridge.",
+        "wine_bridge_update_success": "Zaktualizowano LeviWineBridge.",
+        "wine_bridge_install_failed": "Nie udało się zainstalować LeviWineBridge.",
+        "wine_bridge_enable_success": "Włączono LeviWineBridge.",
+        "wine_bridge_enable_failed": "Nie udało się włączyć LeviWineBridge."
       }
     },
     "logo": {

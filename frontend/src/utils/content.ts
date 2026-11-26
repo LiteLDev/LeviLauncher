@@ -646,6 +646,7 @@ const buildLIPIndexResult = (
 
 let cachedLIPIndexResult: ParsedLIPIndexResult | null = null;
 let cachedLIPIndexResultPromise: Promise<ParsedLIPIndexResult> | null = null;
+const cachedDirectLIPPackageDetails = new Map<string, LIPPackageDetail>();
 const LIP_INDEX_FETCH_TIMEOUT_MS = 30_000;
 
 const fetchLIPIndexResult = async (options?: {
@@ -792,9 +793,64 @@ export async function fetchLIPPackageDetail(
     if (!detail) return cached;
     const parsed = buildLIPPackageDetail(cached ?? entryFromDetail(detail), detail);
     result.detailsByIdentifier[parsed.identifier] = parsed;
+    cachedDirectLIPPackageDetails.set(parsed.identifier.toLowerCase(), parsed);
     return parsed;
   } catch {
     return cached;
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+    options?.signal?.removeEventListener("abort", abort);
+  }
+}
+
+/**
+ * Fetches a single mod's detail directly (`<id>/index.json`) without loading
+ * the full catalogue index first. Reuses the in-memory catalogue or direct
+ * cache when available unless `forceRefresh` is true.
+ */
+export async function fetchLIPPackageDetailDirect(
+  identifier: string,
+  options?: {
+    forceRefresh?: boolean;
+    signal?: AbortSignal;
+  },
+): Promise<LIPPackageDetail | null> {
+  const targetBase = String(identifier || "").trim().split("#")[0].trim();
+  if (!targetBase) return null;
+
+  const cacheKey = targetBase.toLowerCase();
+  if (!options?.forceRefresh) {
+    if (cachedLIPIndexResult) {
+      const fromIndex = findLIPPackageDetail(
+        cachedLIPIndexResult.detailsByIdentifier,
+        targetBase,
+      );
+      if (fromIndex?.detail) return fromIndex;
+    }
+    const fromDirect = cachedDirectLIPPackageDetails.get(cacheKey);
+    if (fromDirect?.detail) return fromDirect;
+  }
+
+  const url = buildLIPModDetailUrl(targetBase);
+  if (!url || options?.signal?.aborted) return null;
+
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  options?.signal?.addEventListener("abort", abort, { once: true });
+  const timeoutId = globalThis.setTimeout(abort, LIP_INDEX_FETCH_TIMEOUT_MS);
+  try {
+    const detail = parseLipModDetail(await fetchLIPJson(url, controller.signal));
+    if (!detail) return null;
+    const existing = cachedLIPIndexResult
+      ? findLIPPackageDetail(cachedLIPIndexResult.detailsByIdentifier, targetBase)
+      : null;
+    const parsed = buildLIPPackageDetail(existing ?? entryFromDetail(detail), detail);
+    cachedDirectLIPPackageDetails.set(cacheKey, parsed);
+    cachedDirectLIPPackageDetails.set(parsed.identifier.toLowerCase(), parsed);
+    if (cachedLIPIndexResult) {
+      cachedLIPIndexResult.detailsByIdentifier[parsed.identifier] = parsed;
+    }
+    return parsed;
   } finally {
     globalThis.clearTimeout(timeoutId);
     options?.signal?.removeEventListener("abort", abort);

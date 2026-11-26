@@ -297,7 +297,18 @@
         "hint": "既定では、インストーラーフォルダー内のダウンロード済みファイルを使用します"
       },
       "levilamina_unsupported": "このゲームバージョンでは LeviLamina はサポートされていません",
-      "title": "インストール"
+      "title": "インストール",
+      "wine_bridge_label": "LeviWineBridge を一緒にインストール",
+      "wine_bridge_recommended": "推奨",
+      "wine_bridge_desc": "macOS でのプレイを改善します：ランチャー内 Xbox サインイン、Wine 入力と Cmd ショートカット修正、ネイティブターミナル出力、CJK フォント補完。",
+      "wine_bridge_checking": "LeviWineBridge の互換性を確認中…",
+      "wine_bridge_incompatible": "選択された LeviLamina バージョンに対応する LeviWineBridge がまだありません。",
+      "wine_bridge_unavailable": "LeviWineBridge の情報を取得できませんでした。再試行するか、後で MOD カタログからインストールできます。",
+      "wine_bridge_installing": "LeviWineBridge をインストール中…",
+      "wine_bridge_failed_toast": "ゲームと LeviLamina はインストールされましたが、LeviWineBridge のインストールに失敗しました。",
+      "wine_bridge_failed_title": "LeviWineBridge をインストールできませんでした",
+      "wine_bridge_failed_body": "Minecraft と LeviLamina はすぐにプレイできます。LeviWineBridge は後で MOD カタログからインストールできます。",
+      "wine_bridge_open_catalog": "LeviWineBridge をインストール"
     },
     "customappx": {
       "modal": {
@@ -909,7 +920,18 @@
         "ll_select_guidance": "インストール、アップグレード、ダウングレード、または再インストールする LeviLamina バージョンを選択してください。",
         "ll_remove_confirm_title": "LeviLamina の削除確認",
         "ll_remove_confirm_body": "このインスタンスから LeviLamina を削除します。",
-        "ll_remove_confirm_warning": "この操作は元に戻せません。"
+        "ll_remove_confirm_warning": "この操作は元に戻せません。",
+        "wine_bridge_status_enabled": "有効",
+        "wine_bridge_status_disabled": "無効",
+        "wine_bridge_status_not_installed": "未インストール",
+        "wine_bridge_requires_ll": "LeviWineBridge をインストールする前に LeviLamina をインストールしてください。",
+        "wine_bridge_view_details": "詳細を見る",
+        "wine_bridge_install": "インストール",
+        "wine_bridge_install_success": "LeviWineBridge をインストールしました。",
+        "wine_bridge_update_success": "LeviWineBridge を更新しました。",
+        "wine_bridge_install_failed": "LeviWineBridge のインストールに失敗しました。",
+        "wine_bridge_enable_success": "LeviWineBridge を有効にしました。",
+        "wine_bridge_enable_failed": "LeviWineBridge を有効にできませんでした。"
       }
     },
     "logo": {

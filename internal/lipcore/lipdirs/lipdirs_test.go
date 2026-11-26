@@ -18,6 +18,15 @@ func TestConfigDirIsLipUnderApplicationData(t *testing.T) {
 		}
 		return
 	}
+	if runtime.GOOS == "darwin" {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("XDG_CONFIG_HOME", "/xdg/config")
+		if got, want := ConfigDir(), filepath.Join(home, "Library", "Application Support", "lip"); got != want {
+			t.Fatalf("ConfigDir() = %q, want %q", got, want)
+		}
+		return
+	}
 	t.Setenv("XDG_CONFIG_HOME", "/xdg/config")
 	if got := ConfigDir(); got != "/xdg/config/lip" {
 		t.Fatalf("ConfigDir() = %q", got)
@@ -39,6 +48,15 @@ func TestCacheDirFollowsPlatformConvention(t *testing.T) {
 		}
 		if filepath.Base(CacheDir()) != "Cache" {
 			t.Fatalf("CacheDir() = %q, want ...\\lip\\Cache", CacheDir())
+		}
+		return
+	}
+	if runtime.GOOS == "darwin" {
+		home := t.TempDir()
+		t.Setenv("HOME", home)
+		t.Setenv("XDG_CACHE_HOME", "/xdg/cache")
+		if got, want := CacheDir(), filepath.Join(home, "Library", "Caches", "lip"); got != want {
+			t.Fatalf("CacheDir() = %q, want %q", got, want)
 		}
 		return
 	}

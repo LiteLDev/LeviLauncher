@@ -1,0 +1,160 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# A release must never be cancelled half way through publishing.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8.0.0
+        with:
+          path: ./artifacts
+
+      - name: List downloaded files
+        run: |
+          echo "Downloaded artifacts:"
+          find ./artifacts -type f -name "*" | sort
+          echo "Artifacts directory structure:"
+          ls -R ./artifacts/
+
+      - name: Determine Prerelease Status
+        id: check_prerelease
+        run: |
+          # Extract beta value from build/config.yml
+          # Look for line with "beta:", extract content between quotes
+          BETA=$(grep 'beta:' build/config.yml | sed -n 's/.*beta:[[:space:]]*"\([^"]*\)".*/\1/p')
+
+          echo "Beta value found: $BETA"
+
+          if [ "$BETA" == "true" ]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "Detected beta: true, setting prerelease to true"
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "Detected beta: $BETA, setting prerelease to false"
+          fi
+
+      - name: Extract Release Notes From CHANGELOG
+        id: extract-release-notes
+        uses: ffurrer2/extract-release-notes@v3
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
+          body: |-
+            ${{ steps.extract-release-notes.outputs.release_notes }}
+
+      - name: Upload Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Uploading release assets..."
+
+          for raw_exe_file in ./artifacts/*/LeviLauncher.exe; do
+            if [ -f "$raw_exe_file" ]; then
+              echo "Uploading standalone EXE: $raw_exe_file"
+              gh release upload ${{ github.ref_name }} "$raw_exe_file" --clobber
+              echo "Zipping standalone EXE for self-update: $raw_exe_file"
+              rm -f LeviLauncher.zip
+              zip -j LeviLauncher.zip "$raw_exe_file"
+              gh release upload ${{ github.ref_name }} LeviLauncher.zip --clobber
+            fi
+          done
+
+          for installer_file in ./artifacts/*/*installer.exe; do
+            if [ -f "$installer_file" ]; then
+              echo "Uploading installer: $installer_file"
+              gh release upload ${{ github.ref_name }} "$installer_file" --clobber
+            fi
+          done
+
+          for dmg_file in ./artifacts/*/*installer.dmg; do
+            if [ -f "$dmg_file" ]; then
+              echo "Uploading macOS installer: $dmg_file"
+              gh release upload ${{ github.ref_name }} "$dmg_file" --clobber
+            fi
+          done
+
+          echo "All assets uploaded successfully"
+
+      - name: Notify Discord
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          INSTALLER_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher-amd64-installer.exe"
+          STANDALONE_EXE_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher.exe"
+          MACOS_DMG_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher-macos-arm64-installer.dmg"
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "DISCORD_WEBHOOK secret not configured; skipping Discord notification."
+            exit 0
+          fi
+          EMBED_TITLE="🚀 LeviLauncher Update!"
+          EMBED_DESC="A new version of **LeviLauncher** is ready."
+          EMBED_COLOR=5814783
+          THUMB_URL="https://avatars.githubusercontent.com/u/78095377?s=200&v=4"
+
+          curl -H "Content-Type: application/json" \
+          -d "{
+            \"embeds\": [{
+              \"title\": \"$EMBED_TITLE\",
+              \"description\": \"$EMBED_DESC\",
+              \"color\": $EMBED_COLOR,
+              \"thumbnail\": { \"url\": \"$THUMB_URL\" },
+              \"fields\": [
+                {
+                  \"name\": \"📦 Version\",
+                  \"value\": \"\`$TAG_NAME\`\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"📦 Installer\",
+                  \"value\": \"[**Click here to download installer**]($INSTALLER_URL)\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"🧩 Standalone EXE\",
+                  \"value\": \"[**Click here to download EXE**]($STANDALONE_EXE_URL)\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"🍎 macOS DMG\",
+                  \"value\": \"[**Click here to download DMG**]($MACOS_DMG_URL)\",
+                  \"inline\": true
+                }
+              ] 
+            }]
+          }" \
+          "$DISCORD_WEBHOOK"

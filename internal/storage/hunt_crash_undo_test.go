@@ -696,6 +696,11 @@ func huntCrashScenario(t *testing.T, name string) {
 				if !fullCrashMatrix && v != crashPartial && v != crashAfterUser && v != crashUndoOld {
 					continue
 				}
+				// -short (pull request CI) keeps only a change half made at
+				// each record; the default run covers the other variants.
+				if !fullCrashMatrix && testing.Short() && v != crashPartial {
+					continue
+				}
 				i, v := i, v
 				t.Run(fmt.Sprintf("r%02d_%s_%s", i, ref.records[i].Op, v), func(t *testing.T) {
 					runCrashCase(t, sc, ref, i, v)

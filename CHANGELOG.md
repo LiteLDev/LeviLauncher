@@ -4,13 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0-beta.1] - 2026-11-26
+
 ### Added
 
-- `levilauncher://install/<mod id>[?version=<version>][&variant=<variant>]` links, such as `levilauncher://install/github.com/LiteLDev/Arke?version=0.1.6`, open the mod on the LeviMC Mods page with that version and variant ready to install, in the running launcher or a new one. Nothing is installed until you pick the instance, from those whose game version the mod supports, and confirm; a link to a mod that is not in the catalogue, a version that is not a SemVer version (no branches, tags, URLs or paths) or any other action is refused. Setup and the MSIX package register the scheme on Windows, and the app bundle on macOS
+- macOS support (Apple silicon), released as `LeviLauncher-macos-arm64-installer.dmg`: the launcher window, Microsoft sign-in, Store licenses, GDK unpacking and the package manager run natively, while the Windows GDK game, its mods and package install scripts run through Wine. Wine is set up on the first install or in Settings, the GDK compatibility components are deployed on the first launch, and Xbox sign-in goes through the web page (#280)
+- On macOS, LeviWineBridge is offered together with LeviLamina on the install page, and Instance Settings → Loader has a row under LeviLamina to install, enable or update it (#295)
+- On macOS, the command-line mode works, the launcher updates itself from the release DMG, the top bar leaves room for the window buttons, and UWP download options are hidden (#296)
+- Error dialogs, the package task console and the download manager explain the likely causes of a failure and the steps to fix it, with a link to the matching question of the LeviMC FAQ. A "Run diagnostics" button checks the runtimes, Windows settings, disk, account and network, and lists the problems found with buttons to fix them (#281)
+- `levilauncher://install/<mod id>[?version=<version>][&variant=<variant>]` links, such as `levilauncher://install/github.com/LiteLDev/Arke?version=0.1.6`, open the mod on the LeviMC Mods page with that version and variant ready to install, in the running launcher or a new one. Nothing is installed until you pick the instance, from those whose game version the mod supports, and confirm; a link to a mod that is not in the catalogue, a version that is not a SemVer version (no branches, tags, URLs or paths) or any other action is refused. Setup and the MSIX package register the scheme on Windows, and the app bundle on macOS (#289)
+
+### Changed
+
+- A GDK install that fails while unpacking shows the underlying cause after the reason
 
 ### Fixed
 
-- A running game is recognised when its folder path has 8.3 short names (such as `C:\Users\JOHNSM~1`), so the launcher no longer starts a second copy or misses the game's window
+- When Xbox Live cannot be reached, the download page, the account menu and diagnostics say so instead of asking a signed-in user to sign in again; the avatar shows a warning with "Run diagnostics", "Retry" and "Sign in" (#282)
+- The download page shows a failure with a hint, instead of an empty list, when no source of the version list can be reached (#282)
+- A proxy set with `HTTP_PROXY` or `HTTPS_PROXY` is no longer described as the Windows proxy, and the failures an unreachable proxy causes are listed under it instead of as separate problems (#282)
+- A running game is recognised when its folder path has 8.3 short names (such as `C:\Users\JOHNSM~1`), so the launcher no longer starts a second copy or misses the game's window (#294)
 
 ## [1.1.0] - 2026-11-12
 
@@ -448,7 +461,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.2.0-beta.1...HEAD
+[1.2.0-beta.1]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0...v1.2.0-beta.1
 [1.1.0]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.7...v1.1.0
 [1.1.0-beta.7]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.6...v1.1.0-beta.7
 [1.1.0-beta.6]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.5...v1.1.0-beta.6

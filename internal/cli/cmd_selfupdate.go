@@ -19,6 +19,7 @@ type selfUpdateResult struct {
 	UpdateAvailable bool   `json:"updateAvailable"`
 	Notes           string `json:"notes"`
 	Updated         bool   `json:"updated"`
+	InstallerPath   string `json:"installerPath,omitempty"`
 }
 
 // Seams replaced by tests.
@@ -116,6 +117,7 @@ func runSelfUpdate(c *Ctx) error {
 		return e
 	}
 	res.Updated = true
+	res.InstallerPath = applied.InstallerPath
 	if applied.To != "" {
 		res.Latest = vPrefix(applied.To)
 	}
@@ -125,6 +127,10 @@ func runSelfUpdate(c *Ctx) error {
 func renderSelfUpdate(c *Ctx, res selfUpdateResult, report bool) error {
 	return c.Render(res, []string{res.Latest}, func(w io.Writer) error {
 		switch {
+		case res.Updated && res.InstallerPath != "":
+			fmt.Fprintf(w, "Downloaded %s installer to %s\n", res.Latest, res.InstallerPath)
+			c.Notice("Open it with: open %s (or upgrade via Homebrew: brew upgrade --cask levilauncher)", quoteArg(res.InstallerPath))
+			return nil
 		case res.Updated:
 			fmt.Fprintf(w, "Updated %s -> %s; the new version runs from the next start\n", res.Current, res.Latest)
 			return nil

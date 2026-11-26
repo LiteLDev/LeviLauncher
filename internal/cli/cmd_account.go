@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -251,8 +252,15 @@ func runAccountStatus(c *Ctx) error {
 }
 
 func runAccountLogin(c *Ctx) error {
-	c.Notice("Choose an account in the Windows account picker")
-	if err := acct.signIn(c.Context()); err != nil {
+	if runtime.GOOS == "windows" {
+		c.Notice("Choose an account in the Windows account picker")
+	} else {
+		c.Notice("Complete Microsoft sign-in in your browser")
+	}
+	ctx := withSignInNotice(c.Context(), func(format string, args ...any) {
+		c.Notice(format, args...)
+	})
+	if err := acct.signIn(ctx); err != nil {
 		return err
 	}
 	st, err := accountIdentity(c.Context(), false)

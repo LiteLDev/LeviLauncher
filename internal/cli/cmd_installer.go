@@ -25,7 +25,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/uwpdownload"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/liteldev/LeviLauncher/internal/xbox"
-	"golang.org/x/sys/windows"
 )
 
 // This file holds the "installer" commands and the backend plumbing shared
@@ -550,7 +549,7 @@ func giDownloadError(name string, err error) *Error {
 // giRemoveError maps a failed file removal: a file another process holds
 // open is in use (exit 4).
 func giRemoveError(name string, err error) *Error {
-	if errors.Is(err, windows.ERROR_SHARING_VIOLATION) || errors.Is(err, windows.ERROR_LOCK_VIOLATION) {
+	if isFileSharingError(err) {
 		return Errorf(ExitConflict, "ERR_INSTALLER_IN_USE", "%s is in use by another program", name).
 			WithHint("wait until the download or installation using it ends")
 	}

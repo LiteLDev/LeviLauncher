@@ -1,15 +1,12 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/sys/windows"
 
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/types"
@@ -27,7 +24,7 @@ func init() {
 	RegisterBackendErrors(map[string]BackendError{
 		"ERR_PROCESS_ACCESS_DENIED": {Exit: ExitSystem, Message: "access to the Minecraft process was denied",
 			Hint: "run the command from an elevated (administrator) terminal"},
-		"ERR_PROCESS_NOT_MINECRAFT": {Exit: ExitNotFound, Message: "no Minecraft process has that PID", Hint: "LeviLauncher.exe ps"},
+		"ERR_PROCESS_NOT_MINECRAFT": {Exit: ExitNotFound, Message: "no Minecraft process has that PID", Hint: ProgramName + " ps"},
 	})
 	Register(&Command{
 		Path:    "process list",
@@ -180,11 +177,11 @@ func procTargets(c *Ctx, running []procItem) ([]procItem, error) {
 
 // procKillError wraps the plain-text error of a kill into a code.
 func procKillError(err error) *Error {
-	if errors.Is(err, windows.ERROR_ACCESS_DENIED) {
+	if isProcessAccessDenied(err) {
 		return Backend("ERR_PROCESS_ACCESS_DENIED").WithDetail(err.Error())
 	}
-	if errors.Is(err, windows.ERROR_INVALID_PARAMETER) {
-		// The process is gone (OpenProcess on a dead PID).
+	if isProcessGone(err) {
+		// The process is gone (OpenProcess on a dead PID / ESRCH).
 		return nil
 	}
 	return Errorf(ExitFailure, "ERR_PROCESS_KILL_FAILED", "could not stop the process: %v", err)

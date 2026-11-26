@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	winreg "github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
@@ -36,9 +38,11 @@ const (
 	fixGameInput       = "gameinput"
 	fixLoaderMigration = "loader-migration"
 	fixDeveloperMode   = "developer-mode"
+	fixWine            = "wine"
 )
 
 var doctorFixes = []string{fixVCRuntime, fixGameInput, fixLoaderMigration, fixDeveloperMode}
+var doctorDarwinFixes = []string{fixWine, fixLoaderMigration}
 
 // gamingServicesStoreURL opens Gaming Services in the Microsoft Store.
 const gamingServicesStoreURL = "ms-windows-store://pdp/?ProductId=9MWPM2CQNLHN"
@@ -59,6 +63,8 @@ func (d doctorCheck) failed() bool { return d.Status != doctorOK }
 
 // doc is the system the checks and fixes look at; tests replace it.
 var doc = struct {
+	isDarwin       bool
+	isArm64        bool
 	vcInstalled    func() bool
 	giInstalled    func() bool
 	gsInstalled    func() bool
@@ -69,12 +75,17 @@ var doc = struct {
 	accountSaved   func() bool
 	elevated       func() bool
 	webview2       func() bool
+	needsRosetta   func(ctx context.Context) bool
+	checkWine      func(ctx context.Context) (string, error)
+	fixWine        func(ctx context.Context, progress func(types.WineInstallProgress)) error
 	sleep          func(time.Duration)
 	fixVC          func(ctx context.Context)
 	fixGI          func(ctx context.Context)
 	fixDevMode     func() bool
 	migrate        func(ctx context.Context) (int, error)
 }{
+	isDarwin:       runtime.GOOS == "darwin",
+	isArm64:        runtime.GOARCH == "arm64",
 	vcInstalled:    vcruntime.IsInstalled,
 	giInstalled:    gameinput.IsInstalled,
 	gsInstalled:    func() bool { _, err := winreg.GetAppxInfo("Microsoft.GamingServices"); return err == nil },
@@ -85,11 +96,21 @@ var doc = struct {
 	accountSaved:   func() bool { return acct.hasSaved() },
 	elevated:       processinfo.IsElevated,
 	webview2:       webview2runtime.IsInstalled,
+	needsRosetta:   darwinNeedsRosetta,
+	checkWine:      darwinCheckWine,
+	fixWine:        darwinInstallManagedWine,
 	sleep:          time.Sleep,
 	fixVC:          vcruntime.EnsureInteractive,
 	fixGI:          gameinput.EnsureInteractive,
 	fixDevMode:     winreg.TryEnableDevMode,
 	migrate:        leviloader.RunMigration,
+}
+
+func activeDoctorFixes() []string {
+	if doc.isDarwin {
+		return doctorDarwinFixes
+	}
+	return doctorFixes
 }
 
 func init() {
@@ -154,7 +175,10 @@ func doctorScopeFor(c *Ctx) (doctorScope, error) {
 	return s, nil
 }
 
-func doctorRunChecks(s doctorScope) []doctorCheck {
+func doctorRunChecks(ctx context.Context, s doctorScope) []doctorCheck {
+	if doc.isDarwin {
+		return doctorRunDarwinChecks(ctx, s)
+	}
 	var out []doctorCheck
 	add := func(d doctorCheck) { out = append(out, d) }
 
@@ -230,6 +254,86 @@ func doctorRunChecks(s doctorScope) []doctorCheck {
 	return out
 }
 
+func doctorRunDarwinChecks(ctx context.Context, s doctorScope) []doctorCheck {
+	var out []doctorCheck
+	add := func(d doctorCheck) { out = append(out, d) }
+
+	rosettaMissing := false
+	if doc.isArm64 {
+		rosettaMissing = doc.needsRosetta(ctx)
+		r := doctorCheck{Check: "rosetta", Name: "Rosetta 2", Status: doctorOK, Required: true, Detail: "installed"}
+		if rosettaMissing {
+			r.Status = doctorMissing
+			r.Detail = "required to run Windows x64 games via Wine on Apple Silicon"
+			r.Fix = fixWine
+			r.Hint = "softwareupdate --install-rosetta --agree-to-license"
+		}
+		add(r)
+	}
+
+	wineCheck := doctorCheck{Check: "wine", Name: "Wine runtime", Status: doctorOK, Required: true}
+	if rosettaMissing {
+		wineCheck.Status = doctorWarn
+		wineCheck.Detail = "waiting for Rosetta 2"
+		wineCheck.Fix = fixWine
+	} else if ver, err := doc.checkWine(ctx); err != nil || strings.TrimSpace(ver) == "" {
+		wineCheck.Status = doctorMissing
+		wineCheck.Detail = describeDarwinWineError(err)
+		wineCheck.Fix = fixWine
+	} else {
+		wineCheck.Detail = strings.TrimSpace(ver)
+	}
+	add(wineCheck)
+
+	vc := doctorCheck{Check: "vcruntime", Name: "Visual C++ runtime (Wine)", Status: doctorOK, Detail: "installed"}
+	if !doc.vcInstalled() {
+		vc.Status = doctorWarn
+		vc.Detail = "not installed yet; installed automatically on first game launch"
+	}
+	add(vc)
+
+	gi := doctorCheck{Check: "gameinput", Name: "GameInput (Wine)", Status: doctorOK, Detail: "installed"}
+	if !doc.giInstalled() {
+		gi.Status = doctorWarn
+		gi.Detail = "not installed yet; installed automatically on first game launch"
+	}
+	add(gi)
+
+	lm := doctorCheck{Check: "loader-migration", Name: "Loader migration", Status: doctorOK, Detail: "done"}
+	if doc.needsMigration() {
+		lm.Status, lm.Fix = doctorWarn, fixLoaderMigration
+		lm.Detail = "the one-time move to the new mod loader setup has not run"
+	}
+	add(lm)
+
+	root := doc.baseRoot()
+	dr := doctorCheck{Check: "data-root", Name: "Data folder", Status: doctorOK, Required: true, Detail: root}
+	if !doc.canWrite(root) {
+		dr.Status = doctorError
+		dr.Detail = "cannot write to " + root
+		dr.Hint = ProgramName + " config set data-root <folder>"
+	}
+	add(dr)
+
+	ac := doctorCheck{Check: "account", Name: "Microsoft account", Status: doctorOK, Detail: "signed in"}
+	if !doc.accountSaved() {
+		ac.Status, ac.Detail = doctorWarn, "not signed in; needed to download Minecraft"
+		ac.Hint = ProgramName + " account login"
+	}
+	add(ac)
+
+	if s.inst != nil {
+		add(doctorInstanceFiles(*s.inst))
+		lv := LoaderVersion(*s.inst)
+		ll := doctorCheck{Check: "loader", Name: "LeviLamina", Status: doctorOK, Detail: "not installed"}
+		if lv != "" {
+			ll.Detail = lv
+		}
+		add(ll)
+	}
+	return out
+}
+
 func joinDetail(a, b string) string {
 	switch {
 	case a == "":
@@ -277,18 +381,19 @@ func parseDoctorFixes(c *Ctx) ([]string, error) {
 		}
 		return nil, nil
 	}
+	allowedFixes := activeDoctorFixes()
 	want := map[string]bool{}
 	for _, a := range c.Args {
 		n := strings.ToLower(strings.TrimSpace(a))
 		ok := false
-		for _, f := range doctorFixes {
+		for _, f := range allowedFixes {
 			if n == f {
 				ok = true
 			}
 		}
 		if !ok {
-			e := UsageError("unknown fix %q: use %s", a, strings.Join(doctorFixes, ", "))
-			if s := suggest(n, doctorFixes); s != "" {
+			e := UsageError("unknown fix %q: use %s", a, strings.Join(allowedFixes, ", "))
+			if s := suggest(n, allowedFixes); s != "" {
 				e = e.WithHint("did you mean %q?", s)
 			}
 			return nil, e
@@ -296,12 +401,12 @@ func parseDoctorFixes(c *Ctx) ([]string, error) {
 		want[n] = true
 	}
 	if len(want) == 0 {
-		for _, f := range doctorFixes {
+		for _, f := range allowedFixes {
 			want[f] = true
 		}
 	}
 	var out []string
-	for _, f := range doctorFixes {
+	for _, f := range allowedFixes {
 		if want[f] {
 			out = append(out, f)
 		}
@@ -370,6 +475,29 @@ func applyFix(c *Ctx, fix string) error {
 		if !doc.fixDevMode() {
 			return errFixDeclined("turning on Developer Mode")
 		}
+	case fixWine:
+		if err := c.Confirm("Install managed Wine runtime (and Rosetta 2 if needed)?"); err != nil {
+			return err
+		}
+		p := c.Progress()
+		p.Phase("Installing Wine runtime")
+		err := doc.fixWine(c.Context(), func(ev types.WineInstallProgress) {
+			if ev.Total > 0 {
+				if ev.Stage != "" {
+					p.Phase("Downloading %s", ev.Stage)
+				}
+				p.Bytes(ev.Downloaded, ev.Total)
+			} else if ev.Stage != "" && ev.Status != "" {
+				p.Phase("Wine setup (%s: %s)", ev.Stage, ev.Status)
+			}
+		})
+		p.Done()
+		if err != nil {
+			if c.Context().Err() != nil {
+				return c.Context().Err()
+			}
+			c.Warn("installing Wine runtime failed: %v", err)
+		}
 	case fixLoaderMigration:
 		if games := suGameRunning(); len(games) > 0 {
 			return ConflictError("Minecraft is running (%s)", strings.Join(games, ", ")).
@@ -403,7 +531,7 @@ func runDoctor(c *Ctx) error {
 	}
 	prog := c.Progress()
 	prog.Phase("Checking")
-	checks := doctorRunChecks(scope)
+	checks := doctorRunChecks(c.Context(), scope)
 	prog.Done()
 
 	if len(fixes) > 0 {
@@ -432,7 +560,7 @@ func runDoctor(c *Ctx) error {
 			c.Notice("Nothing to fix")
 		} else {
 			prog.Phase("Checking again")
-			after := doctorRunChecks(scope)
+			after := doctorRunChecks(c.Context(), scope)
 			prog.Done()
 			for i := range after {
 				if i < len(checks) && checks[i].failed() && !after[i].failed() && applied[checks[i].Fix] {

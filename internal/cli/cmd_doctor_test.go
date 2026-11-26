@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
+	"github.com/liteldev/LeviLauncher/internal/types"
 )
 
 type fakeSystem struct {
@@ -28,6 +29,8 @@ func installFakeSystem(t *testing.T) *fakeSystem {
 	savedGames := suGameRunning
 	t.Cleanup(func() { doc = saved; suGameRunning = savedGames })
 	suGameRunning = func() []string { return nil }
+	doc.isDarwin = false
+	doc.isArm64 = false
 	doc.vcInstalled = func() bool { f.vcCalls++; return f.vc }
 	doc.giInstalled = func() bool { return f.gi }
 	doc.gsInstalled = func() bool { return f.gs }
@@ -160,5 +163,41 @@ func TestDoctorInstance(t *testing.T) {
 	}
 	if code, out, _ := h.run("doctor", "-i", "survival"); code != 0 || !strings.Contains(out, "[ok]      Instance Survival: gdk 1.21.50") {
 		t.Fatalf("instance ok: %d %q", code, out)
+	}
+}
+
+func TestDoctorDarwin(t *testing.T) {
+	h := newHarness(t)
+	f := installFakeSystem(t)
+	doc.isDarwin = true
+	doc.isArm64 = true
+	wineInstalled := false
+	doc.needsRosetta = func(context.Context) bool { return false }
+	doc.checkWine = func(context.Context) (string, error) {
+		if !wineInstalled {
+			return "", os.ErrNotExist
+		}
+		return "wine-11.0", nil
+	}
+	doc.fixWine = func(_ context.Context, progress func(types.WineInstallProgress)) error {
+		f.fixes = append(f.fixes, fixWine)
+		if progress != nil {
+			progress(types.WineInstallProgress{Stage: "engine", Status: "downloading", Downloaded: 5, Total: 10})
+		}
+		wineInstalled = true
+		return nil
+	}
+
+	code, out, errOut := h.run("doctor")
+	if code != ExitFailure || !strings.Contains(out, "[missing] Wine runtime") || !strings.Contains(errOut, "ERR_DOCTOR_FAILED") {
+		t.Fatalf("darwin missing wine: %d %q %q", code, out, errOut)
+	}
+	if strings.Contains(out, "WebView2") || strings.Contains(out, "Developer Mode") {
+		t.Fatalf("darwin doctor should not include Windows-only checks: %q", out)
+	}
+
+	code, out, errOut = h.run("doctor", "--fix", "wine", "--yes")
+	if code != 0 || strings.Join(f.fixes, ",") != "wine" || !strings.Contains(out, "Wine runtime: wine-11.0 (fixed)") {
+		t.Fatalf("darwin fix wine: %d %v %q %q", code, f.fixes, out, errOut)
 	}
 }

@@ -8,11 +8,9 @@ import (
 	"image"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/config"
@@ -57,10 +55,10 @@ func init() {
 		"ERR_NAME_INVALID_CHAR":        {Exit: ExitUsage, Message: `the name must not contain any of < > : " / \ | ? *`},
 		"ERR_NAME_CONTROL_CHAR":        {Exit: ExitUsage, Message: "the name must not contain control characters"},
 		"ERR_NAME_RESERVED":            {Exit: ExitUsage, Message: "the name is reserved by Windows (CON, PRN, AUX, NUL, COM1-9, LPT1-9)"},
-		"ERR_NAME_EXISTS":              {Exit: ExitConflict, Message: "an instance with that name already exists", Hint: "LeviLauncher.exe instance list"},
+		"ERR_NAME_EXISTS":              {Exit: ExitConflict, Message: "an instance with that name already exists", Hint: ProgramName + " instance list"},
 		"ERR_READ_VERSIONS_DIR":        {Exit: ExitFailure, Message: "cannot read the instances folder"},
-		"ERR_NOT_FOUND_OLD":            {Exit: ExitNotFound, Message: "the instance folder does not exist", Hint: "LeviLauncher.exe instance list"},
-		"ERR_VERSION_NOT_FOUND":        {Exit: ExitNotFound, Message: "the instance folder does not exist", Hint: "LeviLauncher.exe instance list"},
+		"ERR_NOT_FOUND_OLD":            {Exit: ExitNotFound, Message: "the instance folder does not exist", Hint: ProgramName + " instance list"},
+		"ERR_VERSION_NOT_FOUND":        {Exit: ExitNotFound, Message: "the instance folder does not exist", Hint: ProgramName + " instance list"},
 		"ERR_RENAME_FAILED":            {Exit: ExitFailure, Message: "renaming the instance folder failed", Hint: "close programs that use files in the instance folder and try again"},
 		"ERR_DELETE_FAILED":            {Exit: ExitFailure, Message: "deleting the instance folder failed", Hint: "close programs that use files in the instance folder and try again"},
 		"ERR_WRITE_TARGET":             {Exit: ExitFailure, Message: "cannot write to the instance folder"},
@@ -417,20 +415,12 @@ func instIsLinked(dir string) bool {
 	if fi.Mode()&(os.ModeSymlink|os.ModeIrregular) != 0 {
 		return true
 	}
-	if d, ok := fi.Sys().(*syscall.Win32FileAttributeData); ok {
-		return d.FileAttributes&syscall.FILE_ATTRIBUTE_REPARSE_POINT != 0
-	}
-	return false
+	return isReparsePoint(fi)
 }
 
-// instExplorer opens dir in a new Explorer window.
+// instExplorer opens dir in the system file manager.
 func instExplorer(dir string) error {
-	cmd := exec.Command("explorer.exe", dir)
-	if err := cmd.Start(); err != nil {
-		return err
-	}
-	go cmd.Wait() // explorer.exe exits 1 even on success
-	return nil
+	return openDirInExplorer(dir)
 }
 
 // instCountDirs counts the folders directly inside dir (following

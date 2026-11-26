@@ -226,7 +226,7 @@ func TestHelp(t *testing.T) {
 		t.Errorf("--help differs from help")
 	}
 	code, out, _ = h.run("help", "instance", "list")
-	if code != 0 || !strings.HasPrefix(out, "Usage:\n  LeviLauncher.exe instance list [<filter>] [flags]") || !strings.Contains(out, "Examples:") || !strings.Contains(out, "--channel") {
+	if code != 0 || !strings.HasPrefix(out, "Usage:\n  "+ProgramName+" instance list [<filter>] [flags]") || !strings.Contains(out, "Examples:") || !strings.Contains(out, "--channel") {
 		t.Fatalf("command help: code %d\n%s", code, out)
 	}
 	if strings.Index(out, "Examples:") > strings.Index(out, "Flags:") {
@@ -450,7 +450,7 @@ func TestResolveInstance(t *testing.T) {
 	}
 	h.add("Creative", "1.21.60", "preview", "gdk")
 	_, _, err = resolveWith(h, Globals{}, "")
-	if e := FromError(err); e.Exit != ExitUsage || !strings.Contains(e.Message, "Creative, Survival") || !strings.Contains(e.Hint, "LeviLauncher.exe use <name>") {
+	if e := FromError(err); e.Exit != ExitUsage || !strings.Contains(e.Message, "Creative, Survival") || !strings.Contains(e.Hint, ProgramName+" use <name>") {
 		t.Fatalf("ambiguous: %+v", e)
 	}
 	h.current = "creative"

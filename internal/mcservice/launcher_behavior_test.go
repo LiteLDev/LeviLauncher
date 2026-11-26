@@ -7,12 +7,10 @@ import (
 )
 
 func TestGameBehaviorSettings(t *testing.T) {
-	// Registered before t.Setenv so that cleanups run in the right order:
-	// APPDATA is back to its real value by the time this reload rebuilds the
-	// cached config and the base-root override the rest of the package reads.
-	t.Cleanup(func() {
-		_, _ = config.Reload()
-	})
+	// Drops the config cached from the temporary APPDATA, so the rest of the
+	// package reads its own. It does not read the real APPDATA, which would
+	// write a default config.json there.
+	t.Cleanup(config.Forget)
 	t.Setenv("APPDATA", t.TempDir())
 	t.Setenv("LOCALAPPDATA", t.TempDir())
 

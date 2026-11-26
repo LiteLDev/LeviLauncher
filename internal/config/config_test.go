@@ -15,19 +15,38 @@ func useTempConfig(t *testing.T) string {
 	dir := t.TempDir()
 	t.Setenv("APPDATA", filepath.Join(dir, "roaming"))
 	t.Setenv("LOCALAPPDATA", filepath.Join(dir, "local"))
-	configMutex.Lock()
-	cachedConfig, isLoaded = AppConfig{}, false
-	configMutex.Unlock()
-	t.Cleanup(func() {
-		configMutex.Lock()
-		cachedConfig, isLoaded = AppConfig{}, false
-		configMutex.Unlock()
-		apppath.SetBaseRootOverride("")
-	})
+	Forget()
+	t.Cleanup(Forget)
 	if err := os.MkdirAll(apppath.ConfigDir(), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	return apppath.ConfigPath()
+}
+
+func TestForgetDropsTheCacheWithoutTouchingTheDisk(t *testing.T) {
+	path := useTempConfig(t)
+	if err := Save(AppConfig{BaseRoot: filepath.Join(t.TempDir(), "root"), WindowWidth: 800}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Another configuration directory, such as the real one once a test's
+	// t.Setenv is undone: Forget must not write a default config.json there.
+	other := t.TempDir()
+	t.Setenv("APPDATA", other)
+	Forget()
+	if entries, _ := os.ReadDir(other); len(entries) != 0 {
+		t.Fatalf("Forget wrote to the configuration directory: %v", entries)
+	}
+	if got := apppath.BaseRoot(); got != apppath.DefaultBaseRoot() {
+		t.Fatalf("BaseRoot() = %q after Forget, want the default %q", got, apppath.DefaultBaseRoot())
+	}
+
+	// The next Load reads the file again rather than the forgotten cache.
+	t.Setenv("APPDATA", filepath.Dir(filepath.Dir(path)))
+	c, err := Load()
+	if err != nil || c.WindowWidth != 800 {
+		t.Fatalf("Load() after Forget = %+v, %v", c, err)
+	}
 }
 
 func TestUpdateKeepsChangesSavedByAnotherProcess(t *testing.T) {

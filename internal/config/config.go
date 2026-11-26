@@ -61,6 +61,20 @@ func Load() (AppConfig, error) {
 	return Reload()
 }
 
+// Forget drops the cached config and the data root it set, so that the next
+// Load reads config.json again from wherever APPDATA points by then. Unlike
+// Reload it never touches the disk: a test calls it in a cleanup, once
+// t.Setenv has put the real APPDATA back, without writing a default
+// config.json into the user's real configuration directory.
+func Forget() {
+	configMutex.Lock()
+	defer configMutex.Unlock()
+
+	cachedConfig = AppConfig{}
+	isLoaded = false
+	apppath.SetBaseRootOverride("")
+}
+
 func Reload() (AppConfig, error) {
 	configMutex.Lock()
 	defer configMutex.Unlock()

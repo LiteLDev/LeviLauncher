@@ -166,6 +166,23 @@ func TestUWPFrameHostHelper(t *testing.T) {
 	}
 }
 
+// windowStateSettles reports whether cond holds within two seconds: the
+// frame lives in the helper process, so changes to it and to the child in it
+// reach this process's view of the windows a little later (the launcher
+// polls too).
+func windowStateSettles(cond func() bool) bool {
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if cond() {
+			return true
+		}
+		if time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
 func TestUWPFrameMatchesGameOwnedChild(t *testing.T) {
 	runtime.LockOSThread()
 	t.Cleanup(runtime.UnlockOSThread)
@@ -209,16 +226,16 @@ func TestUWPFrameMatchesGameOwnedChild(t *testing.T) {
 		t.Fatal("unrelated UWP frame matched without a game child")
 	}
 	child := createTestWindow(t, "STATIC", frame, true)
-	if !isGameWindowVisible(pids) {
+	if !windowStateSettles(func() bool { return isGameWindowVisible(pids) }) {
 		t.Fatal("visible UWP frame with game-owned child was missed")
 	}
 	testShowWindow.Call(uintptr(child), 0)
-	if !isGameWindowVisible(pids) {
+	if !windowStateSettles(func() bool { return isGameWindowVisible(pids) }) {
 		t.Fatal("visible UWP splash frame lost its association with a hidden game child")
 	}
 	testShowWindow.Call(uintptr(child), 4)
 	testShowWindow.Call(uintptr(frame), 0)
-	if isGameWindowVisible(pids) {
+	if !windowStateSettles(func() bool { return !isGameWindowVisible(pids) }) {
 		t.Fatal("hidden UWP host counted as ready")
 	}
 }

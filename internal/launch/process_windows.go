@@ -37,7 +37,10 @@ func gameProcessIDs(versionDir string) map[uint32]struct{} {
 				buf := make([]uint16, 1024)
 				size := uint32(len(buf))
 				if err := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); err == nil && size > 0 {
-					p := utils.NormalizeWindowsPath(windows.UTF16ToString(buf[:size]))
+					// The image path keeps the names the process was started
+					// with (8.3 short names too); canonicalize it like the
+					// version directory so both compare.
+					p := utils.CanonicalWindowsPath(windows.UTF16ToString(buf[:size]))
 					_ = windows.CloseHandle(h)
 					if strings.HasPrefix(p, cleanVerDir+string(filepath.Separator)) {
 						pids[entry.ProcessID] = struct{}{}

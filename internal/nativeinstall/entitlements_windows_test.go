@@ -74,20 +74,22 @@ func TestCatalogRejectsWrongProductAndUnsupportedPackages(t *testing.T) {
 }
 
 func TestChannelLicenseHTTPFailuresAreNotMissingEntitlements(t *testing.T) {
-	original := http.DefaultTransport
-	defer func() { http.DefaultTransport = original; clearOperation() }()
+	original := storeTransport
+	defer func() { storeTransport = original; clearOperation() }()
 	active = &installation{ctx: context.Background(), options: Options{Market: "US"}}
 	userTicket, userReference = "test-ticket", "test-account"
 	for _, status := range []int{401, 403, 429, 500} {
-		http.DefaultTransport = licenseTransport(func(req *http.Request) (*http.Response, error) {
-			body := catalogFixture("release", "family", "7792d9ce-355a-493c-afbd-768f4a77c3b0")
-			code := 200
-			if req.URL.Host == "licensing.mp.microsoft.com" {
-				code = status
-				body = `{"satisfactionFailure":{"code":1}}`
-			}
-			return &http.Response{StatusCode: code, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
-		})
+		storeTransport = func() http.RoundTripper {
+			return licenseTransport(func(req *http.Request) (*http.Response, error) {
+				body := catalogFixture("release", "family", "7792d9ce-355a-493c-afbd-768f4a77c3b0")
+				code := 200
+				if req.URL.Host == "licensing.mp.microsoft.com" {
+					code = status
+					body = `{"satisfactionFailure":{"code":1}}`
+				}
+				return &http.Response{StatusCode: code, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}, nil
+			})
+		}
 		if got := checkChannelLicense(context.Background(), "test-device", "release", "family"); got != "error" {
 			t.Fatalf("HTTP %d became %s", status, got)
 		}

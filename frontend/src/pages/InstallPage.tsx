@@ -23,9 +23,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaChevronDown } from "react-icons/fa";
-import { ROUTES } from "@/constants/routes";
+import { FiAlertTriangle } from "react-icons/fi";
+import { ROUTES, routeTo } from "@/constants/routes";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
+import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import {
   LipTaskProgress,
   useLipTaskConsole,
@@ -36,6 +38,15 @@ import { ErrorDetail } from "@/components/ErrorDetail";
 import { splitErrorResult } from "@/utils/errorDetail";
 import { saveCurrentVersionName } from "@/utils/currentVersion";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
+import {
+  fetchLIPPackageDetailDirect,
+  type LIPPackageDetail,
+} from "@/utils/content";
+import {
+  LEVI_WINE_BRIDGE_IDENTIFIER,
+  resolveWineBridgeOptionState,
+  type WineBridgeCatalogStatus,
+} from "@/utils/wineBridge";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clipboard, Dialogs, Events, System } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
@@ -89,6 +100,7 @@ export default function InstallPage() {
   const navigate = useNavigate();
   const location = useLocation() as any;
   const { refreshAll } = useVersionStatus();
+  const { invalidateInstance } = useModIntelligence();
 
   const mirrorVersion: string = String(location?.state?.mirrorVersion || "");
   const mirrorType = normalizeVersionChannel(location?.state?.mirrorType);
@@ -114,9 +126,13 @@ export default function InstallPage() {
   const [failureDetails, setFailureDetails] = useState("");
   const failure = useMemo(() => splitErrorResult(failureDetails), [failureDetails]);
   const [installing, setInstalling] = useState<boolean>(false);
-  // The LeviLamina step runs lip tasks; their progress replaces the
-  // extraction bar while it runs.
+  // The LeviLamina and LeviWineBridge steps run lip tasks; their progress
+  // replaces the extraction bar while running.
   const [installingLL, setInstallingLL] = useState<boolean>(false);
+  const [installingWineBridge, setInstallingWineBridge] = useState<boolean>(false);
+  const [wineBridgeWarning, setWineBridgeWarning] = useState<string>("");
+  const [wineBridgeInstalledVersion, setWineBridgeInstalledVersion] =
+    useState<string>("");
   const [installingVersion, setInstallingVersion] = useState<string>("");
   const [installingTargetName, setInstallingTargetName] = useState<string>("");
   const [installedFolderName, setInstalledFolderName] = useState<string>("");
@@ -126,7 +142,8 @@ export default function InstallPage() {
     ? isAppxInstaller(customInstallerPath) ? "uwp" : "gdk"
     : normalizePackageType(location?.state?.packageType);
   const isUWP = packageType === "uwp";
-  const requiresWine = !isUWP && System.IsMac();
+  const isMac = System.IsMac();
+  const requiresWine = !isUWP && isMac;
   const [wineReady, setWineReady] = useState<boolean | null>(null);
   useEffect(() => {
     if (!requiresWine) return;
@@ -145,6 +162,13 @@ export default function InstallPage() {
   // Checked by default; only takes effect while the package supports LeviLamina.
   const [llSwitchOn, setInstallLeviLamina] = useState<boolean>(true);
   const installLeviLamina = isLeviLaminaSupported && llSwitchOn;
+  const showWineBridgeOption = isMac && isLeviLaminaSupported && installLeviLamina;
+  const [wineBridgeSwitchOn, setInstallWineBridge] = useState<boolean>(true);
+  const [wineBridgeCatalogStatus, setWineBridgeCatalogStatus] =
+    useState<WineBridgeCatalogStatus>("idle");
+  const [wineBridgeDetail, setWineBridgeDetail] =
+    useState<LIPPackageDetail | null>(null);
+  const [wineBridgeReloadToken, setWineBridgeReloadToken] = useState<number>(0);
   const [installerDir, setInstallerDir] = useState<string>("");
   const [downloadResolved, setDownloadResolved] = useState<boolean>(false);
   const { getSupportedLLVersions, getLatestLLVersion } = useLeviLamina();
@@ -404,6 +428,64 @@ export default function InstallPage() {
     });
   }, [installLeviLamina, mirrorVersion, getSupportedLLVersions, isUWP]);
 
+  useEffect(() => {
+    if (!showWineBridgeOption) return;
+    if (wineBridgeReloadToken === 0 && wineBridgeDetail) return;
+
+    const controller = new AbortController();
+    let active = true;
+    setWineBridgeCatalogStatus("loading");
+    fetchLIPPackageDetailDirect(LEVI_WINE_BRIDGE_IDENTIFIER, {
+      forceRefresh: wineBridgeReloadToken > 0,
+      signal: controller.signal,
+    })
+      .then((detail) => {
+        if (!active || controller.signal.aborted) return;
+        setWineBridgeDetail(detail);
+        setWineBridgeCatalogStatus(detail ? "ready" : "error");
+      })
+      .catch(() => {
+        if (!active || controller.signal.aborted) return;
+        setWineBridgeDetail(null);
+        setWineBridgeCatalogStatus("error");
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [showWineBridgeOption, wineBridgeReloadToken]);
+
+  const effectiveLLVersion = useMemo(
+    () =>
+      String(
+        selectedLLVersion ||
+          (mirrorVersion ? getLatestLLVersion(mirrorVersion) : ""),
+      ).trim(),
+    [selectedLLVersion, mirrorVersion, getLatestLLVersion],
+  );
+
+  const wineBridgeOption = useMemo(
+    () =>
+      resolveWineBridgeOptionState({
+        catalogStatus: wineBridgeCatalogStatus,
+        pkg: wineBridgeDetail,
+        llVersion: effectiveLLVersion,
+        userEnabled: wineBridgeSwitchOn,
+      }),
+    [
+      wineBridgeCatalogStatus,
+      wineBridgeDetail,
+      effectiveLLVersion,
+      wineBridgeSwitchOn,
+    ],
+  );
+
+  const shouldInstallWineBridge =
+    showWineBridgeOption &&
+    wineBridgeOption.checked &&
+    Boolean(wineBridgeOption.candidate);
+
   const headerTitle = useMemo(() => {
     if (installing)
       return t("downloadmodal.installing.title") as unknown as string;
@@ -427,6 +509,8 @@ export default function InstallPage() {
     setFailureDetails("");
     setInstallError("");
     setResultMsg("");
+    setWineBridgeWarning("");
+    setWineBridgeInstalledVersion("");
 
     const name = (installName || "").trim();
     let installationCreated = false;
@@ -582,6 +666,54 @@ export default function InstallPage() {
         } finally {
           setInstallingLL(false);
         }
+
+        if (shouldInstallWineBridge && wineBridgeOption.candidate) {
+          const candidate = wineBridgeOption.candidate;
+          const installPackage = (minecraft as any)?.InstallLIPPackage;
+          if (typeof installPackage === "function") {
+            try {
+              setInstallingWineBridge(true);
+              await runWithLipTask(
+                {
+                  action: "install",
+                  target: name,
+                  methods: ["Install", "Update"],
+                  feedbackMode: "inline",
+                  errorConsole: false,
+                },
+                async ({ addLog }) => {
+                  addLog(
+                    "info",
+                    `Install ${candidate.identifier}@${candidate.version}`,
+                  );
+                  const wbErr: string = await installPackage(
+                    name,
+                    candidate.identifier,
+                    candidate.version,
+                  );
+                  if (String(wbErr || "").trim()) {
+                    throw new Error(String(wbErr));
+                  }
+                },
+              );
+              setWineBridgeInstalledVersion(candidate.version);
+            } catch (e: any) {
+              const rawErr = String(
+                e?.message || e || "ERR_LIP_INSTALL_FAILED",
+              );
+              setWineBridgeWarning(rawErr);
+              toast(t("common.tip"), {
+                description: t("downloadpage.install.wine_bridge_failed_toast"),
+                variant: "warning",
+                timeout: 5000,
+              });
+            } finally {
+              setInstallingWineBridge(false);
+            }
+          }
+        }
+
+        invalidateInstance(name, "install-complete");
       }
 
       try {
@@ -781,15 +913,21 @@ export default function InstallPage() {
                         </div>
                       )}
 
-                      {installingLL ? (
-                        lipProgress.status === "running" ? (
-                          <LipTaskProgress className="mt-1 px-1" />
-                        ) : (
-                          <InstallProgressRow
-                            className="mt-1 px-1"
-                            label={t("lip.task_console.waiting_start")}
-                          />
-                        )
+                      {installingLL || installingWineBridge ? (
+                        <div className="mt-1 flex flex-col gap-2 px-1">
+                          {installingWineBridge && (
+                            <div className="text-xs font-medium text-muted dark:text-zinc-400">
+                              {t("downloadpage.install.wine_bridge_installing")}
+                            </div>
+                          )}
+                          {lipProgress.status === "running" ? (
+                            <LipTaskProgress />
+                          ) : (
+                            <InstallProgressRow
+                              label={t("lip.task_console.waiting_start")}
+                            />
+                          )}
+                        </div>
                       ) : (
                         <InstallProgressRow
                           className="mt-1 px-1"
@@ -868,19 +1006,28 @@ export default function InstallPage() {
                       <h2 className="text-2xl font-black text-brand-700 dark:text-brand-300">
                         {t("downloadpage.install.success_title")}
                       </h2>
-                      {installingVersion && (
-                        <Chip size="sm" variant="soft" color={"accent"}>
-                          <Chip.Label className={"font-bold"}>
-                            {installingVersion}
-                          </Chip.Label>
-                        </Chip>
-                      )}
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        {installingVersion && (
+                          <Chip size="sm" variant="soft" color={"accent"}>
+                            <Chip.Label className={"font-bold"}>
+                              {installingVersion}
+                            </Chip.Label>
+                          </Chip>
+                        )}
+                        {wineBridgeInstalledVersion && (
+                          <Chip size="sm" variant="soft" color={"success"}>
+                            <Chip.Label className={"font-semibold"}>
+                              LeviWineBridge v{wineBridgeInstalledVersion}
+                            </Chip.Label>
+                          </Chip>
+                        )}
+                      </div>
                       <p className="text-muted dark:text-zinc-400 text-sm mt-2 max-w-xs">
                         {t("downloadpage.install.success")}
                       </p>
                     </div>
 
-                    <div className="w-full max-w-lg mt-1">
+                    <div className="w-full max-w-lg mt-1 flex flex-col gap-3">
                       {installingTargetName && (
                         <div className="rounded-xl bg-surface-secondary/50 border border-border/50 dark:border-white/5 p-3 flex flex-col gap-1 items-center">
                           <span className="text-[10px] uppercase tracking-wider text-muted font-bold">
@@ -889,6 +1036,52 @@ export default function InstallPage() {
                           <span className="font-mono text-xs text-foreground dark:text-zinc-400 truncate w-full text-center">
                             {installingTargetName}
                           </span>
+                        </div>
+                      )}
+                      {wineBridgeWarning && (
+                        <div
+                          role="alert"
+                          className="rounded-2xl border border-amber-200/60 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-900/15 p-4 flex items-start gap-3 text-left"
+                        >
+                          <FiAlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                              {t("downloadpage.install.wine_bridge_failed_title")}
+                            </p>
+                            <p className="text-xs leading-5 text-amber-700/90 dark:text-amber-300/90">
+                              {t("downloadpage.install.wine_bridge_failed_body")}
+                            </p>
+                            <p className="text-xs font-mono break-all text-amber-700/80 dark:text-amber-300/80">
+                              {resolveInstallError(
+                                wineBridgeWarning,
+                                t,
+                                typeLabel,
+                              )}
+                            </p>
+                            <div className="pt-1">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onPress={() => {
+                                  if (installedFolderName) {
+                                    saveCurrentVersionName(
+                                      installedFolderName,
+                                      "install-complete",
+                                    );
+                                  }
+                                  navigate(
+                                    routeTo.lipPackageFromLink({
+                                      modulePath: LEVI_WINE_BRIDGE_IDENTIFIER,
+                                    }),
+                                  );
+                                }}
+                              >
+                                {t(
+                                  "downloadpage.install.wine_bridge_open_catalog",
+                                )}
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1119,6 +1312,81 @@ export default function InstallPage() {
                           </ListBox>
                         </Select.Popover>
                       </Select>
+                    </div>
+                  )}
+                  {showWineBridgeOption && (
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm font-medium">
+                            {t("downloadpage.install.wine_bridge_label")}
+                          </span>
+                          <Chip
+                            size="sm"
+                            variant="soft"
+                            color="accent"
+                            className="h-5 px-1.5"
+                          >
+                            <Chip.Label className="text-[11px] font-semibold">
+                              {t(
+                                "downloadpage.install.wine_bridge_recommended",
+                              )}
+                            </Chip.Label>
+                          </Chip>
+                          {wineBridgeOption.candidate && (
+                            <span className="font-mono text-xs text-muted dark:text-zinc-400">
+                              v{wineBridgeOption.candidate.version}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted dark:text-zinc-400">
+                          {t("downloadpage.install.wine_bridge_desc")}
+                        </div>
+                        {wineBridgeOption.statusKind === "loading" && (
+                          <div className="flex items-center gap-1.5 text-xs text-muted">
+                            <Spinner size="sm" />
+                            <span>
+                              {t("downloadpage.install.wine_bridge_checking")}
+                            </span>
+                          </div>
+                        )}
+                        {wineBridgeOption.statusKind === "incompatible" && (
+                          <p className="text-xs text-amber-600 dark:text-amber-400">
+                            {t("downloadpage.install.wine_bridge_incompatible")}
+                          </p>
+                        )}
+                        {wineBridgeOption.statusKind === "unavailable" && (
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-amber-600 dark:text-amber-400">
+                            <span>
+                              {t("downloadpage.install.wine_bridge_unavailable")}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 min-w-0 px-2 text-xs"
+                              onPress={() =>
+                                setWineBridgeReloadToken((n) => n + 1)
+                              }
+                            >
+                              {t("common.retry")}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                      <Switch
+                        aria-label={t("downloadpage.install.wine_bridge_label")}
+                        isSelected={wineBridgeOption.checked}
+                        isDisabled={wineBridgeOption.switchDisabled}
+                        onChange={setInstallWineBridge}
+                        className={"group shrink-0"}
+                      >
+                        <Switch.Content>
+                          <Switch.Control>
+                            <Switch.Thumb></Switch.Thumb>
+                          </Switch.Control>
+                          <span></span>
+                        </Switch.Content>
+                      </Switch>
                     </div>
                   )}
                   <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">

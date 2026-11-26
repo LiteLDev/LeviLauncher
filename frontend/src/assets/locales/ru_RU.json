@@ -297,7 +297,18 @@
         "hint": "По умолчанию используются файлы, уже загруженные в папку установщиков"
       },
       "levilamina_unsupported": "LeviLamina не поддерживается для этой версии игры",
-      "title": "Установить"
+      "title": "Установить",
+      "wine_bridge_label": "Установить LeviWineBridge",
+      "wine_bridge_recommended": "Рекомендуется",
+      "wine_bridge_desc": "Улучшает Minecraft на macOS: вход в Xbox через лаунчер, исправления ввода Wine и сочетаний Cmd, нативный терминал и шрифты CJK.",
+      "wine_bridge_checking": "Проверка совместимости LeviWineBridge…",
+      "wine_bridge_incompatible": "Для выбранной версии LeviLamina пока нет совместимого релиза LeviWineBridge.",
+      "wine_bridge_unavailable": "Не удалось проверить доступность LeviWineBridge. Повторите попытку или установите плагин позже из каталога модов.",
+      "wine_bridge_installing": "Установка LeviWineBridge…",
+      "wine_bridge_failed_toast": "Игра и LeviLamina установлены, но установить LeviWineBridge не удалось.",
+      "wine_bridge_failed_title": "LeviWineBridge не установлен",
+      "wine_bridge_failed_body": "Minecraft и LeviLamina готовы к запуску. Вы можете установить LeviWineBridge позже в каталоге модов.",
+      "wine_bridge_open_catalog": "Установить LeviWineBridge"
     },
     "customappx": {
       "modal": {
@@ -909,7 +920,18 @@
         "ll_select_guidance": "Выберите версию LeviLamina, которую нужно установить, обновить, понизить или переустановить.",
         "ll_remove_confirm_title": "Подтвердите удаление LeviLamina",
         "ll_remove_confirm_body": "LeviLamina будет удалена из этого инстанса.",
-        "ll_remove_confirm_warning": "Это действие нельзя отменить."
+        "ll_remove_confirm_warning": "Это действие нельзя отменить.",
+        "wine_bridge_status_enabled": "Включён",
+        "wine_bridge_status_disabled": "Отключён",
+        "wine_bridge_status_not_installed": "Не установлен",
+        "wine_bridge_requires_ll": "Сначала установите LeviLamina, затем установите LeviWineBridge.",
+        "wine_bridge_view_details": "Подробнее",
+        "wine_bridge_install": "Установить",
+        "wine_bridge_install_success": "LeviWineBridge установлен.",
+        "wine_bridge_update_success": "LeviWineBridge обновлён.",
+        "wine_bridge_install_failed": "Не удалось установить LeviWineBridge.",
+        "wine_bridge_enable_success": "LeviWineBridge включён.",
+        "wine_bridge_enable_failed": "Не удалось включить LeviWineBridge."
       }
     },
     "logo": {

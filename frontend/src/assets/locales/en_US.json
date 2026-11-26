@@ -304,7 +304,18 @@
         "hint": "By default, LeviLauncher uses the files already in your installers folder"
       },
       "levilamina_unsupported": "LeviLamina is not supported for this game version",
-      "title": "Install"
+      "title": "Install",
+      "wine_bridge_label": "Install LeviWineBridge",
+      "wine_bridge_recommended": "Recommended",
+      "wine_bridge_desc": "Improves Minecraft on macOS: in-launcher Xbox sign-in, Wine input & Cmd shortcut fixes, native terminal console, and CJK fallback fonts.",
+      "wine_bridge_checking": "Checking LeviWineBridge compatibility…",
+      "wine_bridge_incompatible": "No LeviWineBridge release matches the selected LeviLamina version yet.",
+      "wine_bridge_unavailable": "Could not check LeviWineBridge availability. You can retry or install it later from the mod catalog.",
+      "wine_bridge_installing": "Installing LeviWineBridge…",
+      "wine_bridge_failed_toast": "Game and LeviLamina were installed, but LeviWineBridge failed to install.",
+      "wine_bridge_failed_title": "LeviWineBridge was not installed",
+      "wine_bridge_failed_body": "Minecraft and LeviLamina are ready to play. You can install LeviWineBridge later from the mod catalog.",
+      "wine_bridge_open_catalog": "Install LeviWineBridge"
     },
     "customappx": {
       "modal": {
@@ -366,7 +377,7 @@
       },
       "errors": {
         "ERR_WINE_DOWNLOAD_STALLED": "The download stopped making progress. Retry to resume it.",
-      "ERR_WINE_INVALID_GITHUB_PROXY": "Enter a valid HTTP or HTTPS proxy URL.",
+        "ERR_WINE_INVALID_GITHUB_PROXY": "Enter a valid HTTP or HTTPS proxy URL.",
         "ERR_WINE_ROSETTA_INSTALL": "Rosetta could not be installed. Check your network or macOS permissions and retry.",
         "ERR_WINE_INSTALL_BUSY": "Wine setup is already running.",
         "ERR_WINE_ASSET_CHECKSUM": "The downloaded file failed validation. Retry the download.",
@@ -1016,7 +1027,18 @@
         "ll_select_guidance": "Choose the LeviLamina version you want to install, upgrade, downgrade, or reinstall.",
         "ll_remove_confirm_title": "Confirm Remove LeviLamina",
         "ll_remove_confirm_body": "LeviLamina will be removed from this instance.",
-        "ll_remove_confirm_warning": "This action cannot be undone."
+        "ll_remove_confirm_warning": "This action cannot be undone.",
+        "wine_bridge_status_enabled": "Enabled",
+        "wine_bridge_status_disabled": "Disabled",
+        "wine_bridge_status_not_installed": "Not Installed",
+        "wine_bridge_requires_ll": "Install LeviLamina first before installing LeviWineBridge.",
+        "wine_bridge_view_details": "View Details",
+        "wine_bridge_install": "Install",
+        "wine_bridge_install_success": "LeviWineBridge installed.",
+        "wine_bridge_update_success": "LeviWineBridge updated.",
+        "wine_bridge_install_failed": "Failed to install LeviWineBridge.",
+        "wine_bridge_enable_success": "LeviWineBridge enabled.",
+        "wine_bridge_enable_failed": "Failed to enable LeviWineBridge."
       }
     },
     "logo": {

@@ -21,6 +21,7 @@
     "test:troubleshoot": "node --test scripts/troubleshoot.test.mjs",
     "test:lipcatalog": "node --test scripts/lipCatalog.test.mjs",
     "test:deeplink": "node --test scripts/deeplink.test.mjs",
+    "test:wine-bridge": "node --test scripts/wine-bridge.test.mjs",
     "styles:check": "node ./scripts/check-materials.mjs"
   },
   "dependencies": {

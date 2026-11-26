@@ -1,6 +1,6 @@
 # LeviLauncher
 
-A desktop launcher for **Minecraft Bedrock Edition** on **Windows and macOS**. Windows supports GDK and UWP. The native macOS launcher runs the GDK game through Wine.
+A desktop launcher for **Minecraft Bedrock Edition** on **Windows and macOS**. Windows supports GDK and UWP. The macOS launcher runs the GDK game through Wine.
 
 ## Background
 
@@ -10,11 +10,14 @@ The **Android version** is developed in [LiteLDev/LeviLauncher-Android](https://
 
 ## Install
 
-### macOS
+### Downloads
 
-See [macOS installer build instructions](build/native/README.md).
+- **GitHub Releases (Windows & macOS):** <https://github.com/LiteLDev/LeviLauncher/releases>
+- **Lanzou Cloud (Windows):** <https://levimc.lanzoue.com/b016ke39hc> (Password: `levi`)
 
-### Windows requirements
+### Windows
+
+Requirements:
 
 - Windows 10/11
 - A legitimate licensed copy of Minecraft Bedrock Edition
@@ -25,17 +28,32 @@ See [macOS installer build instructions](build/native/README.md).
 
 UWP x64 instances support the console toggle under **Instance Settings → Launch Options** and compatible `preload-native` mods imported through **Manage Mods** as `.mcmod` packages (`.zip` packages and bare `.dll` files can still be picked via **All files**). Instance isolation is available for UWP x64 version 1.19.70.2 and later; non-isolated UWP instances keep using the app channel's shared `LocalState` content. Installation deploys the loader; launching a registered instance prepares native loading while preserving Windows app activation. Vanilla x86/ARM64 packages can still launch, but the bundled native loader currently supports x64 only. Automatic LeviLamina installation remains limited to supported GDK versions.
 
-### Windows downloads
+**Build from source (Windows):** requires the Go version in `go.mod`, Wails v3, Node.js/npm, xmake (`3.0+`) with MSVC (for the native loader), and Inno Setup (`iscc`, only needed to build the installer). First build and deploy the native loader to `internal/leviloader/LeviLauncher.dll` from `native/levilauncher`:
 
-- **GitHub Releases:** https://github.com/LiteLDev/LeviLauncher/releases
-- **Lanzou Cloud:** https://levimc.lanzoue.com/b016ke39hc (Password: `levi`)
+```sh
+xmake f -p windows -a x64 -m release --toolchain=msvc --deploy=y -y
+xmake -y
+```
+
+Then from the repository root, run `wails3 task build PRODUCTION=true` to build `bin/LeviLauncher.exe`, or `wails3 task package` to also create `bin/LeviLauncher-amd64-installer.exe`.
+
+### macOS
+
+Requirements:
+
+- macOS 14.6 or later (prebuilt releases target Apple Silicon `arm64`)
+- A legitimate licensed copy of Minecraft Bedrock Edition
+
+Download `LeviLauncher-macos-arm64-installer.dmg` from GitHub Releases, open it, and drag **LeviLauncher** into **Applications**. macOS runs GDK builds through Wine (including LeviLamina, LIP packages, and compatible native mods); UWP instances and the terminal CLI are currently Windows-only.
+
+**Build from source (macOS):** requires Xcode Command Line Tools, the Go version in `go.mod`, Wails v3, Node.js/npm, Python 3, and the Windows x64 loader at `internal/leviloader/LeviLauncher.dll` (or passed to `build/native/macos.py` via `--loader`). Run `wails3 task package` from the repository root to build `bin/LeviLauncher.app` and `bin/LeviLauncher-macos-installer.dmg`. To package an existing `.app` bundle, run `wails3 task darwin:create:dmg` or `python3 build/native/dmg.py --app "/path/to/LeviLauncher.app" --output "/path/to/LeviLauncher.dmg"`.
 
 ## Usage
 
 See the user docs:
 
-- **User docs:** https://levimc.org/LeviLauncher/
-- **中文文档：** https://levimc.org/zh-Hans/LeviLauncher/
+- **User docs:** <https://levimc.org/LeviLauncher/>
+- **中文文档：** <https://levimc.org/zh-Hans/LeviLauncher/>
 
 ### Command Line
 
@@ -84,13 +102,13 @@ Global flags: `-i/--instance <name>`, `-p/--player <id|gamertag>`, `--json` (one
 
 ### Issue Reporting
 
-- **Issues:** https://github.com/LiteLDev/LeviLauncher/issues
-- Include your Windows version, LeviLauncher version, repro steps, and logs/screenshots when possible.
+- **Issues:** <https://github.com/LiteLDev/LeviLauncher/issues>
+- Include your OS version (Windows or macOS), LeviLauncher version, repro steps, and logs/screenshots when possible.
 
 ### Community
 
-- **Discord:** https://discord.gg/v5R5P4vRZk
-- **QQ Group:** https://qm.qq.com/q/1z791rJgJG
+- **Discord:** <https://discord.gg/v5R5P4vRZk>
+- **QQ Group:** <https://qm.qq.com/q/1z791rJgJG>
 
 ### Development
 

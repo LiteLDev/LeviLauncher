@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+func isUnixChinaTimeZone() bool { return false }
+func isUnixChinaLocale() bool   { return false }
+
 func isWindowsTimeZoneChina() bool {
 	k, err := winreg.OpenKey(winreg.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Control\TimeZoneInformation`, winreg.QUERY_VALUE)
 	if err != nil {

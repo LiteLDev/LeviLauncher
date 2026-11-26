@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"os"
 	"runtime"
 	"strings"
 
@@ -24,33 +23,26 @@ func detectsChinaUser() bool {
 	if runtime.GOOS == "windows" {
 		return isWindowsTimeZoneChina() && isWindowsLocaleZhCN()
 	}
+	return isUnixChinaTimeZone() || isUnixChinaLocale()
+}
 
-	isTz := false
-	isLang := false
-	if b, err := os.ReadFile("/etc/timezone"); err == nil {
-		s := strings.ToLower(strings.TrimSpace(string(b)))
-		if s == "asia/shanghai" || s == "asia/urumqi" {
-			isTz = true
-		}
-	} else if p, err := os.Readlink("/etc/localtime"); err == nil {
-		low := strings.ToLower(p)
-		if strings.Contains(low, "asia/shanghai") || strings.Contains(low, "asia/urumqi") {
-			isTz = true
-		}
-	}
-
-	for _, key := range []string{"LANG", "LANGUAGE", "LC_ALL", "LC_MESSAGES"} {
-		v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
-		if v == "" {
+// IsMainlandChinaLocale reports whether a POSIX/BCP-47/AppleLocale tag targets
+// mainland China (region subtag CN), e.g. "zh_CN", "zh_CN.UTF-8", "en_CN",
+// "zh-Hans-CN", or "zh_CN@calendar=chinese".
+func IsMainlandChinaLocale(locale string) bool {
+	tag := strings.TrimSpace(locale)
+	tag, _, _ = strings.Cut(tag, "@")
+	tag, _, _ = strings.Cut(tag, ".")
+	parts := strings.FieldsFunc(tag, func(c rune) bool { return c == '_' || c == '-' })
+	for i, part := range parts {
+		if i == 0 {
 			continue
 		}
-		if strings.HasPrefix(v, "zh_cn") || strings.HasPrefix(v, "zh-cn") || v == "zh" {
-			isLang = true
-			break
+		if strings.EqualFold(part, "CN") {
+			return true
 		}
 	}
-
-	return isTz || isLang
+	return false
 }
 
 func isZhCnLocaleValue(v string) bool {

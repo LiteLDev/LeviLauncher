@@ -296,7 +296,11 @@ func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error 
 			lastErr = err
 			continue
 		}
-		req.Header.Set("Accept", "application/zip")
+		if strings.HasSuffix(strings.ToLower(dest), ".zip") {
+			req.Header.Set("Accept", "application/zip")
+		} else {
+			req.Header.Set("Accept", "application/octet-stream")
+		}
 		resp, err := httpx.Do(req)
 		if err != nil {
 			cancel()
@@ -375,8 +379,7 @@ func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error 
 	return lastErr
 }
 
-func buildSelfUpdateCandidateURLs(ver string) []string {
-	oriUrl := "https://github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip"
+func buildMirrorCandidateURLs(oriUrl string) []string {
 	if utils.IsMirrorEnabled() {
 		return []string{
 			"https://gh-proxy.org/" + oriUrl,
@@ -385,11 +388,46 @@ func buildSelfUpdateCandidateURLs(ver string) []string {
 			"https://gh.bibk.top/" + oriUrl,
 			oriUrl,
 		}
-	} else {
-		return []string{
-			oriUrl,
+	}
+	return []string{
+		oriUrl,
+	}
+}
+
+func buildSelfUpdateCandidateURLs(ver string) []string {
+	oriUrl := "https://github.com/LiteLDev/LeviLauncher/releases/download/" + ver + "/LeviLauncher.zip"
+	return buildMirrorCandidateURLs(oriUrl)
+}
+
+func selectMacDMGAsset(release githubRelease, arch string) (githubReleaseAsset, bool) {
+	preferred := fmt.Sprintf("LeviLauncher-macos-%s-installer.dmg", arch)
+	var archFallback, anyDMG *githubReleaseAsset
+	for i := range release.Assets {
+		a := release.Assets[i]
+		name := strings.TrimSpace(a.Name)
+		low := strings.ToLower(name)
+		if !strings.HasSuffix(low, ".dmg") || strings.TrimSpace(a.BrowserDownloadURL) == "" {
+			continue
+		}
+		if strings.EqualFold(name, preferred) {
+			return a, true
+		}
+		if archFallback == nil && arch != "" && strings.Contains(low, strings.ToLower(arch)) {
+			cp := a
+			archFallback = &cp
+		}
+		if anyDMG == nil {
+			cp := a
+			anyDMG = &cp
 		}
 	}
+	if archFallback != nil {
+		return *archFallback, true
+	}
+	if anyDMG != nil {
+		return *anyDMG, true
+	}
+	return githubReleaseAsset{}, false
 }
 
 func CheckUpdate(version string) types.CheckUpdate {
@@ -431,6 +469,13 @@ func Update(version string) error {
 		return err
 	}
 
+	if res.InstallerPath != "" {
+		if err := openMacInstaller(res.InstallerPath); err != nil {
+			return emitUpdateError("ERR_UPDATE_INSTALL_FAILED", err)
+		}
+		return nil
+	}
+
 	exe, err := os.Executable()
 	if err != nil {
 		return emitUpdateError("ERR_UPDATE_RESTART_FAILED", err)
@@ -442,12 +487,19 @@ func Update(version string) error {
 	return nil
 }
 
+func openMacInstaller(dmgPath string) error {
+	return exec.Command("/usr/bin/open", dmgPath).Start()
+}
+
 // ApplyResult describes an update found or installed by Apply.
 type ApplyResult struct {
 	// From and To are the versions before and after, with a leading "v".
 	// To is empty when no newer release was found.
 	From string
 	To   string
+	// InstallerPath is set on macOS when a DMG disk image was downloaded
+	// instead of replacing the running executable in-place.
+	InstallerPath string
 }
 
 // CheckUpdateErr is CheckUpdate for callers that need to know why a check
@@ -509,6 +561,33 @@ func apply(ctx context.Context, version string, acceptBeta bool) (ApplyResult, e
 		ver = "v" + ver
 	}
 	res.To = ver
+
+	if runtime.GOOS == "darwin" {
+		asset, found := selectMacDMGAsset(release, runtime.GOARCH)
+		if !found {
+			return res, emitUpdateErrorTo(ctx, "ERR_UPDATE_ASSET_MISSING", fmt.Errorf("no macOS DMG asset found for %s in release %s", runtime.GOARCH, ver))
+		}
+		updDir := apppath.UpdatesDir()
+		if err := os.MkdirAll(updDir, 0o755); err != nil {
+			return res, emitUpdateErrorTo(ctx, "ERR_UPDATE_WRITE_FAILED", err)
+		}
+		dmgName := filepath.Base(strings.TrimSpace(asset.Name))
+		if dmgName == "" || dmgName == "." || dmgName == string(filepath.Separator) {
+			dmgName = fmt.Sprintf("LeviLauncher-macos-%s-installer.dmg", runtime.GOARCH)
+		}
+		dmgPath := filepath.Join(updDir, dmgName)
+		if fi, statErr := os.Stat(dmgPath); statErr == nil && fi.Size() > 0 && (asset.Size <= 0 || fi.Size() == asset.Size) {
+			sink.Emit(EventAppUpdateStatus, "downloaded")
+			sink.Emit(EventAppUpdateProgress, AppUpdateProgress{Phase: "download", Downloaded: fi.Size(), Total: fi.Size()})
+		} else {
+			if err := downloadUpdateAsset(ctx, buildMirrorCandidateURLs(asset.BrowserDownloadURL), dmgPath); err != nil {
+				return res, emitUpdateErrorTo(ctx, "ERR_UPDATE_DOWNLOAD_FAILED", err)
+			}
+		}
+		res.InstallerPath = dmgPath
+		sink.Emit(EventAppUpdateStatus, "installed")
+		return res, nil
+	}
 
 	if runtime.GOOS == "windows" && !utils.CanWriteDir(instDir) {
 		return res, errNeedsElevation

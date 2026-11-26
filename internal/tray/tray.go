@@ -24,6 +24,9 @@ func Setup(a *application.App, icon []byte) {
 	mu.Lock()
 	defer mu.Unlock()
 
+	if a == nil {
+		return
+	}
 	app = a
 	handle = a.SystemTray.New()
 	handle.SetIcon(icon)
@@ -45,6 +48,9 @@ func SetLabels(show, exit string) {
 
 // applyMenu rebuilds the menu from the current labels. Callers hold mu.
 func applyMenu() {
+	if app == nil || handle == nil {
+		return
+	}
 	menu := app.NewMenu()
 	menu.Add(showLabel).OnClick(func(_ *application.Context) {
 		launch.RestoreLauncherWindow()

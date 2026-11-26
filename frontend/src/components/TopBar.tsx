@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
 import { ROUTES } from "@/constants/routes";
 import { getRouteLabelKey, ROUTE_LABEL_KEYS } from "@/constants/routeLabels";
+import { System } from "@wailsio/runtime";
 
 interface TopBarProps {
   navLocked: boolean;
@@ -26,6 +27,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   tryNavigate,
 }) => {
   const { t } = useTranslation();
+  const isMac = System.IsMac();
   const location = useLocation();
   const { canGoBack, canGoForward, getBackEntry, getForwardEntry, currentTitle } =
     useNavigationHistory();
@@ -42,9 +44,18 @@ export const TopBar: React.FC<TopBarProps> = ({
         className="fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4"
       >
         <div className="flex items-center gap-2 overflow-hidden">
-          <div className="w-14 shrink-0 flex items-center justify-center">
-            <LeviIcon width={32} height={32} />
-          </div>
+          {isMac ? (
+            <>
+              <div className="w-[78px] shrink-0" aria-hidden="true" />
+              <div className="shrink-0 flex items-center justify-center mr-0.5">
+                <LeviIcon width={26} height={26} />
+              </div>
+            </>
+          ) : (
+            <div className="w-14 shrink-0 flex items-center justify-center">
+              <LeviIcon width={32} height={32} />
+            </div>
+          )}
 
           <div className="flex items-center gap-1 shrink-0">
             <Tooltip
@@ -118,7 +129,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   e.preventDefault();
                   tryNavigate(ROUTES.home);
                 }}
-                className={`transition-colors hover:opacity-80 ${
+                className={`wails-no-drag transition-colors hover:opacity-80 ${
                   pathnames.length === 0
                     ? "font-bold text-lg text-brand-700 dark:text-brand-300"
                     : "text-muted dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-200"
@@ -156,7 +167,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                         e.preventDefault();
                         tryNavigate(to);
                       }}
-                      className="text-muted dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-200 transition-colors truncate"
+                      className="wails-no-drag text-muted dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-200 transition-colors truncate"
                     >
                       {name}
                     </Link>

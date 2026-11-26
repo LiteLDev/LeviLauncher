@@ -4,11 +4,14 @@ package mcservice
 
 import (
 	"archive/zip"
+	"errors"
+	"os"
 	"path/filepath"
 	"syscall"
 	"testing"
 
 	"github.com/liteldev/LeviLauncher/internal/types"
+	"golang.org/x/sys/windows"
 )
 
 // A source file locked against reading fails the backup mid-write: the
@@ -26,12 +29,26 @@ func TestBackupInstanceCreateProgressStopsWithoutDoneOnWriteError(t *testing.T) 
 		t.Fatalf("lock %s: %v", locked, err)
 	}
 	t.Cleanup(func() { _ = syscall.CloseHandle(handle) })
+	lockHeld := func() bool {
+		f, err := os.Open(locked)
+		if err == nil {
+			_ = f.Close()
+			return false
+		}
+		return errors.Is(err, windows.ERROR_SHARING_VIOLATION)
+	}
+	if !lockHeld() {
+		t.Fatalf("the lock on %s does not hold before the backup", locked)
+	}
 	events := recordInstanceBackupCreateProgress(t)
 
 	result := BackupInstance("Source", types.InstanceBackupRequest{
 		Scopes:     []string{"gameData", "mods"},
 		ScopeModes: map[string]string{"gameData": instanceBackupModeSafe},
 	})
+	if result.ErrorCode == "" && !lockHeld() {
+		t.Fatalf("the backup closed the test's lock handle on %s: some handle is closed twice", locked)
+	}
 	if result.ErrorCode == "" {
 		names := []string{}
 		if z, err := zip.OpenReader(result.ArchivePath); err == nil {

@@ -89,7 +89,7 @@ func TestRunMigrationSkipsUWP(t *testing.T) {
 	if err := config.Save(c); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { config.Reload() })
+	t.Cleanup(config.Forget)
 	dir := filepath.Join(c.BaseRoot, apppath.InstancesDirName, "uwp")
 	writeTestVersion(t, dir)
 	if err := versions.WriteMeta(dir, versions.VersionMeta{Name: "uwp", PackageType: "uwp"}); err != nil {

@@ -44,7 +44,9 @@ xmake -y
 - macOS 14.6 及以上（预构建版本面向 Apple Silicon `arm64`）
 - 拥有 Minecraft 基岩版的正版授权
 
-从 GitHub Releases 下载 `LeviLauncher-macos-arm64-installer.dmg`，打开后将 **LeviLauncher** 拖入 **Applications** 即可。macOS 通过 Wine 运行 GDK 版游戏（支持 LeviLamina、LIP 包及兼容的原生模组）；UWP 实例与命令行工具目前仅支持 Windows。
+从 GitHub Releases 下载 `LeviLauncher-macos-arm64-installer.dmg`，打开后将 **LeviLauncher** 拖入 **Applications**
+
+macOS 通过 Wine 运行 GDK 版游戏（支持 LeviLamina、LIP 包及兼容的原生模组），并支持命令行工具（通过 Homebrew 安装后可直接使用 `levilauncher`，或运行 `/Applications/LeviLauncher.app/Contents/MacOS/LeviLauncher`）；UWP 实例目前仅支持 Windows。
 
 **从源码构建（macOS）：** 需要 Xcode 命令行工具、`go.mod` 对应的 Go 版本、Wails v3、Node.js/npm、Python 3，以及位于 `internal/leviloader/LeviLauncher.dll` 的 Windows x64 加载器（或通过 `build/native/macos.py --loader` 指定）。在仓库根目录运行 `wails3 task package` 即可构建 `bin/LeviLauncher.app` 与 `bin/LeviLauncher-macos-installer.dmg`；如需仅将已有的 `.app` 打包为 DMG，可运行 `wails3 task darwin:create:dmg` 或 `python3 build/native/dmg.py --app "/path/to/LeviLauncher.app" --output "/path/to/LeviLauncher.dmg"`。
 
@@ -57,7 +59,7 @@ xmake -y
 
 ### 命令行
 
-不带参数运行 `LeviLauncher.exe` 打开启动器窗口；带命令时在终端中执行并退出，命令格式为 `<名词> <动词>`：
+不带参数运行 `LeviLauncher.exe`（Windows）或 `levilauncher`（macOS）会打开启动器窗口；带命令时在终端中执行并退出，命令格式为 `<名词> <动词>`：
 
 ```text
 常用：

@@ -38,6 +38,8 @@ func init() {
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)
 	application.RegisterEvent[string](launch.EventMcLaunchFailed)
+	// The shared frontend is type-checked on every platform.
+	application.RegisterEvent[types.WineInstallProgress]("wine.install.progress")
 	//msixvc
 	application.RegisterEvent[msixvc.DownloadStatus](msixvc.EventDownloadStatus)
 	application.RegisterEvent[msixvc.DownloadProgress](msixvc.EventDownloadProgress)

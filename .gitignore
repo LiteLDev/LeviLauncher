@@ -29,6 +29,7 @@ logs
 bin
 /native/*
 !/native/levilauncher/
+!/native/macos/
 # Built from native/levilauncher by `task common:build:native` and embedded with go:embed.
 /internal/leviloader/LeviLauncher.dll
 nda
@@ -50,6 +51,7 @@ __pycache__/
 node_modules/
 /.vs
 *.dll
+!/internal/gameruntime/compat/*.dll
 .gitignore
 build/windows/nsis/wails_tools.nsh
 build/windows/wails.exe.manifest

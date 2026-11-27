@@ -259,7 +259,7 @@ export const SettingsPage: React.FC = () => {
     { tab: "personalization", section: "wallpaper", keys: ["audit.usability.appearance_wallpaper", "settings.appearance.background_image", "settings.appearance.background_blur", "settings.appearance.background_brightness", "settings.appearance.background_opacity"] },
     { tab: "personalization", section: "material", keys: ["audit.usability.appearance_material"] },
     { tab: "components", keys: ["settings.tabs.components", "settings.mirror_source.title", "settings.lip.title", "settings.lip.desc", "settings.lip.cache_clean_button", "settings.lip.github_proxy.title"] },
-    ...(hasWineSettings ? [{ tab: "wine", keys: ["settings.wine.title", "settings.wine.prefix", "settings.wine.graphics"] }] : []),
+    ...(hasWineSettings ? [{ tab: "wine", keys: ["settings.wine.title", "settings.wine.prefix", "settings.wine.graphics", "settings.wine.d3dmetal_version", "settings.wine.advanced", "settings.wine.sync", "settings.wine.max_fps", "settings.wine.metal_fx", "settings.wine.thread_qos", "settings.wine.rosetta_avx", "settings.wine.compat_debug_log", "settings.wine.shader_cache", "settings.wine.kill_wine", "settings.wine.download_source"] }] : []),
     { tab: "others", keys: ["settings.troubleshoot.title", "settings.process.title", "settings.experimental.title", "settings.experimental.instance_backup.title"] },
     { tab: "privacy", keys: ["settings.tabs.privacy", "settings.privacy.analytics.title"] },
     { tab: "updates", keys: ["settings.tabs.updates", "settings.beta_updates.title"] },

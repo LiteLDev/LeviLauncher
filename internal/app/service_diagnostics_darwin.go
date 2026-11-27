@@ -87,6 +87,11 @@ func wineDiagnosticChecks() []diagnose.RuntimeCheck {
 	}
 	checks = append(checks, diagnose.RuntimeCheck{ID: "wine_runtime", Run: func(ctx context.Context) diagnose.Check {
 		p, err := profile()
+		if errors.Is(err, gameruntime.ErrExecutableMissing) {
+			if requirement := gameruntime.CheckManagedWineRequirements(ctx); requirement != nil {
+				err = requirement
+			}
+		}
 		if err != nil {
 			return diagnose.Check{Status: diagnose.StatusFail, Params: map[string]string{"reason": wineDiagnosticReason(err)}}
 		}
@@ -111,7 +116,7 @@ func wineDiagnosticChecks() []diagnose.RuntimeCheck {
 	}
 	return append(checks,
 		withProfile("wine_graphics", func(p gameruntime.Profile) diagnose.Check {
-			return diagnose.Check{Status: diagnose.StatusInfo, Params: map[string]string{"backend": p.Graphics}}
+			return diagnose.Check{Status: diagnose.StatusInfo, Params: map[string]string{"backend": p.GraphicsBackend()}}
 		}),
 		withProfile("wine_vcruntime", func(p gameruntime.Profile) diagnose.Check {
 			if vcruntime.IsInstalledIn(p) {
@@ -134,7 +139,11 @@ func wineDiagnosticReason(err error) string {
 		return "missing"
 	case errors.Is(err, gameruntime.ErrPrefixUninitialized):
 		return "prefix"
-	case errors.Is(err, gameruntime.ErrD3DMetalUnavailable):
+	case errors.Is(err, gameruntime.ErrUnsupportedArch):
+		return "unsupported_arch"
+	case errors.Is(err, gameruntime.ErrUnsupportedOS):
+		return "unsupported_os"
+	case errors.Is(err, gameruntime.ErrD3DMetalUnavailable), errors.Is(err, gameruntime.ErrGraphicsBackendUnavailable):
 		return "graphics"
 	default:
 		return "invalid"

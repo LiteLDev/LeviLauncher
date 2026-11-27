@@ -59,6 +59,8 @@ xmake -y
 
 从 GitHub Releases 下载 `LeviLauncher-macos-arm64-installer.dmg`，打开后将 **LeviLauncher** 拖入 **Applications**。
 
+在 **设置 → Wine** 中可安装 MetalSharp Wine x86_64。托管运行时需要 Apple 芯片、macOS 15 或更高版本以及 Rosetta 2，使用独立 Wine 容器并优先默认选用 D3DMetal（未内置时回退到 Mullion）。已有的 Sikarugir 运行时仍可在 Wine 设置中选择。
+
 macOS 通过 Wine 运行 GDK 版游戏（支持 LeviLamina、LIP 包及兼容的原生模组）。运行 `/Applications/LeviLauncher.app/Contents/MacOS/LeviLauncher` 即可使用命令行工具。UWP 实例目前仅支持 Windows。
 
 **从源码构建（macOS）：** 需要 Xcode 命令行工具、`go.mod` 对应的 Go 版本、Wails v3、Node.js/npm、Python 3，以及位于 `internal/leviloader/LeviLauncher.dll` 的 Windows x64 加载器（或通过 `build/native/macos.py --loader` 指定）。在仓库根目录运行 `wails3 task package` 即可构建 `bin/LeviLauncher.app` 与 `bin/LeviLauncher-macos-installer.dmg`；如需仅将已有的 `.app` 打包为 DMG，可运行 `wails3 task darwin:create:dmg` 或 `python3 build/native/dmg.py --app "/path/to/LeviLauncher.app" --output "/path/to/LeviLauncher.dmg"`。

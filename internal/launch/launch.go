@@ -263,6 +263,10 @@ func monitorWithTimeouts(ctx context.Context, versionDir string, launchPID int, 
 	meta, _ := versions.ReadMeta(versionDir)
 	discord.SetPlayingVersion(strings.TrimSpace(meta.GameVersion))
 
+	var gamePIDs map[uint32]struct{}
+	if runtime.GOOS == "darwin" {
+		gamePIDs = gameProcessIDs(versionDir)
+	}
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
@@ -271,7 +275,14 @@ func monitorWithTimeouts(ctx context.Context, versionDir string, launchPID int, 
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if !isGameRunning(versionDir) {
+			running := false
+			if runtime.GOOS == "darwin" {
+				gamePIDs = runningGamePIDs(versionDir, gamePIDs)
+				running = len(gamePIDs) != 0
+			} else {
+				running = isGameRunning(versionDir)
+			}
+			if !running {
 				discord.SetLauncherIdle()
 
 				switch config.GetOnGameExit() {
@@ -288,6 +299,20 @@ func monitorWithTimeouts(ctx context.Context, versionDir string, launchPID int, 
 			}
 		}
 	}
+}
+
+// Check identified Wine processes with a syscall. Rediscover the instance
+// only after those processes exit, in case the game restarted or was relaunched.
+func runningGamePIDs(versionDir string, pids map[uint32]struct{}) map[uint32]struct{} {
+	for pid := range pids {
+		if !isProcessAlive(pid) {
+			delete(pids, pid)
+		}
+	}
+	if len(pids) == 0 {
+		return gameProcessIDs(versionDir)
+	}
+	return pids
 }
 
 // GetMainWindow returns the launcher window, or nil while it does not exist

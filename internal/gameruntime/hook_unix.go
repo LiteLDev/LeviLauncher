@@ -4,6 +4,7 @@ package gameruntime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -42,12 +43,12 @@ func (p Profile) RunHook(ctx context.Context, dir, command string, output io.Wri
 	if err := os.WriteFile(name, []byte(text), 0600); err != nil {
 		return err
 	}
-	launcher := filepath.Join(temp, "run.cmd")
-	cmd, detached, err := p.GameCommand(ctx, launcher)
-	if err != nil {
-		return err
-	}
-	if detached {
+	if _, ok := p.isSikarugirWrapper(); ok {
+		launcher := filepath.Join(temp, "run.cmd")
+		cmd, _, err := p.GameCommand(ctx, launcher)
+		if err != nil {
+			return err
+		}
 		guestDir, err := p.WindowsPath(dir)
 		if err != nil {
 			return err
@@ -88,13 +89,17 @@ func (p Profile) RunHook(ctx context.Context, dir, command string, output io.Wri
 	if err != nil {
 		return err
 	}
-	cmd = p.Command(ctx, "cmd.exe", "/d", "/c", path)
+	cmd := p.Command(ctx, "cmd.exe", "/d", "/c", path)
 	cmd.Dir = dir
 	cmd.Stdout = output
 	cmd.Stderr = output
 	cmd.WaitDelay = 2 * time.Second
 	if err = cmd.Run(); err != nil {
-		return fmt.Errorf("Windows package hook failed: %w", err)
+		// A direct MetalSharp command can exit successfully while its Wine
+		// service still holds the redirected output handles.
+		if p.metalSharp.app == "" || !errors.Is(err, exec.ErrWaitDelay) {
+			return fmt.Errorf("Windows package hook failed: %w", err)
+		}
 	}
 	return nil
 }

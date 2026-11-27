@@ -14,9 +14,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"sync"
+	"syscall"
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
@@ -34,13 +33,9 @@ type runtimeAsset struct {
 }
 
 var (
-	templateAsset = runtimeAsset{"template", "Template-1.0.27.tar.xz",
-		"https://github.com/Sikarugir-App/Template/releases/download/v1.0/Template-1.0.27.tar.xz",
-		"dd0778f7b553d63df9b0f4e2cda3f3c6c005aabb75588c84d604afe80cdedbb9"}
-	engineAsset = runtimeAsset{"engine", "WS12WineSikarugir11.0_1.tar.xz",
-		"https://github.com/Sikarugir-App/Engines/releases/download/v1.0/WS12WineSikarugir11.0_1.tar.xz",
-		"67e29fb3d74f363af39c69ba11f9b13a79812c5db07cf4748672658e4a200a0e"}
-	wineInstallMu sync.Mutex
+	metalSharpAsset = runtimeAsset{"runtime", "MetalSharp-Wine-10.0-x86_64.zip",
+		"https://github.com/metalsharp/MetalSharp-Wine/releases/download/v10.0/MetalSharp-Wine-10.0-x86_64.zip",
+		"8c90c9c2fdb01e6d5f1a5ea40d3b18b388649ddc7238b9061fb4657b43ebf737"}
 )
 
 func downloadSettingsPath() string { return filepath.Join(apppath.ConfigDir(), "wine-download.json") }
@@ -93,7 +88,7 @@ func SaveDownloadSettings(settings types.WineDownloadSettings) error {
 }
 
 func NeedsRosetta(ctx context.Context) bool {
-	if runtime.GOARCH != "arm64" {
+	if !appleSilicon() {
 		return false
 	}
 	// Check the receipt first so opening Wine settings cannot trigger an
@@ -125,25 +120,37 @@ func installRosetta(ctx context.Context) error {
 }
 
 func managedWineSettings(app string) types.WineSettings {
-	support := filepath.Join(app, "Contents", "SharedSupport")
-	graphics := "auto"
-	if runtime.GOARCH == "arm64" {
-		graphics = "d3dmetal"
-	}
-	return types.WineSettings{App: app, Prefix: filepath.Join(support, "prefix"),
-		Executable: filepath.Join(support, "wine", "bin", "wine"), Graphics: graphics, Sync: "auto"}
+	return types.WineSettings{App: app, Prefix: metalSharpPrefix(app),
+		Executable: filepath.Join(app, metalSharpExecutable), Graphics: "auto", Sync: "auto", Runtime: "metalsharp"}
 }
 
-func InstallManagedWine(ctx context.Context, consent bool, progress func(types.WineInstallProgress)) (types.WineSettings, error) {
-	if !wineInstallMu.TryLock() {
-		return types.WineSettings{}, errors.New("ERR_WINE_INSTALL_BUSY")
-	}
-	defer wineInstallMu.Unlock()
+func InstallManagedWine(ctx context.Context, consent bool, progress func(types.WineInstallProgress), prepare func(context.Context, Profile) error) (types.WineSettings, error) {
+
 	if progress == nil {
 		progress = func(types.WineInstallProgress) {}
 	}
 	emit := func(stage, status string) { progress(types.WineInstallProgress{Stage: stage, Status: status}) }
 	emit("rosetta", "working")
+	if err := CheckManagedWineRequirements(ctx); err != nil {
+		return types.WineSettings{}, err
+	}
+	app := managedWineApp()
+	base := filepath.Dir(app)
+	if err := os.MkdirAll(base, 0700); err != nil {
+		return types.WineSettings{}, err
+	}
+	lock, err := os.OpenFile(filepath.Join(base, ".install.lock"), os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		return types.WineSettings{}, err
+	}
+	defer lock.Close()
+	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		if errors.Is(err, syscall.EWOULDBLOCK) {
+			return types.WineSettings{}, errors.New("ERR_WINE_INSTALL_BUSY")
+		}
+		return types.WineSettings{}, err
+	}
+
 	if NeedsRosetta(ctx) {
 		if !consent {
 			return types.WineSettings{}, errors.New("ERR_WINE_ROSETTA_CONSENT")
@@ -154,39 +161,57 @@ func InstallManagedWine(ctx context.Context, consent bool, progress func(types.W
 		}
 	}
 
-	base := filepath.Join(apppath.LocalDir(), "Runtimes", "Sikarugir")
-	settings := managedWineSettings(filepath.Join(base, "Levi Wine.app"))
+	settings := managedWineSettings(app)
+	previous, err := LoadSettings()
+	if err != nil {
+		previous = types.WineSettings{}
+	}
+	if previous.App == settings.App && previous.Prefix == settings.Prefix {
+		settings = previous
+	} else {
+		settings.LeftCommandIsCtrl = previous.LeftCommandIsCtrl
+	}
 	if _, err := os.Stat(settings.App); os.IsNotExist(err) {
 		downloadSettings, err := LoadDownloadSettings()
 		if err != nil {
 			return types.WineSettings{}, err
 		}
-		cache := filepath.Join(apppath.CacheDir(), "Wine")
-		for _, asset := range []runtimeAsset{templateAsset, engineAsset} {
-			if err := downloadWineAsset(ctx, filepath.Join(cache, asset.name), asset, downloadSettings, progress); err != nil {
-				return types.WineSettings{}, err
-			}
+		archive := filepath.Join(apppath.CacheDir(), "Wine", metalSharpAsset.name)
+		if err := downloadWineAsset(ctx, archive, metalSharpAsset, downloadSettings, progress); err != nil {
+			return types.WineSettings{}, err
 		}
-		emit("container", "working")
-		if err := assembleWineContainer(ctx, base, cache, settings); err != nil {
+		emit("extract", "working")
+		if err := extractMetalSharp(ctx, archive, settings.App); err != nil {
 			return types.WineSettings{}, err
 		}
 	} else if err != nil {
 		return types.WineSettings{}, err
 	} else {
-		for _, stage := range []string{"template", "engine", "container"} {
-			emit(stage, "skipped")
-		}
+		emit("runtime", "skipped")
+		emit("extract", "skipped")
 	}
 
 	emit("initialize", "working")
-	if err := initializeWineContainer(ctx, base, settings); err != nil {
+	if err := initializeMetalSharp(ctx, settings); err != nil {
 		return types.WineSettings{}, err
+	}
+	p, err := profileFromSettings(settings)
+	if err != nil {
+		return types.WineSettings{}, err
+	}
+	if _, err := p.CheckVersion(ctx); err != nil {
+		return types.WineSettings{}, err
+	}
+	if prepare != nil {
+		emit("initialize", "dependencies")
+		if err := prepare(ctx, p); err != nil {
+			return types.WineSettings{}, err
+		}
+	}
+	if err := migrateLegacyWineAccount(previous, p.Prefix); err != nil {
+		return types.WineSettings{}, fmt.Errorf("ERR_WINE_ACCOUNT_MIGRATION: %w", err)
 	}
 	emit("select", "working")
-	if _, err := CheckSettings(ctx, settings); err != nil {
-		return types.WineSettings{}, err
-	}
 	if err := ctx.Err(); err != nil {
 		return types.WineSettings{}, err
 	}
@@ -223,7 +248,7 @@ func downloadWineAsset(ctx context.Context, dest string, asset runtimeAsset, set
 	download := func(source string) error {
 		transfer, cancel := context.WithCancel(ctx)
 		defer cancel()
-		const idleTimeout = 30 * time.Second
+		const idleTimeout = 60 * time.Second
 		watchdog := time.AfterFunc(idleTimeout, cancel)
 		defer watchdog.Stop()
 		err := downloader.Download(transfer, source, dest, downloader.SyncOptions{
@@ -252,7 +277,8 @@ func downloadWineAsset(ctx context.Context, dest string, asset runtimeAsset, set
 	return download(asset.url)
 }
 
-func assembleWineContainer(ctx context.Context, base, cache string, settings types.WineSettings) error {
+func extractMetalSharp(ctx context.Context, archive, destination string) error {
+	base := filepath.Dir(destination)
 	if err := os.MkdirAll(base, 0700); err != nil {
 		return err
 	}
@@ -261,75 +287,60 @@ func assembleWineContainer(ctx context.Context, base, cache string, settings typ
 		return err
 	}
 	defer os.RemoveAll(staging)
-	for _, asset := range []runtimeAsset{templateAsset, engineAsset} {
-		out, err := exec.CommandContext(ctx, "/usr/bin/tar", "-xf", filepath.Join(cache, asset.name), "-C", staging).CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("extract %s: %w: %s", asset.name, err, bytes.TrimSpace(out))
-		}
+	if out, err := exec.CommandContext(ctx, "/usr/bin/ditto", "-xk", archive, staging).CombinedOutput(); err != nil {
+		return fmt.Errorf("extract MetalSharp Wine: %w: %s", err, bytes.TrimSpace(out))
 	}
-	app := filepath.Join(staging, "Template-1.0.27.app")
-	support := filepath.Join(app, "Contents", "SharedSupport")
-	if err := os.Rename(filepath.Join(staging, "wswine.bundle"), filepath.Join(support, "wine")); err != nil {
-		return err
+	app := filepath.Join(staging, metalSharpBundle)
+	_ = exec.CommandContext(ctx, "/usr/bin/xattr", "-dr", "com.apple.quarantine", app).Run()
+	if out, err := exec.CommandContext(ctx, "/usr/bin/codesign", "--verify", "--deep", "--strict", app).CombinedOutput(); err != nil {
+		return fmt.Errorf("ERR_WINE_RUNTIME_SIGNATURE: %w: %s", err, bytes.TrimSpace(out))
 	}
-	plist := filepath.Join(app, "Contents", "Info.plist")
-	for _, field := range []struct{ name, kind, value string }{
-		{"CFBundleIdentifier", "-string", "org.levimc.levilauncher.managedwine"},
-		{"CFBundleName", "-string", "Levi Wine"},
-		{"Skip Mono", "-integer", "1"}, {"Skip Gecko", "-integer", "1"},
-		{"Symlinks In User Folder", "-integer", "0"},
-	} {
-		if err := exec.CommandContext(ctx, "/usr/bin/plutil", "-replace", field.name, field.kind, field.value, plist).Run(); err != nil {
-			return fmt.Errorf("configure %s: %w", field.name, err)
-		}
+	if !isMetalSharpApp(app) {
+		return ErrExecutableMissing
 	}
-	if settings.Graphics == "d3dmetal" {
-		if err := exec.CommandContext(ctx, "/usr/bin/plutil", "-replace", "D3DMETAL", "-integer", "1", plist).Run(); err != nil {
-			return err
-		}
-	}
-	return os.Rename(app, settings.App)
+	return os.Rename(app, destination)
 }
 
-func initializeWineContainer(ctx context.Context, base string, settings types.WineSettings) error {
+func initializedMetalSharpPrefix(prefix string) bool {
+	for _, name := range []string{"system.reg", "user.reg", "drive_c/windows/system32/cmd.exe"} {
+		if info, err := os.Stat(filepath.Join(prefix, name)); err != nil || !info.Mode().IsRegular() {
+			return false
+		}
+	}
+	return true
+}
+
+func initializeMetalSharp(ctx context.Context, settings types.WineSettings) error {
+	const ready = ".levilauncher-wineboot"
+	if err := os.MkdirAll(settings.Prefix, 0700); err != nil {
+		return err
+	}
+	if err := checkExternalPrefix(settings.App, settings.Prefix); err != nil {
+		return err
+	}
+	marker := filepath.Join(settings.Prefix, ready)
+	if _, err := os.Stat(marker); err == nil && initializedMetalSharpPrefix(settings.Prefix) {
+		return nil
+	}
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
-	temp, err := os.MkdirTemp(base, "verify-")
-	if err != nil {
-		return err
+	p := Profile{App: settings.App, Wine: settings.Executable, Prefix: settings.Prefix,
+		Graphics: "auto", metalSharp: metalSharpRuntime{settings.App}}
+	// Initialize at the final path: Wine keys its server socket off the prefix.
+	boot := p.Command(ctx, "wineboot", "-u")
+	boot.WaitDelay = 2 * time.Second
+	// A successfully exited wineboot can leave its output open in Wine
+	// services. The separate wineserver wait below checks their lifetime.
+	if out, err := boot.CombinedOutput(); err != nil && !errors.Is(err, exec.ErrWaitDelay) {
+		return fmt.Errorf("ERR_WINE_CONTAINER_INIT: %w: %s", err, bytes.TrimSpace(out))
 	}
-	defer os.RemoveAll(temp)
-	script := filepath.Join(temp, "init.cmd")
-	if err := os.WriteFile(script, []byte("@echo off\r\nver > \"%~dp0ready.txt\"\r\n"), 0600); err != nil {
-		return err
+	server := exec.CommandContext(ctx, filepath.Join(filepath.Dir(p.Wine), "wineserver"), "-w")
+	server.Env = p.Environment()
+	if out, err := server.CombinedOutput(); err != nil {
+		return fmt.Errorf("ERR_WINE_CONTAINER_INIT: %w: %s", err, bytes.TrimSpace(out))
 	}
-	launcher := filepath.Join(settings.App, "Contents", "MacOS", "wineskinlauncher")
-	cmd := exec.CommandContext(ctx, launcher, script)
-	for _, entry := range os.Environ() {
-		key, _, _ := strings.Cut(entry, "=")
-		if key == "HOME" || key == "USER" || key == "LOGNAME" || key == "TMPDIR" {
-			cmd.Env = append(cmd.Env, entry)
-		}
+	if !initializedMetalSharpPrefix(p.Prefix) {
+		return errors.New("ERR_WINE_CONTAINER_INIT: missing prefix files")
 	}
-	cmd.Env = append(cmd.Env, "PATH=/usr/bin:/bin:/usr/sbin:/sbin")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("initialize Wine: %w: %s", err, bytes.TrimSpace(output))
-	}
-	ticker := time.NewTicker(200 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		marker, _ := os.ReadFile(filepath.Join(temp, "ready.txt"))
-		_, systemErr := os.Stat(filepath.Join(settings.Prefix, "system.reg"))
-		_, userErr := os.Stat(filepath.Join(settings.Prefix, "user.reg"))
-		_, commandErr := os.Stat(filepath.Join(settings.Prefix, "drive_c", "windows", "system32", "cmd.exe"))
-		if bytes.Contains(marker, []byte("Microsoft Windows")) && systemErr == nil && userErr == nil && commandErr == nil {
-			return nil
-		}
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("ERR_WINE_CONTAINER_INIT: %w: %s", ctx.Err(), bytes.TrimSpace(output))
-		case <-ticker.C:
-		}
-	}
+	return fsx.WriteFileAtomic(marker, []byte("1\n"), 0600)
 }

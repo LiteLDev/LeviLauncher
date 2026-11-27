@@ -183,7 +183,7 @@ export const useContentPage = (t: TFunc) => {
                   setSkinCount(0);
                 }
               } else {
-                const sp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
+                const sp = resolveContentPath(safe, "skin_packs", player);
                 setSkinCount(await countDirectories(sp));
               }
               const srvs = await (minecraft as any)?.ListServers?.(
@@ -283,7 +283,7 @@ export const useContentPage = (t: TFunc) => {
           setSkinCount(0);
         }
       } else {
-        const sp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
+        const sp = resolveContentPath(roots, "skin_packs", player);
         setSkinCount(await countDirectories(sp));
       }
       const srvs = await (minecraft as any)?.ListServers?.(

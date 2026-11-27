@@ -606,7 +606,8 @@ export default function SkinPacksPage() {
                         : "\\";
                       let sp = `${dir}${sep}skin_packs`;
                       if (selectedPlayer && roots.usersRoot && !isSharedMode) {
-                        sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
+                        const userSep = roots.usersRoot.includes("/") ? "/" : "\\";
+                        sp = `${roots.usersRoot.replace(/[\\/]+$/, "")}${userSep}${selectedPlayer}${userSep}games${userSep}com.mojang${userSep}skin_packs`;
                       }
                       await openDirectory(sp);
                     }}

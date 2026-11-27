@@ -40,12 +40,30 @@ test("unresolved roots never manufacture relative content paths", () => {
   assert.equal(exports.resolveContentPath({ packageType: "uwp" }, "Screenshots"), "");
 });
 
-test("macOS GDK world paths use the host separators", () => {
+test("macOS GDK and UWP content paths use the host separators", () => {
   const usersRoot = "/Users/player/Library/Application Support/LeviLauncher/Instances/中文112233/Minecraft Bedrock/Users";
   assert.equal(
     exports.resolveContentPath({ packageType: "gdk", usersRoot }, "minecraftWorlds", "123"),
     `${usersRoot}/123/games/com.mojang/minecraftWorlds`,
   );
+  assert.equal(
+    exports.resolveContentPath({ packageType: "gdk", usersRoot }, "skin_packs", "123"),
+    `${usersRoot}/123/games/com.mojang/skin_packs`,
+  );
+  const comMojangRoot = "/Users/player/Library/Application Support/LeviLauncher/Instances/uwp/games/com.mojang/";
+  assert.equal(
+    exports.resolveContentPath({ packageType: "uwp", comMojangRoot }, "skin_packs"),
+    "/Users/player/Library/Application Support/LeviLauncher/Instances/uwp/games/com.mojang/skin_packs",
+  );
+});
+
+test("frontend directory openers never hardcode Windows backslashes on POSIX roots", () => {
+  const useLauncherSrc = readFileSync(new URL("../src/hooks/useLauncher.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(useLauncherSrc, /vdir\s*\+\s*["']\\\\["']/);
+  const skinPacksSrc = readFileSync(new URL("../src/pages/SkinPacksPage.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(skinPacksSrc, /usersRoot\}?\\\\/);
+  const contentPageSrc = readFileSync(new URL("../src/hooks/useContentPage.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(contentPageSrc, /usersRoot\}?\\\\/);
 });
 
 test("isolated UWP content resolves inside each instance without a player", () => {

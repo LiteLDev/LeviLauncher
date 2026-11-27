@@ -18,9 +18,13 @@ import (
 )
 
 const (
-	metalSharpBundle     = "MetalSharp-Wine-x86_64.app"
-	metalSharpExecutable = "Contents/MacOS/wine"
-	metalSharpPayload    = "Contents/share/metalsharp"
+	metalSharpBundle      = "MetalSharp-Wine-x86_64.app"
+	metalSharpExecutable  = "Contents/MacOS/wine"
+	metalSharpPayload     = "Contents/share/metalsharp"
+	nvidiaSpoofVendorID   = "0x10DE"
+	nvidiaSpoofDeviceID   = "0x2704"
+	nvidiaSpoofDeviceDesc = "NVIDIA GeForce RTX 4080"
+	dxgiSpoofConfig       = `dxgi.customVendorId = 10de; dxgi.customDeviceId = 2704; dxgi.customDeviceDesc = "NVIDIA GeForce RTX 4080"`
 )
 
 var (
@@ -31,16 +35,53 @@ var (
 
 type metalSharpRuntime struct{ app string }
 
+func managedWineRoot() string {
+	return filepath.Join(apppath.LocalDir(), "Runtimes", "MetalSharp")
+}
+
+func managedWineVersionsDir() string {
+	return filepath.Join(managedWineRoot(), "versions")
+}
+
 func managedWineApp() string {
-	return filepath.Join(apppath.LocalDir(), "Runtimes", "MetalSharp", metalSharpBundle)
+	return filepath.Join(managedWineRoot(), metalSharpBundle)
+}
+
+func managedWineAppForVersion(version string) string {
+	v := normalizeMetalSharpVersion(version)
+	if v == "" {
+		return managedWineApp()
+	}
+	return filepath.Join(managedWineVersionsDir(), "v"+v, metalSharpBundle)
+}
+
+func isManagedMetalSharpApp(app string) bool {
+	if app == "" {
+		return false
+	}
+	cleanApp := filepath.Clean(app)
+	root := filepath.Clean(managedWineRoot())
+	if cleanApp == filepath.Join(root, metalSharpBundle) {
+		return true
+	}
+	versionsDir := filepath.Join(root, "versions")
+	rel, err := filepath.Rel(versionsDir, cleanApp)
+	if err != nil || !filepath.IsLocal(rel) {
+		return false
+	}
+	parts := strings.Split(rel, string(filepath.Separator))
+	return len(parts) == 2 && parts[0] != "" && !strings.HasPrefix(parts[0], ".") && parts[1] == metalSharpBundle
 }
 
 func metalSharpPrefix(app string) string {
+	if isManagedMetalSharpApp(app) {
+		return filepath.Join(managedWineRoot(), "prefix")
+	}
 	sibling := filepath.Join(filepath.Dir(app), "prefix")
 	cleanDir := filepath.Clean(filepath.Dir(app))
 	if cleanDir == "/Applications" || strings.HasPrefix(cleanDir, "/Applications/") {
 		if info, err := os.Stat(sibling); err != nil || !info.IsDir() {
-			return filepath.Join(filepath.Dir(managedWineApp()), "prefix")
+			return filepath.Join(managedWineRoot(), "prefix")
 		}
 	}
 	return sibling
@@ -114,20 +155,103 @@ func CheckManagedWineRequirements(ctx context.Context) error {
 }
 
 func (m metalSharpRuntime) d3dMetalFor(version string) (string, string) {
-	if m.selectedD3DMetalVersion(version) == "gptk4" {
+	return m.d3dMetalForSelection(m.selectedD3DMetalVersion(version))
+}
+
+func (m metalSharpRuntime) d3dMetalForProfile(p Profile) (string, string) {
+	return m.d3dMetalForSelection(m.selectedD3DMetalVersionFor(p.D3DMetalVersion, p.EnableRayTracing))
+}
+
+func (m metalSharpRuntime) d3dMetalForSelection(selected string) (string, string) {
+	if selected == "gptk4" {
 		return filepath.Join(m.app, metalSharpPayload, "runtime", "d3dmetal-gptk4-beta3"), "GPTK 4 beta 3"
 	}
 	return filepath.Join(m.app, metalSharpPayload, "runtime", "d3dmetal-gptk3"), "GPTK 3"
 }
 
 func (m metalSharpRuntime) selectedD3DMetalVersion(version string) string {
+	return m.selectedD3DMetalVersionFor(version, false)
+}
+
+func (m metalSharpRuntime) selectedD3DMetalVersionFor(version string, rayTracing bool) string {
 	if version == "gptk3" || version == "gptk4" {
 		return version
+	}
+	// Apple's D3DMetal GPTK 4 beta 3 maps D3D12_HEAP_TYPE_CUSTOM heaps to
+	// MTLStorageModeShared while hardcoding MTLResourceStorageModePrivate when
+	// creating placed acceleration-structure GPU header buffers, which aborts
+	// Minecraft Bedrock RTX on world load. GPTK 3 allocates acceleration
+	// structures on its own private internal allocator and runs RTX cleanly.
+	if rayTracing && m.hasD3DMetal("gptk3") {
+		return "gptk3"
 	}
 	if versions := m.availableD3DMetalVersions(); len(versions) > 1 {
 		return versions[1]
 	}
 	return "gptk3"
+}
+
+func (m metalSharpRuntime) version() string {
+	if m.app == "" {
+		return ""
+	}
+	if v := readMetalSharpInfoPlistVersion(filepath.Join(m.app, "Contents/Info.plist")); v != "" {
+		return v
+	}
+	return readMetalSharpSourcesVersion(filepath.Join(m.app, metalSharpPayload, "SOURCES.txt"))
+}
+
+func normalizeMetalSharpVersion(raw string) string {
+	return strings.TrimLeft(strings.TrimSpace(raw), "vV")
+}
+
+func readMetalSharpInfoPlistVersion(plistPath string) string {
+	data, err := os.ReadFile(plistPath)
+	if err != nil || len(data) == 0 {
+		return ""
+	}
+	if strings.HasPrefix(string(data), "bplist") {
+		out, err := exec.Command("/usr/bin/plutil", "-extract", "CFBundleShortVersionString", "raw", "-o", "-", plistPath).Output()
+		if err != nil {
+			return ""
+		}
+		return normalizeMetalSharpVersion(string(out))
+	}
+	text := string(data)
+	const keyTag = "<key>CFBundleShortVersionString</key>"
+	idx := strings.Index(text, keyTag)
+	if idx < 0 {
+		return ""
+	}
+	rest := text[idx+len(keyTag):]
+	start := strings.Index(rest, "<string>")
+	if start < 0 {
+		return ""
+	}
+	rest = rest[start+len("<string>"):]
+	end := strings.Index(rest, "</string>")
+	if end < 0 {
+		return ""
+	}
+	return normalizeMetalSharpVersion(rest[:end])
+}
+
+func readMetalSharpSourcesVersion(sourcesPath string) string {
+	data, err := os.ReadFile(sourcesPath)
+	if err != nil {
+		return ""
+	}
+	firstLine, _, _ := strings.Cut(string(data), "\n")
+	firstLine = strings.TrimSpace(firstLine)
+	const prefix = "MetalSharp Wine "
+	if len(firstLine) <= len(prefix) || !strings.EqualFold(firstLine[:len(prefix)], prefix) {
+		return ""
+	}
+	fields := strings.Fields(firstLine[len(prefix):])
+	if len(fields) == 0 {
+		return ""
+	}
+	return normalizeMetalSharpVersion(fields[0])
 }
 
 func (m metalSharpRuntime) availableD3DMetalVersions() []string {
@@ -170,14 +294,8 @@ func metalFXFactor(scale string, enabled bool, retina bool) string {
 	}
 }
 
-func metalFXSharpnessValue(sharpness, scale string, enabled, retina bool) string {
-	factor := metalFXFactor(scale, enabled, retina)
-	if factor == "" {
-		return ""
-	}
+func explicitMetalFXSharpness(sharpness string) string {
 	switch sharpness {
-	case "0":
-		return ""
 	case "10":
 		return "0.10"
 	case "15":
@@ -186,6 +304,22 @@ func metalFXSharpnessValue(sharpness, scale string, enabled, retina bool) string
 		return "0.25"
 	case "35":
 		return "0.35"
+	default:
+		return ""
+	}
+}
+
+func metalFXSharpnessValue(sharpness, scale string, enabled, retina bool) string {
+	factor := metalFXFactor(scale, enabled, retina)
+	if factor == "" {
+		return ""
+	}
+	if explicit := explicitMetalFXSharpness(sharpness); explicit != "" {
+		return explicit
+	}
+	switch sharpness {
+	case "0":
+		return ""
 	case "", "auto":
 		switch factor {
 		case "2.00":
@@ -197,6 +331,39 @@ func metalFXSharpnessValue(sharpness, scale string, enabled, retina bool) string
 		default:
 			return ""
 		}
+	default:
+		return ""
+	}
+}
+
+func dlssMetalFXSharpnessValue(sharpness, quality string) string {
+	if explicit := explicitMetalFXSharpness(sharpness); explicit != "" {
+		return explicit
+	}
+	switch sharpness {
+	case "0":
+		return ""
+	case "", "auto":
+		switch quality {
+		case "ultra_performance":
+			return "0.25"
+		case "performance", "balanced":
+			return "0.15"
+		case "dlaa":
+			return ""
+		default:
+			// quality / auto (game default = Quality 67%)
+			return "0.10"
+		}
+	default:
+		return ""
+	}
+}
+
+func dlssScaleEnvValue(quality string) string {
+	switch quality {
+	case "ultra_performance", "performance", "balanced", "quality", "dlaa":
+		return quality
 	default:
 		return ""
 	}
@@ -255,7 +422,7 @@ func (m metalSharpRuntime) validate(p Profile) error {
 	case "vkd3d":
 		required = filepath.Join(m.app, metalSharpPayload, "vkd3d/vkd3d-proton/x86_64-windows/d3d12.dll")
 	case "d3dmetal":
-		selected := m.selectedD3DMetalVersion(p.D3DMetalVersion)
+		selected := m.selectedD3DMetalVersionFor(p.D3DMetalVersion, p.EnableRayTracing)
 		version := macOSVersion()
 		if selected == "gptk4" && version[0] < 27 {
 			return fmt.Errorf("%w: GPTK 4 requires macOS 27 or later", ErrD3DMetalUnavailable)
@@ -301,7 +468,7 @@ func (p Profile) GraphicsBackend() string {
 	case "mullion":
 		return "Mullion"
 	case "d3dmetal":
-		_, kit := p.metalSharp.d3dMetalFor(p.D3DMetalVersion)
+		_, kit := p.metalSharp.d3dMetalForProfile(p)
 		return "D3DMetal (" + kit + ")"
 	case "vkd3d":
 		return "VKD3D-Proton"
@@ -318,21 +485,88 @@ func (p Profile) EffectiveGraphics() string {
 	return p.metalSharp.effectiveGraphics(p.Graphics)
 }
 
+// EffectiveRayTracing reports whether DXR ray tracing is active on a supported
+// MetalSharp graphics lane.
+func (p Profile) EffectiveRayTracing() bool {
+	if !p.EnableRayTracing {
+		return false
+	}
+	switch p.EffectiveGraphics() {
+	case "d3dmetal", "mullion", "vkd3d":
+		return true
+	default:
+		return false
+	}
+}
+
+// EffectiveDLSS reports whether DLSS (routed to MetalFX Temporal via NGX) is
+// active on a supported MetalSharp graphics lane. Minecraft Bedrock only uses
+// NGX/DLSS while Ray Tracing is enabled, so Temporal upscaling is inactive when
+// EnableRayTracing is false.
+func (p Profile) EffectiveDLSS() bool {
+	if !p.EnableRayTracing || !p.EnableDLSS {
+		return false
+	}
+	switch p.EffectiveGraphics() {
+	case "d3dmetal", "mullion", "vkd3d":
+		return true
+	default:
+		return false
+	}
+}
+
 // SpatialMetalFXFactor returns the configured MetalFX spatial scaling factor
-// (e.g. "1.33", "1.50", "2.00"), or "" when disabled.
+// (e.g. "1.33", "1.50", "2.00"), or "" when disabled or superseded by DLSS.
 func (p Profile) SpatialMetalFXFactor() string {
+	if p.EffectiveDLSS() {
+		return ""
+	}
 	return metalFXFactor(p.MetalFXScale, p.EnableMetalFX, p.RetinaMode)
 }
 
 func (p Profile) usesMetal4D3DMetal() bool {
 	return p.EnableMetal4 && macOSVersion()[0] >= 27 &&
-		p.metalSharp.selectedD3DMetalVersion(p.D3DMetalVersion) == "gptk4"
+		p.metalSharp.selectedD3DMetalVersionFor(p.D3DMetalVersion, p.EnableRayTracing) == "gptk4"
+}
+
+var displayRetinaOversampleRatio = mainDisplayRetinaOversampleRatio
+
+// D3DMetalDLSSLaunchEnv returns the LeviWineBridge environment variable used to
+// override Apple GPTK's default DLSS quality preset under D3DMetal.
+func (p Profile) D3DMetalDLSSLaunchEnv(hasBridge bool) map[string]string {
+	if p.EffectiveGraphics() != "d3dmetal" || !p.EffectiveDLSS() || !hasBridge {
+		return nil
+	}
+	switch p.DLSSQuality {
+	case "ultra_performance", "performance", "balanced", "dlaa":
+		return map[string]string{
+			"LEVI_GPTK_DLSS_QUALITY": p.DLSSQuality,
+		}
+	default:
+		return nil
+	}
+}
+
+// DLSSPanelLimitLaunchEnv caps Retina DLSS output (and therefore internal RTX
+// ray-tracing and MetalFX Temporal resolution) to the display's physical panel
+// pixels via LeviWineBridge when macOS uses a non-integer scaled Retina mode.
+func (p Profile) DLSSPanelLimitLaunchEnv(hasBridge bool) map[string]string {
+	if !p.EffectiveDLSS() || !p.RetinaMode || !p.MetalFXPanelLimit || !hasBridge {
+		return nil
+	}
+	ratio := displayRetinaOversampleRatio()
+	if ratio <= 1.01 || ratio > 4.0 {
+		return nil
+	}
+	return map[string]string{
+		"LEVI_WINE_RENDER_SCALE": fmt.Sprintf("%.4f", ratio),
+	}
 }
 
 // D3DMetalFXLaunchEnv returns the extra environment variables for native
 // Apple MTLFXSpatialScaler and optional CAS sharpening under D3DMetal.
 func (p Profile) D3DMetalFXLaunchEnv(hasBridge bool) map[string]string {
-	if p.EffectiveGraphics() != "d3dmetal" || p.usesMetal4D3DMetal() {
+	if p.EffectiveGraphics() != "d3dmetal" || p.usesMetal4D3DMetal() || p.EffectiveDLSS() {
 		return nil
 	}
 	factor := p.SpatialMetalFXFactor()
@@ -368,10 +602,26 @@ func (p Profile) D3DMetalFXLaunchEnv(hasBridge bool) map[string]string {
 }
 
 // MetalFXSharpenLaunchEnv returns the extra environment variables for post-upscale
-// CAS sharpening on renderers that run MetalFX spatial upscaling internally
-// (Mullion and VKD3D-Proton).
+// CAS sharpening on renderers that run upscaling internally (Mullion, VKD3D-Proton,
+// and D3DMetal when DLSS handles upscaling).
 func (p Profile) MetalFXSharpenLaunchEnv() map[string]string {
 	effective := p.EffectiveGraphics()
+	if p.EffectiveDLSS() {
+		if effective != "mullion" && effective != "vkd3d" && effective != "d3dmetal" {
+			return nil
+		}
+		if effective == "d3dmetal" && p.usesMetal4D3DMetal() {
+			return nil
+		}
+		sharp := dlssMetalFXSharpnessValue(p.MetalFXSharpness, p.DLSSQuality)
+		if sharp == "" {
+			return nil
+		}
+		return map[string]string{
+			"LEVI_METALFX_SHARPNESS":    sharp,
+			"LEVI_METALFX_SHARPEN_ONLY": "1",
+		}
+	}
 	if effective != "mullion" && effective != "vkd3d" {
 		return nil
 	}
@@ -391,8 +641,9 @@ func (m metalSharpRuntime) environment(p Profile, values map[string]string) {
 			strings.HasPrefix(key, "VKD3D_") || strings.HasPrefix(key, "WFDXCOMPAT_") ||
 			strings.HasPrefix(key, "ROSETTA_") ||
 			strings.HasPrefix(key, "LEVI_METAL") || strings.HasPrefix(key, "LEVI_WINE_RENDER_SCALE") ||
+			strings.HasPrefix(key, "LEVI_GPTK_DLSS_") || strings.HasPrefix(key, "METALSHARP_") ||
+			strings.HasPrefix(key, "MVK_CONFIG_") ||
 			key == "LEVI_WINE_UNIX_BIN" || key == "LEVI_GAME_ICON_PATH" || key == "LEVI_GAME_TITLE" ||
-			key == "METALSHARP_METAL_VERSION" ||
 			key == "OPENGL_BACKEND" || key == "MTL_HUD_ENABLED" || key == "MTL_SHADER_CACHE_DIR" {
 			delete(values, key)
 		}
@@ -408,24 +659,33 @@ func (m metalSharpRuntime) environment(p Profile, values map[string]string) {
 		values["MTL_HUD_ENABLED"] = "1"
 	}
 	fps := strconv.Itoa(p.MaxFPS)
-	fxFactor := metalFXFactor(p.MetalFXScale, p.EnableMetalFX, p.RetinaMode)
+	dlssActive := p.EffectiveDLSS()
+	fxFactor := p.SpatialMetalFXFactor()
 	useMetal3 := !p.EnableMetal4 || macOSVersion()[0] < 27
 	lane := "mullion"
 	switch m.effectiveGraphics(p.Graphics) {
 	case "d3dmetal":
 		lane = "d3dmetal"
 		values["GRAPHICS_BACKEND"] = "d3dmetal"
-		d3dDir, _ := m.d3dMetalFor(p.D3DMetalVersion)
+		d3dDir, _ := m.d3dMetalForProfile(p)
 		values["D3DMETAL_RUNTIME_DIR"] = d3dDir
-		if m.selectedD3DMetalVersion(p.D3DMetalVersion) == "gptk4" {
+		if m.selectedD3DMetalVersionFor(p.D3DMetalVersion, p.EnableRayTracing) == "gptk4" {
 			if p.usesMetal4D3DMetal() {
 				values["D3DM_MTL4"] = "1"
 			} else {
 				values["D3DM_MTL4"] = "0"
 			}
 		}
-		if fxFactor != "" {
+		if p.EnableRayTracing {
+			values["D3DM_SUPPORT_DXR"] = "1"
+		}
+		if fxFactor != "" || dlssActive {
 			values["D3DM_ENABLE_METALFX"] = "1"
+		}
+		if dlssActive {
+			values["D3DM_VENDOR_ID"] = nvidiaSpoofVendorID
+			values["D3DM_DEVICE_ID"] = nvidiaSpoofDeviceID
+			values["D3DM_DEVICE_DESCRIPTION"] = nvidiaSpoofDeviceDesc
 		}
 		if p.MaxFPS > 0 {
 			values["D3DM_MAX_FPS"] = fps
@@ -439,15 +699,31 @@ func (m metalSharpRuntime) environment(p Profile, values map[string]string) {
 		if useMetal3 {
 			values["METALSHARP_METAL_VERSION"] = "3"
 		}
+		if p.EnableRayTracing {
+			values["MVK_CONFIG_ENABLE_EXPERIMENTAL_RAY_TRACING"] = "1"
+		} else {
+			values["VKD3D_CONFIG"] = "nodxr"
+		}
 		if p.MaxFPS > 0 {
 			values["VKD3D_FRAME_RATE"] = fps
 			values["DXVK_FRAME_RATE"] = fps
 		}
-		if fxFactor != "" {
-			values["DXVK_CONFIG"] = fmt.Sprintf(
+		var dxvkOptions []string
+		if dlssActive {
+			values["DXVK_ENABLE_NVAPI"] = "1"
+			values["VKD3D_METALFX_SPATIAL"] = "0"
+			dxvkOptions = append(dxvkOptions, dxgiSpoofConfig)
+			if scale := dlssScaleEnvValue(p.DLSSQuality); scale != "" {
+				values["METALSHARP_DLSS_SCALE"] = scale
+			}
+		} else if fxFactor != "" {
+			dxvkOptions = append(dxvkOptions, fmt.Sprintf(
 				"d3d11.metalSpatialUpscale = True; d3d12.metalSpatialUpscale = True; d3d11.metalSpatialUpscaleFactor = %s; d3d12.metalSpatialUpscaleFactor = %s",
 				fxFactor, fxFactor,
-			)
+			))
+		}
+		if len(dxvkOptions) > 0 {
+			values["DXVK_CONFIG"] = strings.Join(dxvkOptions, "; ")
 		}
 	case "wined3d":
 		lane = "wined3d"
@@ -460,9 +736,23 @@ func (m metalSharpRuntime) environment(p Profile, values map[string]string) {
 		} else {
 			values["MULLION_D3D12_METAL4"] = "1"
 		}
+		if p.EnableRayTracing {
+			values["MULLION_D3D12_RAYTRACING"] = "1"
+		} else {
+			values["MULLION_D3D12_RAYTRACING"] = "0"
+		}
 		// Override mullion.conf's bundled 60 FPS cap when MaxFPS is 0 (unlimited)
 		// and apply the explicit cap for both D3D11 and D3D12 when > 0.
 		options = append(options, "d3d11.preferredMaxFrameRate = "+fps, "d3d12.preferredMaxFrameRate = "+fps)
+		if dlssActive {
+			values["MULLION_ENABLE_NVEXT"] = "1"
+			options = append(options, dxgiSpoofConfig)
+			if scale := dlssScaleEnvValue(p.DLSSQuality); scale != "" {
+				values["METALSHARP_DLSS_SCALE"] = scale
+			}
+		} else {
+			values["MULLION_ENABLE_NVEXT"] = "0"
+		}
 		if fxFactor != "" {
 			values["MULLION_METALFX_SPATIAL_SWAPCHAIN"] = "1"
 			options = append(options,
@@ -498,12 +788,17 @@ func (m metalSharpRuntime) environment(p Profile, values map[string]string) {
 	}
 }
 
-// PrepareGameDirectory enables MetalSharp's display-size adjustment for
-// MetalFX. The upstream loader checks for launch.env beside the executable.
+// PrepareGameDirectory enables MetalSharp's launched-game detection (used for
+// MetalFX display-size adjustment, NGX/DLSS discovery, and GPU spoofing).
+// The upstream loader checks for .metalsharp/launch.env beside the executable.
 func (p Profile) PrepareGameDirectory(exe string) error {
+	if p.metalSharp.app == "" {
+		return nil
+	}
 	effective := p.metalSharp.effectiveGraphics(p.Graphics)
-	if p.metalSharp.app == "" || metalFXFactor(p.MetalFXScale, p.EnableMetalFX, p.RetinaMode) == "" ||
-		(effective != "mullion" && effective != "vkd3d") {
+	needsLaunchEnv := p.EffectiveDLSS() || p.EffectiveRayTracing() ||
+		(p.SpatialMetalFXFactor() != "" && (effective == "mullion" || effective == "vkd3d"))
+	if !needsLaunchEnv {
 		return nil
 	}
 	dir := filepath.Join(filepath.Dir(exe), ".metalsharp")

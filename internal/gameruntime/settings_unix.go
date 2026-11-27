@@ -68,9 +68,11 @@ func resolveSettings(s types.WineSettings) (types.WineSettings, error) {
 	}
 	metalSharp := metalSharpForSettings(s)
 	s.Runtime = ""
+	s.RuntimeVersion = ""
 	s.D3DMetalVersions = nil
 	if metalSharp.app != "" {
 		s.Runtime = "metalsharp"
+		s.RuntimeVersion = metalSharp.version()
 		s.D3DMetalVersions = metalSharp.availableD3DMetalVersions()
 	}
 	if s.App == "" && metalSharp.app != "" {
@@ -129,6 +131,9 @@ func resolveSettings(s types.WineSettings) (types.WineSettings, error) {
 	if s.MetalFXSharpness == "" {
 		s.MetalFXSharpness = "auto"
 	}
+	if s.DLSSQuality == "" {
+		s.DLSSQuality = "performance"
+	}
 
 	return s, nil
 }
@@ -165,6 +170,9 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 		MetalFXScale:      s.MetalFXScale,
 		MetalFXSharpness:  s.MetalFXSharpness,
 		MetalFXPanelLimit: s.MetalFXPanelLimit,
+		EnableRayTracing:  s.EnableRayTracing,
+		EnableDLSS:        s.EnableDLSS,
+		DLSSQuality:       s.DLSSQuality,
 		CompatDebugLog:    s.CompatDebugLog,
 		metalSharp:        metalSharpForSettings(s),
 	}
@@ -256,6 +264,11 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 	default:
 		return p, errors.New("unknown MetalFX sharpening level")
 	}
+	switch s.DLSSQuality {
+	case "", "auto", "ultra_performance", "performance", "balanced", "quality", "dlaa":
+	default:
+		return p, errors.New("unknown DLSS quality mode")
+	}
 	return p, nil
 }
 
@@ -278,6 +291,7 @@ func saveSettings(path string, s types.WineSettings) error {
 		return err
 	}
 	s.Runtime = ""
+	s.RuntimeVersion = ""
 	s.D3DMetalVersions = nil
 	b, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {

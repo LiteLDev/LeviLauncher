@@ -94,4 +94,38 @@ func TestApplyOptionsFramePacing(t *testing.T) {
 	if !strings.Contains(string(got), "gfx_vsync:1\r\n") {
 		t.Fatalf("expected gfx_vsync:1, got: %q", string(got))
 	}
+
+	// Only DLSS without RTX should not touch gfx_upscaling or gfx_raytracing.
+	withRTX := strings.Repeat("gfx_viewdistance:16\r\n", 8) +
+		"gfx_upscaling:0\r\n" +
+		"gfx_raytracing:0\r\n"
+	if err := os.WriteFile(opt, []byte(withRTX), 0600); err != nil {
+		t.Fatal(err)
+	}
+	applyOptionsFramePacing(versionDir, gameruntime.Profile{Graphics: "mullion", VSync: "auto", EnableDLSS: true})
+	got, err = os.ReadFile(opt)
+	if err != nil || string(got) != withRTX {
+		t.Fatalf("DLSS-only unexpectedly modified options.txt: %q, %v", got, err)
+	}
+
+	// RTX + DLSS should ensure gfx_upscaling:1 while never forcing gfx_raytracing:1.
+	applyOptionsFramePacing(versionDir, gameruntime.Profile{Graphics: "mullion", VSync: "auto", EnableRayTracing: true, EnableDLSS: true})
+	got, err = os.ReadFile(opt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "gfx_upscaling:1\r\n") || !strings.Contains(string(got), "gfx_raytracing:0\r\n") {
+		t.Fatalf("RTX+DLSS options.txt mismatch: %q", string(got))
+	}
+
+	// When gfx_upscaling is missing from options.txt, RTX + DLSS appends gfx_upscaling:1.
+	noUpscaling := strings.Repeat("gfx_viewdistance:16\n", 10)
+	if err := os.WriteFile(opt, []byte(noUpscaling), 0600); err != nil {
+		t.Fatal(err)
+	}
+	applyOptionsFramePacing(versionDir, gameruntime.Profile{Graphics: "d3dmetal", VSync: "auto", EnableRayTracing: true, EnableDLSS: true})
+	got, err = os.ReadFile(opt)
+	if err != nil || !strings.Contains(string(got), "gfx_upscaling:1\n") {
+		t.Fatalf("missing gfx_upscaling was not appended: %q, %v", got, err)
+	}
 }

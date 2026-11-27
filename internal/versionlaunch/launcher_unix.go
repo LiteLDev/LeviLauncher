@@ -136,11 +136,13 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		openFlags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	}
 	// Game lifetime is independent of the launcher's context once started.
+	bridgePath := findLeviWineBridge(dir)
 	cmd, detached, err := p.GameCommandWithOptions(context.Background(), exe, gameruntime.GameLaunchOptions{
-		WorkDir:       dir,
-		LogPath:       logPath,
-		ExtraEnv:      extraEnv,
-		HasWineBridge: hasLeviWineBridge(dir),
+		WorkDir:                  dir,
+		LogPath:                  logPath,
+		ExtraEnv:                 extraEnv,
+		HasWineBridge:            bridgePath != "",
+		HasWineBridgeGPTK4RTXFix: hasLeviWineBridgeGPTK4RTXFix(bridgePath),
 	}, args...)
 	if err != nil {
 		return "ERR_WINE_RUNTIME: " + err.Error()
@@ -254,17 +256,17 @@ func resolveInstanceIconPath(instanceDir string) string {
 	return ""
 }
 
-func hasLeviWineBridge(instanceDir string) bool {
+func findLeviWineBridge(instanceDir string) string {
 	if instanceDir == "" {
-		return false
+		return ""
 	}
 	direct := filepath.Join(instanceDir, "mods", "LeviClient", "LeviWineBridge.dll")
 	if info, err := os.Stat(direct); err == nil && info.Mode().IsRegular() {
-		return true
+		return direct
 	}
 	entries, err := os.ReadDir(filepath.Join(instanceDir, "mods"))
 	if err != nil {
-		return false
+		return ""
 	}
 	for _, entry := range entries {
 		if !entry.IsDir() {
@@ -272,10 +274,25 @@ func hasLeviWineBridge(instanceDir string) bool {
 		}
 		candidate := filepath.Join(instanceDir, "mods", entry.Name(), "LeviWineBridge.dll")
 		if info, statErr := os.Stat(candidate); statErr == nil && info.Mode().IsRegular() {
-			return true
+			return candidate
 		}
 	}
-	return false
+	return ""
+}
+
+func hasLeviWineBridge(instanceDir string) bool {
+	return findLeviWineBridge(instanceDir) != ""
+}
+
+func hasLeviWineBridgeGPTK4RTXFix(bridgePath string) bool {
+	if bridgePath == "" {
+		return false
+	}
+	data, err := os.ReadFile(bridgePath)
+	if err != nil {
+		return false
+	}
+	return bytes.Contains(data, []byte("LEVI_GPTK4_RTX_FIX"))
 }
 
 func isProcessRunningAtPath(path string) bool {

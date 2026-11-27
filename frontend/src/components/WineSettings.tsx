@@ -205,11 +205,18 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
     : settings?.graphics;
   const isD3DMetal = metalSharp && effectiveGraphics === "d3dmetal";
   const supportsGraphicsTuning = metalSharp && ["mullion", "d3dmetal", "vkd3d"].includes(effectiveGraphics || "");
+  const enableRayTracing = !!settings?.enableRayTracing;
+  const effectiveRayTracing = supportsGraphicsTuning && enableRayTracing;
   const selectedD3DMetalVersion = settings?.d3dMetalVersion && settings.d3dMetalVersion !== "auto"
-    ? settings.d3dMetalVersion : d3dMetalVersions[1];
-  const d3dMetal4 = isD3DMetal && !!settings?.enableMetal4 &&
+    ? settings.d3dMetalVersion
+    : d3dMetalVersions[1];
+  const isD3DMetalGptk4 = isD3DMetal &&
     selectedD3DMetalVersion === "gptk4" && d3dMetalVersions.includes("gptk4");
-  const supportsSpatialScale = supportsGraphicsTuning && !d3dMetal4;
+  const d3dMetal4 = isD3DMetalGptk4 && !!settings?.enableMetal4;
+  const dlssQuality = settings?.dlssQuality || "performance";
+  // MetalFX Temporal (NGX/DLSS) is only active in Minecraft Bedrock while Ray Tracing is enabled.
+  const effectiveDlss = effectiveRayTracing && !!settings?.enableDlss;
+  const supportsSpatialScale = supportsGraphicsTuning && !d3dMetal4 && !effectiveDlss;
   const graphics = metalSharp ? ["auto", "d3dmetal", "mullion", "vkd3d", "wined3d"] : ["auto", "d3dmetal", "wined3d"];
   const showD3DMetalVersion = isD3DMetal && d3dMetalVersions.length > 1;
   const maxFps = settings?.maxFps ?? 0;
@@ -217,16 +224,22 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
   const vsync = settings?.vsync || "auto";
   const metalFxScale = settings?.metalFxScale || (settings?.enableMetalFx ? (settings?.retinaMode ? "performance" : "balanced") : "off");
   const metalFxSharpness = settings?.metalFxSharpness || "auto";
+  const showCasSharpening = (supportsSpatialScale && metalFxScale !== "off") || (effectiveDlss && !d3dMetal4);
+  const showPanelLimit = !!settings?.retinaMode && (effectiveDlss || (isD3DMetal && supportsSpatialScale && metalFxScale !== "off"));
   const threadQos = settings?.threadQos || "balanced";
 
   const handleRetinaChange = (retinaMode: boolean) => {
     if (!settings) return;
+    if (effectiveDlss) {
+      applyImmediate({ retinaMode, ...(retinaMode ? { metalFxPanelLimit: true } : {}) });
+      return;
+    }
     if (retinaMode) {
       if (supportsSpatialScale && metalFxScale === "off") {
-        applyImmediate({ retinaMode: true, metalFxScale: "performance", enableMetalFx: true });
+        applyImmediate({ retinaMode: true, metalFxScale: "performance", enableMetalFx: true, metalFxPanelLimit: true });
         return;
       }
-      applyImmediate({ retinaMode: true });
+      applyImmediate({ retinaMode: true, metalFxPanelLimit: true });
       return;
     }
     if (supportsSpatialScale && metalFxScale === "performance") {
@@ -236,49 +249,52 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
     applyImmediate({ retinaMode: false });
   };
 
-  type DisplayPairingAdvice = {
-    severity: "warning" | "info";
+  const handleRayTracingChange = (nextRayTracing: boolean) => {
+    if (!settings) return;
+    if (nextRayTracing) {
+      applyImmediate({
+        enableRayTracing: true,
+        enableDlss: true,
+        dlssQuality: settings.dlssQuality || "performance",
+        ...(settings.retinaMode ? { metalFxPanelLimit: true } : {}),
+      });
+      return;
+    }
+    applyImmediate({ enableRayTracing: false, enableDlss: false });
+  };
+
+  type DisplayWarning = {
     messageKey: string;
     canUsePerformance?: boolean;
     canDisableRetina?: boolean;
+    canEnableMetal3?: boolean;
   };
 
-  const displayPairingAdvice = React.useMemo<DisplayPairingAdvice | null>(() => {
+  const displayWarning = React.useMemo<DisplayWarning | null>(() => {
     if (!mac || !settings) return null;
-    if (d3dMetal4) {
-      return { severity: "info", messageKey: "settings.wine.d3dmetal4_metalfx_unavailable" };
+    if (d3dMetal4 && !effectiveDlss) {
+      return {
+        messageKey: "settings.wine.d3dmetal4_metalfx_unavailable",
+        canEnableMetal3: true,
+      };
     }
-    if (settings.retinaMode) {
+    if (settings.retinaMode && !effectiveDlss) {
       if (supportsSpatialScale) {
         if (metalFxScale === "off") {
-          return { severity: "warning", messageKey: "settings.wine.retina_off_warn", canUsePerformance: true, canDisableRetina: true };
+          return { messageKey: "settings.wine.retina_off_warn", canUsePerformance: true, canDisableRetina: true };
         }
         if (metalFxScale === "quality") {
-          return { severity: "warning", messageKey: "settings.wine.retina_quality_warn", canUsePerformance: true, canDisableRetina: true };
+          return { messageKey: "settings.wine.retina_quality_warn", canUsePerformance: true, canDisableRetina: true };
         }
-        if (metalFxScale === "balanced") {
-          return { severity: "info", messageKey: "settings.wine.retina_balanced_tip" };
-        }
-        if (metalFxScale === "performance" || metalFxScale === "ultra_performance" || metalFxScale === "extreme" || metalFxScale === "max") {
-          return {
-            severity: "info",
-            messageKey: isD3DMetal ? "settings.wine.d3dmetal_metalfx_tip" : "settings.wine.retina_performance_tip",
-          };
-        }
+      } else {
+        return { messageKey: "settings.wine.retina_no_upscale_warn", canDisableRetina: true };
       }
-      return { severity: "warning", messageKey: "settings.wine.retina_no_upscale_warn", canDisableRetina: true };
-    }
-    if (isD3DMetal && metalFxScale !== "off") {
-      return { severity: "info", messageKey: "settings.wine.d3dmetal_metalfx_tip" };
-    }
-    if (supportsSpatialScale && metalFxScale === "performance") {
-      return { severity: "info", messageKey: "settings.wine.standard_performance_tip" };
     }
     return null;
-  }, [d3dMetal4, isD3DMetal, mac, metalFxScale, settings, supportsSpatialScale]);
+  }, [d3dMetal4, effectiveDlss, mac, metalFxScale, settings, supportsSpatialScale]);
 
   const selectField = (
-    field: "graphics" | "d3dmetal_version" | "sync" | "vsync" | "max_fps" | "metal_fx" | "metal_fx_sharpness" | "thread_qos",
+    field: "graphics" | "d3dmetal_version" | "sync" | "vsync" | "max_fps" | "metal_fx" | "metal_fx_sharpness" | "dlss_quality" | "thread_qos",
     value: string,
     choices: { id: string; label: string }[],
     onSelect: (value: string) => void,
@@ -308,8 +324,9 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
     selected: boolean,
     unavailable: boolean,
     onChange: (selected: boolean) => void,
+    compact = false,
   ) => (
-    <li key={id} className="flex min-w-0 items-center justify-between gap-4 py-3">
+    <li key={id} className={`flex min-w-0 items-center justify-between gap-4 ${compact ? "py-2.5" : "py-3"}`}>
       <div className="min-w-0">
         <p className="text-sm font-medium">{t(labelKey)}</p>
         <p id={`wine-${id}-description`} className="mt-0.5 text-xs leading-relaxed text-muted">{t(descKey)}</p>
@@ -337,7 +354,8 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
         {(loading || saving) && <Spinner size="sm" aria-label={t("settings.wine.working")} />}
       </div>
       {settings && <>
-        <div className={showD3DMetalVersion ? "grid min-w-0 gap-3 sm:grid-cols-2" : "max-w-sm"}>
+        {/* Core Graphics Backend & Frame Rate */}
+        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
           {selectField("graphics", settings.graphics, graphics.map((id) => ({
             id,
             label: t(metalSharp && id === "auto"
@@ -348,8 +366,156 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
             id,
             label: t(`settings.wine.d3dmetal_version_${id}`),
           })), (d3dMetalVersion) => applyImmediate({ d3dMetalVersion }))}
+          {supportsGraphicsTuning && selectField("max_fps", String(maxFps), frameRates.map((fps) => ({
+            id: String(fps),
+            label: fps === 0 ? t("settings.wine.unlimited_fps") : `${fps} FPS`,
+          })), (fps) => applyImmediate({ maxFps: Number(fps) }))}
+          {mac && metalSharp && selectField("vsync", vsync, ["auto", "on", "off"].map((id) => ({
+            id,
+            label: t(`settings.wine.vsync_${id}`),
+          })), (nextVsync) => applyImmediate({ vsync: nextVsync }))}
         </div>
+        {mac && metalSharp && vsync === "off" && maxFps === 0 && (
+          <p className="-mt-1 text-xs leading-relaxed text-muted">{t("settings.wine.vsync_off_tip")}</p>
+        )}
 
+        {/* Display, Ray Tracing & Upscaling (contextual — only active options shown) */}
+        {mac && (
+          <div className="flex min-w-0 flex-col gap-3">
+            <ul className="divide-y divide-border/60 rounded-xl border border-border/70 px-4">
+              {switchRow(
+                "retina_mode",
+                "settings.wine.retina_mode",
+                "settings.wine.retina_mode_desc",
+                !!settings.retinaMode,
+                false,
+                handleRetinaChange,
+              )}
+              {showPanelLimit && switchRow(
+                "metal_fx_panel_limit",
+                "settings.wine.metal_fx_panel_limit",
+                effectiveDlss ? "settings.wine.dlss_panel_limit_desc" : "settings.wine.metal_fx_panel_limit_desc",
+                !!settings.metalFxPanelLimit,
+                false,
+                (metalFxPanelLimit) => applyImmediate({ metalFxPanelLimit }),
+                true,
+              )}
+              {supportsGraphicsTuning && switchRow(
+                "ray_tracing",
+                "settings.wine.ray_tracing",
+                isD3DMetalGptk4 ? "settings.wine.ray_tracing_gptk4_desc" : "settings.wine.ray_tracing_desc",
+                enableRayTracing,
+                false,
+                handleRayTracingChange,
+              )}
+              {effectiveRayTracing && switchRow(
+                "dlss",
+                "settings.wine.dlss",
+                "settings.wine.dlss_desc",
+                !!settings.enableDlss,
+                false,
+                (nextDlss) => applyImmediate({ enableDlss: nextDlss }),
+                true,
+              )}
+              {supportsGraphicsTuning && (effectiveDlss || supportsSpatialScale) && (
+                <li className="py-3">
+                  <div className={showCasSharpening ? "grid min-w-0 gap-3 sm:grid-cols-2" : "max-w-sm"}>
+                    {effectiveDlss ? (
+                      selectField("dlss_quality", dlssQuality, ["ultra_performance", "performance", "balanced", "quality", "dlaa", "auto"].map((id) => ({
+                        id,
+                        label: t(`settings.wine.dlss_quality_${id}`),
+                      })), (nextQuality) => applyImmediate({ dlssQuality: nextQuality }))
+                    ) : (
+                      selectField("metal_fx", metalFxScale, ["off", "quality", "balanced", "performance", "ultra_performance", "extreme", "max"].map((id) => ({
+                        id,
+                        label: t(`settings.wine.metal_fx_${id}`),
+                      })), (scale) => applyImmediate({
+                        metalFxScale: scale,
+                        enableMetalFx: scale !== "off",
+                        ...(settings.enableDlss ? { enableDlss: false } : {}),
+                      }))
+                    )}
+                    {showCasSharpening && selectField("metal_fx_sharpness", metalFxSharpness, ["auto", "0", "10", "15", "25", "35"].map((id) => ({
+                      id,
+                      label: t(`settings.wine.metal_fx_sharpness_${id}`),
+                    })), (metalFxSharpness) => applyImmediate({ metalFxSharpness }))}
+                  </div>
+                </li>
+              )}
+            </ul>
+
+            {displayWarning && (
+              <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/10 px-3.5 py-2.5">
+                <div className="flex min-w-0 flex-1 items-start gap-2">
+                  <LuCircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning" />
+                  <p className="text-xs leading-relaxed text-foreground">{t(displayWarning.messageKey)}</p>
+                </div>
+                {(displayWarning.canUsePerformance || displayWarning.canDisableRetina || displayWarning.canEnableMetal3) && (
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    {displayWarning.canEnableMetal3 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        isDisabled={disabled}
+                        onPress={() => applyImmediate({ enableMetal4: false })}
+                      >
+                        {t("settings.wine.action_enable_metal3")}
+                      </Button>
+                    )}
+                    {displayWarning.canUsePerformance && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        isDisabled={disabled}
+                        onPress={() => applyImmediate({ metalFxScale: "performance", enableMetalFx: true, metalFxPanelLimit: true })}
+                      >
+                        {t("settings.wine.action_use_performance")}
+                      </Button>
+                    )}
+                    {displayWarning.canDisableRetina && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        isDisabled={disabled}
+                        onPress={() => applyImmediate({ retinaMode: false })}
+                      >
+                        {t("settings.wine.action_disable_retina")}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!supportsGraphicsTuning && (
+              <p className="text-xs leading-relaxed text-muted">
+                {t(metalSharp ? "settings.wine.backend_options" : "settings.wine.metalsharp_options")}
+              </p>
+            )}
+
+            {/* Everyday Input & Overlay Toggles */}
+            <ul className="divide-y divide-border/60 rounded-xl border border-border/70 px-4">
+              {switchRow(
+                "left_command_is_ctrl",
+                "settings.wine.left_command_is_ctrl",
+                "settings.wine.left_command_is_ctrl_desc",
+                !!settings.leftCommandIsCtrl,
+                false,
+                (leftCommandIsCtrl) => applyImmediate({ leftCommandIsCtrl }),
+              )}
+              {metalSharp && switchRow(
+                "metal_hud",
+                "settings.wine.metal_hud",
+                "settings.wine.metal_hud_desc",
+                !!settings.metalHud,
+                false,
+                (metalHud) => applyImmediate({ metalHud }),
+              )}
+            </ul>
+          </div>
+        )}
+
+        {/* Advanced Compatibility, Maintenance & Manual Paths (collapsed by default) */}
         <details className="group min-w-0 rounded-xl border border-border/70">
           <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-4 py-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
             <span className="min-w-0 flex-1">
@@ -358,159 +524,47 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
             </span>
             <LuChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted group-open:rotate-180" />
           </summary>
-          <div className="grid gap-6 border-t border-border/70 px-4 py-4">
-            {/* Layer 1: Rendering & Frame Rate */}
-            <div className="grid min-w-0 gap-4">
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("settings.wine.group_rendering")}</h3>
-              </div>
-              <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-                {selectField("sync", settings.sync, ["auto", "msync", "esync", "none"].map((id) => ({
-                  id,
-                  label: t(`settings.wine.sync_${id}`),
-                })), (sync) => applyImmediate({ sync }))}
-                {mac && selectField("vsync", vsync, ["auto", "on", "off"].map((id) => ({
-                  id,
-                  label: t(`settings.wine.vsync_${id}`),
-                })), (nextVsync) => applyImmediate({ vsync: nextVsync }), !metalSharp)}
-                {selectField("max_fps", String(maxFps), frameRates.map((fps) => ({
-                  id: String(fps),
-                  label: fps === 0 ? t("settings.wine.unlimited_fps") : `${fps} FPS`,
-                })), (fps) => applyImmediate({ maxFps: Number(fps) }), !supportsGraphicsTuning)}
-                {selectField("metal_fx", metalFxScale, ["off", "quality", "balanced", "performance", "ultra_performance", "extreme", "max"].map((id) => ({
-                  id,
-                  label: t(`settings.wine.metal_fx_${id}`),
-                })), (scale) => applyImmediate({ metalFxScale: scale, enableMetalFx: scale !== "off" }), !supportsSpatialScale)}
-                {mac && selectField("metal_fx_sharpness", metalFxSharpness, ["auto", "0", "10", "15", "25", "35"].map((id) => ({
-                  id,
-                  label: t(`settings.wine.metal_fx_sharpness_${id}`),
-                })), (metalFxSharpness) => applyImmediate({ metalFxSharpness }), !supportsSpatialScale || metalFxScale === "off")}
-              </div>
-              {mac && metalSharp && (vsync !== "auto" || maxFps > 0) && (
-                <p className="-mt-1 text-xs leading-relaxed text-muted">
-                  {t(vsync === "off" && maxFps === 0 ? "settings.wine.vsync_off_tip" : "settings.wine.frame_pacing_tip")}
-                </p>
-              )}
-              {!supportsGraphicsTuning && (
-                <p className="-mt-1 text-xs leading-relaxed text-muted">
-                  {t(metalSharp ? "settings.wine.backend_options" : "settings.wine.metalsharp_options")}
-                </p>
-              )}
-              {mac && (
-                <>
+          <div className="grid gap-5 border-t border-border/70 px-4 py-4">
+            {/* Compatibility & Scheduling */}
+            {((mac && (supportsGraphicsTuning || metalSharp)) || !metalSharp) && (
+              <div className="grid min-w-0 gap-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("settings.wine.group_scheduling")}</h3>
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+                  {mac && metalSharp && selectField("thread_qos", threadQos, ["balanced", "aggressive", "default"].map((id) => ({
+                    id,
+                    label: t(`settings.wine.thread_qos_${id}`),
+                  })), (nextQos) => applyImmediate({ threadQos: nextQos }))}
+                  {!metalSharp && selectField("sync", settings.sync, ["auto", "msync", "esync", "none"].map((id) => ({
+                    id,
+                    label: t(`settings.wine.sync_${id}`),
+                  })), (sync) => applyImmediate({ sync }))}
+                </div>
+                {mac && (supportsGraphicsTuning || metalSharp) && (
                   <ul className="divide-y divide-border/60 border-y border-border/60">
-                    {switchRow(
+                    {supportsGraphicsTuning && switchRow(
                       "metal3_mode",
                       "settings.wine.metal3_mode",
                       "settings.wine.metal3_mode_desc",
                       !settings.enableMetal4,
-                      !supportsGraphicsTuning,
+                      false,
                       (metal3Enabled) => applyImmediate({ enableMetal4: !metal3Enabled }),
                     )}
-                    {switchRow(
-                      "retina_mode",
-                      "settings.wine.retina_mode",
-                      "settings.wine.retina_mode_desc",
-                      !!settings.retinaMode,
+                    {metalSharp && switchRow(
+                      "rosetta_avx",
+                      "settings.wine.rosetta_avx",
+                      "settings.wine.rosetta_avx_desc",
+                      !settings.disableRosettaAvx,
                       false,
-                      handleRetinaChange,
-                    )}
-                    {isD3DMetal && switchRow(
-                      "metal_fx_panel_limit",
-                      "settings.wine.metal_fx_panel_limit",
-                      "settings.wine.metal_fx_panel_limit_desc",
-                      !!settings.metalFxPanelLimit,
-                      !supportsSpatialScale || !settings.retinaMode || metalFxScale === "off",
-                      (metalFxPanelLimit) => applyImmediate({ metalFxPanelLimit }),
-                    )}
-                    {switchRow(
-                      "metal_hud",
-                      "settings.wine.metal_hud",
-                      "settings.wine.metal_hud_desc",
-                      !!settings.metalHud,
-                      !metalSharp,
-                      (metalHud) => applyImmediate({ metalHud }),
+                      (enabled) => applyImmediate({ disableRosettaAvx: !enabled }),
                     )}
                   </ul>
-                  {displayPairingAdvice && (
-                    displayPairingAdvice.severity === "warning" ? (
-                      <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5">
-                        <div className="flex min-w-0 flex-1 items-start gap-2">
-                          <LuCircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-warning" />
-                          <p className="text-xs leading-relaxed text-foreground">{t(displayPairingAdvice.messageKey)}</p>
-                        </div>
-                        {(displayPairingAdvice.canUsePerformance || displayPairingAdvice.canDisableRetina) && (
-                          <div className="flex shrink-0 flex-wrap items-center gap-2">
-                            {displayPairingAdvice.canUsePerformance && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                isDisabled={disabled}
-                                onPress={() => applyImmediate({ metalFxScale: "performance", enableMetalFx: true })}
-                              >
-                                {t("settings.wine.action_use_performance")}
-                              </Button>
-                            )}
-                            {displayPairingAdvice.canDisableRetina && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                isDisabled={disabled}
-                                onPress={() => applyImmediate({ retinaMode: false })}
-                              >
-                                {t("settings.wine.action_disable_retina")}
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="-mt-1 text-xs leading-relaxed text-muted">{t(displayPairingAdvice.messageKey)}</p>
-                    )
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Layer 2: CPU Scheduling & Compatibility */}
-            {mac && (
-              <div className="grid min-w-0 gap-4">
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("settings.wine.group_scheduling")}</h3>
-                </div>
-                <div className="max-w-sm">
-                  {selectField("thread_qos", threadQos, ["balanced", "aggressive", "default"].map((id) => ({
-                    id,
-                    label: t(`settings.wine.thread_qos_${id}`),
-                  })), (nextQos) => applyImmediate({ threadQos: nextQos }), !metalSharp)}
-                  <p className="mt-1 text-xs leading-relaxed text-muted">{t("settings.wine.thread_qos_desc")}</p>
-                </div>
-                <ul className="divide-y divide-border/60 border-y border-border/60">
-                  {switchRow(
-                    "rosetta_avx",
-                    "settings.wine.rosetta_avx",
-                    "settings.wine.rosetta_avx_desc",
-                    !settings.disableRosettaAvx,
-                    !metalSharp,
-                    (enabled) => applyImmediate({ disableRosettaAvx: !enabled }),
-                  )}
-                  {switchRow(
-                    "left_command_is_ctrl",
-                    "settings.wine.left_command_is_ctrl",
-                    "settings.wine.left_command_is_ctrl_desc",
-                    !!settings.leftCommandIsCtrl,
-                    false,
-                    (leftCommandIsCtrl) => applyImmediate({ leftCommandIsCtrl }),
-                  )}
-                </ul>
+                )}
               </div>
             )}
 
-            {/* Layer 3: Diagnostics & Maintenance */}
-            <div className="grid min-w-0 gap-4">
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("settings.wine.group_maintenance")}</h3>
-              </div>
+            {/* Diagnostics & Maintenance */}
+            <div className="grid min-w-0 gap-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("settings.wine.group_maintenance")}</h3>
               <ul className="divide-y divide-border/60 border-y border-border/60">
                 {switchRow(
                   "compat_debug_log",
@@ -575,7 +629,7 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
               </ul>
             </div>
 
-            {/* Layer 4: Manual Paths (collapsed by default) */}
+            {/* Manual Paths (collapsed by default) */}
             <details className="group/paths min-w-0 rounded-lg border border-border/60">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
                 <span>{t("settings.wine.manual_paths")}</span>

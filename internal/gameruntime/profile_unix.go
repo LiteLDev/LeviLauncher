@@ -31,6 +31,7 @@ type Profile struct {
 	EnableMetalFX     bool
 	MetalFXScale      string
 	MetalFXSharpness  string
+	MetalFXPanelLimit bool
 	CompatDebugLog    bool
 	metalSharp        metalSharpRuntime
 }

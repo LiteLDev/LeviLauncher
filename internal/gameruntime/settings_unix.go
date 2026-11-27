@@ -164,6 +164,7 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 		EnableMetalFX:     s.EnableMetalFX,
 		MetalFXScale:      s.MetalFXScale,
 		MetalFXSharpness:  s.MetalFXSharpness,
+		MetalFXPanelLimit: s.MetalFXPanelLimit,
 		CompatDebugLog:    s.CompatDebugLog,
 		metalSharp:        metalSharpForSettings(s),
 	}

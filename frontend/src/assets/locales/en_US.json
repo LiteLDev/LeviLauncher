@@ -500,6 +500,8 @@
       "metal_fx_extreme": "Extreme (3.0×)",
       "metal_fx_max": "Maximum (4.0×)",
       "metal_fx_sharpness": "MetalFX sharpening",
+      "metal_fx_panel_limit": "Limit MetalFX output to display pixels",
+      "metal_fx_panel_limit_desc": "When macOS uses a larger Retina backing buffer, scale the output to the window’s physical pixel size when possible. Applies on the next launch.",
       "metal_fx_sharpness_auto": "Automatic (matches scale)",
       "metal_fx_sharpness_0": "Off (0%)",
       "metal_fx_sharpness_10": "Light (10%)",

@@ -352,17 +352,17 @@ func (p Profile) D3DMetalFXLaunchEnv(hasBridge bool) map[string]string {
 			env["LEVI_METALFX_SPATIAL_FACTOR"] = factor
 			env["LEVI_WINE_RENDER_SCALE"] = fmt.Sprintf("%.2f", parsed/2.0)
 		}
-		if sharp != "" {
-			env["LEVI_METALFX_SHARPNESS"] = sharp
-		}
-		return env
-	}
-	if hasBridge {
+	} else if hasBridge {
 		env["LEVI_WINE_RENDER_SCALE"] = factor
 		env["LEVI_METALFX_SPATIAL_FACTOR"] = factor
-		if sharp != "" {
-			env["LEVI_METALFX_SHARPNESS"] = sharp
-		}
+	} else {
+		return env
+	}
+	if sharp != "" {
+		env["LEVI_METALFX_SHARPNESS"] = sharp
+	}
+	if p.RetinaMode && p.MetalFXPanelLimit {
+		env["LEVI_METALFX_PANEL_LIMIT"] = "1"
 	}
 	return env
 }

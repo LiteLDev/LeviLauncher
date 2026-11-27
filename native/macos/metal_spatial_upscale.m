@@ -17,6 +17,7 @@
 #import <QuartzCore/QuartzCore.h>
 #import <Metal/Metal.h>
 #import <MetalFX/MetalFX.h>
+#import <IOKit/graphics/IOGraphicsTypes.h>
 #import <objc/runtime.h>
 #import <errno.h>
 #import <fcntl.h>
@@ -35,6 +36,7 @@ static const void *kLeviSpatialStateKey = &kLeviSpatialStateKey;
 static const void *kLeviPendingPresentsKey = &kLeviPendingPresentsKey;
 static double g_spatial_factor = 1.0;
 static BOOL g_retina_upscale = NO;
+static BOOL g_panel_limit = NO;
 static float g_sharpness = 0.0f;  /* 0.0 = off, (0.0..1.0] = CAS sharpening strength */
 static BOOL g_sharpen_only = NO;  /* YES = sharpen native-size frames without spatial scaling */
 static BOOL g_opaque_policy = YES;
@@ -194,10 +196,11 @@ static NSString *const kLeviCASShaderSource =
      "                                  texture2d<float> src [[texture(0)]],\n"
      "                                  constant LeviCASParams &params [[buffer(0)]]) {\n"
      "    constexpr sampler s(coord::normalized, filter::linear, address::clamp_to_edge);\n"
+     "    float4 center = src.sample(s, in.uv);\n"
+     "    if (params.sharpness == 0.0f) return center;\n"
      "    uint texW = src.get_width();\n"
      "    uint texH = src.get_height();\n"
      "    float2 texel = float2(1.0f / float(max(texW, 1u)), 1.0f / float(max(texH, 1u)));\n"
-     "    float4 center = src.sample(s, in.uv);\n"
      "    float3 a = src.sample(s, in.uv + float2(-texel.x, -texel.y)).rgb;\n"
      "    float3 b = src.sample(s, in.uv + float2(    0.0f, -texel.y)).rgb;\n"
      "    float3 c = src.sample(s, in.uv + float2( texel.x, -texel.y)).rgb;\n"
@@ -227,11 +230,9 @@ static NSString *const kLeviCASShaderSource =
      "    return float4(outRGB, center.a);\n"
      "}\n";
 
-static CGSize levi_native_output_size(CAMetalLayer *layer, CGSize fallback) {
-    CGRect bounds = layer.bounds;
-    CGFloat scale = levi_desired_backing_scale(layer);
-    CGFloat w = floor(bounds.size.width * scale + 0.5);
-    CGFloat h = floor(bounds.size.height * scale + 0.5);
+static CGSize levi_native_output_size(CAMetalLayer *layer, CGSize bounds, CGFloat scale, CGSize fallback) {
+    CGFloat w = round(bounds.width * scale);
+    CGFloat h = round(bounds.height * scale);
     if (w >= 64.0 && h >= 64.0) {
         return CGSizeMake(w, h);
     }
@@ -272,7 +273,13 @@ static MTLFXSpatialScalerColorProcessingMode levi_color_mode_for_format(MTLPixel
 
 @interface LeviSpatialLayerState : NSObject
 @property (nonatomic) CGSize requestedInputSize;
+@property (nonatomic) CGSize requestedInputBackingSize;
 @property (nonatomic) CGSize lastOutputSize;
+@property (nonatomic) BOOL tracksPanel;
+@property (nonatomic, weak) CAMetalLayer *trackedLayer;
+@property (nonatomic) CGDirectDisplayID panelDisplayID;
+@property (nonatomic) CGSize panelLogicalSize;
+@property (nonatomic) CGFloat panelScale;
 @property (nonatomic, strong) NSMutableArray<id<MTLTexture>> *inputPool;
 @property (nonatomic) NSUInteger poolIndex;
 @property (nonatomic) NSUInteger poolWidth;
@@ -309,6 +316,7 @@ static MTLFXSpatialScalerColorProcessingMode levi_color_mode_for_format(MTLPixel
 @property (nonatomic) NSUInteger loggedInH;
 @property (nonatomic) NSUInteger loggedOutW;
 @property (nonatomic) NSUInteger loggedOutH;
+- (void)updatePanelScale:(NSNotification *)notification;
 @end
 
 @implementation LeviSpatialLayerState
@@ -318,6 +326,41 @@ static MTLFXSpatialScalerColorProcessingMode levi_color_mode_for_format(MTLPixel
         _inputPool = [NSMutableArray arrayWithCapacity:3];
     }
     return self;
+}
+
+- (void)updatePanelScale:(NSNotification *)notification {
+    // Window and screen data are read on the AppKit thread.
+    id delegate = self.trackedLayer.delegate;
+    NSWindow *window = [delegate isKindOfClass:[NSView class]] ? ((NSView *)delegate).window : nil;
+    if ([notification.object isKindOfClass:[NSWindow class]] && notification.object != window) return;
+    NSScreen *screen = window.screen;
+    CGDirectDisplayID displayID = [screen.deviceDescription[@"NSScreenNumber"] unsignedIntValue];
+    CGSize logical = screen ? screen.frame.size : CGSizeZero;
+    BOOL displayChanged = [notification.name isEqualToString:NSApplicationDidChangeScreenParametersNotification];
+    if (!displayChanged && displayID == self.panelDisplayID && CGSizeEqualToSize(logical, self.panelLogicalSize)) return;
+    self.panelDisplayID = displayID;
+    self.panelLogicalSize = logical;
+
+    CGFloat scale = 0.0;
+    if (displayID && logical.width > 0.0 && logical.height > 0.0) {
+        CFArrayRef modes = CGDisplayCopyAllDisplayModes(displayID, NULL);
+        if (modes) {
+            for (CFIndex i = 0; i < CFArrayGetCount(modes); ++i) {
+                CGDisplayModeRef mode = (CGDisplayModeRef)CFArrayGetValueAtIndex(modes, i);
+                if (!(CGDisplayModeGetIOFlags(mode) & kDisplayModeNativeFlag)) continue;
+                size_t width = CGDisplayModeGetPixelWidth(mode);
+                size_t height = CGDisplayModeGetPixelHeight(mode);
+                if (!width || !height ||
+                    width != CGDisplayModeGetWidth(mode) || height != CGDisplayModeGetHeight(mode)) continue;
+                CGFloat candidate = fmin(width / logical.width, height / logical.height);
+                scale = scale > 0.0 ? fmin(scale, candidate) : candidate;
+            }
+            CFRelease(modes);
+        }
+    }
+    @synchronized(self) {
+        self.panelScale = scale;
+    }
 }
 @end
 
@@ -332,6 +375,55 @@ static LeviSpatialLayerState *levi_state_for_layer(CAMetalLayer *layer) {
     }
 }
 
+static void levi_track_panel(CAMetalLayer *layer, LeviSpatialLayerState *state) {
+    @synchronized(state) {
+        if (state.tracksPanel) return;
+        state.tracksPanel = YES;
+    }
+    __weak CAMetalLayer *weakLayer = layer;
+    void (^track)(void) = ^{
+        state.trackedLayer = weakLayer;
+        if (!state.trackedLayer) return;
+        NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+        for (NSNotificationName name in @[NSWindowDidResizeNotification,
+                                           NSWindowDidChangeScreenNotification, NSWindowDidChangeBackingPropertiesNotification,
+                                           NSApplicationDidChangeScreenParametersNotification]) {
+            [center addObserver:state selector:@selector(updatePanelScale:) name:name object:nil];
+        }
+        [state updatePanelScale:nil];
+    };
+    if ([NSThread isMainThread]) track();
+    else dispatch_async(dispatch_get_main_queue(), track);
+}
+
+static CGSize levi_spatial_output_size(CGSize backingSize, CGSize inputSize, CGFloat backingScale, CGFloat panelScale) {
+    if (panelScale <= 0.0 || panelScale >= backingScale) return backingSize;
+    CGFloat ratio = panelScale / backingScale;
+    CGSize capped = CGSizeMake(round(backingSize.width * ratio), round(backingSize.height * ratio));
+    // A spatial scaler needs a larger target on both axes.
+    if (capped.width >= 64.0 && capped.height >= 64.0 &&
+        capped.width > inputSize.width && capped.height > inputSize.height) return capped;
+    return backingSize;
+}
+
+// Called with the layer state locked.
+static CGSize levi_spatial_input_size(LeviSpatialLayerState *state, CGSize bounds, CGSize backingSize) {
+    CGSize requested = state.requestedInputSize;
+    if (g_panel_limit && !CGSizeEqualToSize(state.requestedInputBackingSize, backingSize)) {
+        requested = CGSizeZero;
+    }
+    BOOL validRequest = requested.width >= 64.0 && requested.height >= 64.0 &&
+        requested.width < backingSize.width && requested.height < backingSize.height;
+    if (g_retina_upscale && g_spatial_factor <= 1.01) {
+        // Wine renders this mode at the window's logical size.
+        CGSize logical = CGSizeMake(round(bounds.width), round(bounds.height));
+        if (logical.width >= 64.0 && logical.height >= 64.0 &&
+            logical.width < backingSize.width && logical.height < backingSize.height) return logical;
+        return validRequest ? requested : backingSize;
+    }
+    return validRequest ? requested : levi_scaled_input_size(backingSize, g_spatial_factor);
+}
+
 @interface LeviScaledDrawable : NSObject <CAMetalDrawable>
 @property (nonatomic, strong) id<MTLTexture> leviTexture;
 @property (nonatomic, weak) CAMetalLayer *leviLayer;
@@ -340,6 +432,7 @@ static LeviSpatialLayerState *levi_state_for_layer(CAMetalLayer *layer) {
 @property (nonatomic) CFTimeInterval presentedTimeValue;
 @property (nonatomic, strong) NSMutableArray<MTLDrawablePresentedHandler> *handlers;
 @property (nonatomic) BOOL presented;
+@property (nonatomic) CGSize outputSize;
 @end
 
 static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scaled, id<MTLCommandBuffer> cmdBuf);
@@ -480,15 +573,24 @@ static BOOL levi_encode_cas(id<MTLCommandBuffer> cmdBuf,
                             id<MTLRenderPipelineState> pso,
                             id<MTLTexture> srcTex,
                             id<MTLTexture> dstTex,
-                            float sharpness) {
+                            float sharpness,
+                            BOOL fitAspect) {
     if (!cmdBuf || !pso || !srcTex || !dstTex) return NO;
     MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor renderPassDescriptor];
     rpd.colorAttachments[0].texture = dstTex;
-    rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
+    rpd.colorAttachments[0].loadAction = fitAspect ? MTLLoadActionClear : MTLLoadActionDontCare;
+    rpd.colorAttachments[0].clearColor = MTLClearColorMake(0, 0, 0, 1);
     rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
     id<MTLRenderCommandEncoder> enc = [cmdBuf renderCommandEncoderWithDescriptor:rpd];
     if (!enc) return NO;
     MTLViewport vp = { 0.0, 0.0, (double)dstTex.width, (double)dstTex.height, 0.0, 1.0 };
+    if (fitAspect) {
+        double scale = fmin(vp.width / srcTex.width, vp.height / srcTex.height);
+        vp.width = round(srcTex.width * scale);
+        vp.height = round(srcTex.height * scale);
+        vp.originX = floor((dstTex.width - vp.width) / 2.0);
+        vp.originY = floor((dstTex.height - vp.height) / 2.0);
+    }
     [enc setViewport:vp];
     [enc setRenderPipelineState:pso];
     [enc setFragmentTexture:srcTex atIndex:0];
@@ -526,13 +628,20 @@ static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scal
     BOOL scaledEncoded = NO;
     BOOL sharpenedEncoded = NO;
     BOOL directOutput = NO;
+    BOOL resizedInFlight = g_panel_limit &&
+        !CGSizeEqualToSize(scaled.outputSize, CGSizeMake(outW, outH));
+    BOOL resizedEncoded = NO;
 
     id<MTLRenderPipelineState> casPipeline = nil;
-    if (device && levi_sharpen_enabled()) {
+    if (device && (levi_sharpen_enabled() || resizedInFlight)) {
         casPipeline = levi_cas_pipeline_for_state(state, device, outFmt);
     }
 
-    if (device && inW >= 64 && inH >= 64 && outW > inW && outH > inH &&
+    if (resizedInFlight) {
+        // The frame was drawn before the layer resized. Fit it to the new drawable
+        // while the renderer catches up, even when the new drawable is smaller.
+        resizedEncoded = levi_encode_cas(cmdBuf, casPipeline, inputTex, realTex, 0.0f, YES);
+    } else if (device && inW >= 64 && inH >= 64 && outW > inW && outH > inH &&
         [MTLFXSpatialScalerDescriptor supportsDevice:device]) {
         id<MTLFXSpatialScaler> scaler = nil;
         id<MTLTexture> privateOut = nil;
@@ -596,7 +705,7 @@ static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scal
             scaler.outputTexture = directOutput ? realTex : privateOut;
             [scaler encodeToCommandBuffer:cmdBuf];
             if (!directOutput && privateOut) {
-                if (casPipeline && levi_encode_cas(cmdBuf, casPipeline, privateOut, realTex, g_sharpness)) {
+                if (casPipeline && levi_encode_cas(cmdBuf, casPipeline, privateOut, realTex, g_sharpness, NO)) {
                     sharpenedEncoded = YES;
                 } else {
                     id<MTLBlitCommandEncoder> blit = [cmdBuf blitCommandEncoder];
@@ -615,12 +724,12 @@ static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scal
             scaledEncoded = YES;
         }
     } else if (casPipeline && inW >= 64 && inH >= 64 && outW >= 64 && outH >= 64) {
-        if (levi_encode_cas(cmdBuf, casPipeline, inputTex, realTex, g_sharpness)) {
+        if (levi_encode_cas(cmdBuf, casPipeline, inputTex, realTex, g_sharpness, NO)) {
             sharpenedEncoded = YES;
         }
     }
 
-    if (!scaledEncoded && !sharpenedEncoded) {
+    if (!scaledEncoded && !sharpenedEncoded && !resizedEncoded) {
         NSUInteger copyW = inW < outW ? inW : outW;
         NSUInteger copyH = inH < outH ? inH : outH;
         if (copyW > 0 && copyH > 0) {
@@ -1379,23 +1488,35 @@ static void levi_setDrawableSize(id self, SEL _cmd, CGSize size) {
     CAMetalLayer *layer = (CAMetalLayer *)self;
     if (levi_spatial_enabled() && levi_is_wine_metal_layer(layer)) {
         LeviSpatialLayerState *state = levi_state_for_layer(layer);
-        CGSize nativeSize = levi_native_output_size(layer, state.lastOutputSize);
-        if (nativeSize.width >= 64.0 && nativeSize.height >= 64.0) {
-            @synchronized(state) {
-                state.lastOutputSize = nativeSize;
+        if (g_panel_limit) levi_track_panel(layer, state);
+        CGSize bounds = layer.bounds.size;
+        CGFloat scale = levi_desired_backing_scale(layer);
+        CGSize outputSize;
+        @synchronized(state) {
+            CGSize backingSize = levi_native_output_size(layer, bounds, scale, state.lastOutputSize);
+            outputSize = backingSize;
+            if (backingSize.width >= 64.0 && backingSize.height >= 64.0) {
+                state.lastOutputSize = backingSize;
                 if (size.width >= 64.0 && size.height >= 64.0 &&
-                    size.width < nativeSize.width * 0.96 &&
-                    size.height < nativeSize.height * 0.96) {
+                    size.width < backingSize.width * 0.96 &&
+                    size.height < backingSize.height * 0.96) {
                     /* D3DMetal / Wine requested the logical (pre-upscale) size. */
                     state.requestedInputSize = size;
+                    state.requestedInputBackingSize = backingSize;
                 } else {
                     /* Native resize from Wine / AppKit. */
-                    state.lastOutputSize = size;
+                    if (!g_panel_limit) state.lastOutputSize = size;
                     state.requestedInputSize = CGSizeZero;
                 }
+                if (g_panel_limit) {
+                    CGSize inputSize = levi_spatial_input_size(state, bounds, backingSize);
+                    outputSize = levi_spatial_output_size(backingSize, inputSize, scale, state.panelScale);
+                }
             }
+        }
+        if (outputSize.width >= 64.0 && outputSize.height >= 64.0) {
             if (g_orig_setDrawableSize) {
-                ((SetDrawableSizeFn)g_orig_setDrawableSize)(self, _cmd, nativeSize);
+                ((SetDrawableSizeFn)g_orig_setDrawableSize)(self, _cmd, outputSize);
             }
             return;
         }
@@ -1438,43 +1559,22 @@ static id<CAMetalDrawable> levi_nextDrawable(id self, SEL _cmd) {
 
     NSUInteger inW = 0;
     NSUInteger inH = 0;
+    CGSize spatialOutputSize = CGSizeZero;
     if (spatialMode) {
-        if (g_retina_upscale && g_orig_setContentsScale) {
-            CGFloat desiredScale = levi_desired_backing_scale(layer);
-            if (desiredScale > layer.contentsScale + 0.01) {
-                ((SetCGFloatFn)g_orig_setContentsScale)(layer, @selector(setContentsScale:), desiredScale);
-            }
+        if (g_panel_limit) levi_track_panel(layer, state);
+        CGFloat scale = levi_desired_backing_scale(layer);
+        if (g_retina_upscale && g_orig_setContentsScale && scale > layer.contentsScale + 0.01) {
+            ((SetCGFloatFn)g_orig_setContentsScale)(layer, @selector(setContentsScale:), scale);
         }
 
-        CGSize outputSize = levi_native_output_size(layer, state.lastOutputSize);
-        if (outputSize.width < 64.0 || outputSize.height < 64.0) {
-            return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
-        }
-
+        CGSize bounds = layer.bounds.size;
+        CGSize outputSize;
         CGSize inputSize;
         @synchronized(state) {
-            state.lastOutputSize = outputSize;
-            if (g_retina_upscale && g_spatial_factor <= 1.01) {
-                /* Non-Retina Wine window (1x logical points) -> native Retina backing (2x pixels). */
-                CGRect b = layer.bounds;
-                CGFloat lw = floor(b.size.width + 0.5);
-                CGFloat lh = floor(b.size.height + 0.5);
-                if (lw >= 64.0 && lh >= 64.0 && lw < outputSize.width && lh < outputSize.height) {
-                    inputSize = CGSizeMake(lw, lh);
-                } else if (state.requestedInputSize.width >= 64.0 && state.requestedInputSize.height >= 64.0 &&
-                           state.requestedInputSize.width < outputSize.width &&
-                           state.requestedInputSize.height < outputSize.height) {
-                    inputSize = state.requestedInputSize;
-                } else {
-                    inputSize = outputSize;
-                }
-            } else if (state.requestedInputSize.width >= 64.0 && state.requestedInputSize.height >= 64.0 &&
-                       state.requestedInputSize.width < outputSize.width &&
-                       state.requestedInputSize.height < outputSize.height) {
-                inputSize = state.requestedInputSize;
-            } else {
-                inputSize = levi_scaled_input_size(outputSize, g_spatial_factor);
-            }
+            CGSize backingSize = levi_native_output_size(layer, bounds, scale, state.lastOutputSize);
+            state.lastOutputSize = backingSize;
+            inputSize = levi_spatial_input_size(state, bounds, backingSize);
+            outputSize = levi_spatial_output_size(backingSize, inputSize, scale, state.panelScale);
         }
 
         inW = (NSUInteger)inputSize.width;
@@ -1485,7 +1585,7 @@ static id<CAMetalDrawable> levi_nextDrawable(id self, SEL _cmd) {
             return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
         }
 
-        /* Keep the underlying CAMetalLayer at native output resolution and writable. */
+        spatialOutputSize = outputSize;
         CGSize currentDrawableSize = layer.drawableSize;
         if (g_orig_setDrawableSize &&
             (fabs(currentDrawableSize.width - outputSize.width) > 0.5 ||
@@ -1499,7 +1599,7 @@ static id<CAMetalDrawable> levi_nextDrawable(id self, SEL _cmd) {
         /* Sharpen-only mode (Mullion / VKD3D): keep renderer's native drawableSize untouched. */
         CGSize nativeSize = layer.drawableSize;
         if (nativeSize.width < 64.0 || nativeSize.height < 64.0) {
-            nativeSize = levi_native_output_size(layer, state.lastOutputSize);
+            nativeSize = levi_native_output_size(layer, layer.bounds.size, levi_desired_backing_scale(layer), state.lastOutputSize);
         }
         inW = (NSUInteger)floor(nativeSize.width + 0.5);
         inH = (NSUInteger)floor(nativeSize.height + 0.5);
@@ -1544,10 +1644,12 @@ static id<CAMetalDrawable> levi_nextDrawable(id self, SEL _cmd) {
     }
 
     NSUInteger did = (NSUInteger)__atomic_add_fetch(&g_drawable_seq, 1, __ATOMIC_RELAXED);
-    return [[LeviScaledDrawable alloc] initWithTexture:inputTex
-                                                 layer:layer
-                                                 state:state
-                                            drawableID:did];
+    LeviScaledDrawable *drawable = [[LeviScaledDrawable alloc] initWithTexture:inputTex
+                                                                      layer:layer
+                                                                      state:state
+                                                                 drawableID:did];
+    drawable.outputSize = spatialOutputSize;
+    return drawable;
 }
 
 __attribute__((constructor))
@@ -1600,6 +1702,8 @@ static void levi_metal_fx_init(void) {
             g_spatial_factor = parsed;
         }
     }
+    const char *panel_limit_env = getenv("LEVI_METALFX_PANEL_LIMIT");
+    g_panel_limit = levi_spatial_enabled() && panel_limit_env && strcmp(panel_limit_env, "1") == 0;
     const char *sharp_env = getenv("LEVI_METALFX_SHARPNESS");
     if (!mtl4_active && sharp_env && sharp_env[0] != '\0') {
         char *end = NULL;

@@ -186,6 +186,49 @@ func TestRetinaMetalFXDefaultScalePolicy(t *testing.T) {
 	}
 }
 
+func TestMetalFXPanelLimit(t *testing.T) {
+	s := fixtureSettings(t)
+	s.App = filepath.Join(t.TempDir(), "Wine.app")
+	s.Executable = appWineExecutable(s.App)
+	writeWineFixture(t, s.Executable, "#!/bin/sh\nexit 0\n", 0700)
+	writeWineFixture(t, filepath.Join(s.App, "Contents/SharedSupport/renderer/d3dmetal/wine"), "", 0600)
+	s.Graphics = "d3dmetal"
+	s.RetinaMode = true
+	s.MetalFXScale = "performance"
+	const key = "LEVI_METALFX_PANEL_LIMIT"
+	path := filepath.Join(t.TempDir(), "wine.json")
+
+	for _, enabled := range []bool{false, true} {
+		s.MetalFXPanelLimit = enabled
+		if err := saveSettings(path, s); err != nil {
+			t.Fatal(err)
+		}
+		loaded, err := loadSettings(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		p, err := profileFromSettings(loaded)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, hasBridge := range []bool{false, true} {
+			env := p.D3DMetalFXLaunchEnv(hasBridge)
+			if (env[key] == "1") != enabled || env["LEVI_METALFX_RETINA_UPSCALE"] != "1" {
+				t.Fatalf("panel limit=%t, bridge=%t: %v", enabled, hasBridge, env)
+			}
+		}
+	}
+	for _, p := range []Profile{
+		{Graphics: "mullion", RetinaMode: true, MetalFXScale: "performance", MetalFXPanelLimit: true},
+		{Graphics: "d3dmetal", RetinaMode: true, MetalFXScale: "off", MetalFXPanelLimit: true},
+		{Graphics: "d3dmetal", MetalFXScale: "performance", MetalFXPanelLimit: true},
+	} {
+		if env := p.D3DMetalFXLaunchEnv(true); env[key] != "" {
+			t.Fatalf("panel limit is active for an unsupported profile: %v", env)
+		}
+	}
+}
+
 func TestMetalFXSharpeningPolicy(t *testing.T) {
 	base := fixtureSettings(t)
 	resolved, err := resolveSettings(base)

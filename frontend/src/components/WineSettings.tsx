@@ -415,6 +415,14 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
                       false,
                       handleRetinaChange,
                     )}
+                    {isD3DMetal && switchRow(
+                      "metal_fx_panel_limit",
+                      "settings.wine.metal_fx_panel_limit",
+                      "settings.wine.metal_fx_panel_limit_desc",
+                      !!settings.metalFxPanelLimit,
+                      !supportsSpatialScale || !settings.retinaMode || metalFxScale === "off",
+                      (metalFxPanelLimit) => applyImmediate({ metalFxPanelLimit }),
+                    )}
                     {switchRow(
                       "metal_hud",
                       "settings.wine.metal_hud",

@@ -500,6 +500,8 @@
       "metal_fx_extreme": "極致效能（3.0×）",
       "metal_fx_max": "極限（4.0×）",
       "metal_fx_sharpness": "MetalFX 銳化",
+      "metal_fx_panel_limit": "按面板像素限制 MetalFX 輸出",
+      "metal_fx_panel_limit_desc": "當 macOS 的 Retina 背板大於實體面板時，盡可能按視窗實際涵蓋的面板像素輸出。下次啟動遊戲時生效。",
       "metal_fx_sharpness_auto": "自動（按倍率自動調整）",
       "metal_fx_sharpness_0": "關閉（0%）",
       "metal_fx_sharpness_10": "輕度（10%）",

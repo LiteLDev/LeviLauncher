@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "function_keys.h"
 
 static int prepend_dyld_library(const char *lib_path) {
     if (!lib_path || lib_path[0] != '/') {
@@ -51,6 +52,19 @@ static int prepend_dyld_library(const char *lib_path) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 3 && strcmp(argv[1], "--restore-function-keys") == 0) {
+        // The game sends a byte after a normal restore. EOF also covers a crash.
+        char restored;
+        ssize_t result;
+        do { result = read(STDIN_FILENO, &restored, 1); } while (result < 0 && errno == EINTR);
+        if (result != 0) return result < 0;
+        io_connect_t connection = levi_open_keyboard_parameters();
+        if (!connection) return 1;
+        bool ok = levi_set_function_key_mode(connection, atoi(argv[2]));
+        IOServiceClose(connection);
+        return ok ? 0 : 1;
+    }
+
     const char *wine_env = getenv("LEVI_WINE_UNIX_BIN");
     if (!wine_env || wine_env[0] != '/') {
         fprintf(stderr, "LeviGameHost: missing absolute LEVI_WINE_UNIX_BIN\n");
@@ -75,6 +89,10 @@ int main(int argc, char **argv) {
     }
     unsetenv("LEVI_METAL_HELPER_LIB");
     unsetenv("LEVI_WINE_UNIX_BIN");
+
+    if (argv[0][0] == '/') {
+        setenv("LEVI_GAME_HOST_BIN", argv[0], 1);
+    }
 
     char **new_argv = (char **)calloc((size_t)argc + 2, sizeof(char *));
     if (!new_argv) {

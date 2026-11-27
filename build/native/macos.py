@@ -66,7 +66,7 @@ subprocess.run([
     '-Wall', '-Wextra', '-Werror', '-dynamiclib', str(metal_helper_src),
     '-framework', 'Foundation', '-weak_framework', 'AppKit',
     '-weak_framework', 'QuartzCore', '-weak_framework', 'Metal',
-    '-weak_framework', 'MetalFX', '-o', str(metal_helper_out),
+    '-weak_framework', 'MetalFX', '-framework', 'IOKit', '-o', str(metal_helper_out),
 ], check=True)
 subprocess.run(['codesign', '--force', '--sign', '-', str(metal_helper_out)], check=True)
 
@@ -77,7 +77,7 @@ if game_host_app.exists():
 (game_host_app/'Contents/Resources').mkdir(parents=True, exist_ok=True)
 subprocess.run([
     'clang', '-arch', 'x86_64', '-mmacosx-version-min=14.6', '-O2',
-    '-Wall', '-Wextra', '-Werror', str(game_host_src),
+    '-Wall', '-Wextra', '-Werror', str(game_host_src), '-framework', 'IOKit', '-framework', 'CoreFoundation',
     '-o', str(game_host_app/'Contents/MacOS/LeviGameHost'),
 ], check=True)
 shutil.copyfile(resources/'AppIcon.icns', game_host_app/'Contents/Resources/AppIcon.icns')

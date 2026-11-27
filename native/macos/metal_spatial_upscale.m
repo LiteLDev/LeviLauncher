@@ -14,13 +14,18 @@
 #import <Metal/Metal.h>
 #import <MetalFX/MetalFX.h>
 #import <objc/runtime.h>
+#import <errno.h>
+#import <fcntl.h>
 #import <math.h>
 #import <sched.h>
+#import <spawn.h>
 #import <stdio.h>
 #import <stdlib.h>
 #import <string.h>
 #import <time.h>
 #import <unistd.h>
+#import <sys/wait.h>
+#import "function_keys.h"
 
 static const void *kLeviSpatialStateKey = &kLeviSpatialStateKey;
 static const void *kLeviPendingPresentsKey = &kLeviPendingPresentsKey;
@@ -48,6 +53,7 @@ static IMP g_orig_setFramebufferOnly = NULL;
 static IMP g_orig_nextDrawable = NULL;
 static IMP g_orig_setAppIcon = NULL;
 static IMP g_orig_setWindowTitle = NULL;
+static IMP g_orig_setMainMenu = NULL;
 
 typedef void (*SetDrawableSizeFn)(id, SEL, CGSize);
 typedef void (*SetCGFloatFn)(id, SEL, CGFloat);
@@ -59,6 +65,7 @@ typedef void (*PresentDrawableAfterMinFn)(id, SEL, id<MTLDrawable>, CFTimeInterv
 typedef void (*CommitFn)(id, SEL);
 typedef void (*SetAppIconFn)(id, SEL, NSImage *);
 typedef void (*SetWindowTitleFn)(id, SEL, NSString *);
+typedef void (*SetMainMenuFn)(id, SEL, NSMenu *);
 
 static NSMutableSet<NSString *> *g_swizzled_cmdbuf_methods = nil;
 static NSMutableSet<NSString *> *g_swizzled_cmdbuf_classes = nil;
@@ -841,6 +848,96 @@ static void levi_setWindowTitle(id self, SEL _cmd, NSString *title) {
     }
 }
 
+static void levi_brand_app_menu(NSMenu *menu) {
+    NSMenuItem *appItem = menu.itemArray.firstObject;
+    if (appItem.submenu && [appItem.title caseInsensitiveCompare:@"Wine"] == NSOrderedSame) {
+        appItem.title = g_game_title;
+        appItem.submenu.title = g_game_title;
+    }
+}
+
+static void levi_setMainMenu(id self, SEL selector, NSMenu *menu) {
+    ((SetMainMenuFn)g_orig_setMainMenu)(self, selector, menu);
+    levi_brand_app_menu(menu);
+}
+
+static int g_function_key_guard = -1;
+static io_connect_t g_keyboard_parameters = IO_OBJECT_NULL;
+static int g_previous_function_key_mode;
+
+static int levi_watch_function_keys(const char *host, int previousMode) {
+    int pipeFD[2];
+    if (!host || host[0] != '/' || pipe(pipeFD) != 0) return -1;
+    if (fcntl(pipeFD[1], F_SETFD, FD_CLOEXEC) < 0 ||
+        fcntl(pipeFD[1], F_SETNOSIGPIPE, 1) < 0) {
+        close(pipeFD[0]);
+        close(pipeFD[1]);
+        return -1;
+    }
+    posix_spawn_file_actions_t actions;
+    int status = posix_spawn_file_actions_init(&actions);
+    if (status == 0) {
+        status = posix_spawn_file_actions_adddup2(&actions, pipeFD[0], STDIN_FILENO);
+        if (status == 0 && pipeFD[0] != STDIN_FILENO) {
+            status = posix_spawn_file_actions_addclose(&actions, pipeFD[0]);
+        }
+        if (status == 0) {
+            char mode[32];
+            snprintf(mode, sizeof(mode), "%d", previousMode);
+            char *args[] = {(char *)host, "--restore-function-keys", mode, NULL};
+            char *env[] = {NULL}; // The recovery process does not load the Wine dylib.
+            pid_t pid;
+            status = posix_spawn(&pid, host, &actions, NULL, args, env);
+            if (status == 0) {
+                dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+                    while (waitpid(pid, NULL, 0) < 0 && errno == EINTR) {}
+                });
+            }
+        }
+        posix_spawn_file_actions_destroy(&actions);
+    }
+    close(pipeFD[0]);
+    if (status == 0) return pipeFD[1];
+    close(pipeFD[1]);
+    return -1;
+}
+
+static void levi_restore_function_keys(void) {
+    if (g_function_key_guard < 0) return;
+    if (levi_set_function_key_mode(g_keyboard_parameters, g_previous_function_key_mode)) {
+        ssize_t written;
+        do { written = write(g_function_key_guard, "r", 1); } while (written < 0 && errno == EINTR);
+    }
+    close(g_function_key_guard);
+    g_function_key_guard = -1;
+    IOServiceClose(g_keyboard_parameters);
+    g_keyboard_parameters = IO_OBJECT_NULL;
+}
+
+static void levi_update_function_keys(void) {
+    if (!NSApp.isActive || !levi_is_wine_game_window(NSApp.keyWindow, NSApp.keyWindow.title)) {
+        levi_restore_function_keys();
+        return;
+    }
+    if (g_function_key_guard >= 0) return;
+    io_connect_t connection = levi_open_keyboard_parameters();
+    if (!connection) return;
+    int previousMode;
+    if (levi_read_function_key_mode(connection, &previousMode) && previousMode != 1) {
+        int guard = levi_watch_function_keys(getenv("LEVI_GAME_HOST_BIN"), previousMode);
+        if (guard >= 0) {
+            if (levi_set_function_key_mode(connection, 1)) {
+                g_function_key_guard = guard;
+                g_keyboard_parameters = connection;
+                g_previous_function_key_mode = previousMode;
+                return;
+            }
+            close(guard);
+        }
+    }
+    IOServiceClose(connection);
+}
+
 static void levi_apply_app_branding_on_main(void) {
     if (!g_game_icon_path && !g_game_title) return;
     void (^applyBlock)(void) = ^{
@@ -850,12 +947,14 @@ static void levi_apply_app_branding_on_main(void) {
                 ((SetAppIconFn)g_orig_setAppIcon)(NSApp, @selector(setApplicationIconImage:), icon);
             }
         }
-        if (g_game_title && g_game_title.length > 0 && NSApp && g_orig_setWindowTitle) {
+        if (g_game_title.length > 0 && NSApp && g_orig_setWindowTitle) {
+            levi_brand_app_menu(NSApp.mainMenu);
             for (NSWindow *w in NSApp.windows) {
                 if (levi_is_wine_game_window(w, w.title)) {
                     ((SetWindowTitleFn)g_orig_setWindowTitle)(w, @selector(setTitle:), g_game_title);
                 }
             }
+            if (getenv("LEVI_GAME_HOST_BIN")) levi_update_function_keys();
         }
     };
     if ([NSThread isMainThread]) {
@@ -1154,9 +1253,40 @@ static void levi_metal_fx_init(void) {
     const char *title_env = getenv("LEVI_GAME_TITLE");
     if (title_env && title_env[0] != '\0') {
         g_game_title = [NSString stringWithUTF8String:title_env];
+        if (g_game_title.length > 0) {
+            // AppKit gets its application-menu title from the loader's
+            // embedded bundle information. Update the cached name before
+            // Wine initializes NSApplication.
+            NSDictionary *info = NSBundle.mainBundle.infoDictionary;
+            if ([info[@"CFBundleName"] isEqual:@"Wine"] &&
+                [info isKindOfClass:[NSMutableDictionary class]]) {
+                ((NSMutableDictionary *)info)[@"CFBundleName"] = g_game_title;
+            }
+            [NSProcessInfo processInfo].processName = g_game_title;
+        }
     }
 
     Class appClass = NSClassFromString(@"NSApplication");
+    if (appClass && g_game_title.length > 0) {
+        Method menuMethod = class_getInstanceMethod(appClass, @selector(setMainMenu:));
+        if (menuMethod) {
+            g_orig_setMainMenu = method_setImplementation(menuMethod, (IMP)levi_setMainMenu);
+        }
+        if (getenv("LEVI_GAME_HOST_BIN")) {
+            NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+            for (NSNotificationName name in @[NSApplicationDidBecomeActiveNotification,
+                                              NSWindowDidBecomeKeyNotification,
+                                              NSWindowDidResignKeyNotification]) {
+                [center addObserverForName:name object:nil queue:[NSOperationQueue mainQueue]
+                                usingBlock:^(__unused NSNotification *note) { levi_update_function_keys(); }];
+            }
+            for (NSNotificationName name in @[NSApplicationDidResignActiveNotification,
+                                              NSApplicationWillTerminateNotification]) {
+                [center addObserverForName:name object:nil queue:[NSOperationQueue mainQueue]
+                                usingBlock:^(__unused NSNotification *note) { levi_restore_function_keys(); }];
+            }
+        }
+    }
     if (appClass && g_game_icon_path) {
         Method am = class_getInstanceMethod(appClass, @selector(setApplicationIconImage:));
         if (am) {

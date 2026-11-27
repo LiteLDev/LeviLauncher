@@ -8,6 +8,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/gameruntime"
 	"github.com/liteldev/LeviLauncher/internal/types"
+	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 )
 
 func (a *Minecraft) GetWineSettings() (types.WineSettings, error) { return gameruntime.LoadSettings() }
@@ -31,5 +32,20 @@ func (a *Minecraft) WineNeedsRosetta(ctx context.Context) bool {
 func (a *Minecraft) StartWineInstaller(ctx context.Context, consent bool) (types.WineSettings, error) {
 	return gameruntime.InstallManagedWine(ctx, consent, func(progress types.WineInstallProgress) {
 		eventsink.From(ctx).Emit("wine.install.progress", progress)
-	})
+	}, versionlaunch.PrepareWine)
+}
+func (a *Minecraft) GetLegacyWineInfo() (types.LegacyWineInfo, error) {
+	return gameruntime.GetLegacyWineInfo()
+}
+func (a *Minecraft) RemoveLegacyWineRuntime() error {
+	return gameruntime.RemoveLegacyWineRuntime()
+}
+func (a *Minecraft) GetWineShaderCacheInfo() (types.WineShaderCacheInfo, error) {
+	return gameruntime.GetWineShaderCacheInfo()
+}
+func (a *Minecraft) ClearWineShaderCache() error {
+	return gameruntime.ClearWineShaderCache()
+}
+func (a *Minecraft) KillWineProcesses(ctx context.Context) error {
+	return gameruntime.KillWineProcesses(ctx)
 }

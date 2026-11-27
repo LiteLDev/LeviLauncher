@@ -59,6 +59,8 @@ Requirements:
 
 Download `LeviLauncher-macos-arm64-installer.dmg` from GitHub Releases, open it, and drag **LeviLauncher** into **Applications**.
 
+In **Settings → Wine**, install MetalSharp Wine x86_64. The managed runtime requires Apple Silicon, macOS 15 or later, and Rosetta 2. It uses a separate Wine prefix and defaults to D3DMetal when bundled (falling back to Mullion). Existing Sikarugir installations remain selectable in Wine settings.
+
 macOS runs GDK builds through Wine (including LeviLamina, LIP packages, and compatible native mods). Run `/Applications/LeviLauncher.app/Contents/MacOS/LeviLauncher` to use the CLI. UWP instances are currently Windows-only.
 
 **Build from source (macOS):** requires Xcode Command Line Tools, the Go version in `go.mod`, Wails v3, Node.js/npm, Python 3, and the Windows x64 loader at `internal/leviloader/LeviLauncher.dll` (or passed to `build/native/macos.py` via `--loader`). Run `wails3 task package` from the repository root to build `bin/LeviLauncher.app` and `bin/LeviLauncher-macos-installer.dmg`. To package an existing `.app` bundle, run `wails3 task darwin:create:dmg` or `python3 build/native/dmg.py --app "/path/to/LeviLauncher.app" --output "/path/to/LeviLauncher.dmg"`.

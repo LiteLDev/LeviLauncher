@@ -31,3 +31,18 @@ func (a *Minecraft) WineNeedsRosetta(context.Context) bool { return false }
 func (a *Minecraft) StartWineInstaller(context.Context, bool) (types.WineSettings, error) {
 	return types.WineSettings{}, errors.New("Wine installation is only available on macOS")
 }
+func (a *Minecraft) GetLegacyWineInfo() (types.LegacyWineInfo, error) {
+	return types.LegacyWineInfo{}, nil
+}
+func (a *Minecraft) RemoveLegacyWineRuntime() error {
+	return errors.New("Wine settings are only available on macOS")
+}
+func (a *Minecraft) GetWineShaderCacheInfo() (types.WineShaderCacheInfo, error) {
+	return types.WineShaderCacheInfo{}, nil
+}
+func (a *Minecraft) ClearWineShaderCache() error {
+	return errors.New("Wine settings are only available on macOS")
+}
+func (a *Minecraft) KillWineProcesses(context.Context) error {
+	return errors.New("Wine settings are only available on macOS")
+}

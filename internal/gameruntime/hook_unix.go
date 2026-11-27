@@ -4,6 +4,7 @@ package gameruntime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -42,12 +43,12 @@ func (p Profile) RunHook(ctx context.Context, dir, command string, output io.Wri
 	if err := os.WriteFile(name, []byte(text), 0600); err != nil {
 		return err
 	}
-	launcher := filepath.Join(temp, "run.cmd")
-	cmd, detached, err := p.GameCommand(ctx, launcher)
-	if err != nil {
-		return err
-	}
-	if detached {
+	if _, ok := p.isSikarugirWrapper(); ok {
+		launcher := filepath.Join(temp, "run.cmd")
+		cmd, _, err := p.GameCommand(ctx, launcher)
+		if err != nil {
+			return err
+		}
 		guestDir, err := p.WindowsPath(dir)
 		if err != nil {
 			return err
@@ -88,13 +89,19 @@ func (p Profile) RunHook(ctx context.Context, dir, command string, output io.Wri
 	if err != nil {
 		return err
 	}
-	cmd = p.Command(ctx, "cmd.exe", "/d", "/c", path)
+	cmd := p.Command(ctx, "cmd.exe", "/d", "/c", path)
 	cmd.Dir = dir
 	cmd.Stdout = output
 	cmd.Stderr = output
 	cmd.WaitDelay = 2 * time.Second
 	if err = cmd.Run(); err != nil {
-		return fmt.Errorf("Windows package hook failed: %w", err)
+		// Wine background services (wineserver, services.exe, etc.) inherit
+		// stdout/stderr pipe handles and often outlive cmd.exe. Treat ErrWaitDelay
+		// as success only when the context is still active and cmd.exe exited 0.
+		if ctx.Err() != nil || !errors.Is(err, exec.ErrWaitDelay) ||
+			cmd.ProcessState == nil || !cmd.ProcessState.Success() {
+			return fmt.Errorf("Windows package hook failed: %w", err)
+		}
 	}
 	return nil
 }

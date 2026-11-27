@@ -58,7 +58,7 @@ typedef struct Monitor { struct Monitor* next; UINT64 token; void* ctx; XTaskQue
 typedef struct Queue {
   DWORD magic; volatile LONG refs; Port* ports[2]; volatile LONG terminated;
   volatile LONG inflight; /* entries submitted via this queue and not yet finished */
-  CRITICAL_SECTION cs; Monitor* monitors;
+  CRITICAL_SECTION cs; CONDITION_VARIABLE drained; Monitor* monitors;
 } Queue;
 
 // ---------------------------------------------------------------- globals
@@ -91,22 +91,54 @@ static Port* port_new(int mode, Queue* owner) {
   InitializeCriticalSection(&p->cs); p->avail = CreateEventW(NULL, TRUE, FALSE, NULL); return p;
 }
 static Queue* queue_new(void) {
-  Queue* q = (Queue*)calloc(1, sizeof *q); q->magic = QMAGIC; q->refs = 1; InitializeCriticalSection(&q->cs); return q;
+  Queue* q = (Queue*)calloc(1, sizeof *q); q->magic = QMAGIC; q->refs = 1; InitializeCriticalSection(&q->cs); InitializeConditionVariable(&q->drained); return q;
 }
 static Queue* queue_create(int wm, int cm) {
   Queue* q = queue_new(); q->ports[0] = port_new(wm, q); q->ports[1] = port_new(cm, q); return q;
 }
+static void queue_retain(Queue* q) { InterlockedIncrement(&q->refs); }
+
+// Entries, workers and composite ports each hold a reference for the time
+// they can access a queue. A handle can be closed while its callback runs.
+static void queue_release(Queue* q) {
+  if (!q || InterlockedDecrement(&q->refs) != 0) return;
+  for (int i = 0; i < 2; ++i) {
+    Port* p = q->ports[i];
+    if (p->owner == q) {
+      CloseHandle(p->avail);
+      DeleteCriticalSection(&p->cs);
+      free(p);
+    } else {
+      queue_release(p->owner);
+    }
+  }
+  while (q->monitors) {
+    Monitor* m = q->monitors;
+    q->monitors = m->next;
+    free(m);
+  }
+  DeleteCriticalSection(&q->cs);
+  free(q);
+}
+
+static void release_local_queue(Queue** q) { queue_release(*q); }
+#define LOCAL_QUEUE __attribute__((cleanup(release_local_queue))) Queue*
+
 static Queue* proc_queue(void) {
-  ensure_init(); Queue* q;
+  ensure_init();
   EnterCriticalSection(&g_acs);
   if (!g_procQ && !g_procSet) { g_procQ = queue_create(MODE_THREADPOOL, MODE_THREADPOOL); g_procSet = TRUE; }
-  q = g_procQ; LeaveCriticalSection(&g_acs); return q;
+  Queue* q = g_procQ;
+  if (q) queue_retain(q);
+  LeaveCriticalSection(&g_acs);
+  return q;
 }
 static Queue* resolve(void* h) {
   ensure_init();
   if (!h) return proc_queue();
   Queue* q = (Queue*)h;
   if (q->magic != QMAGIC) { xgr_log("TQ: invalid queue handle %p", h); return NULL; }
+  queue_retain(q);
   return q;
 }
 static BOOL q_dead(Queue* q, Port* p) { return q->terminated || (p->owner && p->owner->terminated); }
@@ -115,8 +147,13 @@ static void run_entry(Entry* e, BOOL canceled) {
   Frame f = { e->q, T_FRAMES }; TlsSetValue(g_tls, &f);
   e->cb(e->ctx, canceled ? 1 : 0);
   TlsSetValue(g_tls, f.prev);
-  InterlockedDecrement(&e->q->inflight);
+  Queue* q = e->q;
+  EnterCriticalSection(&q->cs);
+  --q->inflight;
+  WakeAllConditionVariable(&q->drained);
+  LeaveCriticalSection(&q->cs);
   free(e);
+  queue_release(q);
 }
 static Entry* pop(Port* p) {
   EnterCriticalSection(&p->cs);
@@ -132,10 +169,21 @@ static void notify_monitors(Queue* q, UINT32 portIdx) {
   LeaveCriticalSection(&q->cs);
   for (int i = 0; i < n; i++) m[i].cb(m[i].ctx, q, portIdx);
 }
-static DWORD WINAPI wi_run_entry(LPVOID p) { run_entry((Entry*)p, FALSE); return 0; }
-static DWORD WINAPI wi_threadpool(LPVOID pp) { Entry* e = pop((Port*)pp); if (e) run_entry(e, FALSE); return 0; }
+static DWORD WINAPI wi_run_entry(LPVOID p) {
+  Entry* e = (Entry*)p;
+  run_entry(e, q_dead(e->q, e->port));
+  return 0;
+}
+static DWORD WINAPI wi_threadpool(LPVOID pp) {
+  Port* p = (Port*)pp;
+  LOCAL_QUEUE owner = p->owner; // reference transferred when scheduling the worker
+  Entry* e = pop(p);
+  if (e) run_entry(e, FALSE);
+  return 0;
+}
 static DWORD WINAPI wi_serial(LPVOID pp) {
   Port* p = (Port*)pp;
+  LOCAL_QUEUE owner = p->owner;
   for (;;) {
     EnterCriticalSection(&p->cs);
     Entry* e = p->head;
@@ -149,27 +197,46 @@ static void append(Port* p, Entry* e) {
   e->next = NULL; if (p->tail) p->tail->next = e; else p->head = e; p->tail = e;
 }
 static void port_enqueue(Entry* e, BOOL fromTimer) {
-  Port* p = e->port; Queue* q = e->q;
+  Port* p = e->port;
+  LOCAL_QUEUE q = e->q;
+  queue_retain(q);
+  UINT32 portIdx = e->portIdx;
   switch (p->mode) {
   case MODE_IMMEDIATE:
-    if (fromTimer) { if (!QueueUserWorkItem(wi_run_entry, e, WT_EXECUTEDEFAULT)) run_entry(e, FALSE); }
+    if (q_dead(q, p)) { run_entry(e, TRUE); return; }
+    if (fromTimer) { if (!QueueUserWorkItem(wi_run_entry, e, WT_EXECUTEDEFAULT)) wi_run_entry(e); }
     else run_entry(e, FALSE);
     return;
   case MODE_THREADPOOL:
-    EnterCriticalSection(&p->cs); append(p, e); LeaveCriticalSection(&p->cs);
-    if (!QueueUserWorkItem(wi_threadpool, p, WT_EXECUTEDEFAULT)) xgr_log("TQ: QueueUserWorkItem failed %lu", GetLastError());
+    EnterCriticalSection(&p->cs);
+    if (q_dead(q, p)) { LeaveCriticalSection(&p->cs); run_entry(e, TRUE); return; }
+    append(p, e);
+    LeaveCriticalSection(&p->cs);
+    queue_retain(p->owner);
+    if (!QueueUserWorkItem(wi_threadpool, p, WT_EXECUTEDEFAULT)) wi_threadpool(p);
     break;
   case MODE_SERIALIZED: {
     BOOL sched = FALSE;
-    EnterCriticalSection(&p->cs); append(p, e); if (!p->busy) { p->busy = 1; sched = TRUE; } LeaveCriticalSection(&p->cs);
-    if (sched && !QueueUserWorkItem(wi_serial, p, WT_EXECUTEDEFAULT)) xgr_log("TQ: QueueUserWorkItem failed %lu", GetLastError());
+    EnterCriticalSection(&p->cs);
+    if (q_dead(q, p)) { LeaveCriticalSection(&p->cs); run_entry(e, TRUE); return; }
+    append(p, e);
+    if (!p->busy) { p->busy = 1; sched = TRUE; }
+    LeaveCriticalSection(&p->cs);
+    if (sched) {
+      queue_retain(p->owner);
+      if (!QueueUserWorkItem(wi_serial, p, WT_EXECUTEDEFAULT)) wi_serial(p);
+    }
     break; }
   default: /* manual */
-    EnterCriticalSection(&p->cs); append(p, e); SetEvent(p->avail); LeaveCriticalSection(&p->cs);
+    EnterCriticalSection(&p->cs);
+    if (q_dead(q, p)) { LeaveCriticalSection(&p->cs); run_entry(e, TRUE); return; }
+    append(p, e);
+    SetEvent(p->avail);
+    LeaveCriticalSection(&p->cs);
     break;
   }
-  notify_monitors(q, e->portIdx);
-  if (p->owner && p->owner != q) notify_monitors(p->owner, e->portIdx);
+  notify_monitors(q, portIdx);
+  if (p->owner != q) notify_monitors(p->owner, portIdx);
 }
 
 static DWORD WINAPI timer_thread(LPVOID unused) {
@@ -188,6 +255,7 @@ static DWORD WINAPI timer_thread(LPVOID unused) {
 static void timer_add(Entry* e, UINT32 delay) {
   e->due = GetTickCount64() + delay;
   EnterCriticalSection(&g_tcs);
+  if (q_dead(e->q, e->port)) { LeaveCriticalSection(&g_tcs); run_entry(e, TRUE); return; }
   Entry** pp = &g_timers; while (*pp && (*pp)->due <= e->due) pp = &(*pp)->next;
   e->next = *pp; *pp = e;
   LeaveCriticalSection(&g_tcs);
@@ -195,29 +263,40 @@ static void timer_add(Entry* e, UINT32 delay) {
 }
 
 static HRESULT submit(void* qh, UINT32 portIdx, UINT32 delay, void* ctx, XTaskQueueCallback cb) {
-  Queue* q = resolve(qh);
+  LOCAL_QUEUE q = resolve(qh);
   if (!q || !cb || portIdx > 1) return E_INVALIDARG;
   Port* p = q->ports[portIdx];
-  if (q_dead(q, p)) return E_ABORT;
+  EnterCriticalSection(&q->cs);
+  if (q_dead(q, p)) {
+    LeaveCriticalSection(&q->cs);
+    return E_ABORT;
+  }
+  ++q->inflight;
+  LeaveCriticalSection(&q->cs);
   Entry* e = (Entry*)calloc(1, sizeof *e);
   e->cb = cb; e->ctx = ctx; e->q = q; e->port = p; e->portIdx = portIdx;
-  InterlockedIncrement(&q->inflight);
+  queue_retain(q);
   if (delay) timer_add(e, delay); else port_enqueue(e, FALSE);
   return S_OK;
 }
 
 static int own_frames(Queue* q) { int n = 0; for (Frame* f = T_FRAMES; f; f = f->prev) if (f->q == q) n++; return n; }
-static void wait_inflight(Queue* q, int own) { while (q->inflight > own) Sleep(1); }
+static void wait_inflight(Queue* q, int own) {
+  EnterCriticalSection(&q->cs);
+  while (q->inflight > own) SleepConditionVariableCS(&q->drained, &q->cs, INFINITE);
+  LeaveCriticalSection(&q->cs);
+}
 
 typedef struct { Queue* q; void* ctx; XTaskQueueTerminatedCallback cb; } TermCtx;
 static DWORD WINAPI wi_term(LPVOID p) {
   TermCtx* t = (TermCtx*)p; wait_inflight(t->q, 0);
   if (t->cb) t->cb(t->ctx);
+  queue_release(t->q);
   free(t); return 0;
 }
 static BOOL cancel_match(Entry* e, Queue* q) { return e->q == q || e->port->owner == q; }
 static HRESULT tq_terminate(void* qh, BOOL wait, void* ctx, XTaskQueueTerminatedCallback cb) {
-  Queue* q = resolve(qh); if (!q) return E_INVALIDARG;
+  LOCAL_QUEUE q = resolve(qh); if (!q) return E_INVALIDARG;
   xgr_log("TQ: terminate %p wait=%d", q, wait);
   InterlockedExchange(&q->terminated, 1);
   Entry* canc = NULL; Entry** tail = &canc;
@@ -240,6 +319,7 @@ static HRESULT tq_terminate(void* qh, BOOL wait, void* ctx, XTaskQueueTerminated
   if (wait) { wait_inflight(q, own_frames(q)); if (cb) cb(ctx); }
   else {
     TermCtx* t = (TermCtx*)calloc(1, sizeof *t); t->q = q; t->ctx = ctx; t->cb = cb;
+    queue_retain(q);
     if (!QueueUserWorkItem(wi_term, t, WT_EXECUTEDEFAULT)) wi_term(t);
   }
   return S_OK;
@@ -262,23 +342,23 @@ IMPL(tq_create_composite) {
   if (!w || !c || !out || w->magic != PMAGIC || c->magic != PMAGIC) return E_INVALIDARG;
   ensure_init();
   Queue* q = queue_new(); q->ports[0] = w; q->ports[1] = c;
-  if (w->owner) InterlockedIncrement(&w->owner->refs);
-  if (c->owner) InterlockedIncrement(&c->owner->refs);
+  queue_retain(w->owner);
+  queue_retain(c->owner);
   *out = q; xgr_log("TQ: XTaskQueueCreateComposite(%p,%p) -> %p", w, c, q);
   return S_OK;
 }
 IMPL(tq_get_port) {
-  Queue* q = resolve((void*)a1); UINT32 idx = (UINT32)a2; void** out = (void**)a3;
+  LOCAL_QUEUE q = resolve((void*)a1); UINT32 idx = (UINT32)a2; void** out = (void**)a3;
   if (!q || idx > 1 || !out) return E_INVALIDARG;
   *out = q->ports[idx]; return S_OK;
 }
 IMPL(tq_duplicate) {
-  Queue* q = resolve((void*)a1); void** out = (void**)a2;
+  LOCAL_QUEUE q = resolve((void*)a1); void** out = (void**)a2;
   if (!q || !out) return E_INVALIDARG;
-  InterlockedIncrement(&q->refs); *out = q; return S_OK;
+  queue_retain(q); *out = q; return S_OK;
 }
 IMPL(tq_dispatch) {
-  Queue* q = resolve((void*)a1); UINT32 idx = (UINT32)a2; UINT32 timeout = (UINT32)a3;
+  LOCAL_QUEUE q = resolve((void*)a1); UINT32 idx = (UINT32)a2; UINT32 timeout = (UINT32)a3;
   if (!q || idx > 1) return 0;
   Port* p = q->ports[idx];
   ULONGLONG start = GetTickCount64();
@@ -295,52 +375,87 @@ IMPL(tq_dispatch) {
 }
 IMPL(tq_close) {
   Queue* q = (Queue*)a1;
-  if (q && q->magic == QMAGIC) InterlockedDecrement(&q->refs); // memory intentionally kept alive
+  if (q && q->magic == QMAGIC) queue_release(q);
   return 0;
 }
 IMPL(tq_submit) { return (UINT64)(LONG)submit((void*)a1, (UINT32)a2, 0, (void*)a3, (XTaskQueueCallback)a4); }
 IMPL(tq_submit_delayed) { return (UINT64)(LONG)submit((void*)a1, (UINT32)a2, (UINT32)a3, (void*)a4, (XTaskQueueCallback)a5); }
 
-typedef struct Waiter { Queue* q; UINT32 port; void* ctx; XTaskQueueCallback cb; HANDLE wh; } Waiter;
+typedef struct Waiter { Queue* q; UINT32 port; void* ctx; XTaskQueueCallback cb; HANDLE wh, done; } Waiter;
 static VOID CALLBACK waiter_cb(PVOID p, BOOLEAN timedOut) { Waiter* w = (Waiter*)p; submit(w->q, w->port, 0, w->ctx, w->cb); }
 IMPL(tq_register_waiter) {
-  Queue* q = resolve((void*)a1); UINT32 port = (UINT32)a2; HANDLE h = (HANDLE)a3; UINT64* tok = (UINT64*)a6;
+  LOCAL_QUEUE q = resolve((void*)a1); UINT32 port = (UINT32)a2; HANDLE h = (HANDLE)a3; UINT64* tok = (UINT64*)a6;
   if (!q || port > 1 || !h || !a5 || !tok) return E_INVALIDARG;
   Waiter* w = (Waiter*)calloc(1, sizeof *w); w->q = q; w->port = port; w->ctx = (void*)a4; w->cb = (XTaskQueueCallback)a5;
-  if (!RegisterWaitForSingleObject(&w->wh, h, waiter_cb, w, INFINITE, WT_EXECUTEONLYONCE)) { free(w); return HRESULT_FROM_WIN32(GetLastError()); }
+  queue_retain(q);
+  w->done = CreateEventW(NULL, TRUE, FALSE, NULL);
+  if (!w->done || !RegisterWaitForSingleObject(&w->wh, h, waiter_cb, w, INFINITE, WT_EXECUTEONLYONCE)) {
+    HRESULT hr = HRESULT_FROM_WIN32(GetLastError());
+    if (w->done) CloseHandle(w->done);
+    queue_release(q);
+    free(w);
+    return hr;
+  }
   *tok = (UINT64)(ULONG_PTR)w; return S_OK;
 }
+static DWORD WINAPI waiter_release(LPVOID param) {
+  Waiter* w = (Waiter*)param;
+  WaitForSingleObject(w->done, INFINITE);
+  CloseHandle(w->done);
+  queue_release(w->q);
+  free(w);
+  return 0;
+}
 IMPL(tq_unregister_waiter) {
-  Waiter* w = (Waiter*)(ULONG_PTR)a2; if (w) UnregisterWaitEx(w->wh, NULL); return 0; // w leaked (callback may race)
+  Waiter* w = (Waiter*)(ULONG_PTR)a2;
+  if (!w) return 0;
+  // A waiter can unregister itself from its callback. Defer reclamation
+  // until Windows has finished with the callback context.
+  if (UnregisterWaitEx(w->wh, w->done)) {
+    SetEvent(w->done);
+    waiter_release(w);
+  } else if (GetLastError() == ERROR_IO_PENDING) {
+    if (!QueueUserWorkItem(waiter_release, w, WT_EXECUTEDEFAULT)) {
+      HANDLE thread = CreateThread(NULL, 0, waiter_release, w, 0, NULL);
+      if (thread) CloseHandle(thread);
+    }
+  }
+  return 0;
 }
 IMPL(tq_terminate_) { return (UINT64)(LONG)tq_terminate((void*)a1, (a2 & 0xff) != 0, (void*)a3, (XTaskQueueTerminatedCallback)a4); }
 IMPL(tq_register_monitor) {
-  Queue* q = resolve((void*)a1); XTaskQueueMonitorCallback cb = (XTaskQueueMonitorCallback)a3; UINT64* tok = (UINT64*)a4;
+  LOCAL_QUEUE q = resolve((void*)a1); XTaskQueueMonitorCallback cb = (XTaskQueueMonitorCallback)a3; UINT64* tok = (UINT64*)a4;
   if (!q || !cb || !tok) return E_INVALIDARG;
   Monitor* m = (Monitor*)calloc(1, sizeof *m); m->ctx = (void*)a2; m->cb = cb; m->token = (UINT64)InterlockedIncrement64(&g_token);
   EnterCriticalSection(&q->cs); m->next = q->monitors; q->monitors = m; LeaveCriticalSection(&q->cs);
   *tok = m->token;
+  void* monitor_ctx = (void*)a2;
   // libHttpClient: notify the new monitor about items already pending on manual ports
-  for (UINT32 i = 0; i < 2; i++) { Port* p = q->ports[i]; if (p->mode == MODE_MANUAL && p->head) cb(m->ctx, q, i); }
+  for (UINT32 i = 0; i < 2; i++) { Port* p = q->ports[i]; if (p->mode == MODE_MANUAL && p->head) cb(monitor_ctx, q, i); }
   return S_OK;
 }
 IMPL(tq_unregister_monitor) {
-  Queue* q = resolve((void*)a1); UINT64 tok = a2; if (!q) return 0;
+  LOCAL_QUEUE q = resolve((void*)a1); UINT64 tok = a2; if (!q) return 0;
   EnterCriticalSection(&q->cs);
-  for (Monitor** pp = &q->monitors; *pp; pp = &(*pp)->next) if ((*pp)->token == tok) { *pp = (*pp)->next; break; } // node leaked (may be mid-call)
+  for (Monitor** pp = &q->monitors; *pp; pp = &(*pp)->next) if ((*pp)->token == tok) { Monitor* m = *pp; *pp = m->next; free(m); break; }
   LeaveCriticalSection(&q->cs);
   return 0;
 }
 IMPL(tq_get_process_queue) {
-  void** out = (void**)a1; Queue* q = proc_queue();
+  void** out = (void**)a1; LOCAL_QUEUE q = proc_queue();
   if (!q) { if (out) *out = NULL; return 0; }
-  InterlockedIncrement(&q->refs); if (out) *out = q; return 1;
+  if (out) { queue_retain(q); *out = q; } return 1;
 }
 IMPL(tq_set_process_queue) {
   ensure_init(); Queue* q = (Queue*)a1;
   if (q && q->magic != QMAGIC) return 0;
-  if (q) InterlockedIncrement(&q->refs);
-  EnterCriticalSection(&g_acs); g_procQ = q; g_procSet = TRUE; LeaveCriticalSection(&g_acs);
+  if (q) queue_retain(q);
+  EnterCriticalSection(&g_acs);
+  Queue* previous = g_procQ;
+  g_procQ = q;
+  g_procSet = TRUE;
+  LeaveCriticalSection(&g_acs);
+  queue_release(previous);
   xgr_log("TQ: SetCurrentProcessTaskQueue(%p)", q);
   return 0;
 }
@@ -370,7 +485,7 @@ typedef struct { AState* state; HRESULT status; DWORD sig; } BlockInt;
 static BlockInt* bi(XAsyncBlock* b) { return (BlockInt*)b->internal; }
 
 static void a_release(AState* s) {
-  if (InterlockedDecrement(&s->refs) == 0) { CloseHandle(s->done); free(s); }
+  if (InterlockedDecrement(&s->refs) == 0) { CloseHandle(s->done); queue_release(s->q); free(s); }
 }
 // Returns state with an added ref (or NULL); *status gets the block's status.
 static AState* a_get(XAsyncBlock* b, HRESULT* status) {
@@ -435,16 +550,16 @@ static HRESULT a_schedule(XAsyncBlock* b, UINT32 delay) {
 static HRESULT a_begin(XAsyncBlock* b, void* ctx, const void* identity, const char* name, XAsyncProvider provider) {
   ensure_init();
   if (!b || !provider) return E_INVALIDARG;
-  Queue* q = resolve(b->queue); if (!q) return E_INVALIDARG;
+  LOCAL_QUEUE q = resolve(b->queue); if (!q) return E_INVALIDARG;
   AState* s = (AState*)calloc(1, sizeof *s);
-  s->refs = 2; /* link + alive */ s->user = b; s->prov = *b; s->provider = provider; s->identity = identity; s->name = name;
-  s->q = q; InterlockedIncrement(&q->refs);
+  s->refs = 3; /* link + alive + provider begin */ s->user = b; s->prov = *b; s->provider = provider; s->identity = identity; s->name = name;
+  s->q = q; queue_retain(q);
   s->done = CreateEventW(NULL, TRUE, FALSE, NULL); s->status = E_PENDING;
   s->pd.async = &s->prov; s->pd.context = ctx;
   EnterCriticalSection(&g_acs);
   BlockInt* u = bi(b);
   if (u->sig == ASIG && u->state && !u->state->completed) {
-    LeaveCriticalSection(&g_acs); CloseHandle(s->done); free(s);
+    LeaveCriticalSection(&g_acs); CloseHandle(s->done); queue_release(s->q); free(s);
     xgr_log("XAsyncBegin: block %p already in use (%s)", b, name ? name : "?"); return E_INVALIDARG;
   }
   memset(b->internal, 0, sizeof b->internal); memset(s->prov.internal, 0, sizeof s->prov.internal);
@@ -458,8 +573,10 @@ static HRESULT a_begin(XAsyncBlock* b, void* ctx, const void* identity, const ch
       EnterCriticalSection(&g_acs); a_unlink_locked(s); LeaveCriticalSection(&g_acs);
       SetEvent(s->done); a_release(s); a_release(s);
     }
+    a_release(s);
     return hr;
   }
+  a_release(s);
   return S_OK;
 }
 

@@ -18,8 +18,20 @@ type Profile struct {
 	Wine              string
 	Prefix            string
 	Graphics          string
+	D3DMetalVersion   string
+	EnableMetal4      bool
 	Sync              string
+	ThreadQoS         string
+	DisableRosettaAVX bool
 	LeftCommandIsCtrl bool
+	RetinaMode        bool
+	MetalHUD          bool
+	VSync             string
+	MaxFPS            int
+	EnableMetalFX     bool
+	MetalFXScale      string
+	CompatDebugLog    bool
+	metalSharp        metalSharpRuntime
 }
 
 func Default() (Profile, error) {
@@ -64,7 +76,9 @@ func (p Profile) Environment() []string {
 		values["WINESERVER"] = filepath.Join(filepath.Dir(p.Wine), "wineserver")
 	}
 	values["WINEDEBUG"] = "-all"
-	if p.App != "" {
+	if p.metalSharp.app != "" {
+		p.metalSharp.environment(p, values)
+	} else if p.App != "" {
 		support := filepath.Join(p.App, "Contents/SharedSupport")
 		engine := filepath.Join(support, "wine")
 		renderer := filepath.Join(support, "renderer/d3dmetal")
@@ -80,7 +94,7 @@ func (p Profile) Environment() []string {
 		values["TERM"] = "dumb"
 		values["XPC_SERVICE_NAME"] = "0"
 	}
-	if p.Graphics == "wined3d" {
+	if p.metalSharp.app == "" && p.Graphics == "wined3d" {
 		delete(values, "WINEDLLPATH_D3DMETAL")
 		delete(values, "CX_APPLEGPTK_LIBD3DSHARED_PATH")
 		delete(values, "D3DMETAL_FRAMEWORK_PATH")
@@ -95,6 +109,12 @@ func (p Profile) Environment() []string {
 		values["WINEMSYNC"], values["WINEESYNC"], values["WINEFSYNC"] = "0", "0", "0"
 	}
 	values["XGR_MODS"] = "0"
+	delete(values, "XGR_TRACE")
+	delete(values, "MCWINRT_TRACE")
+	if p.CompatDebugLog {
+		values["XGR_TRACE"] = "1"
+		values["MCWINRT_TRACE"] = "1"
+	}
 	for _, key := range []string{"MICROSOFT_WINDOWSAPPRUNTIME_BOOTSTRAP_INITIALIZE_SHOWUI", "MICROSOFT_WINDOWSAPPRUNTIME_BOOTSTRAP_INITIALIZE_FAILFAST", "MICROSOFT_WINDOWSAPPRUNTIME_DEPLOYMENT_INITIALIZE_ONERRORSHOWUI"} {
 		values[key] = "0"
 	}

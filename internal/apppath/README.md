@@ -148,4 +148,4 @@ N9 保留的名称：
 - `Accounts/` 使用带版本头的认证加密格式，密钥由 macOS 钥匙串保护。
 - `wine.json` 保存 Wine 运行时、prefix、图形和同步配置。首次配置可通过界面选择 Wine，也可由 `LEVI_WINE_APP`、`LEVI_WINE_EXECUTABLE` 和 `LEVI_WINEPREFIX` 指定路径。自定义 Wine 可执行文件默认使用 `~/.wine`。
 - `wine-download.json` 保存 Wine 安装使用的镜像开关和 GitHub 代理。
-- `Runtimes/Sikarugir/Levi Wine.app` 是自动安装的 Wine 容器，下载包放在缓存目录的 `Wine/` 中。
+- `Runtimes/MetalSharp/MetalSharp-Wine-x86_64.app` 保存已签名的托管运行时，`Runtimes/MetalSharp/prefix` 保存独立的 Wine 容器。下载包放在缓存目录的 `Wine/` 中。旧版托管运行时可从 `Runtimes/Sikarugir/Levi Wine.app` 重新选用。

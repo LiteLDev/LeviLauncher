@@ -21,7 +21,7 @@ func Scan(ctx context.Context) ([]types.WineInstallation, error) {
 		return nil, err
 	}
 	binDirs := append(filepath.SplitList(os.Getenv("PATH")), "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", filepath.Join(home, ".local/bin"))
-	appDirs := []string{"/Applications", filepath.Join(home, "Applications")}
+	appDirs := []string{"/Applications", filepath.Join(home, "Applications"), filepath.Dir(managedWineApp()), filepath.Dir(legacyManagedWineApp())}
 	current, err := LoadSettings()
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 		status := "ready"
 		if !supported {
 			status = "unsupported"
-		} else if info, err := os.Stat(filepath.Join(s.Prefix, "drive_c")); err != nil || !info.IsDir() {
+		} else if !winePrefixReady(s.Prefix, s.Runtime == "metalsharp") {
 			status = "needs_prefix"
 		}
 		result = append(result, types.WineInstallation{Name: name, Settings: s, Status: status})
@@ -74,9 +74,10 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 				add("CrossOver · "+filepath.Base(current.Prefix), current, true)
 			}
 		} else {
-			add(name, current, true)
+			add(name, current, !isMetalSharpApp(current.App) || CheckManagedWineRequirements(ctx) == nil)
 		}
 	}
+	managedRoot := filepath.Dir(managedWineApp())
 	for _, root := range appDirs {
 		err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 			if ctx.Err() != nil {
@@ -91,6 +92,13 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 			}
 			if strings.HasSuffix(strings.ToLower(entry.Name()), ".app") {
 				name := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
+				if isMetalSharpApp(path) {
+					add(name, managedWineSettings(path), CheckManagedWineRequirements(ctx) == nil)
+					if entry.IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
+				}
 				for _, layout := range []struct {
 					path               string
 					bundled, supported bool
@@ -117,6 +125,9 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 				if entry.IsDir() {
 					return filepath.SkipDir
 				}
+			}
+			if root == managedRoot && path != root && entry.IsDir() {
+				return filepath.SkipDir
 			}
 			// Do not traverse arbitrary app data or entire user directories.
 			if entry.IsDir() && relative != "." && (strings.HasPrefix(entry.Name(), ".") || len(strings.Split(relative, string(filepath.Separator))) >= 4) {

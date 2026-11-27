@@ -63,7 +63,8 @@ export function resolveContentPath(
     const direct = kind === "minecraftWorlds" ? roots.worlds
       : kind === "skin_packs" ? roots.skinPacks
       : kind === "Screenshots" ? roots.screenshots : "";
-    return direct || (roots.comMojangRoot ? `${roots.comMojangRoot}\\${kind}` : "");
+    const separator = roots.comMojangRoot?.startsWith("/") ? "/" : "\\";
+    return direct || (roots.comMojangRoot ? `${roots.comMojangRoot.replace(/[\\/]+$/, "")}${separator}${kind}` : "");
   }
   if (!roots.usersRoot || !player || player === "." || player === ".." || /[\\/:]/.test(player)) return "";
   const separator = roots.usersRoot.startsWith("/") ? "/" : "\\";

@@ -6,11 +6,13 @@
 
 static CRITICAL_SECTION g_log_cs; static FILE* g_log;
 #include "xgr.h"
+static int xgr_trace_on(void);
 void xgr_log(const char* fmt, ...) {
+  if (!xgr_trace_on()) return;
   va_list ap; char buf[1024];
   va_start(ap, fmt); vsnprintf(buf, sizeof buf, fmt, ap); va_end(ap);
   EnterCriticalSection(&g_log_cs);
-  if (!g_log) g_log = fopen("C:\\xgr.log", "a");
+  if (!g_log) g_log = fopen("C:\\xgr.log", "w");
   if (g_log) { fprintf(g_log, "[%04lx] %s\n", GetCurrentThreadId(), buf); fflush(g_log); }
   fprintf(stderr, "[xgr %04lx] %s\n", GetCurrentThreadId(), buf); fflush(stderr);
   LeaveCriticalSection(&g_log_cs);
@@ -24,9 +26,13 @@ static ULONG __stdcall obj_AddRef(Obj* o) { return InterlockedIncrement(&o->ref)
 static ULONG __stdcall obj_Release(Obj* o) { return InterlockedDecrement(&o->ref); }
 // CALL / QueryApiImpl tracing is noisy; set XGR_TRACE=1 to see which unimplemented slots the game hits.
 static int xgr_trace_on(void) {
-  static int on = -1;
-  if (on < 0) { char e[8]; on = GetEnvironmentVariableA("XGR_TRACE", e, sizeof e) && e[0] == '1'; }
-  return on;
+  static volatile LONG on = -1;
+  LONG enabled = InterlockedCompareExchange(&on, -1, -1);
+  if (enabled >= 0) return enabled;
+  char e[8];
+  enabled = GetEnvironmentVariableA("XGR_TRACE", e, sizeof e) && e[0] == '1';
+  InterlockedCompareExchange(&on, enabled, -1);
+  return enabled;
 }
 static void slot_hit(Obj* o, int n, void* ra, UINT64 a1, UINT64 a2, UINT64 a3) {
   // hot paths (XThreadAssertNotTimeSensitive, XTaskQueueDispatch, XAsyncGetStatus, submit) are not logged
@@ -698,6 +704,15 @@ __declspec(dllexport) HRESULT QueryApiImpl(const GUID* prov, const GUID* iid, vo
   o->vtbl = g_vtbl; o->prov = *prov; o->iid = *iid; o->ref = 1; *out = o; return S_OK;
 }
 BOOL WINAPI DllMain(HINSTANCE h, DWORD r, LPVOID p) {
-  if (r == DLL_PROCESS_ATTACH) { InitializeCriticalSection(&g_log_cs); DisableThreadLibraryCalls(h); xgr_log("xgameruntime stub loaded"); }
+  if (r == DLL_PROCESS_ATTACH) {
+    InitializeCriticalSection(&g_log_cs);
+    DisableThreadLibraryCalls(h);
+    WCHAR workdir[MAX_PATH * 4];
+    DWORD len = GetEnvironmentVariableW(L"LEVI_WINE_WORKDIR", workdir, (DWORD)(sizeof(workdir) / sizeof(workdir[0])));
+    if (len > 0 && len < (DWORD)(sizeof(workdir) / sizeof(workdir[0]))) {
+      SetCurrentDirectoryW(workdir);
+    }
+    xgr_log("xgameruntime stub loaded");
+  }
   return TRUE;
 }

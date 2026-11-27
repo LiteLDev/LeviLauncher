@@ -32,7 +32,18 @@ struct Obj {
 /* ---------------- logging ---------------- */
 static CRITICAL_SECTION g_cs;
 static HANDLE g_logf = INVALID_HANDLE_VALUE;
+static int mcwinrt_trace_on(void) {
+    static volatile LONG on = -1;
+    LONG enabled = InterlockedCompareExchange(&on, -1, -1);
+    if (enabled >= 0) return enabled;
+    char e[8];
+    enabled = (GetEnvironmentVariableA("MCWINRT_TRACE", e, sizeof e) && e[0] == '1') ||
+              (GetEnvironmentVariableA("XGR_TRACE", e, sizeof e) && e[0] == '1');
+    InterlockedCompareExchange(&on, enabled, -1);
+    return enabled;
+}
 static void logf_(const char *fmt, ...) {
+    if (!mcwinrt_trace_on()) return;
     char buf[1024];
     int n = snprintf(buf, sizeof buf, "[mcwinrt %04lx] ", GetCurrentThreadId());
     va_list ap; va_start(ap, fmt);
@@ -43,8 +54,8 @@ static void logf_(const char *fmt, ...) {
     EnterCriticalSection(&g_cs);
     fputs(buf, stderr); fflush(stderr);
     if (g_logf == INVALID_HANDLE_VALUE)
-        g_logf = CreateFileA("C:\\mcwinrt.log", FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-                             OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+        g_logf = CreateFileA("C:\\mcwinrt.log", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                             CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (g_logf != INVALID_HANDLE_VALUE) { DWORD w; WriteFile(g_logf, buf, n, &w, NULL); }
     LeaveCriticalSection(&g_cs);
 }

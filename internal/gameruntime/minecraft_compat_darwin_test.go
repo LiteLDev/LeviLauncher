@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-func TestApplyMacInputSettingsSkipsUnchanged(t *testing.T) {
+func TestApplyMacDriverSettingsSkipsUnchanged(t *testing.T) {
 	prefix := t.TempDir()
 	// Disabled by default with no marker: zero-overhead no-op (does not invoke Wine).
 	p := Profile{Prefix: prefix, LeftCommandIsCtrl: false}
-	if err := p.ApplyMacInputSettings(context.Background()); err != nil {
+	if err := p.ApplyMacDriverSettings(context.Background()); err != nil {
 		t.Fatalf("default disabled should be a no-op, got: %v", err)
 	}
 	// Enabled with matching marker: zero-overhead no-op.
@@ -20,7 +20,7 @@ func TestApplyMacInputSettingsSkipsUnchanged(t *testing.T) {
 		t.Fatal(err)
 	}
 	p.LeftCommandIsCtrl = true
-	if err := p.ApplyMacInputSettings(context.Background()); err != nil {
+	if err := p.ApplyMacDriverSettings(context.Background()); err != nil {
 		t.Fatalf("matching marker should be a no-op, got: %v", err)
 	}
 }

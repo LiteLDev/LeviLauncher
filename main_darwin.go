@@ -25,6 +25,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/gameauth"
 	"github.com/liteldev/LeviLauncher/internal/gameconsole"
+	"github.com/liteldev/LeviLauncher/internal/gameshell"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/oslang"
 	"github.com/liteldev/LeviLauncher/internal/types"
@@ -505,6 +506,11 @@ func main() {
 		log.Printf("Game console bridge unavailable: %v", err)
 	} else {
 		defer consoleBroker.Close()
+	}
+	if shellBroker, err := gameshell.StartDefault(); err != nil {
+		log.Printf("Game shell bridge unavailable: %v", err)
+	} else {
+		defer shellBroker.Close()
 	}
 
 	if strings.TrimSpace(autoLaunchVersion) != "" {

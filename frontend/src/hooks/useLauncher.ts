@@ -387,7 +387,8 @@ export const useLauncher = (args: any) => {
     try {
       const vdir = await versionService.GetVersionsDir();
       if (!vdir) return;
-      const path = vdir + "\\" + currentVersion;
+      const sep = vdir.includes("\\") ? "\\" : "/";
+      const path = `${vdir.replace(/[\\/]+$/, "")}${sep}${currentVersion}`;
       await openDirectory(path);
     } catch (e) {
       showDirectoryOpenError(e);

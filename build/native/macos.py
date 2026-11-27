@@ -56,6 +56,50 @@ info={'CFBundleExecutable':'LeviLauncher','CFBundleIdentifier':'org.levimc.levil
 with (app/'Contents/Info.plist').open('wb') as f: plistlib.dump(info,f)
 for name in ('COPYING', 'THIRD_PARTY_NOTICES'):
     shutil.copyfile(root/name, resources/name)
+
+# Build the native macOS MetalFX helper dylib and Game Mode host app bundle.
+metal_helper_src = root/'native/macos/metal_spatial_upscale.m'
+game_host_src = root/'native/macos/levi_game_host.c'
+metal_helper_out = resources/'libLeviMetalFX.dylib'
+subprocess.run([
+    'clang', '-arch', 'x86_64', '-mmacosx-version-min=14.6', '-O2', '-fobjc-arc',
+    '-Wall', '-Wextra', '-Werror', '-dynamiclib', str(metal_helper_src),
+    '-framework', 'Foundation', '-weak_framework', 'AppKit',
+    '-weak_framework', 'QuartzCore', '-weak_framework', 'Metal',
+    '-weak_framework', 'MetalFX', '-framework', 'IOKit', '-o', str(metal_helper_out),
+], check=True)
+subprocess.run(['codesign', '--force', '--sign', '-', str(metal_helper_out)], check=True)
+
+game_host_app = resources/'LeviGameHost.app'
+if game_host_app.exists():
+    shutil.rmtree(game_host_app)
+(game_host_app/'Contents/MacOS').mkdir(parents=True, exist_ok=True)
+(game_host_app/'Contents/Resources').mkdir(parents=True, exist_ok=True)
+subprocess.run([
+    'clang', '-arch', 'x86_64', '-mmacosx-version-min=14.6', '-O2',
+    '-Wall', '-Wextra', '-Werror', str(game_host_src), '-framework', 'IOKit', '-framework', 'CoreFoundation',
+    '-o', str(game_host_app/'Contents/MacOS/LeviGameHost'),
+], check=True)
+shutil.copyfile(resources/'AppIcon.icns', game_host_app/'Contents/Resources/AppIcon.icns')
+host_info = {
+    'CFBundleExecutable': 'LeviGameHost',
+    'CFBundleIdentifier': 'org.levimc.levilauncher.gamehost',
+    'CFBundleName': 'Minecraft Bedrock',
+    'CFBundleDisplayName': 'Minecraft Bedrock',
+    'CFBundlePackageType': 'APPL',
+    'CFBundleShortVersionString': app_version,
+    'CFBundleVersion': '1',
+    'CFBundleIconFile': 'AppIcon.icns',
+    'LSMinimumSystemVersion': '14.6',
+    'NSHighResolutionCapable': True,
+    'NSSupportsAutomaticGraphicsSwitching': True,
+    'LSApplicationCategoryType': 'public.app-category.games',
+    'LSSupportsGameMode': True,
+    'GCSupportsGameMode': True,
+}
+with (game_host_app/'Contents/Info.plist').open('wb') as f: plistlib.dump(host_info, f)
+subprocess.run(['codesign', '--force', '--sign', '-', str(game_host_app)], check=True)
+
 subprocess.run(['codesign','--force','--sign','-',str(app)],check=True)
 subprocess.run(['codesign','--verify','--deep','--strict',str(app)],check=True)
 print(f'Native application: {app}')

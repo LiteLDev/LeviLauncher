@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0-beta.2] - 2026-11-27
+
+### Added
+
+- On macOS, Wine settings can limit the frame rate, force VSync on or off, upscale with MetalFX from 1.33× to 4×, render at Retina resolution, show the Metal performance HUD, and choose the graphics backend (D3DMetal, Mullion or VKD3D-Proton) and the D3DMetal version (#302)
+
+### Changed
+
+- On macOS, the launcher installs MetalSharp Wine instead of Sikarugir, and needs macOS 15 or later. An existing Sikarugir setup keeps working: "Upgrade to MetalSharp Wine" creates a separate Wine prefix, and the old runtime can be removed afterwards to free space without affecting worlds or mods (#302)
+- On macOS, the Wine installation can run in the background, and the game shows its own name in the menu bar (#302)
+
+### Fixed
+
+- On macOS, content folders are no longer created with a backslash in their name, such as `Instances\<name>` (#301)
+- On macOS, a package install script that exits successfully no longer fails with `WaitDelay expired before I/O complete` (#300)
+
 ## [1.2.0-beta.1] - 2026-11-26
 
 ### Added
@@ -461,7 +477,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.2.0-beta.1...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.2.0-beta.2...HEAD
+[1.2.0-beta.2]: https://github.com/LiteLDev/LeviLauncher/compare/v1.2.0-beta.1...v1.2.0-beta.2
 [1.2.0-beta.1]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0...v1.2.0-beta.1
 [1.1.0]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.7...v1.1.0
 [1.1.0-beta.7]: https://github.com/LiteLDev/LeviLauncher/compare/v1.1.0-beta.6...v1.1.0-beta.7

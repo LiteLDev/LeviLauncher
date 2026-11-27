@@ -15,9 +15,10 @@ import (
 
 // GameLaunchOptions configures how a Windows game executable is started.
 type GameLaunchOptions struct {
-	WorkDir  string
-	LogPath  string
-	ExtraEnv map[string]string
+	WorkDir       string
+	LogPath       string
+	ExtraEnv      map[string]string
+	HasWineBridge bool
 }
 
 func (p Profile) isSikarugirWrapper() (wrapper string, ok bool) {
@@ -64,17 +65,21 @@ func (p Profile) GameCommandWithOptions(ctx context.Context, exe string, opts Ga
 			}
 		}
 		launchApp := p.metalSharp.app
-		wineUnix := filepath.Join(p.metalSharp.app, "Contents/lib/wine/x86_64-unix/wine")
-		if hostApp, helperLib := bundledGameHostAndMetalHelper(); hostApp != "" && helperLib != "" {
-			if info, statErr := os.Stat(wineUnix); statErr == nil && info.Mode().IsRegular() && info.Mode()&0111 != 0 {
-				launchApp = hostApp
-				merged["LEVI_WINE_UNIX_BIN"] = wineUnix
-				merged["LEVI_METAL_HELPER_LIB"] = helperLib
-				merged["LEVI_METAL_OPAQUE"] = "1"
-				applyNativeMetalPacing(merged, p)
-				if p.CompatDebugLog {
-					merged["LEVI_METALFX_DEBUG"] = "1"
+		if hostApp, helperLib, wineUnix := p.nativeMetalGameHost(); hostApp != "" {
+			launchApp = hostApp
+			merged["LEVI_WINE_UNIX_BIN"] = wineUnix
+			merged["LEVI_METAL_HELPER_LIB"] = helperLib
+			merged["LEVI_METAL_OPAQUE"] = "1"
+			if merged["D3DM_MTL4"] != "1" {
+				for key, value := range p.D3DMetalFXLaunchEnv(opts.HasWineBridge) {
+					if _, overridden := opts.ExtraEnv[key]; !overridden {
+						merged[key] = value
+					}
 				}
+			}
+			applyNativeMetalPacing(merged, p)
+			if p.CompatDebugLog {
+				merged["LEVI_METALFX_DEBUG"] = "1"
 			}
 		}
 		openArgs := []string{"-n", "-a", launchApp}
@@ -194,6 +199,19 @@ func bundledGameHostAndMetalHelper() (string, string) {
 		return "", ""
 	}
 	return hostApp, helperLib
+}
+
+func (p Profile) nativeMetalGameHost() (app, helper, wine string) {
+	if p.metalSharp.app == "" {
+		return "", "", ""
+	}
+	wine = filepath.Join(p.metalSharp.app, "Contents/lib/wine/x86_64-unix/wine")
+	info, err := os.Stat(wine)
+	if err != nil || !info.Mode().IsRegular() || info.Mode()&0111 == 0 {
+		return "", "", ""
+	}
+	app, helper = bundledGameHostAndMetalHelper()
+	return app, helper, wine
 }
 
 func sameRuntimePath(a, b string) bool {

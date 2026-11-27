@@ -102,11 +102,6 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	if iconPath := resolveInstanceIconPath(dir); iconPath != "" {
 		extraEnv["LEVI_GAME_ICON_PATH"] = iconPath
 	}
-	// Under D3DMetal with MetalFX enabled, configure native Apple MTLFXSpatialScaler
-	// (paired with LeviWineBridge virtual scaling when internal resolution differs from 1x points).
-	for k, v := range p.D3DMetalFXLaunchEnv(hasLeviWineBridge(dir)) {
-		extraEnv[k] = v
-	}
 	for _, e := range strings.Split(meta.EnvVars, "\n") {
 		k, v, ok := strings.Cut(strings.TrimSpace(e), "=")
 		if ok && k != "" {
@@ -141,9 +136,10 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	}
 	// Game lifetime is independent of the launcher's context once started.
 	cmd, detached, err := p.GameCommandWithOptions(context.Background(), exe, gameruntime.GameLaunchOptions{
-		WorkDir:  dir,
-		LogPath:  logPath,
-		ExtraEnv: extraEnv,
+		WorkDir:       dir,
+		LogPath:       logPath,
+		ExtraEnv:      extraEnv,
+		HasWineBridge: hasLeviWineBridge(dir),
 	}, args...)
 	if err != nil {
 		return "ERR_WINE_RUNTIME: " + err.Error()

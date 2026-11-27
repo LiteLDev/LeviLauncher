@@ -29,17 +29,23 @@ func settingsPath() string { return filepath.Join(apppath.ConfigDir(), "wine.jso
 func LoadSettings() (types.WineSettings, error) { return loadSettings(settingsPath()) }
 
 func loadSettings(path string) (types.WineSettings, error) {
-	var s types.WineSettings
-	b, err := os.ReadFile(path)
+	s, err := readSettings(path)
 	if err != nil && !os.IsNotExist(err) {
 		return s, err
 	}
-	if err == nil {
-		if err := json.Unmarshal(b, &s); err != nil {
-			return s, fmt.Errorf("invalid Wine settings: %w", err)
-		}
-	}
 	return resolveSettings(s)
+}
+
+func readSettings(path string) (types.WineSettings, error) {
+	var s types.WineSettings
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return s, err
+	}
+	if err := json.Unmarshal(b, &s); err != nil {
+		return s, fmt.Errorf("invalid Wine settings: %w", err)
+	}
+	return s, nil
 }
 
 func resolveSettings(s types.WineSettings) (types.WineSettings, error) {

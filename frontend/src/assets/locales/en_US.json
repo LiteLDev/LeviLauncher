@@ -359,6 +359,10 @@
       "in_use": "In use",
       "unsupported": "Unsupported",
       "managed": {
+        "run_in_background": "Run in background",
+        "show_progress": "View installation progress",
+        "show_result": "View installation result",
+        "continue_install": "Continue installation",
         "not_configured": "Wine is not configured",
         "install": "Install MetalSharp Wine",
         "retry": "Retry Wine setup",
@@ -406,6 +410,7 @@
         "ERR_WINE_GRAPHICS_BACKEND_UNAVAILABLE": "The selected graphics backend is unavailable.",
         "ERR_WINE_RUNTIME_SIGNATURE": "Could not verify the MetalSharp Wine signature.",
         "ERR_WINE_ACCOUNT_MIGRATION": "Could not copy the previous Wine account cache.",
+        "ERR_WINE_LEGACY_SETTINGS": "Levi could not read the active Wine configuration. The old runtime was kept.",
         "ERR_WINE_LEGACY_IN_USE": "Switch away from the old Sikarugir runtime before removing it."
       },
       "setup": {
@@ -444,6 +449,7 @@
       "choose_path": "Choose {{field}}",
       "graphics": "Graphics backend",
       "graphics_auto": "Runtime default",
+      "graphics_auto_mullion": "Automatic (Mullion)",
       "graphics_auto_metalsharp": "Automatic (D3DMetal)",
       "graphics_d3dmetal": "D3DMetal",
       "graphics_wined3d": "WineD3D (OpenGL)",
@@ -480,7 +486,8 @@
       "retina_performance_tip": "Recommended Retina pairing: internal rendering stays near 1× logical pixels while MetalFX upscales cleanly to 2× Retina output.",
       "retina_balanced_tip": "Retina 2× with Balanced (1.5×) renders ~1.8× pixels. Switch to Performance (2.0×) or disable Retina if frame times fluctuate under shaders.",
       "standard_performance_tip": "At standard 1× resolution, Performance (2.0×) renders at quarter pixel count and may look soft; Off or Quality (1.33×) is recommended unless Retina is enabled.",
-      "d3dmetal_metalfx_tip": "Under D3DMetal, Apple’s native MTLFXSpatialScaler outputs full Retina pixels (2.0× and non-Retina use zero Win32 scaling; 1.33× / 1.5× / 2.5× / 3.0× / 4.0× pair with LeviWineBridge).",
+      "d3dmetal4_metalfx_unavailable": "Switch to Metal 3 compatibility mode to use the launcher’s MetalFX scaling with D3DMetal.",
+      "d3dmetal_metalfx_tip": "D3DMetal uses the native MetalFX spatial scaler. Install LeviWineBridge to use custom ratios. On a Retina display with Retina enabled, 2.0× works without the bridge.",
       "action_use_performance": "Use Performance (2.0×)",
       "action_disable_retina": "Disable Retina",
       "metal_fx": "MetalFX upscaling",

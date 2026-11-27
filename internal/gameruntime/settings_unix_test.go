@@ -160,6 +160,15 @@ func TestRetinaMetalFXDefaultScalePolicy(t *testing.T) {
 		if got := metalFXFactor(preset, true, true); got != want {
 			t.Fatalf("metalFXFactor(%q) = %q, want %q", preset, got, want)
 		}
+		p := Profile{Graphics: "d3dmetal", MetalFXScale: preset}
+		env := p.D3DMetalFXLaunchEnv(true)
+		if env["LEVI_METALFX_SPATIAL_FACTOR"] != want || env["LEVI_WINE_RENDER_SCALE"] != want ||
+			env["LEVI_METALFX_RETINA_UPSCALE"] != "" {
+			t.Errorf("standard-resolution %s scaling = %v, want paired %s scaling", preset, env, want)
+		}
+		if env := p.D3DMetalFXLaunchEnv(false); len(env) != 0 {
+			t.Errorf("standard-resolution %s without the bridge = %v", preset, env)
+		}
 	}
 
 	p2x := Profile{Graphics: "d3dmetal", RetinaMode: true, EnableMetalFX: true, MetalFXScale: "performance"}

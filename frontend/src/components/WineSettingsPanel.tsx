@@ -1,11 +1,11 @@
 import React from "react";
 import { Button, Input, Label, ListBox, Select, Spinner, Switch, TextField, toast } from "@heroui/react";
-import { Browser, Events } from "@wailsio/runtime";
+import { Browser } from "@wailsio/runtime";
 import { LuCircle, LuCircleAlert, LuCircleCheck } from "react-icons/lu";
 import { useTranslation } from "react-i18next";
 import {
   CheckWineSettings, GetLegacyWineInfo, GetWineDownloadSettings, RemoveLegacyWineRuntime,
-  SaveWineDownloadSettings, SaveWineSettings, ScanWineInstallations, StartWineInstaller, WineNeedsRosetta,
+  SaveWineDownloadSettings, SaveWineSettings, ScanWineInstallations,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import type {
   LegacyWineInfo, WineDownloadSettings, WineInstallation, WineSettings as Settings,
@@ -15,12 +15,9 @@ import { formatBytes } from "@/utils/formatting";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { WineSettings } from "@/components/WineSettings";
 import { GITHUB_PROXY_PRESETS, githubProxyLabel } from "@/constants/githubProxy";
+import { installWine, useWineInstall, wineInstallStages } from "@/utils/wineInstallStore";
 
-type WineInstallProgress = { stage: string; status: string; downloaded: number; total: number };
-
-const stages = ["rosetta", "runtime", "extract", "initialize", "select"] as const;
 const appleRosettaURL = "https://support.apple.com/102527";
-const checkingRosetta: WineInstallProgress = { stage: "rosetta", status: "working", downloaded: 0, total: 0 };
 
 export function WineSettingsPanel() {
   const { t } = useTranslation();
@@ -37,16 +34,13 @@ export function WineSettingsPanel() {
   const [proxy, setProxy] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [scanning, setScanning] = React.useState(false);
-  const [checking, setChecking] = React.useState(false);
-  const [installing, setInstalling] = React.useState(false);
   const [installOpen, setInstallOpen] = React.useState(false);
-  const [needsConsent, setNeedsConsent] = React.useState(false);
-  const [progress, setProgress] = React.useState(checkingRosetta);
-  const [finished, setFinished] = React.useState(false);
-  const [installError, setInstallError] = React.useState("");
   const [error, setError] = React.useState("");
   const [downloadError, setDownloadError] = React.useState("");
-  const installPending = checking || installing;
+  const { status, progress, error: installFailure, completed } = useWineInstall();
+  const installPending = status === "running";
+  const needsConsent = status === "consent";
+  const finished = status === "done";
   const locked = installPending || scanning || selecting || cleaningLegacy;
 
   const describeError = (failure: unknown) => {
@@ -56,6 +50,7 @@ export function WineSettingsPanel() {
     const text = code ? [t("settings.wine.errors." + code, { defaultValue: code }), detail].filter(Boolean).join(" · ") : message;
     return { code, text };
   };
+  const installError = installFailure && describeError(installFailure).text;
 
   const loadLegacyInfo = React.useCallback(async () => {
     try {
@@ -76,13 +71,10 @@ export function WineSettingsPanel() {
       if (mounted) setDownloadError(failure instanceof Error ? failure.message : String(failure));
     });
     void loadLegacyInfo();
-    const stop = Events.On("wine.install.progress", (event) => {
-      const next = event.data as WineInstallProgress | null;
-      if (!next || !stages.some((stage) => stage === next.stage)) return;
-      setProgress(next);
-    });
-    return () => { mounted = false; stop(); };
+    return () => { mounted = false; };
   }, [loadLegacyInfo]);
+
+  React.useEffect(() => { setInstallations(null); }, [completed]);
 
   const handleLoaded = React.useCallback((settings: Settings) => {
     setActive(settings);
@@ -122,36 +114,9 @@ export function WineSettingsPanel() {
     finally { setSelecting(false); }
   };
 
-  const install = async (consent: boolean) => {
-    setNeedsConsent(false);
-    setInstalling(true);
-    setInstallError("");
-    setProgress(checkingRosetta);
-    try {
-      await StartWineInstaller(consent);
-      refreshSettings();
-      setInstallations(null);
-      setFinished(true);
-      void loadLegacyInfo();
-    } catch (failure) {
-      const { code, text } = describeError(failure);
-      if (code === "ERR_WINE_ROSETTA_CONSENT") setNeedsConsent(true);
-      else setInstallError(text);
-    } finally { setInstalling(false); }
-  };
-
-  const requestInstall = async () => {
+  const requestInstall = () => {
     setInstallOpen(true);
-    setNeedsConsent(false);
-    setFinished(false);
-    setInstallError("");
-    setProgress(checkingRosetta);
-    setChecking(true);
-    try {
-      if (await WineNeedsRosetta()) setNeedsConsent(true);
-      else void install(false);
-    } catch (failure) { setInstallError(describeError(failure).text); }
-    finally { setChecking(false); }
+    void installWine(false);
   };
 
   const removeLegacy = async () => {
@@ -169,7 +134,7 @@ export function WineSettingsPanel() {
     }
   };
 
-  const stageIndex = stages.findIndex((stage) => stage === progress.stage);
+  const stageIndex = wineInstallStages.findIndex((stage) => stage === progress.stage);
   const downloadPercent = progress.total > 0
     ? Math.min(100, Math.max(0, (progress.downloaded / progress.total) * 100))
     : undefined;
@@ -192,8 +157,13 @@ export function WineSettingsPanel() {
               {scanning && <Spinner size="sm" />}
               {t("settings.wine.scan")}
             </Button>
-            {!metalSharp && (
-              <Button size="sm" variant="primary" aria-haspopup="dialog" isDisabled={locked || saving || !download} onPress={() => void requestInstall()}>
+            {status !== "idle" && (
+              <Button size="sm" variant={needsConsent ? "primary" : "outline"} aria-haspopup="dialog" onPress={() => setInstallOpen(true)}>
+                {t(installPending ? "settings.wine.managed.show_progress" : needsConsent ? "settings.wine.managed.continue_install" : "settings.wine.managed.show_result")}
+              </Button>
+            )}
+            {!metalSharp && (status === "idle" || finished) && (
+              <Button size="sm" variant="primary" aria-haspopup="dialog" isDisabled={locked || saving || !download} onPress={requestInstall}>
                 {t(legacy ? "settings.wine.managed.upgrade" : "settings.wine.managed.install")}
               </Button>
             )}
@@ -242,7 +212,7 @@ export function WineSettingsPanel() {
         {error && <p role="alert" className="mt-3 break-words text-sm text-danger">{error}</p>}
       </section>
 
-      <WineSettings key={settingsRevision} locked={selecting || installPending} onLoaded={handleLoaded} />
+      <WineSettings key={`${settingsRevision}:${completed}`} locked={selecting || installPending} onLoaded={handleLoaded} />
 
       <section className="min-w-0 border-t border-border/70 pt-5" aria-labelledby="wine-download-heading">
         <div className="flex items-center justify-between gap-4">
@@ -301,7 +271,6 @@ export function WineSettingsPanel() {
       <UnifiedModal
         isOpen={installOpen}
         onOpenChange={setInstallOpen}
-        isPending={installPending}
         size="compact"
         type={installError ? "error" : finished ? "success" : needsConsent ? "warning" : "info"}
         title={t(needsConsent ? "settings.wine.managed.rosetta_title" :
@@ -309,12 +278,11 @@ export function WineSettingsPanel() {
           installError ? "settings.wine.managed.failed" : "settings.wine.managed.progress")}
         showCancelButton={needsConsent || !!installError}
         cancelText={t(installError ? "common.close" : "common.cancel")}
-        showConfirmButton={!installPending}
-        confirmText={t(needsConsent ? "settings.wine.managed.rosetta_confirm" :
+        confirmText={t(installPending ? "settings.wine.managed.run_in_background" : needsConsent ? "settings.wine.managed.rosetta_confirm" :
           installError ? "settings.wine.managed.retry" : "common.close")}
         onConfirm={() => {
-          if (needsConsent) void install(true);
-          else if (installError) void requestInstall();
+          if (needsConsent) void installWine(true);
+          else if (installError) requestInstall();
           else setInstallOpen(false);
         }}
       >
@@ -327,7 +295,7 @@ export function WineSettingsPanel() {
           </div>
         )}
         <ol className="flex flex-col gap-2">
-          {stages.map((stage, index) => {
+          {wineInstallStages.map((stage, index) => {
             const current = index === stageIndex && !finished;
             const done = index < stageIndex || finished ||
               (current && (progress.status === "skipped" || progress.status === "done"));

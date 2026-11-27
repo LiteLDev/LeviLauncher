@@ -152,7 +152,11 @@ func (p Profile) ApplyMacDriverSettings(ctx context.Context) error {
 	if p.LeftCommandIsCtrl {
 		desired = "1"
 	}
-	wineRetina := p.RetinaMode && !p.UsesNativeRetinaMetalFXUpscale()
+	wineRetina := p.RetinaMode
+	if wineRetina && p.D3DMetalFXLaunchEnv(false)["LEVI_METALFX_RETINA_UPSCALE"] == "1" {
+		host, _, _ := p.nativeMetalGameHost()
+		wineRetina = host == ""
+	}
 	if p.metalSharp.app != "" || wineRetina {
 		desired += fmt.Sprintf("/retina=%t", wineRetina)
 	}

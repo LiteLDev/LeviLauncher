@@ -205,7 +205,11 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
     : settings?.graphics;
   const isD3DMetal = metalSharp && effectiveGraphics === "d3dmetal";
   const supportsGraphicsTuning = metalSharp && ["mullion", "d3dmetal", "vkd3d"].includes(effectiveGraphics || "");
-  const supportsSpatialScale = supportsGraphicsTuning;
+  const selectedD3DMetalVersion = settings?.d3dMetalVersion && settings.d3dMetalVersion !== "auto"
+    ? settings.d3dMetalVersion : d3dMetalVersions[1];
+  const d3dMetal4 = isD3DMetal && !!settings?.enableMetal4 &&
+    selectedD3DMetalVersion === "gptk4" && d3dMetalVersions.includes("gptk4");
+  const supportsSpatialScale = supportsGraphicsTuning && !d3dMetal4;
   const graphics = metalSharp ? ["auto", "d3dmetal", "mullion", "vkd3d", "wined3d"] : ["auto", "d3dmetal", "wined3d"];
   const showD3DMetalVersion = isD3DMetal && d3dMetalVersions.length > 1;
   const maxFps = settings?.maxFps ?? 0;
@@ -240,6 +244,9 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
 
   const displayPairingAdvice = React.useMemo<DisplayPairingAdvice | null>(() => {
     if (!mac || !settings) return null;
+    if (d3dMetal4) {
+      return { severity: "info", messageKey: "settings.wine.d3dmetal4_metalfx_unavailable" };
+    }
     if (settings.retinaMode) {
       if (supportsSpatialScale) {
         if (metalFxScale === "off") {
@@ -267,7 +274,7 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
       return { severity: "info", messageKey: "settings.wine.standard_performance_tip" };
     }
     return null;
-  }, [isD3DMetal, mac, metalFxScale, settings, supportsSpatialScale]);
+  }, [d3dMetal4, isD3DMetal, mac, metalFxScale, settings, supportsSpatialScale]);
 
   const selectField = (
     field: "graphics" | "d3dmetal_version" | "sync" | "vsync" | "max_fps" | "metal_fx" | "thread_qos",
@@ -333,7 +340,7 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
           {selectField("graphics", settings.graphics, graphics.map((id) => ({
             id,
             label: t(metalSharp && id === "auto"
-              ? (hasBundledD3DMetal ? "settings.wine.graphics_auto_metalsharp" : "settings.wine.graphics_auto")
+              ? (hasBundledD3DMetal ? "settings.wine.graphics_auto_metalsharp" : "settings.wine.graphics_auto_mullion")
               : `settings.wine.graphics_${id}`),
           })), (nextGraphics) => applyImmediate({ graphics: nextGraphics }))}
           {showD3DMetalVersion && selectField("d3dmetal_version", settings.d3dMetalVersion || "auto", d3dMetalVersions.map((id) => ({
@@ -372,7 +379,7 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
                 {selectField("metal_fx", metalFxScale, ["off", "quality", "balanced", "performance", "ultra_performance", "extreme", "max"].map((id) => ({
                   id,
                   label: t(`settings.wine.metal_fx_${id}`),
-                })), (scale) => applyImmediate({ metalFxScale: scale, enableMetalFx: scale !== "off" }), !supportsGraphicsTuning)}
+                })), (scale) => applyImmediate({ metalFxScale: scale, enableMetalFx: scale !== "off" }), !supportsSpatialScale)}
               </div>
               {mac && metalSharp && (vsync !== "auto" || maxFps > 0) && (
                 <p className="-mt-1 text-xs leading-relaxed text-muted">

@@ -359,6 +359,10 @@
       "in_use": "使用中",
       "unsupported": "不受支援",
       "managed": {
+        "run_in_background": "在背景執行",
+        "show_progress": "查看安裝進度",
+        "show_result": "查看安裝結果",
+        "continue_install": "繼續安裝",
         "not_configured": "尚未設定 Wine",
         "install": "安裝 MetalSharp Wine",
         "retry": "重試安裝 Wine",
@@ -406,6 +410,7 @@
         "ERR_WINE_GRAPHICS_BACKEND_UNAVAILABLE": "所選圖形後端無法使用。",
         "ERR_WINE_RUNTIME_SIGNATURE": "未能驗證 MetalSharp Wine 的簽署。",
         "ERR_WINE_ACCOUNT_MIGRATION": "未能複製舊 Wine 容器的帳戶快取。",
+        "ERR_WINE_LEGACY_SETTINGS": "無法讀取目前的 Wine 設定，已保留舊執行環境。",
         "ERR_WINE_LEGACY_IN_USE": "請先切換至其他 Wine 執行環境，再清理舊 Sikarugir 執行環境。"
       },
       "setup": {
@@ -444,6 +449,7 @@
       "choose_path": "選擇{{field}}",
       "graphics": "圖形後端",
       "graphics_auto": "執行環境預設",
+      "graphics_auto_mullion": "自動（Mullion）",
       "graphics_auto_metalsharp": "自動（D3DMetal）",
       "graphics_d3dmetal": "D3DMetal",
       "graphics_wined3d": "WineD3D（OpenGL）",
@@ -480,7 +486,8 @@
       "retina_performance_tip": "已啟用推薦的 Retina 組合：內部維持約 1× 邏輯像素渲染，同時透過 MetalFX 2.0× 輸出清晰的 Retina 畫面。",
       "retina_balanced_tip": "Retina 2× 搭配平衡（1.5×）約需渲染 1.8× 像素量；若開啟光影後幀時間波動，建議改用效能（2.0×）或關閉 Retina。",
       "standard_performance_tip": "未開啟 Retina 時，效能（2.0×）會按 1/4 像素渲染，畫面偏糊；標準解像度下建議關閉或使用畫質（1.33×）。",
-      "d3dmetal_metalfx_tip": "在 D3DMetal 下透過 Apple 原生 MTLFXSpatialScaler 輸出原生 Retina 畫面（2.0× 及關閉 Retina 時零視窗縮放開銷；1.33×/1.5×/2.5×/3.0×/4.0× 搭配 LeviWineBridge 生效）。",
+      "d3dmetal4_metalfx_unavailable": "啟用 Metal 3 相容模式後，即可在 D3DMetal 下使用啟動器的 MetalFX 縮放。",
+      "d3dmetal_metalfx_tip": "D3DMetal 使用原生 MetalFX 空間縮放。自訂倍率需要 LeviWineBridge。在 Retina 顯示器上啟用 Retina 後，2.0× 可獨立使用。",
       "action_use_performance": "改用效能（2.0×）",
       "action_disable_retina": "關閉 Retina",
       "metal_fx": "MetalFX 升頻",

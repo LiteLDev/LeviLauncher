@@ -114,18 +114,20 @@ func CheckManagedWineRequirements(ctx context.Context) error {
 }
 
 func (m metalSharpRuntime) d3dMetalFor(version string) (string, string) {
-	switch version {
-	case "gptk3":
-		return filepath.Join(m.app, metalSharpPayload, "runtime", "d3dmetal-gptk3"), "GPTK 3"
-	case "gptk4":
+	if m.selectedD3DMetalVersion(version) == "gptk4" {
 		return filepath.Join(m.app, metalSharpPayload, "runtime", "d3dmetal-gptk4-beta3"), "GPTK 4 beta 3"
-	default:
-		name, label := "d3dmetal-gptk3", "GPTK 3"
-		if macOSVersion()[0] >= 27 {
-			name, label = "d3dmetal-gptk4-beta3", "GPTK 4 beta 3"
-		}
-		return filepath.Join(m.app, metalSharpPayload, "runtime", name), label
 	}
+	return filepath.Join(m.app, metalSharpPayload, "runtime", "d3dmetal-gptk3"), "GPTK 3"
+}
+
+func (m metalSharpRuntime) selectedD3DMetalVersion(version string) string {
+	if version == "gptk3" || version == "gptk4" {
+		return version
+	}
+	if versions := m.availableD3DMetalVersions(); len(versions) > 1 {
+		return versions[1]
+	}
+	return "gptk3"
 }
 
 func (m metalSharpRuntime) availableD3DMetalVersions() []string {
@@ -133,15 +135,10 @@ func (m metalSharpRuntime) availableD3DMetalVersions() []string {
 		return nil
 	}
 	versions := []string{"auto"}
-	if macOSVersion()[0] >= 27 {
-		dir4, _ := m.d3dMetalFor("gptk4")
-		if _, err := os.Stat(filepath.Join(dir4, "external/D3DMetal.framework")); err == nil {
-			versions = append(versions, "gptk4")
+	for _, version := range []string{"gptk4", "gptk3"} {
+		if m.hasD3DMetal(version) {
+			versions = append(versions, version)
 		}
-	}
-	dir3, _ := m.d3dMetalFor("gptk3")
-	if _, err := os.Stat(filepath.Join(dir3, "external/D3DMetal.framework")); err == nil {
-		versions = append(versions, "gptk3")
 	}
 	return versions
 }
@@ -192,7 +189,7 @@ func (m metalSharpRuntime) hasD3DMetal(version string) bool {
 	if version == "gptk4" && osVer[0] < 27 {
 		return false
 	}
-	if (version == "gptk3" || osVer[0] < 27) && osVer[0] == 15 && osVer[1] < 4 {
+	if version == "gptk3" && osVer[0] == 15 && osVer[1] < 4 {
 		return false
 	}
 	dir, _ := m.d3dMetalFor(version)
@@ -203,7 +200,7 @@ func (m metalSharpRuntime) hasD3DMetal(version string) bool {
 func (m metalSharpRuntime) effectiveGraphics(graphics string) string {
 	switch graphics {
 	case "", "auto":
-		if m.hasD3DMetal("auto") {
+		if len(m.availableD3DMetalVersions()) > 1 {
 			return "d3dmetal"
 		}
 		return "mullion"
@@ -226,15 +223,15 @@ func (m metalSharpRuntime) validate(p Profile) error {
 	case "vkd3d":
 		required = filepath.Join(m.app, metalSharpPayload, "vkd3d/vkd3d-proton/x86_64-windows/d3d12.dll")
 	case "d3dmetal":
+		selected := m.selectedD3DMetalVersion(p.D3DMetalVersion)
 		version := macOSVersion()
-		if p.D3DMetalVersion == "gptk4" && version[0] < 27 {
+		if selected == "gptk4" && version[0] < 27 {
 			return fmt.Errorf("%w: GPTK 4 requires macOS 27 or later", ErrD3DMetalUnavailable)
 		}
-		if (p.D3DMetalVersion == "gptk3" || version[0] < 27) && version[0] == 15 && version[1] < 4 {
+		if selected == "gptk3" && version[0] == 15 && version[1] < 4 {
 			return fmt.Errorf("%w: GPTK 3 requires macOS 15.4 or later", ErrD3DMetalUnavailable)
 		}
-		dir, _ := m.d3dMetalFor(p.D3DMetalVersion)
-		if _, err := os.Stat(filepath.Join(dir, "external/D3DMetal.framework")); err != nil {
+		if !m.hasD3DMetal(selected) {
 			return ErrD3DMetalUnavailable
 		}
 	case "wined3d":
@@ -295,31 +292,15 @@ func (p Profile) SpatialMetalFXFactor() string {
 	return metalFXFactor(p.MetalFXScale, p.EnableMetalFX, p.RetinaMode)
 }
 
-// UsesNativeRetinaMetalFXUpscale reports whether D3DMetal should keep Wine's
-// Win32 surface at 1x logical points and let libLeviMetalFX.dylib upgrade the
-// CAMetalLayer to native Retina backing pixels via MTLFXSpatialScaler.
-// This covers RetinaMode=false with MetalFX enabled AND any >= 2.0x preset
-// (2.0x / 2.5x / 3.0x / 4.0x), avoiding half-size startup windows and halving
-// Win32 coordinate scaling.
-func (p Profile) UsesNativeRetinaMetalFXUpscale() bool {
-	if p.EffectiveGraphics() != "d3dmetal" {
-		return false
-	}
-	factor := p.SpatialMetalFXFactor()
-	if factor == "" {
-		return false
-	}
-	if !p.RetinaMode {
-		return true
-	}
-	parsed, err := strconv.ParseFloat(factor, 64)
-	return err == nil && parsed >= 1.99
+func (p Profile) usesMetal4D3DMetal() bool {
+	return p.EnableMetal4 && macOSVersion()[0] >= 27 &&
+		p.metalSharp.selectedD3DMetalVersion(p.D3DMetalVersion) == "gptk4"
 }
 
 // D3DMetalFXLaunchEnv returns the extra environment variables for native
 // Apple MTLFXSpatialScaler under D3DMetal.
 func (p Profile) D3DMetalFXLaunchEnv(hasBridge bool) map[string]string {
-	if p.EffectiveGraphics() != "d3dmetal" {
+	if p.EffectiveGraphics() != "d3dmetal" || p.usesMetal4D3DMetal() {
 		return nil
 	}
 	factor := p.SpatialMetalFXFactor()
@@ -331,9 +312,10 @@ func (p Profile) D3DMetalFXLaunchEnv(hasBridge bool) map[string]string {
 		return nil
 	}
 	env := map[string]string{}
-	if p.UsesNativeRetinaMetalFXUpscale() {
+	if p.RetinaMode && parsed >= 2.0 {
+		// Without a bridge, keep the logical-pixel to Retina path at 2×.
 		env["LEVI_METALFX_RETINA_UPSCALE"] = "1"
-		if parsed > 2.01 && hasBridge {
+		if parsed > 2.0 && hasBridge {
 			env["LEVI_METALFX_SPATIAL_FACTOR"] = factor
 			env["LEVI_WINE_RENDER_SCALE"] = fmt.Sprintf("%.2f", parsed/2.0)
 		}
@@ -378,11 +360,11 @@ func (m metalSharpRuntime) environment(p Profile, values map[string]string) {
 		values["GRAPHICS_BACKEND"] = "d3dmetal"
 		d3dDir, _ := m.d3dMetalFor(p.D3DMetalVersion)
 		values["D3DMETAL_RUNTIME_DIR"] = d3dDir
-		if strings.Contains(filepath.Base(d3dDir), "gptk4") {
-			if useMetal3 {
-				values["D3DM_MTL4"] = "0"
-			} else {
+		if m.selectedD3DMetalVersion(p.D3DMetalVersion) == "gptk4" {
+			if p.usesMetal4D3DMetal() {
 				values["D3DM_MTL4"] = "1"
+			} else {
+				values["D3DM_MTL4"] = "0"
 			}
 		}
 		if fxFactor != "" {

@@ -3,6 +3,7 @@ package gameruntime
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -37,13 +38,6 @@ func pathInside(root, target string) bool {
 func GetLegacyWineInfo() (types.LegacyWineInfo, error) {
 	dir := legacyManagedWineDir()
 	info := types.LegacyWineInfo{Path: dir}
-	current, err := LoadSettings()
-	if err == nil {
-		info.Active = IsLegacyManagedWine(current) ||
-			pathInside(dir, current.App) ||
-			pathInside(dir, current.Executable) ||
-			pathInside(dir, current.Prefix)
-	}
 	stat, err := os.Stat(dir)
 	if errors.Is(err, os.ErrNotExist) {
 		return info, nil
@@ -54,6 +48,16 @@ func GetLegacyWineInfo() (types.LegacyWineInfo, error) {
 	if !stat.IsDir() {
 		return info, nil
 	}
+	current, err := readSettings(settingsPath())
+	if err == nil {
+		current, err = resolveSettings(current)
+	}
+	if err != nil {
+		return info, fmt.Errorf("ERR_WINE_LEGACY_SETTINGS: %w", err)
+	}
+	info.Active = pathInside(dir, current.App) ||
+		pathInside(dir, current.Executable) ||
+		pathInside(dir, current.Prefix)
 	info.Present = true
 	var total int64
 	_ = filepath.WalkDir(dir, func(_ string, entry fs.DirEntry, walkErr error) error {

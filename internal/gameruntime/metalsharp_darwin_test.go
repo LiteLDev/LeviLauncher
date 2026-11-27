@@ -240,7 +240,9 @@ func TestLegacyWineInfoAndCleanup(t *testing.T) {
 	oldApp := legacyManagedWineApp()
 	writeWineFixture(t, filepath.Join(oldApp, "Contents/SharedSupport/wine/bin/wine"), "#!/bin/sh\n", 0700)
 	writeWineFixture(t, filepath.Join(oldApp, "Contents/SharedSupport/prefix/drive_c/marker.txt"), "12345", 0600)
-	t.Setenv("LEVI_WINE_APP", oldApp)
+	if err := SaveSettings(types.WineSettings{App: oldApp}); err != nil {
+		t.Fatal(err)
+	}
 	info, err := GetLegacyWineInfo()
 	if err != nil || !info.Present || !info.Active || info.SizeBytes < 5 {
 		t.Fatalf("active legacy info = %+v, %v", info, err)
@@ -248,7 +250,12 @@ func TestLegacyWineInfoAndCleanup(t *testing.T) {
 	if err := RemoveLegacyWineRuntime(); err == nil || !strings.Contains(err.Error(), "ERR_WINE_LEGACY_IN_USE") {
 		t.Fatalf("expected ERR_WINE_LEGACY_IN_USE, got %v", err)
 	}
-	t.Setenv("LEVI_WINE_APP", filepath.Join(root, "Other.app"))
+	otherApp := filepath.Join(root, "Other.app")
+	writeWineFixture(t, filepath.Join(otherApp, "Contents/SharedSupport/wine/bin/wine"), "#!/bin/sh\n", 0700)
+	writeWineFixture(t, filepath.Join(otherApp, "Contents/SharedSupport/prefix/drive_c/marker.txt"), "", 0600)
+	if err := SaveSettings(types.WineSettings{App: otherApp}); err != nil {
+		t.Fatal(err)
+	}
 	info, err = GetLegacyWineInfo()
 	if err != nil || !info.Present || info.Active {
 		t.Fatalf("inactive legacy info = %+v, %v", info, err)
@@ -325,6 +332,66 @@ func TestManagedUpgradeCopiesAccountCacheOnce(t *testing.T) {
 			t.Fatalf("account cache permissions: %v, %v", info, err)
 		}
 		writeWineFixture(t, dst, `{"account":"new"}`, 0600)
+	}
+}
+
+func TestRemoveLegacyWineRequiresReadableSettings(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	t.Setenv("LOCALAPPDATA", t.TempDir())
+	legacyPrefix := filepath.Join(legacyManagedWineApp(), "Contents/SharedSupport/prefix")
+	sentinel := filepath.Join(legacyPrefix, "user.reg")
+	writeWineFixture(t, sentinel, "legacy prefix", 0600)
+
+	for _, contents := range []string{"", "{"} {
+		if contents != "" {
+			writeWineFixture(t, settingsPath(), contents, 0600)
+		}
+		if err := RemoveLegacyWineRuntime(); err == nil || !strings.Contains(err.Error(), "ERR_WINE_LEGACY_SETTINGS") {
+			t.Fatalf("RemoveLegacyWineRuntime with settings %q: %v", contents, err)
+		}
+		if _, err := os.Stat(sentinel); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestAutoD3DMetalFallsBackToCompatibleGPTK(t *testing.T) {
+	osVersion := macOSVersion
+	t.Cleanup(func() { macOSVersion = osVersion })
+	macOSVersion = func() [2]int { return [2]int{27, 0} }
+
+	m := metalSharpRuntime{app: t.TempDir()}
+	gptk3, _ := m.d3dMetalFor("gptk3")
+	writeWineFixture(t, filepath.Join(gptk3, "external/D3DMetal.framework/D3DMetal"), "", 0600)
+	if variants := strings.Join(m.availableD3DMetalVersions(), ","); variants != "auto,gptk3" {
+		t.Fatalf("available selectors = %s", variants)
+	}
+	if got := m.effectiveGraphics("auto"); got != "d3dmetal" {
+		t.Fatalf("automatic backend = %s", got)
+	}
+	if dir, _ := m.d3dMetalFor("auto"); dir != gptk3 {
+		t.Fatalf("automatic toolkit = %s, want GPTK 3", dir)
+	}
+	p := Profile{metalSharp: m, Graphics: "auto", EnableMetal4: true, RetinaMode: true, MetalFXScale: "max"}
+	if env := p.D3DMetalFXLaunchEnv(true); env["LEVI_WINE_RENDER_SCALE"] != "2.00" {
+		t.Fatalf("GPTK 3 scaling = %v", env)
+	}
+
+	gptk4, _ := m.d3dMetalFor("gptk4")
+	writeWineFixture(t, filepath.Join(gptk4, "external/D3DMetal.framework/D3DMetal"), "", 0600)
+	if dir, _ := m.d3dMetalFor("auto"); dir != gptk4 {
+		t.Fatalf("automatic toolkit = %s, want GPTK 4", dir)
+	}
+	if env := p.D3DMetalFXLaunchEnv(true); len(env) != 0 {
+		t.Fatalf("Metal 4 must disable both custom scaling paths, got %v", env)
+	}
+
+	macOSVersion = func() [2]int { return [2]int{15, 3} }
+	if variants := strings.Join(m.availableD3DMetalVersions(), ","); variants != "auto" {
+		t.Fatalf("macOS 15.3 selectors = %s", variants)
+	}
+	if got := m.effectiveGraphics("auto"); got != "mullion" {
+		t.Fatalf("macOS 15.3 automatic backend = %s", got)
 	}
 }
 

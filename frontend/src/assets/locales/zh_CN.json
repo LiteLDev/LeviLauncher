@@ -359,6 +359,10 @@
       "in_use": "使用中",
       "unsupported": "不受支持",
       "managed": {
+        "run_in_background": "在后台运行",
+        "show_progress": "查看安装进度",
+        "show_result": "查看安装结果",
+        "continue_install": "继续安装",
         "not_configured": "尚未配置 Wine",
         "install": "安装 MetalSharp Wine",
         "retry": "重试安装 Wine",
@@ -406,6 +410,7 @@
         "ERR_WINE_GRAPHICS_BACKEND_UNAVAILABLE": "所选图形后端不可用。",
         "ERR_WINE_RUNTIME_SIGNATURE": "无法验证 MetalSharp Wine 的签名。",
         "ERR_WINE_ACCOUNT_MIGRATION": "无法复制旧 Wine 容器的账号缓存。",
+        "ERR_WINE_LEGACY_SETTINGS": "无法读取当前 Wine 配置，已保留旧运行时。",
         "ERR_WINE_LEGACY_IN_USE": "请先切换到其他 Wine 运行时，再清理旧 Sikarugir 运行时。"
       },
       "setup": {
@@ -444,6 +449,7 @@
       "choose_path": "选择{{field}}",
       "graphics": "图形后端",
       "graphics_auto": "运行时默认",
+      "graphics_auto_mullion": "自动（Mullion）",
       "graphics_auto_metalsharp": "自动（D3DMetal）",
       "graphics_d3dmetal": "D3DMetal",
       "graphics_wined3d": "WineD3D（OpenGL）",
@@ -480,7 +486,8 @@
       "retina_performance_tip": "已启用推荐的 Retina 组合：内部维持约 1× 逻辑像素渲染，同时通过 MetalFX 2.0× 输出清晰的 Retina 画面。",
       "retina_balanced_tip": "Retina 2× 搭配平衡（1.5×）约需渲染 1.8× 像素量；若开启光影后帧时间波动，建议改用性能（2.0×）或关闭 Retina。",
       "standard_performance_tip": "未开启 Retina 时，性能（2.0×）会按 1/4 像素渲染，画面偏糊；标准分辨率下建议关闭或使用质量（1.33×）。",
-      "d3dmetal_metalfx_tip": "在 D3DMetal 下通过 Apple 原生 MTLFXSpatialScaler 输出原生 Retina 画面（2.0× 及关闭 Retina 时零窗口缩放开销；1.33×/1.5×/2.5×/3.0×/4.0× 搭配 LeviWineBridge 生效）。",
+      "d3dmetal4_metalfx_unavailable": "启用 Metal 3 兼容模式后，即可在 D3DMetal 下使用启动器的 MetalFX 缩放。",
+      "d3dmetal_metalfx_tip": "D3DMetal 使用原生 MetalFX 空间缩放。自定义倍率需要 LeviWineBridge。在 Retina 显示器上启用 Retina 后，2.0× 可独立使用。",
       "action_use_performance": "改用性能（2.0×）",
       "action_disable_retina": "关闭 Retina",
       "metal_fx": "MetalFX 超分辨率",

@@ -7,6 +7,10 @@
  *      on the Windows side), hands D3DMetal a lower-resolution private MTLTexture
  *      proxy drawable and upscales zero-copy to the native CAMetalDrawable via
  *      Apple's native MTLFXSpatialScaler inside the game's MTLCommandBuffer.
+ *   3. When LEVI_METALFX_SHARPNESS > 0.0, runs a Contrast-Adaptive Sharpening
+ *      (CAS) Metal render pass into the native CAMetalDrawable — either after
+ *      MTLFXSpatialScaler (D3DMetal) or directly on the native-sized proxy
+ *      frame in LEVI_METALFX_SHARPEN_ONLY=1 mode (Mullion / VKD3D-Proton).
  */
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
@@ -31,10 +35,13 @@ static const void *kLeviSpatialStateKey = &kLeviSpatialStateKey;
 static const void *kLeviPendingPresentsKey = &kLeviPendingPresentsKey;
 static double g_spatial_factor = 1.0;
 static BOOL g_retina_upscale = NO;
+static float g_sharpness = 0.0f;  /* 0.0 = off, (0.0..1.0] = CAS sharpening strength */
+static BOOL g_sharpen_only = NO;  /* YES = sharpen native-size frames without spatial scaling */
 static BOOL g_opaque_policy = YES;
 static BOOL g_debug_log = NO;
 static int g_vsync_override = -1; /* -1 = game default, 0 = force off, 1 = force on */
 static int g_max_fps = 0;         /* 0 = unlimited, 1..1000 = native Metal frame pacing cap */
+static NSUInteger g_drawable_count = 2; /* 2 = low latency & avoids macOS windowed 60fps stall; override via LEVI_METAL_DRAWABLE_COUNT */
 static uint64_t g_frame_interval_ns = 0;
 static uint64_t g_drawable_seq = 0;
 static CGFloat g_main_display_scale = 1.0;
@@ -49,6 +56,7 @@ static IMP g_orig_setContentsScale = NULL;
 static IMP g_orig_setOpaque = NULL;
 static IMP g_orig_setPresentsWithTransaction = NULL;
 static IMP g_orig_setDisplaySyncEnabled = NULL;
+static IMP g_orig_setMaximumDrawableCount = NULL;
 static IMP g_orig_setFramebufferOnly = NULL;
 static IMP g_orig_nextDrawable = NULL;
 static IMP g_orig_setAppIcon = NULL;
@@ -58,10 +66,12 @@ static IMP g_orig_setMainMenu = NULL;
 typedef void (*SetDrawableSizeFn)(id, SEL, CGSize);
 typedef void (*SetCGFloatFn)(id, SEL, CGFloat);
 typedef void (*SetBoolFn)(id, SEL, BOOL);
+typedef void (*SetNSUIntegerFn)(id, SEL, NSUInteger);
 typedef id<CAMetalDrawable> (*NextDrawableFn)(id, SEL);
 typedef void (*PresentDrawableFn)(id, SEL, id<MTLDrawable>);
 typedef void (*PresentDrawableAtTimeFn)(id, SEL, id<MTLDrawable>, CFTimeInterval);
 typedef void (*PresentDrawableAfterMinFn)(id, SEL, id<MTLDrawable>, CFTimeInterval);
+typedef void (*DrawablePresentTimeFn)(id, SEL, CFTimeInterval);
 typedef void (*CommitFn)(id, SEL);
 typedef void (*SetAppIconFn)(id, SEL, NSImage *);
 typedef void (*SetWindowTitleFn)(id, SEL, NSString *);
@@ -69,12 +79,17 @@ typedef void (*SetMainMenuFn)(id, SEL, NSMenu *);
 
 static NSMutableSet<NSString *> *g_swizzled_cmdbuf_methods = nil;
 static NSMutableSet<NSString *> *g_swizzled_cmdbuf_classes = nil;
+static NSMutableSet<NSString *> *g_swizzled_drawable_methods = nil;
+static NSMutableSet<NSString *> *g_swizzled_drawable_classes = nil;
 static dispatch_once_t g_tables_once;
+static int g_logged_present_bypass = 0;
 
 static void levi_ensure_tables(void) {
     dispatch_once(&g_tables_once, ^{
         g_swizzled_cmdbuf_methods = [NSMutableSet new];
         g_swizzled_cmdbuf_classes = [NSMutableSet new];
+        g_swizzled_drawable_methods = [NSMutableSet new];
+        g_swizzled_drawable_classes = [NSMutableSet new];
     });
 }
 
@@ -133,6 +148,84 @@ static CGFloat levi_desired_backing_scale(CAMetalLayer *layer) {
 static BOOL levi_spatial_enabled(void) {
     return g_spatial_factor > 1.01 || g_retina_upscale;
 }
+
+static BOOL levi_sharpen_enabled(void) {
+    return g_sharpness > 0.001f;
+}
+
+static BOOL levi_sharpen_only_enabled(void) {
+    return g_sharpen_only && levi_sharpen_enabled() && !levi_spatial_enabled();
+}
+
+static BOOL levi_is_hdr_format(MTLPixelFormat fmt) {
+    switch (fmt) {
+    case MTLPixelFormatRGBA16Float:
+    case MTLPixelFormatRGBA32Float:
+        return YES;
+    default:
+        return NO;
+    }
+}
+
+typedef struct {
+    float sharpness;
+    uint32_t isHDR;
+} LeviCASParams;
+
+static NSString *const kLeviCASShaderSource =
+    @"#include <metal_stdlib>\n"
+     "using namespace metal;\n"
+     "struct LeviCASParams {\n"
+     "    float sharpness;\n"
+     "    uint isHDR;\n"
+     "};\n"
+     "struct LeviCASOut {\n"
+     "    float4 position [[position]];\n"
+     "    float2 uv;\n"
+     "};\n"
+     "vertex LeviCASOut levi_cas_vertex(uint vid [[vertex_id]]) {\n"
+     "    LeviCASOut out;\n"
+     "    float2 pos = float2((vid == 1) ? 3.0f : -1.0f, (vid == 2) ? 3.0f : -1.0f);\n"
+     "    out.position = float4(pos, 0.0f, 1.0f);\n"
+     "    out.uv = float2(pos.x * 0.5f + 0.5f, 0.5f - pos.y * 0.5f);\n"
+     "    return out;\n"
+     "}\n"
+     "fragment float4 levi_cas_fragment(LeviCASOut in [[stage_in]],\n"
+     "                                  texture2d<float> src [[texture(0)]],\n"
+     "                                  constant LeviCASParams &params [[buffer(0)]]) {\n"
+     "    constexpr sampler s(coord::normalized, filter::linear, address::clamp_to_edge);\n"
+     "    uint texW = src.get_width();\n"
+     "    uint texH = src.get_height();\n"
+     "    float2 texel = float2(1.0f / float(max(texW, 1u)), 1.0f / float(max(texH, 1u)));\n"
+     "    float4 center = src.sample(s, in.uv);\n"
+     "    float3 a = src.sample(s, in.uv + float2(-texel.x, -texel.y)).rgb;\n"
+     "    float3 b = src.sample(s, in.uv + float2(    0.0f, -texel.y)).rgb;\n"
+     "    float3 c = src.sample(s, in.uv + float2( texel.x, -texel.y)).rgb;\n"
+     "    float3 d = src.sample(s, in.uv + float2(-texel.x,     0.0f)).rgb;\n"
+     "    float3 e = center.rgb;\n"
+     "    float3 f = src.sample(s, in.uv + float2( texel.x,     0.0f)).rgb;\n"
+     "    float3 g = src.sample(s, in.uv + float2(-texel.x,  texel.y)).rgb;\n"
+     "    float3 h = src.sample(s, in.uv + float2(    0.0f,  texel.y)).rgb;\n"
+     "    float3 i = src.sample(s, in.uv + float2( texel.x,  texel.y)).rgb;\n"
+     "    float3 mn = min(min(min(d, e), min(f, b)), h);\n"
+     "    float3 mn2 = min(mn, min(min(a, c), min(g, i)));\n"
+     "    mn += mn2;\n"
+     "    float3 mx = max(max(max(d, e), max(f, b)), h);\n"
+     "    float3 mx2 = max(mx, max(max(a, c), max(g, i)));\n"
+     "    mx += mx2;\n"
+     "    float3 rcpMx = 1.0f / max(mx, float3(1e-5f));\n"
+     "    float3 amp = saturate(min(mn, max(2.0f - mx, float3(0.0f))) * rcpMx);\n"
+     "    amp = sqrt(amp);\n"
+     "    float peak = -1.0f / mix(8.0f, 5.0f, saturate(params.sharpness));\n"
+     "    float3 wRGB = amp * peak;\n"
+     "    float3 outRGB = (wRGB * (b + d + f + h) + e) / (1.0f + 4.0f * wRGB);\n"
+     "    if (params.isHDR != 0u) {\n"
+     "        outRGB = max(outRGB, float3(0.0f));\n"
+     "    } else {\n"
+     "        outRGB = saturate(outRGB);\n"
+     "    }\n"
+     "    return float4(outRGB, center.a);\n"
+     "}\n";
 
 static CGSize levi_native_output_size(CAMetalLayer *layer, CGSize fallback) {
     CGRect bounds = layer.bounds;
@@ -202,10 +295,16 @@ static MTLFXSpatialScalerColorProcessingMode levi_color_mode_for_format(MTLPixel
 @property (nonatomic) MTLPixelFormat privateOutFmt;
 @property (nonatomic) MTLTextureUsage privateOutUsage;
 
+@property (nonatomic, strong) id<MTLRenderPipelineState> casPipeline;
+@property (nonatomic, strong) id<MTLDevice> casDevice;
+@property (nonatomic) MTLPixelFormat casFormat;
+@property (nonatomic) BOOL casFailed;
+
 @property (nonatomic, strong) id<MTLCommandQueue> fallbackQueue;
 @property (nonatomic) uint64_t nextFrameDeadlineNs;
 @property (nonatomic) BOOL loggedSurface;
 @property (nonatomic) BOOL loggedSpatial;
+@property (nonatomic) BOOL loggedSharpenOnly;
 @property (nonatomic) NSUInteger loggedInW;
 @property (nonatomic) NSUInteger loggedInH;
 @property (nonatomic) NSUInteger loggedOutW;
@@ -315,13 +414,92 @@ static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scal
 }
 
 - (void)presentAtTime:(CFTimeInterval)presentationTime {
+    if (g_vsync_override == 0) {
+        [self levi_presentDirectWithMode:0 timeValue:0.0];
+        return;
+    }
     [self levi_presentDirectWithMode:1 timeValue:presentationTime];
 }
 
 - (void)presentAfterMinimumDuration:(CFTimeInterval)duration {
+    if (g_vsync_override == 0) {
+        [self levi_presentDirectWithMode:0 timeValue:0.0];
+        return;
+    }
     [self levi_presentDirectWithMode:2 timeValue:duration];
 }
 @end
+
+static id<MTLRenderPipelineState> levi_cas_pipeline_for_state(LeviSpatialLayerState *state,
+                                                             id<MTLDevice> device,
+                                                             MTLPixelFormat outFmt) {
+    if (!state || !device || outFmt == MTLPixelFormatInvalid) return nil;
+    @synchronized(state) {
+        if (state.casDevice == device && state.casFormat == outFmt) {
+            if (state.casPipeline) return state.casPipeline;
+            if (state.casFailed) return nil;
+        }
+        state.casDevice = device;
+        state.casFormat = outFmt;
+        state.casPipeline = nil;
+        state.casFailed = NO;
+
+        NSError *err = nil;
+        id<MTLLibrary> lib = [device newLibraryWithSource:kLeviCASShaderSource options:nil error:&err];
+        if (!lib) {
+            state.casFailed = YES;
+            fprintf(stderr, "LeviMetalFX: failed to compile CAS shader: %s\n",
+                    err.localizedDescription.UTF8String ?: "unknown");
+            fflush(stderr);
+            return nil;
+        }
+        id<MTLFunction> vfn = [lib newFunctionWithName:@"levi_cas_vertex"];
+        id<MTLFunction> ffn = [lib newFunctionWithName:@"levi_cas_fragment"];
+        if (!vfn || !ffn) {
+            state.casFailed = YES;
+            return nil;
+        }
+        MTLRenderPipelineDescriptor *desc = [MTLRenderPipelineDescriptor new];
+        desc.vertexFunction = vfn;
+        desc.fragmentFunction = ffn;
+        desc.colorAttachments[0].pixelFormat = outFmt;
+        id<MTLRenderPipelineState> pso = [device newRenderPipelineStateWithDescriptor:desc error:&err];
+        if (!pso) {
+            state.casFailed = YES;
+            fprintf(stderr, "LeviMetalFX: failed to create CAS pipeline (format=%lu): %s\n",
+                    (unsigned long)outFmt, err.localizedDescription.UTF8String ?: "unknown");
+            fflush(stderr);
+            return nil;
+        }
+        state.casPipeline = pso;
+        return pso;
+    }
+}
+
+static BOOL levi_encode_cas(id<MTLCommandBuffer> cmdBuf,
+                            id<MTLRenderPipelineState> pso,
+                            id<MTLTexture> srcTex,
+                            id<MTLTexture> dstTex,
+                            float sharpness) {
+    if (!cmdBuf || !pso || !srcTex || !dstTex) return NO;
+    MTLRenderPassDescriptor *rpd = [MTLRenderPassDescriptor renderPassDescriptor];
+    rpd.colorAttachments[0].texture = dstTex;
+    rpd.colorAttachments[0].loadAction = MTLLoadActionDontCare;
+    rpd.colorAttachments[0].storeAction = MTLStoreActionStore;
+    id<MTLRenderCommandEncoder> enc = [cmdBuf renderCommandEncoderWithDescriptor:rpd];
+    if (!enc) return NO;
+    MTLViewport vp = { 0.0, 0.0, (double)dstTex.width, (double)dstTex.height, 0.0, 1.0 };
+    [enc setViewport:vp];
+    [enc setRenderPipelineState:pso];
+    [enc setFragmentTexture:srcTex atIndex:0];
+    LeviCASParams params;
+    params.sharpness = sharpness;
+    params.isHDR = levi_is_hdr_format(dstTex.pixelFormat) ? 1u : 0u;
+    [enc setFragmentBytes:&params length:sizeof(params) atIndex:0];
+    [enc drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+    [enc endEncoding];
+    return YES;
+}
 
 static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scaled, id<MTLCommandBuffer> cmdBuf) {
     @synchronized(scaled) {
@@ -346,7 +524,13 @@ static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scal
     MTLPixelFormat outFmt = realTex.pixelFormat;
 
     BOOL scaledEncoded = NO;
+    BOOL sharpenedEncoded = NO;
     BOOL directOutput = NO;
+
+    id<MTLRenderPipelineState> casPipeline = nil;
+    if (device && levi_sharpen_enabled()) {
+        casPipeline = levi_cas_pipeline_for_state(state, device, outFmt);
+    }
 
     if (device && inW >= 64 && inH >= 64 && outW > inW && outH > inH &&
         [MTLFXSpatialScalerDescriptor supportsDevice:device]) {
@@ -380,7 +564,8 @@ static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scal
 
             if (scaler) {
                 MTLTextureUsage reqOutUsage = scaler.outputTextureUsage;
-                directOutput = (realTex.storageMode == MTLStorageModePrivate) &&
+                directOutput = (casPipeline == nil) &&
+                               (realTex.storageMode == MTLStorageModePrivate) &&
                                ((realTex.usage & reqOutUsage) == reqOutUsage);
                 if (!directOutput) {
                     MTLTextureUsage needUsage = reqOutUsage | MTLTextureUsageShaderRead;
@@ -411,23 +596,31 @@ static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scal
             scaler.outputTexture = directOutput ? realTex : privateOut;
             [scaler encodeToCommandBuffer:cmdBuf];
             if (!directOutput && privateOut) {
-                id<MTLBlitCommandEncoder> blit = [cmdBuf blitCommandEncoder];
-                [blit copyFromTexture:privateOut
-                          sourceSlice:0
-                          sourceLevel:0
-                         sourceOrigin:MTLOriginMake(0, 0, 0)
-                           sourceSize:MTLSizeMake(outW, outH, 1)
-                            toTexture:realTex
-                     destinationSlice:0
-                     destinationLevel:0
-                    destinationOrigin:MTLOriginMake(0, 0, 0)];
-                [blit endEncoding];
+                if (casPipeline && levi_encode_cas(cmdBuf, casPipeline, privateOut, realTex, g_sharpness)) {
+                    sharpenedEncoded = YES;
+                } else {
+                    id<MTLBlitCommandEncoder> blit = [cmdBuf blitCommandEncoder];
+                    [blit copyFromTexture:privateOut
+                              sourceSlice:0
+                              sourceLevel:0
+                             sourceOrigin:MTLOriginMake(0, 0, 0)
+                               sourceSize:MTLSizeMake(outW, outH, 1)
+                                toTexture:realTex
+                         destinationSlice:0
+                         destinationLevel:0
+                        destinationOrigin:MTLOriginMake(0, 0, 0)];
+                    [blit endEncoding];
+                }
             }
             scaledEncoded = YES;
         }
+    } else if (casPipeline && inW >= 64 && inH >= 64 && outW >= 64 && outH >= 64) {
+        if (levi_encode_cas(cmdBuf, casPipeline, inputTex, realTex, g_sharpness)) {
+            sharpenedEncoded = YES;
+        }
     }
 
-    if (!scaledEncoded) {
+    if (!scaledEncoded && !sharpenedEncoded) {
         NSUInteger copyW = inW < outW ? inW : outW;
         NSUInteger copyH = inH < outH ? inH : outH;
         if (copyW > 0 && copyH > 0) {
@@ -465,10 +658,21 @@ static id<CAMetalDrawable> levi_encode_and_acquire_real(LeviScaledDrawable *scal
             state.loggedInH = inH;
             state.loggedOutW = outW;
             state.loggedOutH = outH;
-            fprintf(stderr, "LeviMetalFX: MTLFXSpatialScaler active %lux%lu -> %lux%lu (format=%lu, directOutput=%d)\n",
+            fprintf(stderr, "LeviMetalFX: MTLFXSpatialScaler active %lux%lu -> %lux%lu (format=%lu, directOutput=%d, sharpness=%.2f)\n",
                     (unsigned long)inW, (unsigned long)inH,
                     (unsigned long)outW, (unsigned long)outH,
-                    (unsigned long)outFmt, directOutput ? 1 : 0);
+                    (unsigned long)outFmt, directOutput ? 1 : 0,
+                    sharpenedEncoded ? (double)g_sharpness : 0.0);
+            fflush(stderr);
+        } else if (!scaledEncoded && sharpenedEncoded && (!state.loggedSharpenOnly ||
+                   state.loggedOutW != outW || state.loggedOutH != outH)) {
+            state.loggedSharpenOnly = YES;
+            state.loggedOutW = outW;
+            state.loggedOutH = outH;
+            fprintf(stderr, "LeviMetalFX: CAS sharpen-only active %lux%lu -> %lux%lu (format=%lu, sharpness=%.2f)\n",
+                    (unsigned long)inW, (unsigned long)inH,
+                    (unsigned long)outW, (unsigned long)outH,
+                    (unsigned long)outFmt, (double)g_sharpness);
             fflush(stderr);
         }
     }
@@ -543,6 +747,28 @@ static Class levi_defining_class(Class cls, SEL sel) {
     return Nil;
 }
 
+static BOOL levi_should_bypass_present_delay(id<MTLDrawable> drawable) {
+    if (g_vsync_override != 0 || !drawable) return NO;
+    if ([drawable isKindOfClass:[LeviScaledDrawable class]]) {
+        return YES;
+    }
+    if ([drawable respondsToSelector:@selector(layer)]) {
+        CAMetalLayer *layer = [(id<CAMetalDrawable>)drawable layer];
+        if ([layer isKindOfClass:[CAMetalLayer class]] && levi_is_wine_metal_layer(layer)) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+static void levi_log_present_bypass_once(const char *selectorName, CFTimeInterval value) {
+    if (__atomic_exchange_n(&g_logged_present_bypass, 1, __ATOMIC_RELAXED) == 0) {
+        fprintf(stderr, "LeviMetalFX: bypassed timed present (%s value=%.4f) because vsyncOverride=0\n",
+                selectorName, (double)value);
+        fflush(stderr);
+    }
+}
+
 static void levi_swizzle_cmdbuf_selector(Class cls, SEL sel, int kind) {
     Class owner = levi_defining_class(cls, sel);
     if (!owner) return;
@@ -569,7 +795,17 @@ static void levi_swizzle_cmdbuf_selector(Class cls, SEL sel, int kind) {
         case 1:
             replacement = imp_implementationWithBlock(^(id self, id<MTLDrawable> drawable, CFTimeInterval time) {
                 if ([drawable isKindOfClass:[LeviScaledDrawable class]]) {
+                    if (g_vsync_override == 0) {
+                        levi_log_present_bypass_once("presentDrawable:atTime:", time);
+                        levi_queue_pending_present(self, (LeviScaledDrawable *)drawable, 0, 0.0);
+                        return;
+                    }
                     levi_queue_pending_present(self, (LeviScaledDrawable *)drawable, 1, time);
+                    return;
+                }
+                if (levi_should_bypass_present_delay(drawable)) {
+                    levi_log_present_bypass_once("presentDrawable:atTime:", time);
+                    [(id<MTLCommandBuffer>)self presentDrawable:drawable];
                     return;
                 }
                 ((PresentDrawableAtTimeFn)orig)(self, sel, drawable, time);
@@ -578,7 +814,17 @@ static void levi_swizzle_cmdbuf_selector(Class cls, SEL sel, int kind) {
         case 2:
             replacement = imp_implementationWithBlock(^(id self, id<MTLDrawable> drawable, CFTimeInterval duration) {
                 if ([drawable isKindOfClass:[LeviScaledDrawable class]]) {
+                    if (g_vsync_override == 0) {
+                        levi_log_present_bypass_once("presentDrawable:afterMinimumDuration:", duration);
+                        levi_queue_pending_present(self, (LeviScaledDrawable *)drawable, 0, 0.0);
+                        return;
+                    }
                     levi_queue_pending_present(self, (LeviScaledDrawable *)drawable, 2, duration);
+                    return;
+                }
+                if (levi_should_bypass_present_delay(drawable)) {
+                    levi_log_present_bypass_once("presentDrawable:afterMinimumDuration:", duration);
+                    [(id<MTLCommandBuffer>)self presentDrawable:drawable];
                     return;
                 }
                 ((PresentDrawableAfterMinFn)orig)(self, sel, drawable, duration);
@@ -597,6 +843,56 @@ static void levi_swizzle_cmdbuf_selector(Class cls, SEL sel, int kind) {
             method_setImplementation(ownMethod, replacement);
             [g_swizzled_cmdbuf_methods addObject:key];
         }
+    }
+}
+
+static void levi_swizzle_drawable_selector(Class cls, SEL sel) {
+    Class owner = levi_defining_class(cls, sel);
+    if (!owner || owner == [LeviScaledDrawable class]) return;
+    NSString *key = [NSString stringWithFormat:@"%@::%s", NSStringFromClass(owner), sel_getName(sel)];
+    @synchronized(g_swizzled_drawable_methods) {
+        if ([g_swizzled_drawable_methods containsObject:key]) return;
+        Method ownMethod = class_getInstanceMethod(owner, sel);
+        if (!ownMethod) return;
+        IMP orig = method_getImplementation(ownMethod);
+        if (!orig) return;
+        const char *selName = sel_getName(sel);
+        IMP replacement = imp_implementationWithBlock(^(id self, CFTimeInterval value) {
+            if (levi_should_bypass_present_delay((id<MTLDrawable>)self)) {
+                levi_log_present_bypass_once(selName, value);
+                [(id<MTLDrawable>)self present];
+                return;
+            }
+            ((DrawablePresentTimeFn)orig)(self, sel, value);
+        });
+        if (replacement) {
+            method_setImplementation(ownMethod, replacement);
+            [g_swizzled_drawable_methods addObject:key];
+        }
+    }
+}
+
+static void levi_swizzle_drawable_class(Class cls) {
+    if (!cls || cls == [LeviScaledDrawable class]) return;
+    static void *g_last_drawable_class = NULL;
+    if ((__bridge void *)cls == __atomic_load_n(&g_last_drawable_class, __ATOMIC_RELAXED)) {
+        return;
+    }
+    levi_ensure_tables();
+    NSString *name = NSStringFromClass(cls);
+    @synchronized(g_swizzled_drawable_classes) {
+        if ([g_swizzled_drawable_classes containsObject:name]) {
+            __atomic_store_n(&g_last_drawable_class, (__bridge void *)cls, __ATOMIC_RELAXED);
+            return;
+        }
+        [g_swizzled_drawable_classes addObject:name];
+    }
+    levi_swizzle_drawable_selector(cls, @selector(presentAtTime:));
+    levi_swizzle_drawable_selector(cls, @selector(presentAfterMinimumDuration:));
+    __atomic_store_n(&g_last_drawable_class, (__bridge void *)cls, __ATOMIC_RELAXED);
+    if (g_debug_log) {
+        fprintf(stderr, "LeviMetalFX: hooked drawable class %s\n", name.UTF8String);
+        fflush(stderr);
     }
 }
 
@@ -620,12 +916,19 @@ static void levi_swizzle_command_buffer_class(Class cls) {
 
 static void levi_hook_command_buffers_for_device(id<MTLDevice> device) {
     if (!device) return;
+    static void *g_last_probed_device = NULL;
+    if ((__bridge void *)device == __atomic_load_n(&g_last_probed_device, __ATOMIC_RELAXED)) {
+        return;
+    }
     static NSMutableSet<NSNumber *> *probedDevices = nil;
     static dispatch_once_t once;
     dispatch_once(&once, ^{ probedDevices = [NSMutableSet new]; });
     NSNumber *key = @((uintptr_t)(__bridge void *)device);
     @synchronized(probedDevices) {
-        if ([probedDevices containsObject:key]) return;
+        if ([probedDevices containsObject:key]) {
+            __atomic_store_n(&g_last_probed_device, (__bridge void *)device, __ATOMIC_RELAXED);
+            return;
+        }
         [probedDevices addObject:key];
     }
     @autoreleasepool {
@@ -641,6 +944,7 @@ static void levi_hook_command_buffers_for_device(id<MTLDevice> device) {
             }
         }
     }
+    __atomic_store_n(&g_last_probed_device, (__bridge void *)device, __ATOMIC_RELAXED);
 }
 
 static void levi_pace_frame(LeviSpatialLayerState *state) {
@@ -979,19 +1283,27 @@ static void levi_apply_surface_policy(CAMetalLayer *layer, LeviSpatialLayerState
             ((SetBoolFn)g_orig_setDisplaySyncEnabled)(layer, @selector(setDisplaySyncEnabled:), wantSync);
         }
     }
+    if (g_drawable_count >= 2 && g_drawable_count <= 3 && g_orig_setMaximumDrawableCount) {
+        if (layer.maximumDrawableCount != g_drawable_count) {
+            ((SetNSUIntegerFn)g_orig_setMaximumDrawableCount)(layer, @selector(setMaximumDrawableCount:), g_drawable_count);
+        }
+    }
     if (state && !state.loggedSurface) {
         @synchronized(state) {
             if (!state.loggedSurface) {
                 state.loggedSurface = YES;
                 levi_apply_app_branding_on_main();
-                fprintf(stderr, "LeviMetalFX: surface configured opaque=%d transaction=%d displaySync=%d vsyncOverride=%d maxFps=%d pixelFormat=%lu factor=%.2f\n",
+                fprintf(stderr, "LeviMetalFX: surface configured opaque=%d transaction=%d displaySync=%d drawableCount=%lu vsyncOverride=%d maxFps=%d pixelFormat=%lu factor=%.2f sharpness=%.2f sharpenOnly=%d\n",
                         layer.isOpaque ? 1 : 0,
                         layer.presentsWithTransaction ? 1 : 0,
                         layer.displaySyncEnabled ? 1 : 0,
+                        (unsigned long)layer.maximumDrawableCount,
                         g_vsync_override,
                         g_max_fps,
                         (unsigned long)layer.pixelFormat,
-                        g_spatial_factor);
+                        g_spatial_factor,
+                        (double)g_sharpness,
+                        g_sharpen_only ? 1 : 0);
                 fflush(stderr);
             }
         }
@@ -1005,6 +1317,16 @@ static void levi_setDisplaySyncEnabled(id self, SEL _cmd, BOOL flag) {
     }
     if (g_orig_setDisplaySyncEnabled) {
         ((SetBoolFn)g_orig_setDisplaySyncEnabled)(self, _cmd, flag);
+    }
+}
+
+static void levi_setMaximumDrawableCount(id self, SEL _cmd, NSUInteger count) {
+    CAMetalLayer *layer = (CAMetalLayer *)self;
+    if (g_drawable_count >= 2 && g_drawable_count <= 3 && levi_is_wine_metal_layer(layer)) {
+        count = g_drawable_count;
+    }
+    if (g_orig_setMaximumDrawableCount) {
+        ((SetNSUIntegerFn)g_orig_setMaximumDrawableCount)(self, _cmd, count);
     }
 }
 
@@ -1093,70 +1415,97 @@ static id<CAMetalDrawable> levi_nextDrawable(id self, SEL _cmd) {
     levi_apply_surface_policy(layer, state);
     levi_pace_frame(state);
 
-    if (!levi_spatial_enabled()) {
-        return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
+    BOOL spatialMode = levi_spatial_enabled();
+    BOOL sharpenOnlyMode = levi_sharpen_only_enabled();
+    if (!spatialMode && !sharpenOnlyMode) {
+        if (g_vsync_override == 0) {
+            levi_hook_command_buffers_for_device(layer.device);
+        }
+        id<CAMetalDrawable> realDrawable = g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
+        if (g_vsync_override == 0 && realDrawable) {
+            levi_swizzle_drawable_class(object_getClass(realDrawable));
+        }
+        return realDrawable;
     }
 
     id<MTLDevice> device = layer.device;
-    if (!device || ![MTLFXSpatialScalerDescriptor supportsDevice:device]) {
+    if (!device) {
+        return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
+    }
+    if (spatialMode && ![MTLFXSpatialScalerDescriptor supportsDevice:device]) {
         return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
     }
 
-    if (g_retina_upscale && g_orig_setContentsScale) {
-        CGFloat desiredScale = levi_desired_backing_scale(layer);
-        if (desiredScale > layer.contentsScale + 0.01) {
-            ((SetCGFloatFn)g_orig_setContentsScale)(layer, @selector(setContentsScale:), desiredScale);
+    NSUInteger inW = 0;
+    NSUInteger inH = 0;
+    if (spatialMode) {
+        if (g_retina_upscale && g_orig_setContentsScale) {
+            CGFloat desiredScale = levi_desired_backing_scale(layer);
+            if (desiredScale > layer.contentsScale + 0.01) {
+                ((SetCGFloatFn)g_orig_setContentsScale)(layer, @selector(setContentsScale:), desiredScale);
+            }
         }
-    }
 
-    CGSize outputSize = levi_native_output_size(layer, state.lastOutputSize);
-    if (outputSize.width < 64.0 || outputSize.height < 64.0) {
-        return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
-    }
+        CGSize outputSize = levi_native_output_size(layer, state.lastOutputSize);
+        if (outputSize.width < 64.0 || outputSize.height < 64.0) {
+            return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
+        }
 
-    CGSize inputSize;
-    @synchronized(state) {
-        state.lastOutputSize = outputSize;
-        if (g_retina_upscale && g_spatial_factor <= 1.01) {
-            /* Non-Retina Wine window (1x logical points) -> native Retina backing (2x pixels). */
-            CGRect b = layer.bounds;
-            CGFloat lw = floor(b.size.width + 0.5);
-            CGFloat lh = floor(b.size.height + 0.5);
-            if (lw >= 64.0 && lh >= 64.0 && lw < outputSize.width && lh < outputSize.height) {
-                inputSize = CGSizeMake(lw, lh);
+        CGSize inputSize;
+        @synchronized(state) {
+            state.lastOutputSize = outputSize;
+            if (g_retina_upscale && g_spatial_factor <= 1.01) {
+                /* Non-Retina Wine window (1x logical points) -> native Retina backing (2x pixels). */
+                CGRect b = layer.bounds;
+                CGFloat lw = floor(b.size.width + 0.5);
+                CGFloat lh = floor(b.size.height + 0.5);
+                if (lw >= 64.0 && lh >= 64.0 && lw < outputSize.width && lh < outputSize.height) {
+                    inputSize = CGSizeMake(lw, lh);
+                } else if (state.requestedInputSize.width >= 64.0 && state.requestedInputSize.height >= 64.0 &&
+                           state.requestedInputSize.width < outputSize.width &&
+                           state.requestedInputSize.height < outputSize.height) {
+                    inputSize = state.requestedInputSize;
+                } else {
+                    inputSize = outputSize;
+                }
             } else if (state.requestedInputSize.width >= 64.0 && state.requestedInputSize.height >= 64.0 &&
                        state.requestedInputSize.width < outputSize.width &&
                        state.requestedInputSize.height < outputSize.height) {
                 inputSize = state.requestedInputSize;
             } else {
-                inputSize = outputSize;
+                inputSize = levi_scaled_input_size(outputSize, g_spatial_factor);
             }
-        } else if (state.requestedInputSize.width >= 64.0 && state.requestedInputSize.height >= 64.0 &&
-                   state.requestedInputSize.width < outputSize.width &&
-                   state.requestedInputSize.height < outputSize.height) {
-            inputSize = state.requestedInputSize;
-        } else {
-            inputSize = levi_scaled_input_size(outputSize, g_spatial_factor);
         }
-    }
 
-    NSUInteger inW = (NSUInteger)inputSize.width;
-    NSUInteger inH = (NSUInteger)inputSize.height;
-    NSUInteger outW = (NSUInteger)outputSize.width;
-    NSUInteger outH = (NSUInteger)outputSize.height;
-    if (inW < 64 || inH < 64 || inW >= outW || inH >= outH) {
-        return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
-    }
+        inW = (NSUInteger)inputSize.width;
+        inH = (NSUInteger)inputSize.height;
+        NSUInteger outW = (NSUInteger)outputSize.width;
+        NSUInteger outH = (NSUInteger)outputSize.height;
+        if (inW < 64 || inH < 64 || inW >= outW || inH >= outH) {
+            return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
+        }
 
-    /* Keep the underlying CAMetalLayer at native output resolution and writable. */
-    CGSize currentDrawableSize = layer.drawableSize;
-    if (g_orig_setDrawableSize &&
-        (fabs(currentDrawableSize.width - outputSize.width) > 0.5 ||
-         fabs(currentDrawableSize.height - outputSize.height) > 0.5)) {
-        ((SetDrawableSizeFn)g_orig_setDrawableSize)(layer, @selector(setDrawableSize:), outputSize);
-    }
-    if (g_orig_setFramebufferOnly && layer.framebufferOnly) {
-        ((SetBoolFn)g_orig_setFramebufferOnly)(layer, @selector(setFramebufferOnly:), NO);
+        /* Keep the underlying CAMetalLayer at native output resolution and writable. */
+        CGSize currentDrawableSize = layer.drawableSize;
+        if (g_orig_setDrawableSize &&
+            (fabs(currentDrawableSize.width - outputSize.width) > 0.5 ||
+             fabs(currentDrawableSize.height - outputSize.height) > 0.5)) {
+            ((SetDrawableSizeFn)g_orig_setDrawableSize)(layer, @selector(setDrawableSize:), outputSize);
+        }
+        if (g_orig_setFramebufferOnly && layer.framebufferOnly) {
+            ((SetBoolFn)g_orig_setFramebufferOnly)(layer, @selector(setFramebufferOnly:), NO);
+        }
+    } else {
+        /* Sharpen-only mode (Mullion / VKD3D): keep renderer's native drawableSize untouched. */
+        CGSize nativeSize = layer.drawableSize;
+        if (nativeSize.width < 64.0 || nativeSize.height < 64.0) {
+            nativeSize = levi_native_output_size(layer, state.lastOutputSize);
+        }
+        inW = (NSUInteger)floor(nativeSize.width + 0.5);
+        inH = (NSUInteger)floor(nativeSize.height + 0.5);
+        if (inW < 64 || inH < 64) {
+            return g_orig_nextDrawable ? ((NextDrawableFn)g_orig_nextDrawable)(self, _cmd) : nil;
+        }
     }
 
     levi_hook_command_buffers_for_device(device);
@@ -1221,6 +1570,12 @@ static void levi_metal_fx_init(void) {
         if (strcmp(vsync_env, "0") == 0) g_vsync_override = 0;
         else if (strcmp(vsync_env, "1") == 0) g_vsync_override = 1;
     }
+    const char *drawable_count_env = getenv("LEVI_METAL_DRAWABLE_COUNT");
+    if (drawable_count_env && drawable_count_env[0] != '\0') {
+        if (strcmp(drawable_count_env, "3") == 0) g_drawable_count = 3;
+        else if (strcmp(drawable_count_env, "2") == 0) g_drawable_count = 2;
+        else if (strcmp(drawable_count_env, "0") == 0) g_drawable_count = 0;
+    }
     const char *fps_env = getenv("LEVI_METAL_MAX_FPS");
     if (fps_env && fps_env[0] != '\0') {
         char *end = NULL;
@@ -1244,6 +1599,18 @@ static void levi_metal_fx_init(void) {
         if (end && end != factor_env && isfinite(parsed) && parsed > 1.01 && parsed <= 4.0) {
             g_spatial_factor = parsed;
         }
+    }
+    const char *sharp_env = getenv("LEVI_METALFX_SHARPNESS");
+    if (!mtl4_active && sharp_env && sharp_env[0] != '\0') {
+        char *end = NULL;
+        double parsed = strtod(sharp_env, &end);
+        if (end && end != sharp_env && isfinite(parsed) && parsed > 0.0 && parsed <= 1.0) {
+            g_sharpness = (float)parsed;
+        }
+    }
+    const char *sharpen_only_env = getenv("LEVI_METALFX_SHARPEN_ONLY");
+    if (!mtl4_active && sharpen_only_env && strcmp(sharpen_only_env, "1") == 0) {
+        g_sharpen_only = YES;
     }
 
     const char *icon_env = getenv("LEVI_GAME_ICON_PATH");
@@ -1334,6 +1701,9 @@ static void levi_metal_fx_init(void) {
     if ((m = class_getInstanceMethod(metalLayerClass, @selector(setDisplaySyncEnabled:)))) {
         g_orig_setDisplaySyncEnabled = method_setImplementation(m, (IMP)levi_setDisplaySyncEnabled);
     }
+    if ((m = class_getInstanceMethod(metalLayerClass, @selector(setMaximumDrawableCount:)))) {
+        g_orig_setMaximumDrawableCount = method_setImplementation(m, (IMP)levi_setMaximumDrawableCount);
+    }
     if ((m = class_getInstanceMethod(metalLayerClass, @selector(setFramebufferOnly:)))) {
         g_orig_setFramebufferOnly = method_setImplementation(m, (IMP)levi_setFramebufferOnly);
     }
@@ -1341,15 +1711,20 @@ static void levi_metal_fx_init(void) {
         g_orig_nextDrawable = method_setImplementation(m, (IMP)levi_nextDrawable);
     }
 
-    /* Pre-swizzle Metal's base command buffer class if available. */
+    /* Pre-swizzle Metal's base command buffer and CAMetalDrawable classes if available. */
     Class baseCmdBuf = NSClassFromString(@"_MTLCommandBuffer");
     if (baseCmdBuf) {
         levi_swizzle_command_buffer_class(baseCmdBuf);
     }
+    Class metalDrawableClass = NSClassFromString(@"CAMetalDrawable");
+    if (metalDrawableClass) {
+        levi_swizzle_drawable_class(metalDrawableClass);
+    }
 
     if (g_debug_log) {
-        fprintf(stderr, "LeviMetalFX: loaded pid=%d opaque=%d vsync=%d maxFps=%d spatialFactor=%.2f\n",
-                (int)getpid(), g_opaque_policy ? 1 : 0, g_vsync_override, g_max_fps, g_spatial_factor);
+        fprintf(stderr, "LeviMetalFX: loaded pid=%d opaque=%d vsync=%d maxFps=%d spatialFactor=%.2f sharpness=%.2f sharpenOnly=%d\n",
+                (int)getpid(), g_opaque_policy ? 1 : 0, g_vsync_override, g_max_fps, g_spatial_factor,
+                (double)g_sharpness, g_sharpen_only ? 1 : 0);
         fflush(stderr);
     }
 }

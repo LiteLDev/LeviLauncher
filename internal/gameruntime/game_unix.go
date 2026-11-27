@@ -77,6 +77,11 @@ func (p Profile) GameCommandWithOptions(ctx context.Context, exe string, opts Ga
 					}
 				}
 			}
+			for key, value := range p.MetalFXSharpenLaunchEnv() {
+				if _, overridden := opts.ExtraEnv[key]; !overridden {
+					merged[key] = value
+				}
+			}
 			applyNativeMetalPacing(merged, p)
 			if p.CompatDebugLog {
 				merged["LEVI_METALFX_DEBUG"] = "1"

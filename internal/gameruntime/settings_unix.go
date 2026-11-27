@@ -126,6 +126,9 @@ func resolveSettings(s types.WineSettings) (types.WineSettings, error) {
 		}
 	}
 	s.EnableMetalFX = s.MetalFXScale != "off"
+	if s.MetalFXSharpness == "" {
+		s.MetalFXSharpness = "auto"
+	}
 
 	return s, nil
 }
@@ -160,6 +163,7 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 		MaxFPS:            s.MaxFPS,
 		EnableMetalFX:     s.EnableMetalFX,
 		MetalFXScale:      s.MetalFXScale,
+		MetalFXSharpness:  s.MetalFXSharpness,
 		CompatDebugLog:    s.CompatDebugLog,
 		metalSharp:        metalSharpForSettings(s),
 	}
@@ -245,6 +249,11 @@ func profileFromSettings(s types.WineSettings) (Profile, error) {
 	case "off", "quality", "balanced", "performance", "ultra_performance", "extreme", "max":
 	default:
 		return p, errors.New("unknown MetalFX upscaling mode")
+	}
+	switch s.MetalFXSharpness {
+	case "", "auto", "0", "10", "15", "25", "35":
+	default:
+		return p, errors.New("unknown MetalFX sharpening level")
 	}
 	return p, nil
 }

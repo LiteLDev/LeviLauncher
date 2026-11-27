@@ -89,6 +89,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		return "ERR_LAUNCH_PREPARE: " + err.Error()
 	}
 	prepareOptionsBackup(dir)
+	applyOptionsFramePacing(dir, p)
 	args := parseCommandLineArgs(meta.LaunchArgs)
 	if meta.EnableEditorMode {
 		args = append(args, "-Editor", "true")

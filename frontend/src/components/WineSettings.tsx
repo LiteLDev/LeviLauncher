@@ -216,6 +216,7 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
   const frameRates = [...new Set([0, 30, 60, 90, 120, 144, 165, 240, maxFps])].sort((a, b) => a - b);
   const vsync = settings?.vsync || "auto";
   const metalFxScale = settings?.metalFxScale || (settings?.enableMetalFx ? (settings?.retinaMode ? "performance" : "balanced") : "off");
+  const metalFxSharpness = settings?.metalFxSharpness || "auto";
   const threadQos = settings?.threadQos || "balanced";
 
   const handleRetinaChange = (retinaMode: boolean) => {
@@ -277,7 +278,7 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
   }, [d3dMetal4, isD3DMetal, mac, metalFxScale, settings, supportsSpatialScale]);
 
   const selectField = (
-    field: "graphics" | "d3dmetal_version" | "sync" | "vsync" | "max_fps" | "metal_fx" | "thread_qos",
+    field: "graphics" | "d3dmetal_version" | "sync" | "vsync" | "max_fps" | "metal_fx" | "metal_fx_sharpness" | "thread_qos",
     value: string,
     choices: { id: string; label: string }[],
     onSelect: (value: string) => void,
@@ -374,12 +375,16 @@ export function WineSettings({ locked, onLoaded }: { locked: boolean; onLoaded: 
                 })), (nextVsync) => applyImmediate({ vsync: nextVsync }), !metalSharp)}
                 {selectField("max_fps", String(maxFps), frameRates.map((fps) => ({
                   id: String(fps),
-                  label: fps === 0 ? t("settings.wine.default_fps") : `${fps} FPS`,
+                  label: fps === 0 ? t("settings.wine.unlimited_fps") : `${fps} FPS`,
                 })), (fps) => applyImmediate({ maxFps: Number(fps) }), !supportsGraphicsTuning)}
                 {selectField("metal_fx", metalFxScale, ["off", "quality", "balanced", "performance", "ultra_performance", "extreme", "max"].map((id) => ({
                   id,
                   label: t(`settings.wine.metal_fx_${id}`),
                 })), (scale) => applyImmediate({ metalFxScale: scale, enableMetalFx: scale !== "off" }), !supportsSpatialScale)}
+                {mac && selectField("metal_fx_sharpness", metalFxSharpness, ["auto", "0", "10", "15", "25", "35"].map((id) => ({
+                  id,
+                  label: t(`settings.wine.metal_fx_sharpness_${id}`),
+                })), (metalFxSharpness) => applyImmediate({ metalFxSharpness }), !supportsSpatialScale || metalFxScale === "off")}
               </div>
               {mac && metalSharp && (vsync !== "auto" || maxFps > 0) && (
                 <p className="-mt-1 text-xs leading-relaxed text-muted">

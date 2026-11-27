@@ -19,6 +19,7 @@ type WineSettings struct {
 	MaxFPS            int      `json:"maxFps,omitempty"`
 	EnableMetalFX     bool     `json:"enableMetalFx,omitempty"`     // kept for backwards compatibility; derived from MetalFXScale
 	MetalFXScale      string   `json:"metalFxScale,omitempty"`      // off | quality | balanced | performance | ultra_performance | extreme | max
+	MetalFXSharpness  string   `json:"metalFxSharpness,omitempty"`  // auto | 0 | 10 | 15 | 25 | 35 (CAS sharpening after MetalFX upscaling)
 	CompatDebugLog    bool     `json:"compatDebugLog,omitempty"`    // enables XGR_TRACE=1 & MCWINRT_TRACE=1
 	Runtime           string   `json:"runtime,omitempty"`           // derived from the selected executable
 	D3DMetalVersions  []string `json:"d3dMetalVersions,omitempty"`  // derived available D3DMetal selector options

@@ -331,7 +331,8 @@ func initializeMetalSharp(ctx context.Context, settings types.WineSettings) erro
 	boot.WaitDelay = 2 * time.Second
 	// A successfully exited wineboot can leave its output open in Wine
 	// services. The separate wineserver wait below checks their lifetime.
-	if out, err := boot.CombinedOutput(); err != nil && !errors.Is(err, exec.ErrWaitDelay) {
+	if out, err := boot.CombinedOutput(); err != nil &&
+		(ctx.Err() != nil || !errors.Is(err, exec.ErrWaitDelay) || boot.ProcessState == nil || !boot.ProcessState.Success()) {
 		return fmt.Errorf("ERR_WINE_CONTAINER_INIT: %w: %s", err, bytes.TrimSpace(out))
 	}
 	server := exec.CommandContext(ctx, filepath.Join(filepath.Dir(p.Wine), "wineserver"), "-w")

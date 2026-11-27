@@ -95,9 +95,11 @@ func (p Profile) RunHook(ctx context.Context, dir, command string, output io.Wri
 	cmd.Stderr = output
 	cmd.WaitDelay = 2 * time.Second
 	if err = cmd.Run(); err != nil {
-		// A direct MetalSharp command can exit successfully while its Wine
-		// service still holds the redirected output handles.
-		if p.metalSharp.app == "" || !errors.Is(err, exec.ErrWaitDelay) {
+		// Wine background services (wineserver, services.exe, etc.) inherit
+		// stdout/stderr pipe handles and often outlive cmd.exe. Treat ErrWaitDelay
+		// as success only when the context is still active and cmd.exe exited 0.
+		if ctx.Err() != nil || !errors.Is(err, exec.ErrWaitDelay) ||
+			cmd.ProcessState == nil || !cmd.ProcessState.Success() {
 			return fmt.Errorf("Windows package hook failed: %w", err)
 		}
 	}

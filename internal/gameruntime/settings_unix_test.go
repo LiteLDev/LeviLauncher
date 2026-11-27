@@ -34,8 +34,9 @@ func fixtureSettings(t *testing.T) types.WineSettings {
 		D3DMetalVersion: "auto",
 		Sync:            "none",
 		ThreadQoS:       "balanced",
-		VSync:           "auto",
-		MetalFXScale:    "off",
+		VSync:            "auto",
+		MetalFXScale:     "off",
+		MetalFXSharpness: "auto",
 	}
 }
 
@@ -182,5 +183,124 @@ func TestRetinaMetalFXDefaultScalePolicy(t *testing.T) {
 	pQualityRetina := Profile{Graphics: "d3dmetal", RetinaMode: true, EnableMetalFX: true, MetalFXScale: "quality"}
 	if env := pQualityRetina.D3DMetalFXLaunchEnv(true); env["LEVI_METALFX_RETINA_UPSCALE"] != "" || env["LEVI_METALFX_SPATIAL_FACTOR"] != "1.33" || env["LEVI_WINE_RENDER_SCALE"] != "1.33" {
 		t.Fatalf("1.33x Retina D3DMetalFXLaunchEnv = %v, want 1.33 paired scaling", env)
+	}
+}
+
+func TestMetalFXPanelLimit(t *testing.T) {
+	s := fixtureSettings(t)
+	s.App = filepath.Join(t.TempDir(), "Wine.app")
+	s.Executable = appWineExecutable(s.App)
+	writeWineFixture(t, s.Executable, "#!/bin/sh\nexit 0\n", 0700)
+	writeWineFixture(t, filepath.Join(s.App, "Contents/SharedSupport/renderer/d3dmetal/wine"), "", 0600)
+	s.Graphics = "d3dmetal"
+	s.RetinaMode = true
+	s.MetalFXScale = "performance"
+	const key = "LEVI_METALFX_PANEL_LIMIT"
+	path := filepath.Join(t.TempDir(), "wine.json")
+
+	for _, enabled := range []bool{false, true} {
+		s.MetalFXPanelLimit = enabled
+		if err := saveSettings(path, s); err != nil {
+			t.Fatal(err)
+		}
+		loaded, err := loadSettings(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		p, err := profileFromSettings(loaded)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, hasBridge := range []bool{false, true} {
+			env := p.D3DMetalFXLaunchEnv(hasBridge)
+			if (env[key] == "1") != enabled || env["LEVI_METALFX_RETINA_UPSCALE"] != "1" {
+				t.Fatalf("panel limit=%t, bridge=%t: %v", enabled, hasBridge, env)
+			}
+		}
+	}
+	for _, p := range []Profile{
+		{Graphics: "mullion", RetinaMode: true, MetalFXScale: "performance", MetalFXPanelLimit: true},
+		{Graphics: "d3dmetal", RetinaMode: true, MetalFXScale: "off", MetalFXPanelLimit: true},
+		{Graphics: "d3dmetal", MetalFXScale: "performance", MetalFXPanelLimit: true},
+	} {
+		if env := p.D3DMetalFXLaunchEnv(true); env[key] != "" {
+			t.Fatalf("panel limit is active for an unsupported profile: %v", env)
+		}
+	}
+}
+
+func TestMetalFXSharpeningPolicy(t *testing.T) {
+	base := fixtureSettings(t)
+	resolved, err := resolveSettings(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.MetalFXSharpness != "auto" {
+		t.Fatalf("default MetalFXSharpness = %q, want auto", resolved.MetalFXSharpness)
+	}
+
+	invalid := base
+	invalid.MetalFXSharpness = "99"
+	if _, err := profileFromSettings(invalid); err == nil {
+		t.Fatalf("expected invalid MetalFXSharpness to fail validation")
+	}
+
+	autoCases := []struct {
+		scale string
+		want  string
+	}{
+		{"off", ""},
+		{"quality", ""},
+		{"balanced", ""},
+		{"performance", "0.15"},
+		{"ultra_performance", "0.20"},
+		{"extreme", "0.25"},
+		{"max", "0.25"},
+	}
+	for _, tc := range autoCases {
+		if got := metalFXSharpnessValue("auto", tc.scale, tc.scale != "off", false); got != tc.want {
+			t.Errorf("auto sharpness for scale %q = %q, want %q", tc.scale, got, tc.want)
+		}
+	}
+
+	for level, want := range map[string]string{
+		"0":  "",
+		"10": "0.10",
+		"15": "0.15",
+		"25": "0.25",
+		"35": "0.35",
+	} {
+		if got := metalFXSharpnessValue(level, "balanced", true, false); got != want {
+			t.Errorf("explicit sharpness %q = %q, want %q", level, got, want)
+		}
+		if got := metalFXSharpnessValue(level, "off", false, false); got != "" {
+			t.Errorf("sharpness %q with MetalFX off = %q, want empty", level, got)
+		}
+	}
+
+	pD3D := Profile{Graphics: "d3dmetal", RetinaMode: true, MetalFXScale: "performance", MetalFXSharpness: "auto"}
+	if env := pD3D.D3DMetalFXLaunchEnv(false); env["LEVI_METALFX_SHARPNESS"] != "0.15" || env["LEVI_METALFX_SHARPEN_ONLY"] != "" {
+		t.Fatalf("D3DMetal 2x auto sharpen env = %v", env)
+	}
+	if env := pD3D.MetalFXSharpenLaunchEnv(); len(env) != 0 {
+		t.Fatalf("D3DMetal should not use sharpen-only env, got %v", env)
+	}
+
+	pD3DOff := Profile{Graphics: "d3dmetal", RetinaMode: true, MetalFXScale: "performance", MetalFXSharpness: "0"}
+	if env := pD3DOff.D3DMetalFXLaunchEnv(false); env["LEVI_METALFX_SHARPNESS"] != "" {
+		t.Fatalf("D3DMetal sharpness=0 should omit LEVI_METALFX_SHARPNESS, got %v", env)
+	}
+
+	pMullion := Profile{Graphics: "mullion", MetalFXScale: "performance", MetalFXSharpness: "25"}
+	if env := pMullion.MetalFXSharpenLaunchEnv(); env["LEVI_METALFX_SHARPNESS"] != "0.25" || env["LEVI_METALFX_SHARPEN_ONLY"] != "1" {
+		t.Fatalf("Mullion sharpen-only env = %v", env)
+	}
+	pVKD3D := Profile{Graphics: "vkd3d", MetalFXScale: "balanced", MetalFXSharpness: "auto"}
+	if env := pVKD3D.MetalFXSharpenLaunchEnv(); len(env) != 0 {
+		t.Fatalf("VKD3D 1.5x auto sharpness should be inactive, got %v", env)
+	}
+	pVKD3DExplicit := Profile{Graphics: "vkd3d", MetalFXScale: "balanced", MetalFXSharpness: "10"}
+	if env := pVKD3DExplicit.MetalFXSharpenLaunchEnv(); env["LEVI_METALFX_SHARPNESS"] != "0.10" || env["LEVI_METALFX_SHARPEN_ONLY"] != "1" {
+		t.Fatalf("VKD3D explicit sharpen-only env = %v", env)
 	}
 }

@@ -30,6 +30,8 @@ type Profile struct {
 	MaxFPS            int
 	EnableMetalFX     bool
 	MetalFXScale      string
+	MetalFXSharpness  string
+	MetalFXPanelLimit bool
 	CompatDebugLog    bool
 	metalSharp        metalSharpRuntime
 }

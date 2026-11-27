@@ -170,6 +170,38 @@ func metalFXFactor(scale string, enabled bool, retina bool) string {
 	}
 }
 
+func metalFXSharpnessValue(sharpness, scale string, enabled, retina bool) string {
+	factor := metalFXFactor(scale, enabled, retina)
+	if factor == "" {
+		return ""
+	}
+	switch sharpness {
+	case "0":
+		return ""
+	case "10":
+		return "0.10"
+	case "15":
+		return "0.15"
+	case "25":
+		return "0.25"
+	case "35":
+		return "0.35"
+	case "", "auto":
+		switch factor {
+		case "2.00":
+			return "0.15"
+		case "2.50":
+			return "0.20"
+		case "3.00", "4.00":
+			return "0.25"
+		default:
+			return ""
+		}
+	default:
+		return ""
+	}
+}
+
 func threadQoSValue(mode string) string {
 	switch mode {
 	case "default":
@@ -298,7 +330,7 @@ func (p Profile) usesMetal4D3DMetal() bool {
 }
 
 // D3DMetalFXLaunchEnv returns the extra environment variables for native
-// Apple MTLFXSpatialScaler under D3DMetal.
+// Apple MTLFXSpatialScaler and optional CAS sharpening under D3DMetal.
 func (p Profile) D3DMetalFXLaunchEnv(hasBridge bool) map[string]string {
 	if p.EffectiveGraphics() != "d3dmetal" || p.usesMetal4D3DMetal() {
 		return nil
@@ -311,6 +343,7 @@ func (p Profile) D3DMetalFXLaunchEnv(hasBridge bool) map[string]string {
 	if err != nil || parsed <= 1.01 {
 		return nil
 	}
+	sharp := metalFXSharpnessValue(p.MetalFXSharpness, p.MetalFXScale, p.EnableMetalFX, p.RetinaMode)
 	env := map[string]string{}
 	if p.RetinaMode && parsed >= 2.0 {
 		// Without a bridge, keep the logical-pixel to Retina path at 2×.
@@ -319,13 +352,37 @@ func (p Profile) D3DMetalFXLaunchEnv(hasBridge bool) map[string]string {
 			env["LEVI_METALFX_SPATIAL_FACTOR"] = factor
 			env["LEVI_WINE_RENDER_SCALE"] = fmt.Sprintf("%.2f", parsed/2.0)
 		}
-		return env
-	}
-	if hasBridge {
+	} else if hasBridge {
 		env["LEVI_WINE_RENDER_SCALE"] = factor
 		env["LEVI_METALFX_SPATIAL_FACTOR"] = factor
+	} else {
+		return env
+	}
+	if sharp != "" {
+		env["LEVI_METALFX_SHARPNESS"] = sharp
+	}
+	if p.RetinaMode && p.MetalFXPanelLimit {
+		env["LEVI_METALFX_PANEL_LIMIT"] = "1"
 	}
 	return env
+}
+
+// MetalFXSharpenLaunchEnv returns the extra environment variables for post-upscale
+// CAS sharpening on renderers that run MetalFX spatial upscaling internally
+// (Mullion and VKD3D-Proton).
+func (p Profile) MetalFXSharpenLaunchEnv() map[string]string {
+	effective := p.EffectiveGraphics()
+	if effective != "mullion" && effective != "vkd3d" {
+		return nil
+	}
+	sharp := metalFXSharpnessValue(p.MetalFXSharpness, p.MetalFXScale, p.EnableMetalFX, p.RetinaMode)
+	if sharp == "" {
+		return nil
+	}
+	return map[string]string{
+		"LEVI_METALFX_SHARPNESS":    sharp,
+		"LEVI_METALFX_SHARPEN_ONLY": "1",
+	}
 }
 
 func (m metalSharpRuntime) environment(p Profile, values map[string]string) {

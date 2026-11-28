@@ -53,6 +53,29 @@ with tempfile.TemporaryDirectory() as scratch:
     subprocess.run(['iconutil', '-c', 'icns', str(iconset), '-o', str(resources/'AppIcon.icns')], check=True)
 app_version = read_app_version(root/'build/config.yml')
 info={'CFBundleExecutable':'LeviLauncher','CFBundleIdentifier':'org.levimc.levilauncher.native','CFBundleName':'LeviLauncher','CFBundleDisplayName':'LeviLauncher','CFBundlePackageType':'APPL','CFBundleShortVersionString':app_version,'CFBundleVersion':'1','CFBundleIconFile':'AppIcon.icns','LSMinimumSystemVersion':'14.6','NSHighResolutionCapable':True,'NSAppTransportSecurity':{'NSAllowsLocalNetworking':True},'NSSupportsAutomaticGraphicsSwitching':True,'CFBundleURLTypes':[{'CFBundleURLName':'org.levimc.levilauncher.native','CFBundleURLSchemes':['levilauncher'],'CFBundleTypeRole':'Viewer'}]}
+document_types = {
+    'mcpack': 'Minecraft Pack',
+    'mcaddon': 'Minecraft Add-On',
+    'mcworld': 'Minecraft World',
+    'mcmod': 'Levi Mod Package',
+}
+info['CFBundleDocumentTypes'] = [
+    {
+        'CFBundleTypeName': name,
+        'CFBundleTypeRole': 'Editor',
+        'LSHandlerRank': 'Owner' if ext == 'mcmod' else 'Alternate',
+        'LSItemContentTypes': [f'org.levimc.levilauncher.{ext}'],
+    }
+    for ext, name in document_types.items()
+]
+for ext, name in document_types.items():
+    key = 'UTExportedTypeDeclarations' if ext == 'mcmod' else 'UTImportedTypeDeclarations'
+    info.setdefault(key, []).append({
+        'UTTypeIdentifier': f'org.levimc.levilauncher.{ext}',
+        'UTTypeDescription': name,
+        'UTTypeConformsTo': ['public.data', 'public.content'],
+        'UTTypeTagSpecification': {'public.filename-extension': [ext]},
+    })
 with (app/'Contents/Info.plist').open('wb') as f: plistlib.dump(info,f)
 for name in ('COPYING', 'THIRD_PARTY_NOTICES'):
     shutil.copyfile(root/name, resources/name)

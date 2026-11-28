@@ -1,3 +1,4 @@
+import { OpenedContentFiles } from "@/hooks/useOpenedContentFiles";
 import { Spinner, ToastProvider } from "@heroui/react";
 
 import "./polyfills/wails";
@@ -275,6 +276,7 @@ function App() {
       <CurrentVersionProvider>
         <ModIntelligenceProvider>
           <GlobalShortcuts tryNavigate={tryNavigate} />
+          <OpenedContentFiles blocked={effectiveNavLocked || termsOpen || analyticsPromptOpen} />
           <VersionStatusProvider>
             <DownloadsProvider>
               <LeviLaminaProvider>

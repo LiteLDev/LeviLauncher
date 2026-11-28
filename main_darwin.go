@@ -286,8 +286,12 @@ func main() {
 	if len(os.Args) >= 2 && os.Args[1] == "--attach-console" {
 		os.Exit(gameconsole.RunCLI(os.Args[2:]))
 	}
-	if cli.Wants(os.Args[1:]) {
-		os.Exit(cli.Run(os.Args[1:]))
+	contentFiles := app.ContentFileArgs(os.Args[1:])
+	if len(contentFiles) != len(os.Args[1:]) {
+		contentFiles = nil
+		if cli.Wants(os.Args[1:]) {
+			os.Exit(cli.Run(os.Args[1:]))
+		}
 	}
 
 	autoLaunchVersion, debugMode := parseDarwinArgs(os.Args[1:])
@@ -327,6 +331,7 @@ func main() {
 		log.Printf("[startup] opening %s", deepLink)
 		deeplink.Default.Deliver(*deepLink)
 	}
+	app.QueueContentFiles(contentFiles)
 	deepLinks := app.NewDeepLinkService()
 
 	logLevel := slog.LevelWarn
@@ -361,6 +366,7 @@ func main() {
 			application.NewService(versions),
 			application.NewService(app.NewDiagnosticsService()),
 			application.NewService(deepLinks),
+			application.NewService(app.FileOpens),
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),
@@ -369,6 +375,18 @@ func main() {
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "org.levimc.levilauncher.native",
 			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+				if len(data.Args) > 1 {
+					files := append([]string(nil), data.Args[1:]...)
+					for i, file := range files {
+						if !filepath.IsAbs(file) {
+							files[i] = filepath.Join(data.WorkingDir, file)
+						}
+					}
+					if len(app.ContentFileArgs(files)) == len(files) {
+						app.QueueContentFiles(files)
+						return
+					}
+				}
 				handleDarwinSecondInstanceArgs(
 					data.Args,
 					func(raw string) error {
@@ -394,6 +412,9 @@ func main() {
 		}
 		go launch.RestoreLauncherWindow()
 	})
+	a.Event.OnApplicationEvent(events.Common.ApplicationOpenedWithFile, func(event *application.ApplicationEvent) {
+		app.QueueContentFiles([]string{event.Context().Filename()})
+	})
 	// Clicking the Dock icon while the launcher window was hidden (e.g. via
 	// the "hide on game launch" setting) restores the main window.
 	a.Event.OnApplicationEvent(events.Mac.ApplicationShouldHandleReopen, func(_ *application.ApplicationEvent) {
@@ -412,12 +433,12 @@ func main() {
 	}
 
 	w := a.Window.NewWithOptions(application.WebviewWindowOptions{
-		Name:           "main",
-		Title:          "LeviLauncher",
-		Width:          winW,
-		Height:         winH,
-		MinWidth:       darwinMinWindowWidth,
-		MinHeight:      darwinMinWindowHeight,
+		Name:      "main",
+		Title:     "LeviLauncher",
+		Width:     winW,
+		Height:    winH,
+		MinWidth:  darwinMinWindowWidth,
+		MinHeight: darwinMinWindowHeight,
 		Mac: application.MacWindow{
 			TitleBar: application.MacTitleBarHiddenInsetUnified,
 		},

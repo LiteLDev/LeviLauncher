@@ -1,3 +1,4 @@
+import { useOpenedContentImport } from "@/hooks/useOpenedContentFiles";
 import { EMPTY_CONTENT_ROOTS, isContentTransferTarget } from "@/utils/content";
 import { useOverlayState } from "@heroui/react";
 import React from "react";
@@ -747,6 +748,7 @@ export const useContentPage = (t: TFunc) => {
   // --- Effects ---
   const doImportRef = React.useRef(doImportFromPaths);
   doImportRef.current = doImportFromPaths;
+  useOpenedContentImport(doImportFromPaths);
 
   React.useEffect(() => {
     let passedPlayer = location?.state?.player;

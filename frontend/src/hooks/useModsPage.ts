@@ -1,3 +1,4 @@
+import { useOpenedContentImport } from "@/hooks/useOpenedContentFiles";
 import { openDirectory, openModsDirectory } from "@/utils/explorer";
 import { toast, useOverlayState } from "@heroui/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -1002,6 +1003,7 @@ ${t(`errors.explain.${cause}`)}` : message,
 
   const doImportRef = useRef(doImportFromPaths);
   doImportRef.current = doImportFromPaths;
+  useOpenedContentImport(doImportFromPaths);
 
   useEffect(() => {
     if (!activeVersionName) {

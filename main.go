@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -496,6 +497,11 @@ func (a singleInstanceActions) handle(line string) {
 		if _, err := a.links.DeliverRaw(payload); err != nil {
 			log.Printf("Rejected single-instance uri payload: %v", err)
 		}
+	case "files":
+		var files []string
+		if json.Unmarshal([]byte(payload), &files) == nil {
+			app.QueueContentFiles(files)
+		}
 	case "launch":
 		if payload == "" {
 			return
@@ -537,7 +543,7 @@ func startSingleInstanceServer(versionService *app.VersionService) {
 	}()
 }
 
-func ensureSingleInstance(autoLaunchVersion string, link *deeplink.Request, waitForPreviousInstance bool) (bool, error) {
+func ensureSingleInstance(autoLaunchVersion string, link *deeplink.Request, waitForPreviousInstance bool, files []string) (bool, error) {
 	var wait time.Duration
 	if waitForPreviousInstance {
 		wait = 30 * time.Second
@@ -548,8 +554,15 @@ func ensureSingleInstance(autoLaunchVersion string, link *deeplink.Request, wait
 		if waitForPreviousInstance {
 			return false, fmt.Errorf("update handoff timed out after %s: the previous launcher instance is still running", wait)
 		}
-		if !sendToExistingInstance(singleInstanceCommand(autoLaunchVersion, link)) {
-			if link != nil {
+		command := singleInstanceCommand(autoLaunchVersion, link)
+		if len(files) > 0 {
+			payload, _ := json.Marshal(files)
+			command = "files\t" + string(payload) + "\n"
+		}
+		if !sendToExistingInstance(command) {
+			if len(files) > 0 {
+				log.Printf("[startup] the running launcher did not receive the files")
+			} else if link != nil {
 				log.Printf("[startup] the running launcher did not take the link %s", link)
 			}
 			focusExistingWindow()
@@ -576,8 +589,12 @@ func launcherWindowTitle() string {
 func main() {
 	// A command turns the launcher into a command-line tool; no arguments
 	// and the window's own switches open the GUI.
-	if cli.Wants(os.Args[1:]) {
-		os.Exit(cli.Run(os.Args[1:]))
+	contentFiles := app.ContentFileArgs(os.Args[1:])
+	if len(contentFiles) != len(os.Args[1:]) {
+		contentFiles = nil
+		if cli.Wants(os.Args[1:]) {
+			os.Exit(cli.Run(os.Args[1:]))
+		}
 	}
 
 	processStart := time.Now()
@@ -638,7 +655,7 @@ func main() {
 		autoLaunchVersion = ""
 	}
 
-	isFirstInstance, err := ensureSingleInstance(autoLaunchVersion, deepLink, waitForPreviousInstance)
+	isFirstInstance, err := ensureSingleInstance(autoLaunchVersion, deepLink, waitForPreviousInstance, contentFiles)
 	if err != nil {
 		diagnostics.HandleError("single-instance startup failed", err)
 		return
@@ -699,6 +716,7 @@ func main() {
 		log.Printf("[startup] opening %s", deepLink)
 		deeplink.Default.Deliver(*deepLink)
 	}
+	app.QueueContentFiles(contentFiles)
 	deepLinkService := app.NewDeepLinkService()
 
 	assets, err := fs.Sub(assets, "frontend/dist")
@@ -735,6 +753,7 @@ func main() {
 			application.NewService(versionService),
 			application.NewService(app.NewDiagnosticsService()),
 			application.NewService(deepLinkService),
+			application.NewService(app.FileOpens),
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),

@@ -35,6 +35,7 @@
 #define VCRuntimeFile "vc_redist." + VCRuntimeArch + ".exe"
 
 [Setup]
+ChangesAssociations=yes
 AppId=org.levimc.launcher
 AppName={#AppName}
 AppVersion={#AppVersion}
@@ -343,6 +344,20 @@ Root: HKA; Subkey: "Software\Classes\levilauncher"; ValueType: string; ValueName
 Root: HKA; Subkey: "Software\Classes\levilauncher"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
 Root: HKA; Subkey: "Software\Classes\levilauncher\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"",0"
 Root: HKA; Subkey: "Software\Classes\levilauncher\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
+
+; Register LeviLauncher in Open With for Minecraft content and Levi mods.
+Root: HKA; Subkey: "Software\Classes\.mcpack\OpenWithProgids"; ValueType: none; ValueName: "LeviLauncher.mcpack"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\LeviLauncher.mcpack"; ValueType: string; ValueName: ""; ValueData: "Minecraft Pack"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\LeviLauncher.mcpack\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\.mcaddon\OpenWithProgids"; ValueType: none; ValueName: "LeviLauncher.mcaddon"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\LeviLauncher.mcaddon"; ValueType: string; ValueName: ""; ValueData: "Minecraft Add-On"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\LeviLauncher.mcaddon\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\.mcworld\OpenWithProgids"; ValueType: none; ValueName: "LeviLauncher.mcworld"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\LeviLauncher.mcworld"; ValueType: string; ValueName: ""; ValueData: "Minecraft World"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\LeviLauncher.mcworld\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
+Root: HKA; Subkey: "Software\Classes\.mcmod\OpenWithProgids"; ValueType: none; ValueName: "LeviLauncher.mcmod"; Flags: uninsdeletevalue
+Root: HKA; Subkey: "Software\Classes\LeviLauncher.mcmod"; ValueType: string; ValueName: ""; ValueData: "Levi Mod Package"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\LeviLauncher.mcmod\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#AppExeName}"" ""%1"""
 
 [Run]
 ; runasoriginaluser keeps the launcher out of the elevated setup session, so it

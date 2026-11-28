@@ -34,6 +34,23 @@ func (a *Minecraft) StartWineInstaller(ctx context.Context, consent bool) (types
 		eventsink.From(ctx).Emit("wine.install.progress", progress)
 	}, versionlaunch.PrepareWine)
 }
+func (a *Minecraft) InstallWineVersion(ctx context.Context, consent bool, tag string) (types.WineSettings, error) {
+	return gameruntime.InstallManagedWineVersion(ctx, consent, tag, func(progress types.WineInstallProgress) {
+		eventsink.From(ctx).Emit("wine.install.progress", progress)
+	}, versionlaunch.PrepareWine)
+}
+func (a *Minecraft) ListWineRuntimeReleases(ctx context.Context) ([]types.WineRuntimeRelease, error) {
+	return gameruntime.ListMetalSharpReleases(ctx)
+}
+func (a *Minecraft) ListInstalledWineVersions() ([]types.ManagedWineVersion, error) {
+	return gameruntime.ListInstalledMetalSharpVersions()
+}
+func (a *Minecraft) SwitchWineVersion(ctx context.Context, appPath string) (types.WineSettings, error) {
+	return gameruntime.SwitchManagedWineVersion(ctx, appPath, versionlaunch.PrepareWine)
+}
+func (a *Minecraft) RemoveWineVersion(appPath string) error {
+	return gameruntime.RemoveManagedWineVersion(appPath)
+}
 func (a *Minecraft) GetLegacyWineInfo() (types.LegacyWineInfo, error) {
 	return gameruntime.GetLegacyWineInfo()
 }

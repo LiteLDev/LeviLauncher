@@ -5,6 +5,7 @@ package versionlaunch
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/gameauth"
@@ -136,11 +137,13 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		openFlags = os.O_CREATE | os.O_TRUNC | os.O_WRONLY
 	}
 	// Game lifetime is independent of the launcher's context once started.
+	bridgePath := findLeviWineBridge(dir)
 	cmd, detached, err := p.GameCommandWithOptions(context.Background(), exe, gameruntime.GameLaunchOptions{
-		WorkDir:       dir,
-		LogPath:       logPath,
-		ExtraEnv:      extraEnv,
-		HasWineBridge: hasLeviWineBridge(dir),
+		WorkDir:                  dir,
+		LogPath:                  logPath,
+		ExtraEnv:                 extraEnv,
+		HasWineBridge:            bridgePath != "",
+		HasWineBridgeGPTK4RTXFix: hasLeviWineBridgeGPTK4RTXFix(bridgePath),
 	}, args...)
 	if err != nil {
 		return "ERR_WINE_RUNTIME: " + err.Error()
@@ -254,28 +257,61 @@ func resolveInstanceIconPath(instanceDir string) string {
 	return ""
 }
 
-func hasLeviWineBridge(instanceDir string) bool {
+func findLeviWineBridge(instanceDir string) string {
 	if instanceDir == "" {
-		return false
+		return ""
 	}
-	direct := filepath.Join(instanceDir, "mods", "LeviClient", "LeviWineBridge.dll")
-	if info, err := os.Stat(direct); err == nil && info.Mode().IsRegular() {
-		return true
+	if direct := activeWineBridgeIn(filepath.Join(instanceDir, "mods", "LeviClient")); direct != "" {
+		return direct
 	}
 	entries, err := os.ReadDir(filepath.Join(instanceDir, "mods"))
 	if err != nil {
-		return false
+		return ""
 	}
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
-		candidate := filepath.Join(instanceDir, "mods", entry.Name(), "LeviWineBridge.dll")
-		if info, statErr := os.Stat(candidate); statErr == nil && info.Mode().IsRegular() {
-			return true
+		if candidate := activeWineBridgeIn(filepath.Join(instanceDir, "mods", entry.Name())); candidate != "" {
+			return candidate
 		}
 	}
-	return false
+	return ""
+}
+
+func activeWineBridgeIn(modDir string) string {
+	dll := filepath.Join(modDir, "LeviWineBridge.dll")
+	if info, err := os.Stat(dll); err != nil || !info.Mode().IsRegular() {
+		return ""
+	}
+	data, err := os.ReadFile(filepath.Join(modDir, "manifest.json"))
+	if err != nil {
+		return ""
+	}
+	var manifest struct {
+		Entry string `json:"entry"`
+		Type  string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &manifest); err != nil ||
+		!strings.EqualFold(manifest.Entry, filepath.Base(dll)) || manifest.Type != "preload-native" {
+		return ""
+	}
+	return dll
+}
+
+func hasLeviWineBridge(instanceDir string) bool {
+	return findLeviWineBridge(instanceDir) != ""
+}
+
+func hasLeviWineBridgeGPTK4RTXFix(bridgePath string) bool {
+	if bridgePath == "" {
+		return false
+	}
+	data, err := os.ReadFile(bridgePath)
+	if err != nil {
+		return false
+	}
+	return bytes.Contains(data, []byte("LEVI_GPTK4_RTX_FIX"))
 }
 
 func isProcessRunningAtPath(path string) bool {

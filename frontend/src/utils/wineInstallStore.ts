@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { Events } from "@wailsio/runtime";
-import { StartWineInstaller } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import { InstallWineVersion, StartWineInstaller } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import type { WineInstallProgress } from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 
 export const wineInstallStages = ["rosetta", "runtime", "extract", "initialize", "select"] as const;
@@ -10,11 +10,12 @@ type InstallState = {
   progress: WineInstallProgress;
   error: string;
   completed: number;
+  targetTag: string;
 };
 
 const initialProgress = { stage: "rosetta", status: "working", downloaded: 0, total: 0 };
 const listeners = new Set<() => void>();
-let state: InstallState = { status: "idle", progress: initialProgress, error: "", completed: 0 };
+let state: InstallState = { status: "idle", progress: initialProgress, error: "", completed: 0, targetTag: "" };
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
@@ -31,9 +32,10 @@ export function useWineInstall() {
 }
 
 // The installation and its progress subscription outlive the Wine tab.
-export async function installWine(consent: boolean) {
+export async function installWine(consent: boolean, targetTag?: string) {
   if (state.status === "running") return;
-  update({ status: "running", progress: initialProgress, error: "" });
+  const resolvedTag = (targetTag ?? state.targetTag).trim();
+  update({ status: "running", progress: initialProgress, error: "", targetTag: resolvedTag });
   const unsubscribe = Events.On("wine.install.progress", ({ data }) => {
     const progress = data as WineInstallProgress | null;
     if (progress && wineInstallStages.some((stage) => stage === progress.stage)) {
@@ -41,7 +43,11 @@ export async function installWine(consent: boolean) {
     }
   });
   try {
-    await StartWineInstaller(consent);
+    if (resolvedTag) {
+      await InstallWineVersion(consent, resolvedTag);
+    } else {
+      await StartWineInstaller(consent);
+    }
     update({ status: "done", completed: state.completed + 1 });
   } catch (failure) {
     const error = failure instanceof Error ? failure.message : String(failure);

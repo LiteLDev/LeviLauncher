@@ -15,10 +15,11 @@ import (
 
 // GameLaunchOptions configures how a Windows game executable is started.
 type GameLaunchOptions struct {
-	WorkDir       string
-	LogPath       string
-	ExtraEnv      map[string]string
-	HasWineBridge bool
+	WorkDir                  string
+	LogPath                  string
+	ExtraEnv                 map[string]string
+	HasWineBridge            bool
+	HasWineBridgeGPTK4RTXFix bool
 }
 
 func (p Profile) isSikarugirWrapper() (wrapper string, ok bool) {
@@ -47,43 +48,77 @@ func (p Profile) GameCommand(ctx context.Context, exe string, args ...string) (c
 // GameCommandWithOptions builds a game launch command with optional working
 // directory, log redirection, and per-launch environment overrides.
 func (p Profile) GameCommandWithOptions(ctx context.Context, exe string, opts GameLaunchOptions, args ...string) (cmd *exec.Cmd, detached bool, err error) {
-	merged := mergeEnv(p.Environment(), opts.ExtraEnv)
+	launchProfile := p
+	heapFixOverride := os.Getenv("LEVI_GPTK4_RTX_FIX")
+	if value, ok := opts.ExtraEnv["LEVI_GPTK4_RTX_FIX"]; ok {
+		heapFixOverride = value
+	}
+	hasHeapFix := opts.HasWineBridgeGPTK4RTXFix
+	switch strings.ToLower(heapFixOverride) {
+	case "0", "false", "off":
+		hasHeapFix = false
+	}
+	if hasHeapFix &&
+		launchProfile.EffectiveGraphics() == "d3dmetal" &&
+		launchProfile.EnableRayTracing &&
+		(launchProfile.D3DMetalVersion == "" || launchProfile.D3DMetalVersion == "auto") &&
+		launchProfile.metalSharp.hasD3DMetal("gptk4") {
+		launchProfile.D3DMetalVersion = "gptk4"
+	}
+	merged := mergeEnv(launchProfile.Environment(), opts.ExtraEnv)
+	if launchProfile.metalSharp.app != "" &&
+		launchProfile.EffectiveGraphics() == "d3dmetal" &&
+		merged["D3DM_SUPPORT_DXR"] == "1" &&
+		launchProfile.metalSharp.selectedD3DMetalVersionFor(launchProfile.D3DMetalVersion, launchProfile.EnableRayTracing) == "gptk4" &&
+		!hasHeapFix {
+		return nil, false, fmt.Errorf("GPTK 4 beta 3 ray tracing requires an enabled LeviWineBridge with the RTX heap fix; enable or update the mod, or select GPTK 3")
+	}
 
 	// Launch MetalSharp through our bundled LeviGameHost.app (when available) so
 	// macOS RunningBoard activates Game Mode while injecting libLeviMetalFX.dylib
 	// into MetalSharp's inner x86_64-unix/wine loader without modifying or re-signing
 	// MetalSharp-Wine-x86_64.app. Fall back to opening MetalSharp directly if the
 	// helper bundle is absent (e.g. during non-bundled development or unit tests).
-	if p.metalSharp.app != "" {
-		guest, err := p.WindowsPath(exe)
+	if launchProfile.metalSharp.app != "" {
+		guest, err := launchProfile.WindowsPath(exe)
 		if err != nil {
 			return nil, false, err
 		}
 		if opts.WorkDir != "" {
-			if guestDir, err := p.WindowsPath(opts.WorkDir); err == nil {
+			if guestDir, err := launchProfile.WindowsPath(opts.WorkDir); err == nil {
 				merged["LEVI_WINE_WORKDIR"] = guestDir
 			}
 		}
-		launchApp := p.metalSharp.app
-		if hostApp, helperLib, wineUnix := p.nativeMetalGameHost(); hostApp != "" {
+		launchApp := launchProfile.metalSharp.app
+		for key, value := range launchProfile.D3DMetalDLSSLaunchEnv(opts.HasWineBridge) {
+			if _, overridden := opts.ExtraEnv[key]; !overridden {
+				merged[key] = value
+			}
+		}
+		for key, value := range launchProfile.DLSSPanelLimitLaunchEnv(opts.HasWineBridge) {
+			if _, overridden := opts.ExtraEnv[key]; !overridden {
+				merged[key] = value
+			}
+		}
+		if hostApp, helperLib, wineUnix := launchProfile.nativeMetalGameHost(); hostApp != "" {
 			launchApp = hostApp
 			merged["LEVI_WINE_UNIX_BIN"] = wineUnix
 			merged["LEVI_METAL_HELPER_LIB"] = helperLib
 			merged["LEVI_METAL_OPAQUE"] = "1"
 			if merged["D3DM_MTL4"] != "1" {
-				for key, value := range p.D3DMetalFXLaunchEnv(opts.HasWineBridge) {
+				for key, value := range launchProfile.D3DMetalFXLaunchEnv(opts.HasWineBridge) {
 					if _, overridden := opts.ExtraEnv[key]; !overridden {
 						merged[key] = value
 					}
 				}
 			}
-			for key, value := range p.MetalFXSharpenLaunchEnv() {
+			for key, value := range launchProfile.MetalFXSharpenLaunchEnv() {
 				if _, overridden := opts.ExtraEnv[key]; !overridden {
 					merged[key] = value
 				}
 			}
-			applyNativeMetalPacing(merged, p)
-			if p.CompatDebugLog {
+			applyNativeMetalPacing(merged, launchProfile)
+			if launchProfile.CompatDebugLog {
 				merged["LEVI_METALFX_DEBUG"] = "1"
 			}
 		}

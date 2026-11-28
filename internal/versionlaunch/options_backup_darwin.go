@@ -80,13 +80,18 @@ func restoreDamagedOptions(versionDir string) {
 	}
 }
 
-// applyOptionsFramePacing synchronizes launcher VSync and FPS pacing overrides
-// into Minecraft Bedrock's options.txt before launch. Keeping gfx_vsync aligned
-// prevents the game's DX12 swap chain from requesting VSync / SyncInterval=1
-// when native VSync is forced off, and keeping gfx_max_framerate at 0 prevents
-// Bedrock's in-game slider from resetting >60 FPS limits back to 60.
+// applyOptionsFramePacing synchronizes launcher VSync, FPS pacing, and DLSS
+// upscaling overrides into Minecraft Bedrock's options.txt before launch.
+// Keeping gfx_vsync aligned prevents the game's DX12 swap chain from requesting
+// VSync / SyncInterval=1 when native VSync is forced off, keeping
+// gfx_max_framerate at 0 prevents Bedrock's in-game slider from resetting >60
+// FPS limits back to 60, and ensuring gfx_upscaling:1 when both RTX and DLSS
+// are enabled prevents Bedrock from reverting the in-game upscaling toggle.
+// gfx_raytracing is intentionally never forced because worlds without an RTX
+// PBR resource pack can misbehave if it is turned on externally.
 func applyOptionsFramePacing(versionDir string, p gameruntime.Profile) {
-	if p.VSync != "off" && p.VSync != "on" && p.MaxFPS <= 0 {
+	enableUpscaling := p.EffectiveRayTracing() && p.EffectiveDLSS()
+	if p.VSync != "off" && p.VSync != "on" && p.MaxFPS <= 0 && !enableUpscaling {
 		return
 	}
 	for _, opt := range optionsFiles(versionDir) {
@@ -94,7 +99,7 @@ func applyOptionsFramePacing(versionDir string, p gameruntime.Profile) {
 		if err != nil || !isHealthyOptionsData(data) {
 			continue
 		}
-		updated, changed := rewriteOptionsFramePacing(data, p.VSync, p.MaxFPS)
+		updated, changed := rewriteOptionsLaunchOverrides(data, p.VSync, p.MaxFPS, enableUpscaling)
 		if !changed {
 			continue
 		}
@@ -104,19 +109,24 @@ func applyOptionsFramePacing(versionDir string, p gameruntime.Profile) {
 	}
 }
 
-func rewriteOptionsFramePacing(original []byte, vsync string, maxFPS int) ([]byte, bool) {
-	if vsync != "off" && vsync != "on" && maxFPS <= 0 {
+func rewriteOptionsLaunchOverrides(original []byte, vsync string, maxFPS int, enableUpscaling bool) ([]byte, bool) {
+	pacingActive := vsync == "off" || vsync == "on" || maxFPS > 0
+	if !pacingActive && !enableUpscaling {
 		return original, false
 	}
-	changes := map[string]string{
-		"gfx_max_framerate":          "0",
-		"gfx_max_framerate_advanced": "0",
+	changes := map[string]string{}
+	if pacingActive {
+		changes["gfx_max_framerate"] = "0"
+		changes["gfx_max_framerate_advanced"] = "0"
+		switch vsync {
+		case "off":
+			changes["gfx_vsync"] = "0"
+		case "on":
+			changes["gfx_vsync"] = "1"
+		}
 	}
-	switch vsync {
-	case "off":
-		changes["gfx_vsync"] = "0"
-	case "on":
-		changes["gfx_vsync"] = "1"
+	if enableUpscaling {
+		changes["gfx_upscaling"] = "1"
 	}
 
 	newline := "\n"
@@ -126,16 +136,29 @@ func rewriteOptionsFramePacing(original []byte, vsync string, maxFPS int) ([]byt
 	text := strings.ReplaceAll(string(original), "\r\n", "\n")
 	lines := strings.Split(text, "\n")
 	changed := false
+	foundUpscaling := false
 	for i, line := range lines {
 		key, val, ok := strings.Cut(line, ":")
 		if !ok {
 			continue
+		}
+		if key == "gfx_upscaling" {
+			foundUpscaling = true
 		}
 		want, exists := changes[key]
 		if !exists || val == want {
 			continue
 		}
 		lines[i] = key + ":" + want
+		changed = true
+	}
+	if enableUpscaling && !foundUpscaling {
+		if len(lines) > 0 && lines[len(lines)-1] == "" {
+			lines[len(lines)-1] = "gfx_upscaling:1"
+			lines = append(lines, "")
+		} else {
+			lines = append(lines, "gfx_upscaling:1")
+		}
 		changed = true
 	}
 	if !changed {

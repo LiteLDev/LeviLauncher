@@ -66,7 +66,12 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 	}
 	if current.Executable != "" {
 		name := "Wine"
-		if current.App != "" {
+		if isMetalSharpApp(current.App) {
+			name = "MetalSharp Wine"
+			if v := (metalSharpRuntime{current.App}).version(); v != "" {
+				name = "MetalSharp Wine " + v
+			}
+		} else if current.App != "" {
 			name = strings.TrimSuffix(filepath.Base(current.App), ".app")
 		}
 		if (Profile{Wine: current.Executable}).crossOverRoot() != "" {
@@ -93,7 +98,11 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 			if strings.HasSuffix(strings.ToLower(entry.Name()), ".app") {
 				name := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
 				if isMetalSharpApp(path) {
-					add(name, managedWineSettings(path), CheckManagedWineRequirements(ctx) == nil)
+					displayName := name
+					if v := (metalSharpRuntime{path}).version(); v != "" {
+						displayName = "MetalSharp Wine " + v
+					}
+					add(displayName, managedWineSettings(path), CheckManagedWineRequirements(ctx) == nil)
 					if entry.IsDir() {
 						return filepath.SkipDir
 					}
@@ -127,7 +136,9 @@ func scanLocations(ctx context.Context, appDirs, binDirs []string, home string, 
 				}
 			}
 			if root == managedRoot && path != root && entry.IsDir() {
-				return filepath.SkipDir
+				if filepath.Base(path) != "versions" && filepath.Dir(path) != filepath.Join(managedRoot, "versions") {
+					return filepath.SkipDir
+				}
 			}
 			// Do not traverse arbitrary app data or entire user directories.
 			if entry.IsDir() && relative != "." && (strings.HasPrefix(entry.Name(), ".") || len(strings.Split(relative, string(filepath.Separator))) >= 4) {

@@ -31,6 +31,21 @@ func (a *Minecraft) WineNeedsRosetta(context.Context) bool { return false }
 func (a *Minecraft) StartWineInstaller(context.Context, bool) (types.WineSettings, error) {
 	return types.WineSettings{}, errors.New("Wine installation is only available on macOS")
 }
+func (a *Minecraft) InstallWineVersion(context.Context, bool, string) (types.WineSettings, error) {
+	return types.WineSettings{}, errors.New("Wine installation is only available on macOS")
+}
+func (a *Minecraft) ListWineRuntimeReleases(context.Context) ([]types.WineRuntimeRelease, error) {
+	return nil, errors.New("Wine installation is only available on macOS")
+}
+func (a *Minecraft) ListInstalledWineVersions() ([]types.ManagedWineVersion, error) {
+	return nil, errors.New("Wine installation is only available on macOS")
+}
+func (a *Minecraft) SwitchWineVersion(context.Context, string) (types.WineSettings, error) {
+	return types.WineSettings{}, errors.New("Wine installation is only available on macOS")
+}
+func (a *Minecraft) RemoveWineVersion(string) error {
+	return errors.New("Wine installation is only available on macOS")
+}
 func (a *Minecraft) GetLegacyWineInfo() (types.LegacyWineInfo, error) {
 	return types.LegacyWineInfo{}, nil
 }

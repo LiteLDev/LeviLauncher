@@ -21,9 +21,34 @@ type WineSettings struct {
 	MetalFXScale      string   `json:"metalFxScale,omitempty"`      // off | quality | balanced | performance | ultra_performance | extreme | max
 	MetalFXSharpness  string   `json:"metalFxSharpness,omitempty"`  // auto | 0 | 10 | 15 | 25 | 35 (CAS sharpening after MetalFX upscaling)
 	MetalFXPanelLimit bool     `json:"metalFxPanelLimit,omitempty"` // cap Retina MetalFX output to the window's physical pixel size
+	EnableRayTracing  bool     `json:"enableRayTracing,omitempty"`  // enables DXR ray tracing on D3DMetal / Mullion / VKD3D
+	EnableDLSS        bool     `json:"enableDlss,omitempty"`        // enables DLSS (routed to MetalFX Temporal via NGX)
+	DLSSQuality       string   `json:"dlssQuality,omitempty"`       // auto | ultra_performance | performance | balanced | quality | dlaa
 	CompatDebugLog    bool     `json:"compatDebugLog,omitempty"`    // enables XGR_TRACE=1 & MCWINRT_TRACE=1
 	Runtime           string   `json:"runtime,omitempty"`           // derived from the selected executable
+	RuntimeVersion    string   `json:"runtimeVersion,omitempty"`    // derived MetalSharp Wine version (e.g. "10.5")
 	D3DMetalVersions  []string `json:"d3dMetalVersions,omitempty"`  // derived available D3DMetal selector options
+}
+
+type WineRuntimeRelease struct {
+	Tag         string `json:"tag"`
+	Version     string `json:"version"`
+	Name        string `json:"name"`
+	PublishedAt string `json:"publishedAt,omitempty"`
+	AssetName   string `json:"assetName"`
+	DownloadURL string `json:"downloadUrl"`
+	SHA256URL   string `json:"sha256Url,omitempty"`
+	SHA256      string `json:"sha256,omitempty"`
+	SizeBytes   int64  `json:"sizeBytes,omitempty"`
+	IsLatest    bool   `json:"isLatest,omitempty"`
+}
+
+type ManagedWineVersion struct {
+	Tag       string `json:"tag"`
+	Version   string `json:"version"`
+	Path      string `json:"path"`
+	SizeBytes int64  `json:"sizeBytes"`
+	Active    bool   `json:"active"`
 }
 
 type WineShaderCacheInfo struct {

@@ -37,6 +37,7 @@ func fixtureSettings(t *testing.T) types.WineSettings {
 		VSync:            "auto",
 		MetalFXScale:     "off",
 		MetalFXSharpness: "auto",
+		DLSSQuality:      "performance",
 	}
 }
 
@@ -302,5 +303,150 @@ func TestMetalFXSharpeningPolicy(t *testing.T) {
 	pVKD3DExplicit := Profile{Graphics: "vkd3d", MetalFXScale: "balanced", MetalFXSharpness: "10"}
 	if env := pVKD3DExplicit.MetalFXSharpenLaunchEnv(); env["LEVI_METALFX_SHARPNESS"] != "0.10" || env["LEVI_METALFX_SHARPEN_ONLY"] != "1" {
 		t.Fatalf("VKD3D explicit sharpen-only env = %v", env)
+	}
+}
+
+func TestDLSSSettingsValidationAndMutualExclusion(t *testing.T) {
+	base := fixtureSettings(t)
+	base.DLSSQuality = ""
+	resolved, err := resolveSettings(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved.DLSSQuality != "performance" {
+		t.Fatalf("default DLSSQuality = %q, want performance", resolved.DLSSQuality)
+	}
+
+	invalid := base
+	invalid.DLSSQuality = "invalid_preset"
+	if _, err := profileFromSettings(invalid); err == nil {
+		t.Fatal("expected invalid DLSSQuality to fail validation")
+	}
+
+	for _, preset := range []string{"auto", "ultra_performance", "performance", "balanced", "quality", "dlaa"} {
+		valid := base
+		valid.DLSSQuality = preset
+		valid.EnableRayTracing = true
+		valid.EnableDLSS = true
+		if _, err := profileFromSettings(valid); err != nil {
+			t.Fatalf("valid DLSSQuality %q rejected: %v", preset, err)
+		}
+	}
+
+	// DLSS (MetalFX Temporal) requires Ray Tracing; without RTX, Spatial MetalFX stays active.
+	pNoRTX := Profile{
+		Graphics:     "d3dmetal",
+		RetinaMode:   true,
+		MetalFXScale: "performance",
+		EnableDLSS:   true,
+		DLSSQuality:  "performance",
+	}
+	if pNoRTX.EffectiveDLSS() {
+		t.Fatalf("EffectiveDLSS without EnableRayTracing = true, want false")
+	}
+	if got := pNoRTX.SpatialMetalFXFactor(); got != "2.00" {
+		t.Fatalf("SpatialMetalFXFactor without RTX = %q, want 2.00", got)
+	}
+
+	// DLSS must suppress spatial MetalFX scaling while preserving explicit CAS sharpening.
+	pD3D := Profile{
+		Graphics:         "d3dmetal",
+		RetinaMode:       true,
+		MetalFXScale:     "performance",
+		MetalFXSharpness: "25",
+		EnableRayTracing: true,
+		EnableDLSS:       true,
+		DLSSQuality:      "ultra_performance",
+	}
+	if got := pD3D.SpatialMetalFXFactor(); got != "" {
+		t.Fatalf("SpatialMetalFXFactor with DLSS = %q, want empty", got)
+	}
+	if env := pD3D.D3DMetalFXLaunchEnv(true); len(env) != 0 {
+		t.Fatalf("D3DMetalFXLaunchEnv with DLSS = %v, want empty", env)
+	}
+	if env := pD3D.MetalFXSharpenLaunchEnv(); env["LEVI_METALFX_SHARPNESS"] != "0.25" || env["LEVI_METALFX_SHARPEN_ONLY"] != "1" {
+		t.Fatalf("D3DMetal DLSS explicit CAS sharpen env = %v", env)
+	}
+	if env := pD3D.D3DMetalDLSSLaunchEnv(true); env["LEVI_GPTK_DLSS_QUALITY"] != "ultra_performance" {
+		t.Fatalf("D3DMetalDLSSLaunchEnv(true) = %v", env)
+	}
+	if env := pD3D.D3DMetalDLSSLaunchEnv(false); len(env) != 0 {
+		t.Fatalf("D3DMetalDLSSLaunchEnv(false) = %v, want empty without bridge", env)
+	}
+
+	// Quality / auto do not need GPTK override.
+	pD3D.DLSSQuality = "quality"
+	if env := pD3D.D3DMetalDLSSLaunchEnv(true); len(env) != 0 {
+		t.Fatalf("D3DMetalDLSSLaunchEnv(quality) = %v, want empty", env)
+	}
+	pD3D.DLSSQuality = "auto"
+	if env := pD3D.D3DMetalDLSSLaunchEnv(true); len(env) != 0 {
+		t.Fatalf("D3DMetalDLSSLaunchEnv(auto) = %v, want empty", env)
+	}
+
+	// Auto sharpness adapts to the MetalFX Temporal preset (off for 100% DLAA, scaled for upscaling).
+	pD3D.MetalFXSharpness = "auto"
+	pD3D.DLSSQuality = "ultra_performance"
+	if env := pD3D.MetalFXSharpenLaunchEnv(); env["LEVI_METALFX_SHARPNESS"] != "0.25" || env["LEVI_METALFX_SHARPEN_ONLY"] != "1" {
+		t.Fatalf("D3DMetal DLSS auto sharpen (ultra_performance) = %v", env)
+	}
+	pD3D.DLSSQuality = "performance"
+	if env := pD3D.MetalFXSharpenLaunchEnv(); env["LEVI_METALFX_SHARPNESS"] != "0.15" || env["LEVI_METALFX_SHARPEN_ONLY"] != "1" {
+		t.Fatalf("D3DMetal DLSS auto sharpen (performance) = %v", env)
+	}
+	pD3D.DLSSQuality = "quality"
+	if env := pD3D.MetalFXSharpenLaunchEnv(); env["LEVI_METALFX_SHARPNESS"] != "0.10" || env["LEVI_METALFX_SHARPEN_ONLY"] != "1" {
+		t.Fatalf("D3DMetal DLSS auto sharpen (quality) = %v", env)
+	}
+	pD3D.DLSSQuality = "dlaa"
+	if env := pD3D.MetalFXSharpenLaunchEnv(); len(env) != 0 {
+		t.Fatalf("D3DMetal DLAA auto sharpen env = %v, want empty", env)
+	}
+	pD3D.MetalFXSharpness = "0"
+	pD3D.DLSSQuality = "ultra_performance"
+	if env := pD3D.MetalFXSharpenLaunchEnv(); len(env) != 0 {
+		t.Fatalf("D3DMetal DLSS explicit off sharpen env = %v, want empty", env)
+	}
+}
+
+func TestDLSSPanelPixelLimit(t *testing.T) {
+	origRatio := displayRetinaOversampleRatio
+	t.Cleanup(func() { displayRetinaOversampleRatio = origRatio })
+	displayRetinaOversampleRatio = func() float64 { return 3420.0 / 2880.0 }
+
+	for _, lane := range []string{"d3dmetal", "mullion", "vkd3d"} {
+		p := Profile{
+			Graphics:          lane,
+			RetinaMode:        true,
+			EnableRayTracing:  true,
+			EnableDLSS:        true,
+			MetalFXPanelLimit: true,
+		}
+		env := p.DLSSPanelLimitLaunchEnv(true)
+		if env["LEVI_WINE_RENDER_SCALE"] != "1.1875" {
+			t.Errorf("%s DLSS panel limit = %v, want LEVI_WINE_RENDER_SCALE=1.1875", lane, env)
+		}
+		if envNoBridge := p.DLSSPanelLimitLaunchEnv(false); len(envNoBridge) != 0 {
+			t.Errorf("%s DLSS panel limit without bridge = %v, want empty", lane, envNoBridge)
+		}
+	}
+
+	// Inactive when RetinaMode, MetalFXPanelLimit, EnableRayTracing, or EnableDLSS is false, or on integer 2x panel.
+	for _, p := range []Profile{
+		{Graphics: "d3dmetal", RetinaMode: false, EnableRayTracing: true, EnableDLSS: true, MetalFXPanelLimit: true},
+		{Graphics: "d3dmetal", RetinaMode: true, EnableRayTracing: true, EnableDLSS: true, MetalFXPanelLimit: false},
+		{Graphics: "d3dmetal", RetinaMode: true, EnableRayTracing: true, EnableDLSS: false, MetalFXPanelLimit: true},
+		{Graphics: "d3dmetal", RetinaMode: true, EnableRayTracing: false, EnableDLSS: true, MetalFXPanelLimit: true},
+		{Graphics: "wined3d", RetinaMode: true, EnableRayTracing: true, EnableDLSS: true, MetalFXPanelLimit: true},
+	} {
+		if env := p.DLSSPanelLimitLaunchEnv(true); len(env) != 0 {
+			t.Errorf("unexpected DLSS panel limit for %+v: %v", p, env)
+		}
+	}
+
+	displayRetinaOversampleRatio = func() float64 { return 1.0 }
+	pNative := Profile{Graphics: "mullion", RetinaMode: true, EnableRayTracing: true, EnableDLSS: true, MetalFXPanelLimit: true}
+	if env := pNative.DLSSPanelLimitLaunchEnv(true); len(env) != 0 {
+		t.Errorf("integer Retina panel should omit LEVI_WINE_RENDER_SCALE, got %v", env)
 	}
 }

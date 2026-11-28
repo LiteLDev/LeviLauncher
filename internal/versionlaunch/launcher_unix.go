@@ -5,6 +5,7 @@ package versionlaunch
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/liteldev/LeviLauncher/internal/eventsink"
 	"github.com/liteldev/LeviLauncher/internal/gameauth"
@@ -260,8 +261,7 @@ func findLeviWineBridge(instanceDir string) string {
 	if instanceDir == "" {
 		return ""
 	}
-	direct := filepath.Join(instanceDir, "mods", "LeviClient", "LeviWineBridge.dll")
-	if info, err := os.Stat(direct); err == nil && info.Mode().IsRegular() {
+	if direct := activeWineBridgeIn(filepath.Join(instanceDir, "mods", "LeviClient")); direct != "" {
 		return direct
 	}
 	entries, err := os.ReadDir(filepath.Join(instanceDir, "mods"))
@@ -272,12 +272,31 @@ func findLeviWineBridge(instanceDir string) string {
 		if !entry.IsDir() {
 			continue
 		}
-		candidate := filepath.Join(instanceDir, "mods", entry.Name(), "LeviWineBridge.dll")
-		if info, statErr := os.Stat(candidate); statErr == nil && info.Mode().IsRegular() {
+		if candidate := activeWineBridgeIn(filepath.Join(instanceDir, "mods", entry.Name())); candidate != "" {
 			return candidate
 		}
 	}
 	return ""
+}
+
+func activeWineBridgeIn(modDir string) string {
+	dll := filepath.Join(modDir, "LeviWineBridge.dll")
+	if info, err := os.Stat(dll); err != nil || !info.Mode().IsRegular() {
+		return ""
+	}
+	data, err := os.ReadFile(filepath.Join(modDir, "manifest.json"))
+	if err != nil {
+		return ""
+	}
+	var manifest struct {
+		Entry string `json:"entry"`
+		Type  string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &manifest); err != nil ||
+		!strings.EqualFold(manifest.Entry, filepath.Base(dll)) || manifest.Type != "preload-native" {
+		return ""
+	}
+	return dll
 }
 
 func hasLeviWineBridge(instanceDir string) bool {

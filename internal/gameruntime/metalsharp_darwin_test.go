@@ -402,6 +402,7 @@ func TestAutoD3DMetalFallsBackToCompatibleGPTK(t *testing.T) {
 }
 
 func TestAutoD3DMetalPrefersGPTK3ForRayTracing(t *testing.T) {
+	t.Setenv("LEVI_GPTK4_RTX_FIX", "")
 	osVersion := macOSVersion
 	t.Cleanup(func() { macOSVersion = osVersion })
 	macOSVersion = func() [2]int { return [2]int{27, 2} }
@@ -497,6 +498,27 @@ func TestAutoD3DMetalPrefersGPTK3ForRayTracing(t *testing.T) {
 	}
 	if !strings.Contains(joinedWithFix, "D3DM_MTL4=1") {
 		t.Fatalf("Auto + RTX with GPTK4 RTX fix and EnableMetal4=true should set D3DM_MTL4=1:\n%s", joinedWithFix)
+	}
+
+	pExplicitGPTK4.Prefix = prefix
+	if _, _, err := pExplicitGPTK4.GameCommandWithOptions(context.Background(), exe, GameLaunchOptions{}); err == nil || !strings.Contains(err.Error(), "RTX heap fix") {
+		t.Fatalf("explicit GPTK 4 + RTX without heap fix returned %v", err)
+	}
+	if _, _, err := pExplicitGPTK4.GameCommandWithOptions(context.Background(), exe, GameLaunchOptions{HasWineBridgeGPTK4RTXFix: true}); err != nil {
+		t.Fatalf("explicit GPTK 4 + RTX with heap fix returned %v", err)
+	}
+	cmdDisabledFix, _, err := pAutoRTX.GameCommandWithOptions(context.Background(), exe, GameLaunchOptions{
+		HasWineBridgeGPTK4RTXFix: true,
+		ExtraEnv:                 map[string]string{"LEVI_GPTK4_RTX_FIX": "OFF"},
+	})
+	if err != nil || !strings.Contains(strings.Join(cmdDisabledFix.Args, "\n"), "D3DMETAL_RUNTIME_DIR="+gptk3) {
+		t.Fatalf("Auto + RTX with disabled heap fix should use GPTK 3: cmd=%v err=%v", cmdDisabledFix, err)
+	}
+	if err := os.RemoveAll(gptk3); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := pAutoRTX.GameCommandWithOptions(context.Background(), exe, GameLaunchOptions{}); err == nil || !strings.Contains(err.Error(), "RTX heap fix") {
+		t.Fatalf("Auto + RTX with only GPTK 4 and no heap fix returned %v", err)
 	}
 }
 

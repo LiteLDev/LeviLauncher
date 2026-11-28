@@ -1,12 +1,14 @@
 package registry
 
 import (
+	"errors"
 	"fmt"
-	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	"log"
 	"os/exec"
+	"runtime"
 
 	json "github.com/goccy/go-json"
+	"github.com/liteldev/LeviLauncher/internal/processinfo"
 )
 
 type AppxInfo struct {
@@ -17,6 +19,9 @@ type AppxInfo struct {
 }
 
 func GetAppxInfo(packageName string) (*AppxInfo, error) {
+	if runtime.GOOS != "windows" {
+		return nil, errors.ErrUnsupported
+	}
 	ps := "Get-AppxPackage -Name '" + packageName + "' | Select-Object PackageFullName, PackageFamilyName, Version, InstallLocation | ConvertTo-Json"
 	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", ps)
 	processinfo.ConfigureChild(cmd)

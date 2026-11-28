@@ -49,7 +49,16 @@ func (p Profile) GameCommand(ctx context.Context, exe string, args ...string) (c
 // directory, log redirection, and per-launch environment overrides.
 func (p Profile) GameCommandWithOptions(ctx context.Context, exe string, opts GameLaunchOptions, args ...string) (cmd *exec.Cmd, detached bool, err error) {
 	launchProfile := p
-	if opts.HasWineBridgeGPTK4RTXFix &&
+	heapFixOverride := os.Getenv("LEVI_GPTK4_RTX_FIX")
+	if value, ok := opts.ExtraEnv["LEVI_GPTK4_RTX_FIX"]; ok {
+		heapFixOverride = value
+	}
+	hasHeapFix := opts.HasWineBridgeGPTK4RTXFix
+	switch strings.ToLower(heapFixOverride) {
+	case "0", "false", "off":
+		hasHeapFix = false
+	}
+	if hasHeapFix &&
 		launchProfile.EffectiveGraphics() == "d3dmetal" &&
 		launchProfile.EnableRayTracing &&
 		(launchProfile.D3DMetalVersion == "" || launchProfile.D3DMetalVersion == "auto") &&
@@ -57,6 +66,13 @@ func (p Profile) GameCommandWithOptions(ctx context.Context, exe string, opts Ga
 		launchProfile.D3DMetalVersion = "gptk4"
 	}
 	merged := mergeEnv(launchProfile.Environment(), opts.ExtraEnv)
+	if launchProfile.metalSharp.app != "" &&
+		launchProfile.EffectiveGraphics() == "d3dmetal" &&
+		merged["D3DM_SUPPORT_DXR"] == "1" &&
+		launchProfile.metalSharp.selectedD3DMetalVersionFor(launchProfile.D3DMetalVersion, launchProfile.EnableRayTracing) == "gptk4" &&
+		!hasHeapFix {
+		return nil, false, fmt.Errorf("GPTK 4 beta 3 ray tracing requires an enabled LeviWineBridge with the RTX heap fix; enable or update the mod, or select GPTK 3")
+	}
 
 	// Launch MetalSharp through our bundled LeviGameHost.app (when available) so
 	// macOS RunningBoard activates Game Mode while injecting libLeviMetalFX.dylib
